@@ -200,7 +200,7 @@ ask_for_reboot() {
   read -p "Would you like to restart your Raspberry Pi now? [Y/N] " userInput
   userInput="${userInput^^}"
 
-  if [[ "${userInput,,}" == "y" ]] then
+  if [[ "${userInput,,}" == "y" ]]; then
     echo_success "You entered 'Y', rebooting now..."
     sleep 2
     sudo reboot now
