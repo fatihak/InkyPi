@@ -15,7 +15,7 @@ ORIENTATIONS = ["horizontal", "vertical"]
 
 plugin_id = "clock"
 plugin_settings = {
-    "selectedClockFace": "Digital Clock"
+    "selectedClockFace": "Gradient Clock"
 }
 
 mock_device_config = MagicMock()

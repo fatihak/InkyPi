@@ -3,10 +3,13 @@ from utils.app_utils import resolve_path, get_font
 from plugins.base_plugin.base_plugin import BasePlugin
 from PIL import Image, ImageDraw, ImageFont
 from io import BytesIO
+import logging
 import numpy as np
 import math
 from datetime import datetime
 import pytz
+
+logger = logging.getLogger(__name__)
 
 CLOCK_FACES = [
     {
@@ -29,6 +32,7 @@ CLOCK_FACES = [
 
 DEFAULT_TIMEZONE = "US/Eastern"
 DEFAULT_CLOCK_FACE = "Gradient Clock"
+
 class Clock(BasePlugin):
     def generate_settings_template(self):
         template_params = super().generate_settings_template()
@@ -105,7 +109,7 @@ class Clock(BasePlugin):
         minute_length = dim * 0.35
         hour_length = dim * 0.22
         
-        hand_width = max(int(dim*0.012), 1)
+        hand_width = max(int(dim*0.013), 1)
         border_width = max(int(dim*0.005), 1)
 
         hand_offset = max(int(dim*0.05), 1)
@@ -274,12 +278,12 @@ class Clock(BasePlugin):
 
         corners = Clock.calculate_rectangle_corners(start, end, hand_length, hand_width)
         if round_corners:
-            draw.circle(start, hand_width-0.8, fill=border_color)
+            draw.circle(start, hand_width-0.6, fill=border_color)
             draw.circle(end, hand_width-0.8, fill=border_color)
         draw.polygon(corners, fill=hand_color, outline=border_color, width=border_width)
         if round_corners:
-            draw.circle(start, hand_width-2.1, fill=hand_color)
-            draw.circle(end, hand_width-2.1, fill=hand_color)
+            draw.circle(start, hand_width-2, fill=hand_color)
+            draw.circle(end, hand_width-2, fill=hand_color)
 
         return image
 
