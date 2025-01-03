@@ -276,7 +276,7 @@ class Clock(BasePlugin):
         start = (x1,y1)
         end = (x2,y2)
 
-        corners = Clock.calculate_rectangle_corners(start, end, hand_length, hand_width)
+        corners = Clock.calculate_rectangle_corners(start, end, hand_width)
         if round_corners:
             draw.circle(start, hand_width-0.6, fill=border_color)
             draw.circle(end, hand_width-0.8, fill=border_color)
@@ -288,7 +288,7 @@ class Clock(BasePlugin):
         return image
 
     @staticmethod
-    def calculate_rectangle_corners(start, end, width, thickness):
+    def calculate_rectangle_corners(start, end, half_width):
 
         # Calculate the direction vector (from start to end)
         dir_x = end[0] - start[0]
@@ -304,9 +304,6 @@ class Clock(BasePlugin):
         # Perpendicular vector (90 degrees to the direction vector)
         perp_x = -dir_y
         perp_y = dir_x
-
-        # Half width of the rectangle (distance from center to the edge)
-        half_width = thickness
 
         # Calculate the corner points
         corner1 = (start[0] + half_width * perp_x, start[1] + half_width * perp_y)

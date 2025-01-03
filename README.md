@@ -24,7 +24,7 @@ And additional plugins coming soon! For documentation on building custom plugins
 
 ## Hardware
 
-- Raspberry Pi (4 | 3 | Zero 2 W | Zero W)
+- Raspberry Pi (4 | 3 | Zero 2 W)
     - Recommended to get 40 pin Pre Soldered Header
 - MicroSD Card (min 8 GB)
 - E-Ink Display: Pimoroni Inky Impression, available in 3 sizes:
