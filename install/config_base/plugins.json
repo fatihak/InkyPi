@@ -5,6 +5,11 @@
         "class": "AIImage"
     },
     {
+        "display_name": "AI Text",
+        "id": "ai_text",
+        "class": "AIText"
+    },
+    {
         "display_name": "Image Upload",
         "id": "image_upload",
         "class": "ImageUpload"
