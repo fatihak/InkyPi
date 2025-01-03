@@ -77,7 +77,7 @@ class Clock(BasePlugin):
         image = Image.new("RGBA", dimensions, secondary_color+(255,))
         text = Image.new("RGBA", dimensions, (0, 0, 0, 0))
 
-        font_size = w * 0.34
+        font_size = w * 0.36
         fnt = get_font("ds-gigi", font_size)
         text_draw = ImageDraw.Draw(text)
 
@@ -135,7 +135,7 @@ class Clock(BasePlugin):
         canvas = Image.new("RGBA", dimensions, (0, 0, 0, 0))
         image_draw = ImageDraw.Draw(canvas)
 
-        shadow_offset = max(int(w * 0.0075), 1)
+        shadow_offset = max(int(dim * 0.0075), 1)
         face_size = int(dim * 0.45)
 
         # clock shadow
@@ -147,9 +147,9 @@ class Clock(BasePlugin):
         Clock.draw_hour_marks(image_draw._image, face_size - int(w*0.04375))
 
         hour_angle, minute_angle = Clock.calculate_clock_angles(time)
-        hand_width = max(int(dim * 0.008), 1)
-        Clock.draw_clock_hand(image_draw._image, int(w*0.3), minute_angle, secondary_color, hand_width=hand_width, border_color=secondary_color, round_corners=False)
-        Clock.draw_clock_hand(image_draw._image, int(w*0.2), hour_angle, secondary_color, hand_width=hand_width, border_color=secondary_color, round_corners=False)
+        hand_width = max(int(dim * 0.009), 1)
+        Clock.draw_clock_hand(image_draw._image, int(dim*0.3), minute_angle, secondary_color, hand_width=hand_width, border_color=secondary_color, round_corners=False)
+        Clock.draw_clock_hand(image_draw._image, int(dim*0.2), hour_angle, secondary_color, hand_width=hand_width, border_color=secondary_color, round_corners=False)
 
         Clock.drew_clock_center(image_draw._image, max(int(dim*0.014), 1), primary_color, secondary_color, width=max(int(dim* 0.007), 1))
 
