@@ -162,6 +162,3 @@ cython_debug/
 
 # Ignore Mac DS_Store files
 .DS_Store
-
-# Ignore saved images
-src/static/saved_images/
