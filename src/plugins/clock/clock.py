@@ -1,5 +1,5 @@
 import os
-from utils.app_utils import resolve_path
+from utils.app_utils import resolve_path, get_font
 from plugins.base_plugin.base_plugin import BasePlugin
 from PIL import Image, ImageDraw, ImageFont
 from io import BytesIO
@@ -26,11 +26,6 @@ CLOCK_FACES = [
         "icon": "faces/word.png"
     }
 ]
-
-FONTS = {
-    "ds-gigi": resolve_path(os.path.join("static","fonts","DS-DIGI.TTF")),
-    "napoli": resolve_path(os.path.join("static","fonts","Napoli.ttf"))
-}
 
 DEFAULT_TIMEZONE = "US/Eastern"
 DEFAULT_CLOCK_FACE = "Gradient Clock"
@@ -71,36 +66,20 @@ class Clock(BasePlugin):
             raise RuntimeError("Failed to display clock.")
         return img
     
-    def draw_digital_clock(self, dimensions, time, primary_color=(51,67,73), secondary_color=(241,228,212), bg_color=(137,180,173)):
+    def draw_digital_clock(self, dimensions, time, primary_color=(255,255,255), secondary_color=(0,0,0)):
         w,h = dimensions
         time_str = Clock.format_time(time.hour, time.minute, zero_pad = True)
 
-        image = Image.new("RGBA", dimensions, bg_color+(255,))
+        image = Image.new("RGBA", dimensions, secondary_color+(255,))
         text = Image.new("RGBA", dimensions, (0, 0, 0, 0))
 
-        fnt = ImageFont.truetype(FONTS["ds-gigi"], 300)
+        font_size = w * 0.34
+        fnt = get_font("ds-gigi", font_size)
         text_draw = ImageDraw.Draw(text)
 
-        corner_radius = 50
-
-        border_padding = 40
-        outline_padding = 60
-        shaddow_offset = 15
-
-        # shadow
-        shadow_corners = [(border_padding+shaddow_offset, border_padding+shaddow_offset), (w-border_padding+shaddow_offset,h-border_padding+shaddow_offset),]
-        text_draw.rounded_rectangle(shadow_corners, radius=corner_radius, fill=primary_color +(100,))
-
-        # rectangle
-        border_corners = [(border_padding, border_padding), (w-border_padding,h-border_padding),]
-        text_draw.rounded_rectangle(border_corners, radius=corner_radius, fill=secondary_color +(255,))
-
-        # rounded outline
-        outline_corners = [(outline_padding, outline_padding), (w-outline_padding,h-outline_padding),]
-        text_draw.rounded_rectangle(outline_corners, radius=corner_radius, outline=primary_color +(255,), width=15)
-
         # time text
-        text_draw.text((w/2, h/2), time_str, font=fnt, anchor="mm", fill=primary_color +(255,), font_size=200)
+        text_draw.text((w/2, h/2), "00:00", font=fnt, anchor="mm", fill=primary_color +(30,))
+        text_draw.text((w/2, h/2), time_str, font=fnt, anchor="mm", fill=primary_color +(255,))
 
         combined = Image.alpha_composite(image, text)    
 
@@ -122,10 +101,19 @@ class Clock(BasePlugin):
         # Combine the images using alpha blending
         final_image = Image.alpha_composite(image_hour, image_minute)
 
-        Clock.draw_clock_hand(final_image, 185, minute_angle, primary_color, border_color=(255, 255, 255), border_width=3, hand_offset=25)
-        Clock.draw_clock_hand(final_image, 100, hour_angle, primary_color, border_color=(255, 255, 255), border_width=3, hand_offset=25)
+        dim = min(width, height)
+        minute_length = dim * 0.35
+        hour_length = dim * 0.22
+        
+        hand_width = max(int(dim*0.012), 1)
+        border_width = max(int(dim*0.005), 1)
 
-        Clock.drew_clock_center(final_image, 5.5, primary_color, outline_color=(255, 255, 255, 255), width=2)
+        hand_offset = max(int(dim*0.05), 1)
+        offset_width = max(int(dim*0.008), 1)
+        Clock.draw_clock_hand(final_image, minute_length, minute_angle, primary_color, border_color=(255, 255, 255), border_width=border_width, hand_offset=hand_offset, offset_width=offset_width, hand_width=hand_width)
+        Clock.draw_clock_hand(final_image, hour_length, hour_angle, primary_color, border_color=(255, 255, 255), border_width=border_width, hand_offset=hand_offset, offset_width=offset_width, hand_width=hand_width)
+        
+        Clock.drew_clock_center(final_image, max(int(dim*0.01), 1), primary_color, outline_color=(255, 255, 255, 255), width=max(int(dim*0.004), 1))
 
         return final_image
 
@@ -134,28 +122,32 @@ class Clock(BasePlugin):
         bg = Image.new("RGBA", dimensions, primary_color+(255,))
         bg_draw = ImageDraw.Draw(bg)
 
+        # used to calculate percentages of sizes
+        dim = min(w,h)
+
         corners = [(0, h/2), (w,h)]
         bg_draw.rectangle(corners, fill=secondary_color +(255,))
 
         canvas = Image.new("RGBA", dimensions, (0, 0, 0, 0))
         image_draw = ImageDraw.Draw(canvas)
 
-        shadow_offset = 6
-        face_size = 200
+        shadow_offset = max(int(w * 0.0075), 1)
+        face_size = int(dim * 0.45)
 
         # clock shadow
         image_draw.circle((w/2,h/2 + shadow_offset), face_size+2, fill=(0,0,0,50))
 
         # clock outline
-        image_draw.circle((w/2,h/2), face_size, fill=primary_color, outline=secondary_color, width=25)
-
-        Clock.draw_hour_marks(image_draw._image, face_size - 35)
+        image_draw.circle((w/2,h/2), face_size, fill=primary_color, outline=secondary_color, width=int(dim * 0.03125))
+        
+        Clock.draw_hour_marks(image_draw._image, face_size - int(w*0.04375))
 
         hour_angle, minute_angle = Clock.calculate_clock_angles(time)
-        Clock.draw_clock_hand(image_draw._image, 150, minute_angle, secondary_color, hand_width=6, border_color=secondary_color, round_corners=False)
-        Clock.draw_clock_hand(image_draw._image, 80, hour_angle, secondary_color, hand_width=6, border_color=secondary_color, round_corners=False)
+        hand_width = max(int(dim * 0.008), 1)
+        Clock.draw_clock_hand(image_draw._image, int(w*0.3), minute_angle, secondary_color, hand_width=hand_width, border_color=secondary_color, round_corners=False)
+        Clock.draw_clock_hand(image_draw._image, int(w*0.2), hour_angle, secondary_color, hand_width=hand_width, border_color=secondary_color, round_corners=False)
 
-        Clock.drew_clock_center(image_draw._image, 6, primary_color, secondary_color, width=3)
+        Clock.drew_clock_center(image_draw._image, max(int(dim*0.014), 1), primary_color, secondary_color, width=max(int(dim* 0.007), 1))
 
         combined = Image.alpha_composite(bg, canvas)    
 
@@ -165,7 +157,11 @@ class Clock(BasePlugin):
         w,h = dimensions
 
         bg = Image.new("RGBA", dimensions, primary_color+(255,))
-        fnt = ImageFont.truetype(FONTS["napoli"], 30)
+
+        dim = min(w,h)
+
+        font_size = dim*0.05
+        fnt = get_font("napoli", font_size)
 
         canvas = Image.new("RGBA", dimensions, (0, 0, 0, 0))
         image_draw = ImageDraw.Draw(canvas)
@@ -250,7 +246,7 @@ class Clock(BasePlugin):
         return Image.fromarray(gradient, mode="RGBA")
 
     @staticmethod
-    def draw_clock_hand(image, length, angle, hand_color, hand_width=14, border_color=None, border_width = 0, hand_offset=0, round_corners=True):
+    def draw_clock_hand(image, length, angle, hand_color, hand_length=14, border_color=None, border_width = 0, hand_offset=0, round_corners=True, offset_width=4, hand_width=4):
         draw = ImageDraw.Draw(image)
         # Get the image dimensions
         w, h = image.size
@@ -263,7 +259,7 @@ class Clock(BasePlugin):
         if hand_offset:
             offset_start = (x1, y1)
             offset_end = (x1 + hand_offset * np.cos(-angle), y1 + hand_offset * np.sin(-angle))
-            draw.line([offset_start, offset_end], fill=border_color, width=4, joint=None)
+            draw.line([offset_start, offset_end], fill=border_color, width=offset_width, joint=None)
         
         # add hand_offset if set
         x1 = x1 + hand_offset * np.cos(-angle)
@@ -276,19 +272,19 @@ class Clock(BasePlugin):
         start = (x1,y1)
         end = (x2,y2)
 
-        corners = Clock.calculate_rectangle_corners(start, end, hand_width)
+        corners = Clock.calculate_rectangle_corners(start, end, hand_length, hand_width)
         if round_corners:
-            draw.circle(start, hand_width/2, fill=border_color)
-            draw.circle(end, hand_width/2, fill=border_color)
-        draw.polygon(corners,fill=hand_color, outline=border_color, width=border_width)
+            draw.circle(start, hand_width-0.8, fill=border_color)
+            draw.circle(end, hand_width-0.8, fill=border_color)
+        draw.polygon(corners, fill=hand_color, outline=border_color, width=border_width)
         if round_corners:
-            draw.circle(start, 4, fill=hand_color)
-            draw.circle(end, 4, fill=hand_color)
+            draw.circle(start, hand_width-2.1, fill=hand_color)
+            draw.circle(end, hand_width-2.1, fill=hand_color)
 
         return image
 
     @staticmethod
-    def calculate_rectangle_corners(start, end, width):
+    def calculate_rectangle_corners(start, end, width, thickness):
 
         # Calculate the direction vector (from start to end)
         dir_x = end[0] - start[0]
@@ -306,7 +302,7 @@ class Clock(BasePlugin):
         perp_y = dir_x
 
         # Half width of the rectangle (distance from center to the edge)
-        half_width = width / 2
+        half_width = thickness
 
         # Calculate the corner points
         corner1 = (start[0] + half_width * perp_x, start[1] + half_width * perp_y)

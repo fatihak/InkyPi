@@ -8,7 +8,7 @@ from PIL import Image, ImageDraw, ImageFont
 logger = logging.getLogger(__name__)
 
 FONTS = {
-    "ds-gigi": "DS-DIGI.TTF",
+    "ds-gigi": "DS-DIGI.ttf",
     "napoli": "Napoli.ttf",
     "jost": "Jost.ttf"
 }
