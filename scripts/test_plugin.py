@@ -13,9 +13,11 @@ RESOLUTIONS = [
 ]
 ORIENTATIONS = ["horizontal", "vertical"]
 
-plugin_id = "clock"
+plugin_id = "ai_text"
 plugin_settings = {
-    "selectedClockFace": "Word Clock"
+    "title": "Dad Joke Of the Day",
+    "textModel": "gpt-4o",
+    "textPrompt": "idk"
 }
 
 mock_device_config = MagicMock()
@@ -35,7 +37,7 @@ plugin_instance = get_plugin_instance(plugin_config)
 total_height = sum([max(resolution) for resolution in RESOLUTIONS])
 total_width = max([max(resolution) for resolution in RESOLUTIONS]) * 2
 
-composite = Image.new('RGB', (total_width, total_height), color='white')
+composite = Image.new('RGB', (total_width, total_height), color='gray')
 y = 0
 for resolution in RESOLUTIONS:
     x = 0

@@ -1,10 +1,12 @@
 import urllib.request
 from plugins.base_plugin.base_plugin import BasePlugin
+from utils.app_utils import resolve_path, get_font
 from openai import OpenAI
-from PIL import Image
+from PIL import Image, ImageDraw, ImageFont
 from io import BytesIO
 import requests
 import logging
+import textwrap
 
 logger = logging.getLogger(__name__)
 
@@ -20,107 +22,46 @@ class AIText(BasePlugin):
         if not api_key:
             raise RuntimeError("OPEN AI API Key not configured.")
 
-        text_prompt = settings.get("inputText")
+        title = settings.get("title")
 
-        image_model = settings.get('imageModel', DEFAULT_IMAGE_MODEL)
-        if image_model not in IMAGE_MODELS:
-            image_model = DEFAULT_IMAGE_MODEL
-        image_quality = settings.get('quality', DEFAULT_IMAGE_QUALITY)
-        if image_quality not in IMAGE_QUALITIES:
-            image_quality = DEFAULT_IMAGE_QUALITY
-        randomize_prompt = settings.get('randomizePrompt') == 'true'
+        text_model = settings.get('textModel')
+        if not text_model or text_model not in ['gpt-4o', 'gpt-4o-mini']:
+            raise RuntimeError("Text Model is required.")
 
-        image = None
+        text_prompt = settings.get('inputText', '')
+        if not text_model.strip():
+            raise RuntimeError("Text Prompt is required.")
+
         try:
             ai_client = OpenAI(api_key = api_key)
-            if randomize_prompt:
-                text_prompt = AIText.fetch_image_prompt(ai_client, text_prompt)
-
-            image = AIText.fetch_image(
-                ai_client,
-                text_prompt,
-                model=image_model,
-                quality=image_quality,
-                orientation=device_config.get_config("orientation")
-            )
+            prompt_response = AIText.fetch_text_prompt(ai_client, text_model, text_prompt)
         except Exception as e:
             logger.error(f"Failed to make Open AI request: {str(e)}")
             raise RuntimeError("Open AI request failure, please check logs.")
+        
+        dimensions = device_config.get_resolution()
+        if device_config.get_config("orientation") == "vertical":
+            dimensions = dimensions[::-1]
+        
+        image = AIText.generate_text_image(dimensions, title, prompt_response)
+
         return image
     
     @staticmethod
-    def fetch_image(ai_client, prompt, model="dalle-e-3", quality="standard", orientation="horizontal"):
-        logger.info(f"Generating image for prompt: {prompt}, model: {model}, quality: {quality}")
-        img = None
-        try:
-            prompt += (
-                ". The image should fully occupy the entire canvas without any frames, "
-                "borders, or cropped areas. No blank spaces or artificial framing."
-            )
-            prompt += (
-                "Focus on simplicity, bold shapes, and strong contrast to enhance clarity "
-                "and visual appeal. Avoid excessive detail or complex gradients, ensuring "
-                "the design works well with flat, vibrant colors."
-            )
-            args = {
-                "model": model,
-                "prompt": prompt,
-                "size": "1024x1024",
-                "quality": "standard"
-            }
-            if model == "dall-e-3":
-                args["size"] = "1792x1024" if orientation == "horizontal" else "1024x1792"
-                args["quality"] = quality
-
-            response = ai_client.images.generate(**args)
-            image_url = response.data[0].url
-            response = requests.get(image_url)
-            img = Image.open(BytesIO(response.content))
-        except Exception as e:
-            logger.exception("Failed to generate an image:")
-        return img
-    
-    @staticmethod
-    def fetch_image_prompt(ai_client, from_prompt=None):
+    def fetch_text_prompt(ai_client, model, text_prompt):
         logger.info(f"Getting random image prompt...")
 
         system_content = (
-            "You are a creative assistant generating extremely random and unique image prompts. "
-            "Avoid common themes. Focus on unexpected, unconventional, and bizarre combinations "
-            "of art style, medium, subjects, time periods, and moods. No repetition. Prompts "
-            "should be 20 words or less and specify random artist, movie, tv show or time period "
-            "for the theme. Do not provide any headers or repeat the request, just provide the updated "
-            "updated prompt in your response."
+            "You are a highly intelligent text generation assistant. Generate concise, "
+            "relevant, and accurate responses tailored to the user's input. Adapt your "
+            "tone and content to align with the context of the user's request. Don't repeat "
+            "the prompt back to the user or rephrase it, just provide the response itself. "
         )
-        user_content = (
-            "Give me a completely random image prompt, something unexpected and creative! "
-            "Let's see what your AI mind can cook up!"
-        )
-        if from_prompt and from_prompt.strip():
-            system_content = (
-                "You are a creative assistant specializing in generating highly descriptive "
-                "and unique prompts for creating images. When given a short or simple image "
-                "description, your job is to rewrite it into a more detailed, imaginative, "
-                "and descriptive version that captures the essence of the original while "
-                "making it unique and vivid. Avoid adding irrelevant details but feel free "
-                "to include creative and visual enhancements. Avoid common themes. Focus on "
-                "unexpected, unconventional, and bizarre combinations of art style, medium, "
-                "subjects, time periods, and moods. Do not provide any headers or repeat the "
-                "request, just provide your updated prompt in the response. Prompts "
-                "should be 20 words or less and specify random artist, movie, tv show or time "
-                "period for the theme."
-            )
-            user_content = (
-                f"Original prompt: \"{from_prompt}\"\n"
-                "Rewrite it to make it more detailed, imaginative, and unique while staying "
-                "true to the original idea. Include vivid imagery and descriptive details. "
-                "Avoid changing the subject of the prompt."
-            )
-    
+        user_content = text_prompt
 
         # Make the API call
         response = ai_client.chat.completions.create(
-            model="gpt-4o",
+            model=model,
             messages=[
                 {
                     "role": "system",
@@ -132,9 +73,65 @@ class AIText(BasePlugin):
                 }
             ],
             temperature=1,  # Adjust for creativity
-            max_tokens=50
+            max_tokens=300
         )
 
         prompt = response.choices[0].message.content.strip()
         logger.info(f"Generated random image prompt: {prompt}")
         return prompt
+
+    @staticmethod
+    def generate_text_image(dimensions, title, body):
+        w,h = dimensions
+        background_color = (255,255,255)
+        text_color = (0,0,0)
+        image = Image.new("RGBA", dimensions, background_color+(255,))
+        image_draw = ImageDraw.Draw(image)
+
+        # Adaptive font size based on image dimensions
+        font_size = max(10, min(w, h) // 20)
+        font = get_font("jost", font_size)
+
+        # Maximum text width in pixels
+        max_text_width = w - 30
+
+        # Dynamic line height based on font size
+        line_height = font_size + 5
+
+        # Word-wrap text using pixel-based constraints
+        words = body.split()
+        wrapped_lines = []
+        current_line = []
+
+        for word in words:
+            test_line = ' '.join(current_line + [word])
+            test_width = image_draw.textlength(test_line, font=font)
+            if test_width <= max_text_width:
+                current_line.append(word)
+            else:
+                wrapped_lines.append(' '.join(current_line))
+                current_line = [word]
+        
+        if current_line:
+            wrapped_lines.append(' '.join(current_line))
+
+        # Calculate the starting y-coordinate to center the text vertically
+        total_text_height = len(wrapped_lines) * line_height
+
+        title_height = max(h // 30, 0) if title else 0
+        y = max((h - total_text_height - title_height) // 2, 0)
+        x = w/2  # Left padding
+
+        if title:
+            title_font_size = max(10, min(w, h) // 15)
+            fnt = get_font("jost-semibold", title_font_size)
+
+            image_draw.text((x, y), title, anchor="mb", fill=text_color, font=fnt)
+            y += title_height
+
+
+        # Draw the wrapped text line by line
+        for line in wrapped_lines:
+            image_draw.text((x, y), line, font=font, anchor="mm", fill=text_color)
+            y += line_height
+        return image

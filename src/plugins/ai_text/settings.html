@@ -1,50 +1,21 @@
 <div class="form-group">
+    <label for="title" class="form-label">Title:</label>
+    <input type="text" id="title" name="title" placeholder="Type something..." required class="form-input">
+</div>
+
+<div class="form-group">
     <label for="inputText" class="form-label">Text Prompt:</label>
     <input type="text" id="inputText" name="inputText" placeholder="Type something..." required class="form-input">
 </div>
 
-
 <!-- Dropdown Options -->
 <div class="form-group dropdown-container">
-    <!-- Image Model Dropdown -->
+    <!-- Text Model Dropdown -->
     <div class="form-group">
-        <label for="imageModel" class="form-label">Image Model:</label>
-        <select id="imageModel" name="imageModel" class="form-input" onchange="toggleQualityDropdown()">
-            <option value="dall-e-3" selected>DALL·E 3</option>
-            <option value="dall-e-2">DALL·E 2</option>
-        </select>
-    </div>
-
-    <!-- Quality Dropdown -->
-    <div class="form-group">
-        <label for="quality" class="form-label">Quality:</label>
-        <select id="quality" name="quality" class="form-input">
-            <option value="hd">HD</option>
-            <option value="standard" selected>Standard</option>
+        <label for="textModel" class="form-label">Text Model:</label>
+        <select id="textModel" name="textModel" class="form-input" onchange="toggleQualityDropdown()">
+            <option value="gpt-4o" selected>GPT-4o mini</option>
+            <option value="gpt-4o-mini">GPT-4o</option>
         </select>
     </div>
 </div>
-
-<div class="form-group">
-    <label for="randomizePrompt" class="form-label">Randomize Text Prompt:</label>
-    <div class="toggle-container">
-        <input type="checkbox" id="randomizePrompt" name="randomizePrompt" class="toggle-checkbox" value="false" onclick="this.value=this.checked ? 'true' : 'false';">
-        <label for="randomizePrompt" class="toggle-label"></label>
-    </div>
-</div>
-
-
-<script>
-    function toggleQualityDropdown() {
-        const imageModelDropdown = document.getElementById("imageModel");
-        const qualityDropdown = document.getElementById("quality");
-        const selectedModel = imageModelDropdown.value;
-
-        if (selectedModel === "dall-e-3") {
-            qualityDropdown.disabled = false; // Enable quality dropdown
-        } else if (selectedModel === "dall-e-2") {
-            qualityDropdown.disabled = true; // Disable quality dropdown
-            qualityDropdown.value = "standard"; // Clear selection
-        }
-    }
-</script>

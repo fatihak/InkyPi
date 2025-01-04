@@ -10,7 +10,8 @@ logger = logging.getLogger(__name__)
 FONTS = {
     "ds-gigi": "DS-DIGI.TTF",
     "napoli": "Napoli.ttf",
-    "jost": "Jost.ttf"
+    "jost": "Jost.ttf",
+    "jost-semibold": "Jost-SemiBold.ttf"
 }
 
 def resolve_path(file_path):
