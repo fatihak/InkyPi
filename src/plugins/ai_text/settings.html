@@ -19,3 +19,50 @@
         </select>
     </div>
 </div>
+
+<div class="form-group">
+    <label for="template" class="form-label">Template:</label>
+
+    <div id="template-selection" class="image-grid">
+        {% for template in image_templates %}
+        <div
+            class="image-option"
+            data-face-name="{{ template.name }}"
+            onclick="selectedTemplate(this)"
+            {% if loop.index == 1 %} class="selected" {% endif %}
+        >
+            <img
+                src="{{ url_for('plugin.image', plugin_id='ai_text', filename=template.icon) }}"
+                alt="{{ template.name }}"
+            />
+        </div>
+        {% endfor %}
+    </div>
+    <input type="hidden" id="selected-template" name="selectedTemplate" value="{{ image_templates[0].Name }}" />
+</div>
+
+<script>
+    function selectedTemplate(element) {
+        // Remove the selected class from any previously selected option
+        const previousSelection = document.querySelector('.image-option.selected');
+        if (previousSelection) {
+            previousSelection.classList.remove('selected');
+        }
+
+        // Add the selected class to the clicked option
+        element.classList.add('selected');
+
+        // Update the hidden input with the selected template
+        const selectedFaceName = element.getAttribute('data-face-name');
+        document.getElementById('selected-template').value = selectedFaceName;
+    }
+
+    // Default selection for the first template
+    document.addEventListener('DOMContentLoaded', () => {
+        const firstOption = document.querySelector('.image-option');
+        if (firstOption) {
+            firstOption.classList.add('selected');
+            document.getElementById('selected-template').value = firstOption.getAttribute('data-face-name');
+        }
+    });
+</script>

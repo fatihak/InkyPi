@@ -26,10 +26,10 @@
 <div class="form-group">
     <label for="clock-face" class="form-label">Clock Face:</label>
 
-    <div id="clock-face-selection" class="clock-face-grid">
+    <div id="clock-face-selection" class="image-grid">
         {% for face in clock_faces %}
         <div
-            class="clock-face-option"
+            class="image-option"
             data-face-name="{{ face.name }}"
             onclick="selectClockFace(this)"
             {% if loop.index == 1 %} class="selected" {% endif %}
@@ -37,7 +37,6 @@
             <img
                 src="{{ url_for('plugin.image', plugin_id='clock', filename=face.icon) }}"
                 alt="{{ face.name }}"
-                class="clock-face-icon"
             />
         </div>
         {% endfor %}
@@ -48,7 +47,7 @@
 <script>
     function selectClockFace(element) {
         // Remove the selected class from any previously selected option
-        const previousSelection = document.querySelector('.clock-face-option.selected');
+        const previousSelection = document.querySelector('.image-option.selected');
         if (previousSelection) {
             previousSelection.classList.remove('selected');
         }
@@ -63,7 +62,7 @@
 
     // Default selection for the first clock face
     document.addEventListener('DOMContentLoaded', () => {
-        const firstOption = document.querySelector('.clock-face-option');
+        const firstOption = document.querySelector('.image-option');
         if (firstOption) {
             firstOption.classList.add('selected');
             document.getElementById('selected-clock-face').value = firstOption.getAttribute('data-face-name');

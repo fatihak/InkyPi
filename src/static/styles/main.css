@@ -377,7 +377,7 @@ body {
     margin-bottom: 1rem;
 }
 
-.clock-face-grid {
+.image-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); /* Ensures grid items wrap */
     gap: 10px;
@@ -385,7 +385,7 @@ body {
     width: 100%
 }
 
-.clock-face-option {
+.image-option {
     text-align: center;
     border: 2px solid transparent;
     padding: 5px;
@@ -394,13 +394,13 @@ body {
     transition: border-color 0.3s ease;
 }
 
-.clock-face-option img {
+.image-option img {
     width: 100%;
     height: auto; /* Ensures aspect ratio is maintained */
     max-width: 100px; /* Optional: Limits the max width of images */
 }
 
-.clock-face-option.selected {
+.image-option.selected {
     border-color: #007bff; /* Highlight for selected option */
 }
 
