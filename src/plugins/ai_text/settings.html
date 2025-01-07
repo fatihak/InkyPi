@@ -1,15 +1,9 @@
 <div class="form-group">
-    <label for="title" class="form-label">Title:</label>
-    <input type="text" id="title" name="title" placeholder="Type something..." required class="form-input">
-</div>
+    <div class="form-group">
+        <label for="title" class="form-label">Title:</label>
+        <input type="text" id="title" name="title" placeholder="Type something..." required class="form-input">
+    </div>
 
-<div class="form-group">
-    <label for="inputText" class="form-label">Text Prompt:</label>
-    <input type="text" id="inputText" name="inputText" placeholder="Type something..." required class="form-input">
-</div>
-
-<!-- Dropdown Options -->
-<div class="form-group dropdown-container">
     <!-- Text Model Dropdown -->
     <div class="form-group">
         <label for="textModel" class="form-label">Text Model:</label>
@@ -18,31 +12,37 @@
             <option value="gpt-4o-mini">GPT-4o</option>
         </select>
     </div>
+    </div>
 </div>
 
 <div class="form-group">
-    <label for="template" class="form-label">Template:</label>
+    <label for="inputText" class="form-label">Text Prompt:</label>
+    <input type="text" id="inputText" name="inputText" placeholder="Type something..." required class="form-input">
+</div>
 
-    <div id="template-selection" class="image-grid">
-        {% for template in image_templates %}
+<div class="form-group">
+    <label for="frame" class="form-label">Template:</label>
+
+    <div id="frame-selection" class="image-grid">
+        {% for frame in frame_styles %}
         <div
             class="image-option"
-            data-face-name="{{ template.name }}"
-            onclick="selectedTemplate(this)"
+            data-face-name="{{ frame.name }}"
+            onclick="selectedFrame(this)"
             {% if loop.index == 1 %} class="selected" {% endif %}
         >
             <img
-                src="{{ url_for('plugin.image', plugin_id='ai_text', filename=template.icon) }}"
-                alt="{{ template.name }}"
+                src="{{ url_for('plugin.image', plugin_id='ai_text', filename=frame.icon) }}"
+                alt="{{ frame.name }}"
             />
         </div>
         {% endfor %}
     </div>
-    <input type="hidden" id="selected-template" name="selectedTemplate" value="{{ image_templates[0].Name }}" />
+    <input type="hidden" id="selected-frame" name="selectedFrame" value="{{ frame_styles[0].Name }}" />
 </div>
 
 <script>
-    function selectedTemplate(element) {
+    function selectedFrame(element) {
         // Remove the selected class from any previously selected option
         const previousSelection = document.querySelector('.image-option.selected');
         if (previousSelection) {
@@ -52,17 +52,17 @@
         // Add the selected class to the clicked option
         element.classList.add('selected');
 
-        // Update the hidden input with the selected template
+        // Update the hidden input with the selected frame
         const selectedFaceName = element.getAttribute('data-face-name');
-        document.getElementById('selected-template').value = selectedFaceName;
+        document.getElementById('selected-frame').value = selectedFaceName;
     }
 
-    // Default selection for the first template
+    // Default selection for the first frame
     document.addEventListener('DOMContentLoaded', () => {
         const firstOption = document.querySelector('.image-option');
         if (firstOption) {
             firstOption.classList.add('selected');
-            document.getElementById('selected-template').value = firstOption.getAttribute('data-face-name');
+            document.getElementById('selected-frame').value = firstOption.getAttribute('data-face-name');
         }
     });
 </script>
