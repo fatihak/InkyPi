@@ -12,7 +12,6 @@
             <option value="gpt-4o-mini">GPT-4o</option>
         </select>
     </div>
-    </div>
 </div>
 
 <div class="form-group">
@@ -21,7 +20,7 @@
 </div>
 
 <div class="form-group">
-    <label for="frame" class="form-label">Template:</label>
+    <label for="frame" class="form-label">Frame:</label>
 
     <div id="frame-selection" class="image-grid">
         {% for frame in frame_styles %}
@@ -40,6 +39,43 @@
     </div>
     <input type="hidden" id="selected-frame" name="selectedFrame" value="{{ frame_styles[0].Name }}" />
 </div>
+
+<!-- Background Color Picker -->
+<div class="form-group">
+    <div class="form-group">
+        <label for="backgroundColor" class="form-label">Background Color:</label>
+        <input type="color" id="backgroundColor" name="backgroundColor" class="color-picker" value="#ffffff">
+    </div>
+    <div class="form-group">
+        <label for="imageUpload" class="form-input file-upload-label">Background Image</label>
+        <input type="file" clear-on-submit="true" id="imageUpload" name="imageFile" accept="image/*" required class="file-upload-input" onchange="showFileName()">
+    </div>
+    <div class="form-group">
+        <div id="fileName" class="file-name" style="display: none;"></div>
+    </div>
+</div>
+
+<!-- Text Color Picker -->
+<div class="form-group">
+    <label for="textColor" class="form-label">Text Color:</label>
+    <input type="color" id="textColor" name="textColor" class="color-picker" value="textColor">
+</div>
+
+<script>
+    function showFileName() {
+        const fileInput = document.getElementById('imageUpload');
+        const fileNameDisplay = document.getElementById('fileName');
+        const file = fileInput.files[0];
+
+        if (file) {
+            fileNameDisplay.textContent = `Selected file: ${file.name}`;
+            fileNameDisplay.style.display = 'block';  // Show the file name
+        } else {
+            fileNameDisplay.style.display = 'none';  // Hide if no file is selected
+        }
+    }
+</script>
+
 
 <script>
     function selectedFrame(element) {

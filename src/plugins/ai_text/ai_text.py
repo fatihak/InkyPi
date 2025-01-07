@@ -15,19 +15,19 @@ logger = logging.getLogger(__name__)
 FRAME_STYLES = [
     {
         "name": "None",
-        "icon": "templates/simple_template.png"
+        "icon": "frames/blank.png"
     },
     {
         "name": "Corner",
-        "icon": "templates/simple_template.png"
+        "icon": "frames/corner.png"
     },
     {
         "name": "Top and Bottom",
-        "icon": "templates/simple_template.png"
+        "icon": "frames/top_and_bottom.png"
     },
     {
         "name": "Rectangle",
-        "icon": "templates/simple_template.png"
+        "icon": "frames/rectangle.png"
     }
 ]
 
@@ -57,6 +57,7 @@ class AIText(BasePlugin):
             raise RuntimeError("Text Prompt is required.")
         
         background_color = settings.get('backgroundColor', "white")
+        text_color = settings.get('textColor', "black")
 
         try:
             ai_client = OpenAI(api_key = api_key)
@@ -69,13 +70,12 @@ class AIText(BasePlugin):
         if device_config.get_config("orientation") == "vertical":
             dimensions = dimensions[::-1]
         
-        primary_color = (0,0,0)
-        image = Image.new("RGBA", dimensions, background_color + (255,))
+        image = Image.new("RGBA", dimensions, background_color)
 
         if frame:
-            image = AIText.draw_frame(frame, image, primary_color)
+            image = AIText.draw_frame(frame, image, text_color)
 
-        image = AIText.generate_text_image(image, dimensions, title, prompt_response)
+        image = AIText.generate_text_image(image, dimensions, title, prompt_response, text_color)
 
         return image
     
@@ -83,7 +83,7 @@ class AIText(BasePlugin):
     def fetch_text_prompt(ai_client, model, text_prompt):
         logger.info(f"Getting random image prompt...")
 
-        return "Why can't a nose be 12 inches long? Because then it would be a foot!"
+        return ""
         system_content = (
             "You are a highly intelligent text generation assistant. Generate concise, "
             "relevant, and accurate responses tailored to the user's input. The response "
@@ -118,10 +118,9 @@ class AIText(BasePlugin):
         return prompt
 
     @staticmethod
-    def generate_text_image(base_image, dimensions, title, body, primary_color=(0,0,0), secondary_color = (255,255,255)):
+    def generate_text_image(base_image, dimensions, title, body, color=(0,0,0)):
         w,h = dimensions
         dim = min(w,h)
-        text_color = (0,0,0)
         image_draw = ImageDraw.Draw(base_image)
         text_padding = max(dim*0.06, 1)
 
@@ -148,12 +147,12 @@ class AIText(BasePlugin):
             title_font_size = max(10, min(w, h) // 15)
             fnt = get_font("jost-semibold", title_font_size)
 
-            image_draw.text((x, y), title, anchor="mb", fill=primary_color, font=fnt)
+            image_draw.text((x, y), title, anchor="mb", fill=color, font=fnt)
             y += title_height
 
         # Draw the wrapped text line by line
         for line in wrapped_lines:
-            image_draw.text((x, y), line, font=font, anchor="mm", fill=primary_color)
+            image_draw.text((x, y), line, font=font, anchor="mm", fill=color)
             y += line_height
         return base_image
 

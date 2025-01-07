@@ -373,10 +373,6 @@ body {
     margin-bottom: 1rem; /* Ensures there's space between the filename and upload button */
 }
 
-.form-group {
-    margin-bottom: 1rem;
-}
-
 .image-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); /* Ensures grid items wrap */
@@ -539,4 +535,25 @@ body {
 @keyframes spin {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
+}
+
+.color-picker {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    width: 30px;
+    height: 30px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    background-color: #fff;
+    cursor: pointer;
+    font-size: 1rem;
+}
+
+.color-picker::-webkit-color-swatch-wrapper {
+    padding: 0;
+}
+
+.color-picker::-webkit-color-swatch {
+    border-radius: 6px;
 }
