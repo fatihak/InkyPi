@@ -1,0 +1,21 @@
+<div class="form-group">
+    <label for="timezone" class="form-label">Time Zone:</label>
+    <input
+        type="text"
+        id="timezone"
+        name="timezoneName"
+        class="form-input"
+        list="timezoneList"
+        placeholder="Type to search..."
+    />
+    <datalist id="timezoneList">
+        {% for timezone in timezones %}
+        <option value="{{ timezone }}"></option>
+        {% endfor %}
+    </datalist>
+</div>
+
+<div class="form-group">
+    <label for="inputUrls" class="form-label">iCal URLs:</label>
+    <textarea id="inputUrls" name="inputUrls" placeholder="Paste your iCal URLs here, one per line." required class="form-input">{{ inputUrls }}</textarea>
+</div>

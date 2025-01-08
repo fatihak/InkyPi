@@ -19,5 +19,10 @@
         "display_name": "Clock",
         "id": "clock",
         "class": "Clock"
+    },
+    {
+        "display_name": "Calendar",
+        "id": "calendar",
+        "class": "Calendar"
     }
 ]
