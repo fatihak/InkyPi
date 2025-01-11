@@ -197,7 +197,7 @@ class ImageCalendar:
                 fill = self.colors.get(date, background_color)
                 draw.rectangle(
                     [(x, y), (x + column_width, y + row_height)],
-                    fill=fill,
+                    fill=fill if date > 0 else (235,235,235,255),
                     outline=border_color,
                     width=border_width,
                 )
