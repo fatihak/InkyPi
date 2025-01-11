@@ -71,38 +71,36 @@ class ImageCalendar:
         text_color, background_color = color
         ical = fetch_ical(url)
         if ical:
-            events = recurring_ical_events.of(ical).between(
-                range_start.date(), range_end.date()
-            )
+            events = recurring_ical_events.of(ical).between(range_start, range_end)
             for event in events:
                 start = event["DTSTART"].dt
                 end = event["DTEND"].dt
                 summary = event["SUMMARY"]
-                if isinstance(start, datetime):
-                    time = start.strftime("%H:%M").strip()
+                time = start.strftime("%H:%M").strip() if isinstance(start, datetime) else None
+                start_date = start.replace(tzinfo=None).date() if isinstance(start, datetime) else start
+                end_date = end.replace(tzinfo=None).date() if isinstance(end, datetime) else end
+                next_date = start_date
+                last_date = min(end_date, range_end.date())
+
+                if next_date == last_date:
                     self.add_event(
-                        start.day,
+                        next_date.day,
                         summary,
                         time=time,
                         color=text_color,
                         background=background_color,
                     )
                 else:
-                    next_day = start
-                    last = (
-                        min(end, range_end).date()
-                        if isinstance(end, datetime)
-                        else min(end, range_end.date())
-                    )
-                    while next_day < last:
-                        if next_day >= range_start.date():
+                    while next_date < last_date:
+                        if next_date >= range_start.date():
                             self.add_event(
-                                next_day.day,
+                                next_date.day,
                                 summary,
+                                time=time,
                                 color=text_color,
                                 background=background_color,
                             )
-                        next_day += timedelta(days=1)
+                        next_date += timedelta(days=1)
 
     def render(
         self,
@@ -223,58 +221,85 @@ class ImageCalendar:
                             datetime.strptime(x[1], "%H:%M") if x[1] else None,
                         ),
                     )
-                    # all_day = []
-                    # regular = []
-                    # for summary, time, color, background in self.events.get(date, []):
-                    #     if time is not None:
-                    #         regular.append((summary, time, color, background))
-                    #     else:
-                    #         all_day.append((summary, time, color, background))
-                    # for summary, time, color, background in all_day + regular:
                     for summary, time, color, background in events:
                         text_y = (
                             y
-                            + padding
-                            + border_width
                             + event_height / 2
-                            + line * event_height
+                            + line * (event_height + padding + padding)
                         )
-                        text_margin = 0
+                        radius = event_height / 3
                         if time is None:
                             draw.rounded_rectangle(
                                 [
-                                    (x + border_width, text_y - event_height / 2),
                                     (
-                                        x + column_width - border_width,
+                                        x + border_width + padding,
+                                        text_y - event_height / 2,
+                                    ),
+                                    (
+                                        x + column_width - border_width - padding,
                                         text_y + event_height / 2,
                                     ),
                                 ],
-                                radius=5,
+                                radius=3,
                                 fill=background,
-                                outline=background_color,
+                                outline=background,
+                                width=1,
+                                corners=None,
+                            )
+                            draw.rounded_rectangle(
+                                [
+                                    (
+                                        x + border_width + radius + padding,
+                                        text_y - event_height / 2 + padding,
+                                    ),
+                                    (
+                                        x
+                                        + column_width
+                                        - radius
+                                        - border_width
+                                        - padding,
+                                        text_y + event_height / 2 - padding,
+                                    ),
+                                ],
+                                radius=3,
+                                fill=fill,
+                                outline=None,
                                 width=1,
                                 corners=None,
                             )
                         else:
-                            radius = event_height / 3
                             draw.circle(
-                                (x + border_width + radius, text_y),
+                                (x + padding + radius, text_y),
                                 radius,
                                 fill=background,
-                                outline=background_color,
+                                outline=fill,
                                 width=1,
                             )
-                            text_margin = radius * 2 + padding
+                        text_margin = radius + padding if time is None else radius * 1.5
                         draw.text(
-                            (text_x + text_margin, text_y),
+                            (text_x + text_margin + padding, text_y),
                             f"{time} {summary}" if time is not None else summary,
                             anchor="lm",
                             font=event_font,
                             font_size=event_height,
-                            fill=color if time is None else border_color,
+                            # fill=color if time is None else border_color,
+                            fill=border_color,
                             width=border_width,
                         )
                         line += 1
+
+                    draw.rectangle(
+                        [
+                            (x + border_width, y + border_width),
+                            (
+                                x + column_width - border_width,
+                                y + row_height - border_width,
+                            ),
+                        ],
+                        fill=None,
+                        outline=fill,
+                        width=padding,
+                    )
 
                     if show_time_line and date == self.day:
                         delta = self.current_time - self.current_time.replace(
@@ -287,6 +312,90 @@ class ImageCalendar:
                             fill=border_color,
                             width=border_width,
                         )
+
+                    if date == self.day:
+                        delta = self.current_time - self.current_time.replace(
+                            hour=0, minute=0, second=0, microsecond=0
+                        )
+                        time_percent = delta.total_seconds() / 86400
+                        time_y = y + padding + border_width + event_height / 2
+                        day_start = x + padding + border_width + 2 * event_height
+                        day_end = x + column_width - event_height * 2 / 3
+                        day_width = day_end - day_start
+                        x_sunrise = 6 / 24 * day_width + day_start
+                        x_midday = 12 / 24 * day_width + day_start
+                        x_sunset = 18 / 24 * day_width + day_start
+                        x_curpos = time_percent * day_width + day_start
+                        draw.line(
+                            [(day_start, time_y), (day_end, time_y)],
+                            fill=border_color,
+                            width=border_width,
+                        )
+                        draw.line(
+                            [(day_start, time_y), (x_curpos, time_y)],
+                            fill=border_color,
+                            width=3 * border_width,
+                        )
+                        small_radius = event_height / 6
+                        large_radius = event_height / 3
+                        draw.circle(
+                            (day_start, time_y),
+                            small_radius,
+                            fill=border_color,
+                            outline=border_color,
+                            width=1,
+                        )
+                        draw.circle(
+                            (day_end, time_y),
+                            small_radius,
+                            fill=border_color,
+                            outline=border_color,
+                            width=1,
+                        )
+                        draw.circle(
+                            (x_sunrise, time_y),
+                            small_radius,
+                            fill=border_color,
+                            outline=border_color,
+                            width=1,
+                        )
+                        draw.circle(
+                            (x_midday, time_y),
+                            small_radius,
+                            fill=border_color,
+                            outline=border_color,
+                            width=1,
+                        )
+                        draw.circle(
+                            (x_sunset, time_y),
+                            small_radius,
+                            fill=border_color,
+                            outline=border_color,
+                            width=1,
+                        )
+                        if x_sunrise <= x_curpos < x_sunset:
+                            draw.circle(
+                                (x_curpos, time_y),
+                                large_radius,
+                                fill="yellow",
+                                outline=border_color,
+                                width=1,
+                            )
+                        else:
+                            draw.circle(
+                                (x_curpos, time_y),
+                                large_radius,
+                                fill="white",
+                                outline=border_color,
+                                width=1,
+                            )
+                            draw.circle(
+                                (x_curpos + small_radius, time_y),
+                                small_radius,
+                                fill=border_color,
+                                outline=border_color,
+                                width=1,
+                            )
 
                     slashed = self.slashed.get(date, None)
                     if slashed == "down":
@@ -301,19 +410,6 @@ class ImageCalendar:
                             fill=border_color,
                             width=border_width,
                         )
-
-                    draw.rectangle(
-                        [
-                            (x + border_width, y + border_width),
-                            (
-                                x + column_width - border_width,
-                                y + row_height - border_width,
-                            ),
-                        ],
-                        fill=None,
-                        outline=fill,
-                        width=padding,
-                    )
 
         return base
 
