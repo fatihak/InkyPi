@@ -22,7 +22,7 @@
     },
     {
         "display_name": "Calendar",
-        "id": "calendar",
-        "class": "Calendar"
+        "id": "calendar_view",
+        "class": "CalendarView"
     }
 ]

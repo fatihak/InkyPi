@@ -4,13 +4,13 @@ import pytz
 from datetime import datetime
 from utils.app_utils import get_font
 from plugins.base_plugin.base_plugin import BasePlugin
-from plugins.calendar.image_calendar import ImageCalendar, COLOR_PAIRS
+from plugins.calendar_view.image_calendar import ImageCalendar, COLOR_PAIRS
 
 logger = logging.getLogger(__name__)
 DEFAULT_TIMEZONE = "US/Eastern"
 
 
-class Calendar(BasePlugin):
+class CalendarView(BasePlugin):
     def generate_settings_template(self):
         template_params = super().generate_settings_template()
         template_params["timezones"] = sorted(pytz.all_timezones_set)

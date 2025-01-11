@@ -19,6 +19,7 @@ COLOR_PAIRS = [
     ("black", "yellow"),
 ]
 
+
 def fetch_ical(url):
     try:
         response = requests.get(url)
@@ -215,14 +216,22 @@ class ImageCalendar:
                         width=border_width,
                     )
                     line = 1
-                    all_day = []
-                    regular = []
-                    for summary, time, color, background in self.events.get(date, []):
-                        if time is not None:
-                            regular.append((summary, time, color, background))
-                        else:
-                            all_day.append((summary, time, color, background))
-                    for summary, time, color, background in all_day + regular:
+                    events = sorted(
+                        self.events.get(date, []),
+                        key=lambda x: (
+                            x[1] is not None,
+                            datetime.strptime(x[1], "%H:%M") if x[1] else None,
+                        ),
+                    )
+                    # all_day = []
+                    # regular = []
+                    # for summary, time, color, background in self.events.get(date, []):
+                    #     if time is not None:
+                    #         regular.append((summary, time, color, background))
+                    #     else:
+                    #         all_day.append((summary, time, color, background))
+                    # for summary, time, color, background in all_day + regular:
+                    for summary, time, color, background in events:
                         text_y = (
                             y
                             + padding
@@ -320,7 +329,9 @@ if __name__ == "__main__":
     )
     parser.add_argument("--width", type=int, default=800, help="Width")
     parser.add_argument("--height", type=int, default=600, help="Height")
-    parser.add_argument("--url", type=str, action='append', help="iCal URL to load events from")
+    parser.add_argument(
+        "--url", type=str, action="append", help="iCal URL to load events from"
+    )
     args = parser.parse_args()
 
     current_time = datetime.now().replace(year=args.year, month=args.month)
