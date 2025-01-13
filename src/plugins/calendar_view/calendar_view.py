@@ -1,6 +1,9 @@
 import logging
 import itertools
 import pytz
+from timezonefinder import TimezoneFinder
+from astral.sun import sun
+from astral import LocationInfo
 from datetime import datetime
 from utils.app_utils import get_font
 from plugins.base_plugin.base_plugin import BasePlugin
@@ -18,8 +21,10 @@ class CalendarView(BasePlugin):
         return template_params
 
     def generate_image(self, settings, device_config):
-        timezone_name = settings.get("timezoneName", DEFAULT_TIMEZONE)
-        tz = pytz.timezone(timezone_name)
+        latitude = float(settings.get("latitude", 0))
+        longitude = float(settings.get("longitude", 0))
+        tzName = TimezoneFinder().timezone_at(lat=latitude, lng=longitude)
+        tz = pytz.timezone(tzName)
 
         urls = settings.get("inputUrls", "").splitlines()
 
@@ -29,6 +34,9 @@ class CalendarView(BasePlugin):
 
         current_time = datetime.now(tz)
         cal = ImageCalendar(current_time)
+
+        location_info = LocationInfo(timezone=tz, latitude=latitude, longitude=longitude)
+        sun_info = sun(location_info.observer, date=current_time)
 
         color_cycle = itertools.cycle(COLOR_PAIRS)
         for url in urls:
@@ -46,6 +54,9 @@ class CalendarView(BasePlugin):
             header_font=get_font("napoli", 18),
             day_font=get_font("napoli", 12),
             event_font=get_font("jost", 12),
+            sunrise=sun_info['sunrise'],
+            noon=sun_info['noon'],
+            sunset=sun_info['sunset'],
         )
 
         return img

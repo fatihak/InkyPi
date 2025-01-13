@@ -8,4 +8,6 @@ pytz==2024.2
 openai==1.58.1
 numpy==2.2.1
 icalendar==6.1.0
-recurring-ical-events
+recurring-ical-events==3.4.0 
+timezonefinder==6.5.7
+astral==3.2

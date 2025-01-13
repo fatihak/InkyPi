@@ -1,21 +1,62 @@
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+
 <div class="form-group">
-    <label for="timezone" class="form-label">Time Zone:</label>
-    <input
-        type="text"
-        id="timezone"
-        name="timezoneName"
-        class="form-input"
-        list="timezoneList"
-        placeholder="Type to search..."
-    />
-    <datalist id="timezoneList">
-        {% for timezone in timezones %}
-        <option value="{{ timezone }}"></option>
-        {% endfor %}
-    </datalist>
+    <label class="form-label">Pick a location:</label>
+    <div>
+        <div id="map" width="400" style="width: 100%; height: 400px; margin: 0; padding: 0;"></div>
+        <input readonly type="text" id="latitude" name="latitude" class="form-input" />
+        <input readonly type="text" id="longitude" name="longitude" class="form-input" />
+    </div>
 </div>
 
 <div class="form-group">
     <label for="inputUrls" class="form-label">iCal URLs:</label>
-    <textarea id="inputUrls" name="inputUrls" placeholder="Paste your iCal URLs here, one per line." required class="form-input">{{ inputUrls }}</textarea>
+    <textarea id="inputUrls" name="inputUrls" placeholder="Paste your iCal URLs here, one per line." required
+        class="form-input">{{ inputUrls }}</textarea>
 </div>
+
+<script type="text/javascript">
+    document.addEventListener('DOMContentLoaded', () => {
+        const OSM_TILE_URL = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+        const $buttons = document.querySelectorAll('button[type="button"]');
+        const $latitude = document.querySelector('#latitude');
+        const $longitude = document.querySelector('#longitude');
+        const $inputUrls = document.querySelector('#inputUrls');
+
+        const default_latitude = Math.min(60, Math.max(-60, Math.random() * 180 - 90));
+        const default_longitude = Math.min(180, Math.max(-180, Math.random() * 360 - 180));
+
+        const latitude = +$latitude.value || +localStorage.getItem('latitude');
+        const longitude = +$longitude.value || +localStorage.getItem('longitude');
+        const zoom = !!latitude && !!longitude ? 4.5 : 2.5;
+
+        $latitude.value = latitude;
+        $longitude.value = longitude;
+        $inputUrls.value = localStorage.getItem('inputUrls') || '';
+
+        // Create the map
+        const location = L.latLng(latitude || default_latitude, longitude || default_longitude);
+        const map = L.map('map').setView(location, zoom);
+        const layer = L.tileLayer(OSM_TILE_URL).addTo(map);
+        const marker = L.marker(location).addTo(map);
+        if (!latitude || !longitude) {
+            marker.setOpacity(0);
+        }
+
+        map.on('click', event => {
+            $latitude.value = event.latlng.lat;
+            $longitude.value = event.latlng.lng;
+            marker.setLatLng(event.latlng).setOpacity(100);
+        });
+
+        $buttons.forEach(button => button.addEventListener('click', () => {
+            localStorage.setItem('latitude', +$latitude.value);
+            localStorage.setItem('longitude', +$longitude.value);
+            localStorage.setItem('inputUrls', $inputUrls.value)
+        }));
+
+
+    });
+</script>

@@ -121,7 +121,17 @@ class ImageCalendar:
         show_month=True,
         show_year=True,
         show_time=True,
+        sunrise=None,
+        noon=None,
+        sunset=None,
     ):
+        
+        if sunrise is None:
+            sunrise=self.current_time.replace(hour=6, minute=0, second=0, microsecond=0),
+        if noon is None:
+            noon=self.current_time.replace(hour=12, minute=0, second=0, microsecond=0),
+        if sunset is None:
+            sunset=self.current_time.replace(hour=18, minute=0, second=0, microsecond=0),
 
         width, height = dimensions
         base = Image.new("RGBA", dimensions, background_color)
@@ -282,7 +292,6 @@ class ImageCalendar:
                             anchor="lm",
                             font=event_font,
                             font_size=event_height,
-                            # fill=color if time is None else border_color,
                             fill=border_color,
                             width=border_width,
                         )
@@ -314,17 +323,18 @@ class ImageCalendar:
                         )
 
                     if date == self.day:
-                        delta = self.current_time - self.current_time.replace(
-                            hour=0, minute=0, second=0, microsecond=0
-                        )
-                        time_percent = delta.total_seconds() / 86400
+                        midnight = self.current_time.replace(hour=0, minute=0, second=0, microsecond=0)
+                        sunrise_percent = (sunrise - midnight).total_seconds() / 86400
+                        noon_percent = (noon - midnight).total_seconds() / 86400
+                        sunset_percent = (sunset - midnight).total_seconds() / 86400
+                        time_percent = (self.current_time - midnight).total_seconds() / 86400
                         time_y = y + padding + border_width + event_height / 2
                         day_start = x + padding + border_width + 2 * event_height
                         day_end = x + column_width - event_height * 2 / 3
                         day_width = day_end - day_start
-                        x_sunrise = 6 / 24 * day_width + day_start
-                        x_midday = 12 / 24 * day_width + day_start
-                        x_sunset = 18 / 24 * day_width + day_start
+                        x_sunrise = sunrise_percent * day_width + day_start
+                        x_noon = noon_percent * day_width + day_start
+                        x_sunset = sunset_percent * day_width + day_start
                         x_curpos = time_percent * day_width + day_start
                         draw.line(
                             [(day_start, time_y), (day_end, time_y)],
@@ -360,7 +370,7 @@ class ImageCalendar:
                             width=1,
                         )
                         draw.circle(
-                            (x_midday, time_y),
+                            (x_noon, time_y),
                             small_radius,
                             fill=border_color,
                             outline=border_color,
