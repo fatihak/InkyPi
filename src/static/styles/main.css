@@ -370,7 +370,6 @@ body {
     font-size: 1rem;
     color: #333;
     word-wrap: break-word;
-    margin-bottom: 1rem; /* Ensures there's space between the filename and upload button */
 }
 
 .image-grid {
@@ -556,4 +555,24 @@ body {
 
 .color-picker::-webkit-color-swatch {
     border-radius: 6px;
+}
+
+.remove-file-btn {
+    background-color: transparent;
+    border: none;
+    color: #e74c3c; /* Using a red color similar to the project style */
+    font-weight: 600; /* Matching the font-weight of other buttons */
+    cursor: pointer;
+    margin-left: 10px;
+    font-size: 1rem; /* Consistent font size */
+    transition: color 0.3s ease; /* Smooth transition on hover */
+}
+
+.remove-file-btn:hover {
+    color: #c0392b; /* Slightly darker red for hover state */
+}
+
+.remove-file-btn:focus {
+    outline: none;
+    box-shadow: 0 0 3px rgba(26, 188, 156, 0.5); /* Adding a focus effect similar to inputs */
 }

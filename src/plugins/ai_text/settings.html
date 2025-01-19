@@ -42,37 +42,61 @@
 
 <!-- Background Color Picker -->
 <div class="form-group">
+    <label class="form-label">Background:</label>
     <div class="form-group">
-        <label for="backgroundColor" class="form-label">Background Color:</label>
+        <label>
+            <input type="radio" name="backgroundOption" value="color" checked>
+            Color
+        </label>
         <input type="color" id="backgroundColor" name="backgroundColor" class="color-picker" value="#ffffff">
     </div>
     <div class="form-group">
-        <label for="imageUpload" class="form-input file-upload-label">Background Image</label>
-        <input type="file" clear-on-submit="true" id="imageUpload" name="imageFile" accept="image/*" required class="file-upload-input" onchange="showFileName()">
-    </div>
-    <div class="form-group">
-        <div id="fileName" class="file-name" style="display: none;"></div>
+        <label>
+            <input type="radio" name="backgroundOption" value="image">
+            Image
+        </label>
+        <label for="imageUpload" class="form-input file-upload-label" id="uploadButtonLabel">Upload Image</label>
+        <input type="file" id="imageUpload" name="backgroundImageFile" accept="image/*" class="file-upload-input" onchange="showFileName()">
+        <div id="fileName" class="file-name" style="display: none;">
+            <span id="fileNameText"></span>
+            <button type="button" id="removeFileButton" class="remove-file-btn" onclick="removeFile()">X</button>
+        </div>
     </div>
 </div>
 
 <!-- Text Color Picker -->
 <div class="form-group">
     <label for="textColor" class="form-label">Text Color:</label>
-    <input type="color" id="textColor" name="textColor" class="color-picker" value="textColor">
+    <input type="color" id="textColor" name="textColor" class="color-picker" value="#000000">
 </div>
 
 <script>
     function showFileName() {
         const fileInput = document.getElementById('imageUpload');
         const fileNameDisplay = document.getElementById('fileName');
+        const fileNameText = document.getElementById('fileNameText');
+        const uploadButtonLabel = document.getElementById('uploadButtonLabel');
+        const removeFileButton = document.getElementById('removeFileButton');
         const file = fileInput.files[0];
 
         if (file) {
-            fileNameDisplay.textContent = `Selected file: ${file.name}`;
-            fileNameDisplay.style.display = 'block';  // Show the file name
+            fileNameText.textContent = `${file.name}`;
+            fileNameDisplay.style.display = 'flex';  // Show the file name and remove button
+            uploadButtonLabel.style.display = 'none';  // Hide the upload button label
         } else {
             fileNameDisplay.style.display = 'none';  // Hide if no file is selected
+            uploadButtonLabel.style.display = 'block';  // Show the upload button label
         }
+    }
+
+    function removeFile() {
+        const fileInput = document.getElementById('imageUpload');
+        const fileNameDisplay = document.getElementById('fileName');
+        const uploadButtonLabel = document.getElementById('uploadButtonLabel');
+
+        fileInput.value = '';  // Clear the file input
+        fileNameDisplay.style.display = 'none';  // Hide the file name and remove button
+        uploadButtonLabel.style.display = 'block';  // Show the upload button label
     }
 </script>
 

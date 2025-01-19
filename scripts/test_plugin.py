@@ -6,16 +6,16 @@ from PIL import Image
 
 PLUGIN_CONFIG_FILE = "install/config_base/plugins.json"
 RESOLUTIONS = [
-    # [400, 300],	# Inky wHAT
-    # [640, 400], # Inky Impression 4"
-    # [600, 448], # Inky Impression 5.7"
+    [400, 300],	# Inky wHAT
+    [640, 400], # Inky Impression 4"
+    [600, 448], # Inky Impression 5.7"
     [800, 480], # Inky Impression 7.3"
 ]
-ORIENTATIONS = ["horizontal" ]#, "vertical"]
+ORIENTATIONS = ["horizontal", "vertical"]
 
 plugin_id = "ai_text"
 plugin_settings = {
-    "title": "",
+    "title": "Today In History",
     "textModel": "gpt-4o",
     "textPrompt": "idk",
     "selectedFrame": "Rectangle"
@@ -52,7 +52,6 @@ for resolution in RESOLUTIONS:
         # post processing thats applied before being displayed
         img = change_orientation(img, orientation)
         img = resize_image(img, resolution, plugin_config.get('image_settings', []))
-        img.show()
         # rotate the image again when pasting
         if orientation == "vertical":
             img = img.rotate(-90, expand=1)
@@ -60,5 +59,5 @@ for resolution in RESOLUTIONS:
         x= int(total_width/2)
     y+= max(width, height)
 
-#composite.show()
+composite.show()
 
