@@ -35,15 +35,23 @@ class CalendarView(BasePlugin):
         current_time = datetime.now(tz)
         cal = ImageCalendar(current_time)
 
-        location_info = LocationInfo(timezone=tz, latitude=latitude, longitude=longitude)
+        location_info = LocationInfo(
+            timezone=tz, latitude=latitude, longitude=longitude
+        )
         sun_info = sun(location_info.observer, date=current_time)
 
         color_cycle = itertools.cycle(COLOR_PAIRS)
         for url in urls:
             cal.load_ical_url(url, next(color_cycle))
 
-        if settings.get("slash_past_days", "off") == "on":
-            cal.slash_past_days()
+        slash_direction = settings.get("slash_past_days", "none")
+        if slash_direction in ["even", "odd", "cross"]:
+            cal.slash_past_days(direction=slash_direction)
+        elif slash_direction == "updown":
+            cal.slash_past_days(directionFunc=lambda dt: "down" if dt.day % 2 == 0 else "up")
+        elif slash_direction == "downup":
+            cal.slash_past_days(directionFunc=lambda dt: "up" if dt.day % 2 == 0 else "down")
+
         if settings.get("highlight_today", "off") == "on":
             cal.color_day(current_time.day, "lightblue")
 

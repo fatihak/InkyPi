@@ -18,8 +18,15 @@
 </div>
 
 <div class="form-group">
-    <label class="form-label">Strikeout past days:</label>
-    <input type="checkbox" id="slash_past_days" name="slash_past_days" class="form-input" />
+    <label class="form-label">Strikeout Pattern:</label>
+    <select id="slash_past_days" name="slash_past_days" class="form-input">
+        <option value="none">None</option>
+        <option value="down">Down</option>
+        <option value="up">Up</option>
+        <option value="cross">Cross</option>
+        <option value="updown">Up-Down</option>
+        <option value="downup">Down-Up</option>
+    </select>
 </div>
 <div class="form-group">
     <label class="form-label">Highlight Today:</label>
@@ -36,6 +43,7 @@
         const $longitude = document.querySelector('#longitude');
         const $inputUrls = document.querySelector('#inputUrls');
         const $checkboxes = $form.querySelectorAll('input[type="checkbox"]');
+        const $dropdowns = $form.querySelectorAll('select');
 
         const default_latitude = Math.min(60, Math.max(-60, Math.random() * 180 - 90));
         const default_longitude = Math.min(180, Math.max(-180, Math.random() * 360 - 180));
@@ -47,7 +55,8 @@
         $latitude.value = latitude;
         $longitude.value = longitude;
         $inputUrls.value = localStorage.getItem('inputUrls') || '';
-        $checkboxes.forEach($checkbox => $checkbox.checked = localStorage.getItem($checkbox.name) === 'on');
+        $checkboxes.forEach($control => $control.checked = localStorage.getItem($control.name) === 'on');
+        $dropdowns.forEach($control => $control.value = localStorage.getItem($control.name));
 
         // Create the map
         const location = L.latLng(latitude || default_latitude, longitude || default_longitude);
@@ -69,10 +78,17 @@
             localStorage.setItem('latitude', +$latitude.value);
             localStorage.setItem('longitude', +$longitude.value);
             localStorage.setItem('inputUrls', $inputUrls.value)
-            $checkboxes.forEach($checkbox => {
-                const value = data.get($checkbox.name) || 'off';
-                localStorage.setItem($checkbox.name, value);
+            $checkboxes.forEach($control => {
+                const value = data.get($control.name) || 'off';
+                localStorage.removeItem($control.name);
+                localStorage.setItem($control.name, value);
             });
+            $dropdowns.forEach($control => {
+                const value = data.get($control.name);
+                localStorage.removeItem($control.name);
+                localStorage.setItem($control.name, value);
+            });
+            
         }));
     });
 </script>

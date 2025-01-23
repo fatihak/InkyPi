@@ -54,10 +54,10 @@ class ImageCalendar:
     def slash_day(self, day, slashed=True, direction="down"):
         self.slashed[day] = direction if slashed else None
 
-    def slash_past_days(self):
+    def slash_past_days(self, direction=None, directionFunc=lambda dt: "down" if dt.day % 2 == 0 else "up"):
         dt = self.range_start
         while dt.day < self.current_time.day:
-            self.slash_day(dt.day, direction="down" if dt.day % 2 == 0 else "up")
+            self.slash_day(dt.day, direction=direction or directionFunc(dt))
             dt += timedelta(days=1)
 
     def add_event(self, day, summary, time=None, color=None, background=None):
@@ -408,13 +408,13 @@ class ImageCalendar:
                             )
 
                     slashed = self.slashed.get(date, None)
-                    if slashed == "down":
+                    if slashed == "down" or slashed == "cross":
                         draw.line(
                             [(x, y), (x + column_width, y + row_height)],
                             fill=border_color,
                             width=border_width,
                         )
-                    elif slashed == "up":
+                    if slashed == "up" or slashed == "cross":
                         draw.line(
                             [(x + column_width, y), (x, y + row_height)],
                             fill=border_color,
