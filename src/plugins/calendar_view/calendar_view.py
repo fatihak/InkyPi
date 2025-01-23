@@ -42,8 +42,10 @@ class CalendarView(BasePlugin):
         for url in urls:
             cal.load_ical_url(url, next(color_cycle))
 
-        cal.slash_past_days()
-        cal.color_day(current_time.day, "lightblue")
+        if settings.get("slash_past_days", "off") == "on":
+            cal.slash_past_days()
+        if settings.get("highlight_today", "off") == "on":
+            cal.color_day(current_time.day, "lightblue")
 
         img = cal.render(
             dimensions,
@@ -54,9 +56,9 @@ class CalendarView(BasePlugin):
             header_font=get_font("napoli", 18),
             day_font=get_font("napoli", 12),
             event_font=get_font("jost", 12),
-            sunrise=sun_info['sunrise'],
-            noon=sun_info['noon'],
-            sunset=sun_info['sunset'],
+            sunrise=sun_info["sunrise"],
+            noon=sun_info["noon"],
+            sunset=sun_info["sunset"],
         )
 
         return img
