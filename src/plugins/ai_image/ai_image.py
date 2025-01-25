@@ -131,8 +131,7 @@ class AIImage(BasePlugin):
                     "content": user_content
                 }
             ],
-            temperature=1,  # Adjust for creativity
-            max_tokens=50
+            temperature=1
         )
 
         prompt = response.choices[0].message.content.strip()

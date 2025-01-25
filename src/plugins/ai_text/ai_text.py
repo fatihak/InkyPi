@@ -90,7 +90,7 @@ class AIText(BasePlugin):
     
     @staticmethod
     def fetch_text_prompt(ai_client, model, text_prompt):
-        logger.info(f"Getting random image prompt...")
+        logger.info(f"Getting random text prompt from input {text_prompt}")
 
         return "On January 7, 1785, Jean-Pierre Blanchard and John Jeffries made the first flight across the English Channel in a gas balloon."
         system_content = (
@@ -119,12 +119,11 @@ class AIText(BasePlugin):
                     "content": user_content
                 }
             ],
-            temperature=1,  # Adjust for creativity
-            max_tokens=300
+            temperature=1
         )
 
         prompt = response.choices[0].message.content.strip()
-        logger.info(f"Generated random image prompt: {prompt}")
+        logger.info(f"Generated random text prompt: {prompt}")
         return prompt
 
     @staticmethod
@@ -136,31 +135,28 @@ class AIText(BasePlugin):
         # Adaptive font size based on image dimensions
         font_size = max(10, min(w, h) // 20)
         font = get_font("jost", font_size)
+        line_height = sum(font.getmetrics()) - 5
+
+        title_font_size = max(10, min(w, h) // 20)
+        title_font = get_font("jost-semibold", title_font_size)
+        title_height = sum(title_font.getmetrics()) - 5
 
         # Maximum text width in pixels
         text_padding = max(dim*0.08, 1)
         max_text_width = w - (text_padding*2)
 
-        # Dynamic line height based on font size
-        line_height = font_size + 5
-
         wrapped_lines = AIText.wrap_lines(body, image_draw, font, max_text_width)
 
-        # Calculate the starting y-coordinate to center the text vertically
         total_text_height = len(wrapped_lines) * line_height
 
-        title_height = max(h // 18, 0) if title else 0
+        title_height = title_height if title else 0
         y = max((h - total_text_height - title_height) // 2, 0)
         x = w/2
 
         if title:
-            title_font_size = max(10, min(w, h) // 15)
-            fnt = get_font("jost-semibold", title_font_size)
-
-            image_draw.text((x, y), title, anchor="mb", fill=color, font=fnt)
+            image_draw.text((x, y), title, anchor="mb", fill=color, font=title_font)
             y += title_height
 
-        # Draw the wrapped text line by line
         for line in wrapped_lines:
             image_draw.text((x, y), line, font=font, anchor="mm", fill=color)
             y += line_height
@@ -190,7 +186,7 @@ class AIText(BasePlugin):
     @staticmethod
     def wrap_lines(body, image_draw, font, max_text_width):        
         # Word-wrap text using pixel-based constraints
-        words = body.split(" ")
+        words = body.replace("\n", " \n").split(" ")
         wrapped_lines = []
         current_line = []
 
@@ -205,5 +201,4 @@ class AIText(BasePlugin):
 
         if current_line:
             wrapped_lines.append(' '.join(current_line))
-        
         return wrapped_lines

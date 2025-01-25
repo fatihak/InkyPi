@@ -52,3 +52,50 @@ sudo /usr/local/bin/inkypi -d
 ## API Key not configured
 
 Some plugins require API Keys to be configured in order to run. These need to be configured in a .env file at the root of the project. See [Storing API Credentials](installation.md#storing-api-credentials) for details.
+
+## Known Issues during Pi Zero W Installation
+
+Due to limitations with the Pi Zero W, there are some known issues during the InkyPi installation process. For more details and community discussion, refer to this [GitHub Issue](https://github.com/fatihak/InkyPi/issues/5).
+
+### Pip Installation Error
+
+#### Error message
+```bash
+WARNING: Retrying (Retry(total=4, connect=None, read=None, redirect=None, status=None)) after connection broken by 'ProtocolError('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))':
+```
+
+#### Recommended solution
+Manually install the required pip packages in the inkypi virtual environment:
+```bash
+source "/usr/local/inkypi/venv_inkypi/bin/activate"
+pip install -r install/requirements.txt
+deactivate
+```
+Restart the inkypi service to apply the changes:
+```bash
+sudo systemctl restart inkypi.service
+```
+
+### Numpy ImportError
+
+#### Error message
+```bash
+ImportError: Error importing numpy: you should not try to import numpy from
+its source directory; please exit the numpy source tree, and relaunch
+your python interpreter from there.
+```
+
+#### Recommended solution
+To resolve this issue, manually reinstall the Pillow library in the inkypi virtual environment:
+```bash
+sudo su
+source "/usr/local/inkypi/venv_inkypi/bin/activate"
+pip uninstall Pillow
+pip install Pillow
+deactivate
+```
+
+Restart the inkypi service to apply the changes:
+```bash
+sudo systemctl restart inkypi.service
+```

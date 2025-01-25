@@ -28,9 +28,9 @@ And additional plugins coming soon! For documentation on building custom plugins
     - Recommended to get 40 pin Pre Soldered Header
 - MicroSD Card (min 8 GB)
 - E-Ink Display: Pimoroni Inky Impression, available in 3 sizes:
-    - **[4 Inch Display](https://shop.pimoroni.com/products/inky-impression-4)**
-    - **[5.7 Inch Display](https://shop.pimoroni.com/products/inky-impression-5-7)**
     - **[7.3 Inch Display](https://shop.pimoroni.com/products/inky-impression-7-3)**
+    - **[5.7 Inch Display](https://shop.pimoroni.com/products/inky-impression-5-7)**
+    - **[4 Inch Display](https://shop.pimoroni.com/products/inky-impression-4)**
 - Picture Frame or 3D Stand
 
 ## Installation
@@ -80,6 +80,8 @@ Distributed under the GPL 3.0 License, see [LICENSE](./LICENSE) for more informa
 ## Issues
 
 Check out the [troubleshooting guide](./docs/troubleshooting.md). If you're still having trouble, feel free to create an issue on the [GitHub Issues](https://github.com/fatihak/InkyPi/issues) page.
+
+If you're using a Pi Zero W, note that there are known issues during the installation process. See [Known Issues during Pi Zero W Installation](./docs/troubleshooting.md#known-issues-during-pi-zero-w-installation) section in the troubleshooting guide for additional details..
 
 ## Acknowledgements
 
