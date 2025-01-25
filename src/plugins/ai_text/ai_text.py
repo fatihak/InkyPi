@@ -92,7 +92,6 @@ class AIText(BasePlugin):
     def fetch_text_prompt(ai_client, model, text_prompt):
         logger.info(f"Getting random text prompt from input {text_prompt}")
 
-        return "On January 7, 1785, Jean-Pierre Blanchard and John Jeffries made the first flight across the English Channel in a gas balloon."
         system_content = (
             "You are a highly intelligent text generation assistant. Generate concise, "
             "relevant, and accurate responses tailored to the user's input. The response "
