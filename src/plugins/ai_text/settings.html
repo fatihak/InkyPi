@@ -56,7 +56,7 @@
             Image
         </label>
         <label for="imageUpload" class="form-input file-upload-label" id="uploadButtonLabel">Upload Image</label>
-        <input type="file" id="imageUpload" name="backgroundImageFile" accept="image/*" class="file-upload-input" onchange="showFileName()">
+        <input type="file" clear-on-submit="true" id="imageUpload" name="backgroundImageFile" accept="image/*" class="file-upload-input" onchange="showFileName()">
         <div id="fileName" class="file-name" style="display: none;">
             <span id="fileNameText"></span>
             <button type="button" id="removeFileButton" class="remove-file-btn" onclick="removeFile()">X</button>
