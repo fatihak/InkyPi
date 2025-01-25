@@ -134,11 +134,11 @@ class AIText(BasePlugin):
         # Adaptive font size based on image dimensions
         font_size = max(10, min(w, h) // 20)
         font = get_font("jost", font_size)
-        line_height = sum(font.getmetrics()) - 5
+        line_height = AIText.get_text_height(font, body) + 4
 
         title_font_size = max(10, min(w, h) // 18)
         title_font = get_font("jost-semibold", title_font_size)
-        title_height = sum(title_font.getmetrics()) - 5
+        title_height = AIText.get_text_height(title_font, title)
 
         # Maximum text width in pixels
         text_padding = max(dim*0.08, 1)
@@ -153,11 +153,11 @@ class AIText(BasePlugin):
         x = w/2
 
         if title:
-            image_draw.text((x, y), title, anchor="mb", fill=color, font=title_font)
+            image_draw.text((x, y), title, anchor="mm", fill=color, font=title_font)
             y += title_height
 
         for line in wrapped_lines:
-            image_draw.text((x, y), line, font=font, anchor="mm", fill=color)
+            image_draw.text((x, y), line, font=font, anchor="mt", fill=color)
             y += line_height
         return base_image
 
@@ -201,3 +201,10 @@ class AIText(BasePlugin):
         if current_line:
             wrapped_lines.append(' '.join(current_line))
         return wrapped_lines
+    
+    @staticmethod
+    def get_text_height(font, text):        
+        # Word-wrap text using pixel-based constraints
+        left, top, right, bottom = font.getbbox(text)
+        return bottom - top
+
