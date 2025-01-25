@@ -137,7 +137,7 @@ class AIText(BasePlugin):
         font = get_font("jost", font_size)
         line_height = sum(font.getmetrics()) - 5
 
-        title_font_size = max(10, min(w, h) // 20)
+        title_font_size = max(10, min(w, h) // 18)
         title_font = get_font("jost-semibold", title_font_size)
         title_height = sum(title_font.getmetrics()) - 5
 
@@ -168,7 +168,7 @@ class AIText(BasePlugin):
         dim = min(w,h)
         image_draw = ImageDraw.Draw(image)
         width = max(int(dim*0.015), 1)
-        padding = max(dim*0.055, 1)
+        padding = max(dim*0.05, 1)
 
         if frame == "Corner":
             corner_length = max(dim*0.16, 1)
