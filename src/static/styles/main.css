@@ -83,7 +83,6 @@ body {
     display: grid;
     grid-template-columns: repeat(5, 1fr); /* 5 items per row */
     gap: 15px; /* Smaller space between buttons */
-    flex-grow: 1; /* Ensure it takes up the remaining space */
     overflow-y: auto; /* Allows scrolling if content exceeds the frame */
 }
 

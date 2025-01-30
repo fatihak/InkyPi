@@ -11,7 +11,7 @@ class Config:
 
     # File paths relative to the script's directory
     config_file = os.path.join(BASE_DIR, "config", "device.json")
-    plugins_file = os.path.join(BASE_DIR, "config", "plugins.json")
+    plugins_file = os.path.join(BASE_DIR, "plugins", "plugins.json")
 
     current_image_file = os.path.join(BASE_DIR, "static", "images", "current_image.png")
 

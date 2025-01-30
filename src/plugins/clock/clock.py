@@ -39,9 +39,6 @@ class Clock(BasePlugin):
         return template_params
 
     def generate_image(self, settings, device_config):
-        timezone_name = settings.get('timezoneName')
-        if not timezone_name:
-            timezone_name = DEFAULT_TIMEZONE
         clock_face = settings.get('selectedClockFace')
         if not clock_face or clock_face not in [face['name'] for face in CLOCK_FACES]:
             clock_face = DEFAULT_CLOCK_FACE
@@ -50,6 +47,7 @@ class Clock(BasePlugin):
         if device_config.get_config("orientation") == "vertical":
             dimensions = dimensions[::-1]
 
+        timezone_name = device_config.get_config("timezone")
         tz = pytz.timezone(timezone_name)
         current_time = datetime.now(tz)
 

@@ -7,6 +7,7 @@ settings_bp = Blueprint("settings", __name__)
 def settings_page():
     device_config = current_app.config['DEVICE_CONFIG']
     timezones = sorted(pytz.all_timezones_set)
+    print(device_config.get_config())
     return render_template('settings.html', device_settings=device_config.get_config(), timezones = timezones)
 
 @settings_bp.route('/save_settings', methods=['POST'])
@@ -18,7 +19,7 @@ def save_settings():
         settings = {
             "name": form_data.get("deviceName"),
             "orientation": form_data.get("orientation"),
-            "timezone": form_data.get("timezone")
+            "timezone": form_data.get("timezoneName")
         }
         device_config.update_config(settings)
     except RuntimeError as e:
