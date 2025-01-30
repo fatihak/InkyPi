@@ -7,7 +7,6 @@ import logging
 import numpy as np
 import math
 from datetime import datetime
-import pytz
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +35,6 @@ DEFAULT_CLOCK_FACE = "Gradient Clock"
 class Clock(BasePlugin):
     def generate_settings_template(self):
         template_params = super().generate_settings_template()
-        template_params['timezones'] = sorted(pytz.all_timezones_set)
         template_params['clock_faces'] = CLOCK_FACES
         return template_params
 

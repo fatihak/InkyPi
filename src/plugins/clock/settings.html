@@ -5,24 +5,6 @@
 <!-- Select2 JS -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.1.0-beta.1/js/select2.min.js"></script>
 
-
-<div class="form-group">
-    <label for="timezone" class="form-label">Time Zone:</label>
-    <input
-        type="text"
-        id="timezone"
-        name="timezoneName"
-        class="form-input"
-        list="timezoneList"
-        placeholder="Type to search..."
-    />
-    <datalist id="timezoneList">
-        {% for timezone in timezones %}
-        <option value="{{ timezone }}"></option>
-        {% endfor %}
-    </datalist>
-</div>
-
 <div class="form-group">
     <label for="clock-face" class="form-label">Clock Face:</label>
 

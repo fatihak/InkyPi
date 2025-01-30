@@ -63,6 +63,23 @@
                         <option value="vertical" {% if device_settings.orientation == "vertical" %}selected{% endif %}>Vertical</option>
                     </select>
                 </div>
+
+                <div class="form-group">
+                    <label for="timezone" class="form-label">Time Zone:</label>
+                    <input
+                        type="text"
+                        id="timezone"
+                        name="timezoneName"
+                        class="form-input"
+                        list="timezoneList"
+                        placeholder="Type to search..."
+                    />
+                    <datalist id="timezoneList">
+                        {% for timezone in timezones %}
+                        <option value="{{ timezone }}"></option>
+                        {% endfor %}
+                    </datalist>
+                </div>
             </div>
         </form>
  
