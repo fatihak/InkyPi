@@ -7,7 +7,6 @@ settings_bp = Blueprint("settings", __name__)
 def settings_page():
     device_config = current_app.config['DEVICE_CONFIG']
     timezones = sorted(pytz.all_timezones_set)
-    print(device_config.get_config())
     return render_template('settings.html', device_settings=device_config.get_config(), timezones = timezones)
 
 @settings_bp.route('/save_settings', methods=['POST'])

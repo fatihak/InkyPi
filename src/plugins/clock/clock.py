@@ -47,7 +47,7 @@ class Clock(BasePlugin):
         if device_config.get_config("orientation") == "vertical":
             dimensions = dimensions[::-1]
 
-        timezone_name = device_config.get_config("timezone")
+        timezone_name = device_config.get_config("timezone") or DEFAULT_TIMEZONE
         tz = pytz.timezone(timezone_name)
         current_time = datetime.now(tz)
 
