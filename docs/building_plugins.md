@@ -47,7 +47,7 @@ If your plugin requires user configuration through the web UI, you’ll need to 
 
 ### 5. Register Your Plugin
 
-- Open the `install/config_base/plugins.json` file.
+- Open the `src/plugins/plugins.json` file.
 - Add an entry for your plugin using the following structure:
     ```json
     {
@@ -56,14 +56,6 @@ If your plugin requires user configuration through the web UI, you’ll need to 
         "class": "Clock"            # The name of your plugin’s Python class.
     }
     ```
-
-Important:
-During the installation process, the configuration files in `install/config_base/` are copied to `src/config/` to create user-specific files. This means that after installation, `src/config/plugins.json` is the file actively used by the InkyPi service.
-
-If you are adding or modifying a plugin after installation, you need to either:
-
-1. Manually update the `src/config/plugins.json` file with your plugin's details, OR
-2. Perform a fresh install to regenerate the configuration files with your new plugin included.
 
 ## Test Your Plugin
 

@@ -51,4 +51,7 @@ else
   exit 1
 fi
 
+echo "Restarting $APPNAME service."
+sudo systemctl restart $APPNAME.service
+
 echo_success "Update completed."
