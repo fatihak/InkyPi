@@ -137,14 +137,6 @@ install_config() {
   else
     echo_success "\tdevice.json already exists in $CONFIG_DIR"
   fi
-
-  # Check and copy plugins.config if it doesn't exist
-  if [ ! -f "$CONFIG_DIR/plugins.json" ]; then
-    cp "$CONFIG_BASE_DIR/plugins.json" "$CONFIG_DIR/"
-    show_loader "\tCopying plugins.config to $CONFIG_DIR"
-  else
-    echo_success "\tplugins.json already exists in $CONFIG_DIR"
-  fi
 }
 
 stop_service() {

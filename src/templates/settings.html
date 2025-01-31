@@ -55,13 +55,34 @@
                            required 
                            class="form-input">
                 </div>
-                <!-- Orientation Dropdown -->
                 <div class="form-group">
-                    <label for="orientation" class="form-label">Orientation:</label>
-                    <select id="orientation" name="orientation" class="form-input">
-                        <option value="horizontal" {% if device_settings.orientation == "horizontal" %}selected{% endif %}>Horizontal</option>
-                        <option value="vertical" {% if device_settings.orientation == "vertical" %}selected{% endif %}>Vertical</option>
-                    </select>
+                    <!-- Orientation Dropdown -->
+                    <div class="form-group">
+                        <label for="orientation" class="form-label">Orientation:</label>
+                        <select id="orientation" name="orientation" class="form-input">
+                            <option value="horizontal" {% if device_settings.orientation == "horizontal" %}selected{% endif %}>Horizontal</option>
+                            <option value="vertical" {% if device_settings.orientation == "vertical" %}selected{% endif %}>Vertical</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Timezone Dropdown -->
+                    <div class="form-group">
+                        <label for="timezone" class="form-label">Time Zone:</label>
+                        <input
+                            type="text"
+                            id="timezone"
+                            name="timezoneName"
+                            class="form-input"
+                            list="timezoneList"
+                            placeholder="Type to search..."
+                            value="{{ device_settings.timezone }}"
+                        />
+                        <datalist id="timezoneList">
+                            {% for timezone in timezones %}
+                            <option value="{{ timezone }}"></option>
+                            {% endfor %}
+                        </datalist>
+                    </div>
                 </div>
             </div>
         </form>

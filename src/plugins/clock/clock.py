@@ -36,14 +36,10 @@ DEFAULT_CLOCK_FACE = "Gradient Clock"
 class Clock(BasePlugin):
     def generate_settings_template(self):
         template_params = super().generate_settings_template()
-        template_params['timezones'] = sorted(pytz.all_timezones_set)
         template_params['clock_faces'] = CLOCK_FACES
         return template_params
 
     def generate_image(self, settings, device_config):
-        timezone_name = settings.get('timezoneName')
-        if not timezone_name:
-            timezone_name = DEFAULT_TIMEZONE
         clock_face = settings.get('selectedClockFace')
         if not clock_face or clock_face not in [face['name'] for face in CLOCK_FACES]:
             clock_face = DEFAULT_CLOCK_FACE
@@ -52,6 +48,7 @@ class Clock(BasePlugin):
         if device_config.get_config("orientation") == "vertical":
             dimensions = dimensions[::-1]
 
+        timezone_name = device_config.get_config("timezone") or DEFAULT_TIMEZONE
         tz = pytz.timezone(timezone_name)
         current_time = datetime.now(tz)
 

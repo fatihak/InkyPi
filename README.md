@@ -56,7 +56,23 @@ Note:
 - The installation script requires sudo privileges to install and run the service. We recommend starting with a fresh installation of Raspberry Pi OS to avoid potential conflicts with existing software or configurations.
 - The installation process will automatically enable the required SPI and I2C interfaces on your Raspberry Pi.
 
-"For more details, including instructions on how to image your microSD with Raspberry Pi OS, refer to [installation.md](./docs/installation.md). You can also checkout [this YouTube tutorial](https://youtu.be/L5PvQj1vfC4).
+For more details, including instructions on how to image your microSD with Raspberry Pi OS, refer to [installation.md](./docs/installation.md). You can also checkout [this YouTube tutorial](https://youtu.be/L5PvQj1vfC4).
+
+## Update
+To update your InkyPi with the latest code changes, follow these steps:
+1. Navigate to the project directory:
+    ```bash
+    cd InkyPi
+    ```
+2. Fetch the latest changes from the repository:
+    ```bash
+    git pull
+    ```
+3. Run the update script with sudo:
+    ```bash
+    sudo bash install/update.sh
+    ```
+This process ensures that any new updates, including code changes and additional dependencies, are properly applied without requiring a full reinstallation.
 
 ## Uninstall
 To install InkyPi, simply run the following command:
