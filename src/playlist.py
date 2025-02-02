@@ -13,9 +13,12 @@ class PlaylistManager:
     
     def get_playlists(self):
         return self.playlists
+    
+    def get_playlist_names(self):
+        return [p.name for p in self.playlists]
 
-    def add_default_playlist():
-        return Playlist("Default", "00:00", "24:00", [])
+    def add_default_playlist(self):
+        return self.playlists.append(Playlist("Default", "00:00", "24:00", []))
 
     def get_active_playlist(self):
         """Determine the active playlist based on the current time."""
@@ -54,7 +57,7 @@ class PlaylistManager:
     @classmethod
     def from_list(cls, playlist_list=None):
         """Create a PlaylistManager instance from a list of dictionaries."""
-        playlists = [Playlist.from_dict(p) for p in (playlist_list or [])]
+        playlist_list = [Playlist.from_dict(p) for p in (playlist_list or [])]
         return cls(playlists=playlist_list)
 
 class Playlist:

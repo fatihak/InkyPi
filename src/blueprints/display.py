@@ -52,28 +52,33 @@ def schedule_plugin():
     try:
         form_data = request.form.to_dict()
         refresh_settings = json.loads(form_data.pop("refresh_settings"))
-        playlist = "Default"
+
+        playlist = refresh_settings.get('playlist')
+        instance_name = refresh_settings.get('instance_name')
         if not refresh_settings.get('interval') or not refresh_settings["interval"].isnumeric():
             raise RuntimeError("Invalid refresh interval.")
         if not refresh_settings.get('unit') or refresh_settings["unit"] not in ["minute", "hour", "day"]:
             raise RuntimeError("Invalid refresh unit.")
+        if not playlist:
+            raise RuntimeError("Playlist is required.")
+        if not instance_name:
+            raise RuntimeError("Instance name is required")
 
         plugin_settings = form_data
         plugin_settings.update(handle_request_files(request.files))
+        refresh_interval_seconds = calculate_seconds(int(refresh_settings.get("interval")), refresh_settings.get("unit"))
 
         plugin_id = plugin_settings.pop("plugin_id")
         playlist_dict = {
             "plugin_id": plugin_id,
             "interval": refresh_interval_seconds,
             "plugin_settings": plugin_settings,
-            "instance": "Test Instance",
+            "instance": instance_name
         }
         playlist_manager.add_plugin_to_playlist(playlist, playlist_dict)
 
         device_config.update_value("playlists", playlist_manager.to_list())
 
-
-        # refresh_interval_seconds = calculate_seconds(int(refresh_settings.get("interval")), refresh_settings.get("unit"))
         # device_config.update_value("refresh_settings", {
         #     "interval": refresh_interval_seconds,
         #     "plugin_settings": plugin_settings

@@ -156,6 +156,7 @@ body {
     display: flex;
     flex-direction: column;
     height: 100%;
+    margin: 0px 0px 10px 0px
 }
 
 #settings-container {

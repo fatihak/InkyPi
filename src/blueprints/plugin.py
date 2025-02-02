@@ -12,12 +12,16 @@ PLUGINS_DIR = resolve_path("plugins")
 @plugin_bp.route('/plugin/<plugin_id>')
 def plugin_page(plugin_id):
     device_config = current_app.config['DEVICE_CONFIG']
+    playlist_manager = current_app.config['PLAYLIST_MANAGER']
+
     # Find the plugin by id
     plugin_config = next((plugin for plugin in device_config.get_plugins() if plugin['id'] == plugin_id), None)
     if plugin_config:
         try:
             plugin_instance = get_plugin_instance(plugin_config)
             template_params = plugin_instance.generate_settings_template()
+
+            template_params["playlists"] = playlist_manager.get_playlist_names()
         except Exception as e:
             logger.exception("EXCEPTION CAUGHT: " + str(e))
             return jsonify({"error": f"An error occurred: {str(e)}"}), 500

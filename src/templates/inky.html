@@ -12,6 +12,9 @@
         <!-- Page Title -->
         <header class="header">
             <h1>{{ config.name }}</h1>
+            <a href="{{ url_for('playlist.playlist_page') }}" class="settings-button">
+                <img src="{{ url_for('static', filename='icons/playlist.png') }}" title="Playlists" alt="playlists icon" class="icon-image">
+            </a>
             <a href="{{ url_for('settings.settings_page') }}" class="settings-button">
                 <img src="{{ url_for('static', filename='icons/settings.png') }}" title="Settings" alt="settings icon" class="icon-image">
             </a>

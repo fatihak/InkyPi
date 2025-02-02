@@ -114,7 +114,20 @@
             <span class="close-button" onclick="closeModal()">×</span>
             <h2>Schedule Configuration</h2>
             <div class="separator"></div>
-            <form id="scheduleForm">
+            <form id="scheduleForm" class="settings-form">
+                <!-- Text Model Dropdown -->
+                <div class="form-group">
+                    <label for="playlist" class="form-label">Playlist:</label>
+                    <select id="playlist" name="playlist" class="form-input">
+                        {% for playlist_name in playlists %}
+                        <option value="{{playlist_name}}">{{playlist_name}}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="instance" class="form-label">Instance Name:</label>
+                    <input type="text" id="instance" name="instance_name" placeholder="Type something..." required class="form-input">
+                </div>
                 <div class="form-group">
                     <label>Refresh Frequency</label>
                 </div>
@@ -127,10 +140,10 @@
                         <option value="day">Day</option>
                     </select>
                 </div>
-                <div class="buttons-container">
-                    <button type="button" onclick="handleAction('schedule')" class="action-button">Schedule</button>
-                </div>
             </form>
+            <div class="buttons-container">
+                <button type="button" onclick="handleAction('schedule')" class="action-button">Schedule</button>
+            </div>
         </div>
     </div>
 </body>
