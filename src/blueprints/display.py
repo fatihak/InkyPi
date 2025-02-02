@@ -4,6 +4,8 @@ import json
 import os
 import logging
 from utils.app_utils import resolve_path
+from playlist import PlaylistManager, Playlist, Plugin
+
 
 logger = logging.getLogger(__name__)
 display_bp = Blueprint("display", __name__)
@@ -45,10 +47,12 @@ def update_now():
 def schedule_plugin():
     device_config = current_app.config['DEVICE_CONFIG']
     refresh_task = current_app.config['REFRESH_TASK']
+    playlist_manager = current_app.config['PLAYLIST_MANAGER']
 
     try:
         form_data = request.form.to_dict()
         refresh_settings = json.loads(form_data.pop("refresh_settings"))
+        playlist = "Default"
         if not refresh_settings.get('interval') or not refresh_settings["interval"].isnumeric():
             raise RuntimeError("Invalid refresh interval.")
         if not refresh_settings.get('unit') or refresh_settings["unit"] not in ["minute", "hour", "day"]:
@@ -57,12 +61,24 @@ def schedule_plugin():
         plugin_settings = form_data
         plugin_settings.update(handle_request_files(request.files))
 
-        refresh_interval_seconds = calculate_seconds(int(refresh_settings.get("interval")), refresh_settings.get("unit"))
-        device_config.update_value("refresh_settings", {
+        plugin_id = plugin_settings.pop("plugin_id")
+        playlist_dict = {
+            "plugin_id": plugin_id,
             "interval": refresh_interval_seconds,
-            "plugin_settings": plugin_settings
-        })
-        refresh_task.update_refresh_settings()
+            "plugin_settings": plugin_settings,
+            "instance": "Test Instance",
+        }
+        playlist_manager.add_plugin_to_playlist(playlist, playlist_dict)
+
+        device_config.update_value("playlists", playlist_manager.to_list())
+
+
+        # refresh_interval_seconds = calculate_seconds(int(refresh_settings.get("interval")), refresh_settings.get("unit"))
+        # device_config.update_value("refresh_settings", {
+        #     "interval": refresh_interval_seconds,
+        #     "plugin_settings": plugin_settings
+        # })
+        # refresh_task.update_refresh_settings()
     except RuntimeError as e:
         return jsonify({"error": str(e)}), 500
     except Exception as e:
