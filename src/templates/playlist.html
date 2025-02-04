@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Playlists</title>
+    <link rel= "stylesheet" type= "text/css" href= "{{ url_for('static',filename='styles/main.css') }}">
+</head>
+<body>
+    <div class="frame">
+        <!-- Back Button -->
+        <button onclick="history.back()" class="back-button">← Back</button>
+        <!-- Settings Header -->
+        <div class="app-header">
+            <img src="{{ url_for('static', filename='icons/playlist.png') }}" alt="settings icon" class="app-icon">
+            <h1 class="app-title">Playlists</h1>
+        </div>
+        <div class="separator"></div>
+        
+        <!-- Playlists Container -->
+        <div class="playlist-list">
+            {% for playlist in playlists %}
+            <div class="playlist-item">
+                    <div class="playlist-header">
+                        <span class="playlist-title">{{ playlist.name }}</span>
+                        <div class="playlist-time">
+                            <select name="start_time" class="form-input">
+                                <option selected>{{ playlist.start_time }}</option>
+                                {% for hour in range(0, 24) %}
+                                    {% set time = "%02d:00" % hour %}
+                                    <option value="{{ time }}">{{ time }}</option>
+                                {% endfor %}
+                            </select>
+                            <span> - </span>
+                            <select name="end_time" class="form-input">
+                                <option selected>{{ playlist.end_time }}</option>
+                                {% for hour in range(0, 24) %}
+                                    {% set time = "%02d:00" % hour %}
+                                    <option value="{{ time }}">{{ time }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Plugin List -->
+                    <div class="plugin-list">
+                        {% for plugin in playlist.plugins %}
+                        <div class="plugin-item">
+                            <img src="{{ url_for('plugin.image', plugin_id=plugin.plugin_id, filename='icon.png') }}" alt="Plugin Icon" class="plugin-icon">
+                            <span class="plugin-name">{{ plugin.instance }}</span>
+                            <button class="edit-button"><img src="{{ url_for('static', filename='icons/edit.png') }}" alt="delete plugin" class="icon-image"></button>
+                            <button class="delete-button"><img src="{{ url_for('static', filename='icons/remove.png') }}" alt="delete plugin" class="icon-image"></button>
+                        </div>
+                        {% endfor %}
+                    </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</body>
+</html>

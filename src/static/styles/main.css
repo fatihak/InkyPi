@@ -576,3 +576,85 @@ body {
     outline: none;
     box-shadow: 0 0 3px rgba(26, 188, 156, 0.5); /* Adding a focus effect similar to inputs */
 }
+
+/* Plugin List */
+.plugin-list {
+    margin-top: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+/* Plugin Item */
+.plugin-item {
+    display: flex;
+    align-items: center;
+    background-color: #fff;
+    padding: 8px;
+    border-radius: 6px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Plugin Icon */
+.plugin-icon {
+    width: 30px;
+    height: 30px;
+    margin-right: 10px;
+}
+
+/* Plugin Name & Instance */
+.plugin-name {
+    font-weight: bold;
+    color: #333;
+}
+
+.plugin-instance {
+    margin-left: auto;
+    color: #777;
+    font-size: 0.9rem;
+}
+
+/* Edit & Delete Buttons */
+.edit-button, .delete-button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    margin-left: 8px;
+}
+
+/* Playlist List */
+.playlist-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    overflow-y: auto;
+}
+
+.playlist-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}
+
+/* Playlist Item */
+.playlist-item {
+    display: flex;
+    padding: 20px;
+    transition: all 0.3s ease;
+    border: 2px solid #e0e0e0;
+    border-radius: 16px;
+    flex-direction: column;
+    width: 100%
+}
+
+.playlist-title {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #333;
+}
+
+.playlist-time {
+    font-size: 0.9rem;
+    color: #666;
+}

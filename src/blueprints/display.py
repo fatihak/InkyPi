@@ -89,4 +89,9 @@ def schedule_plugin():
     except Exception as e:
         return jsonify({"error": f"An error occurred: {str(e)}"}), 500
     return jsonify({"success": True, "message": "Scheduled refresh configured."})
-    
+
+@display_bp.route('/playlist')
+def playlists():
+    playlist_manager = current_app.config['PLAYLIST_MANAGER']
+
+    return render_template('playlist.html', playlists=playlist_manager.to_list())
