@@ -1,0 +1,120 @@
+<div class="form-group">
+    <div class="form-group">
+        <label for="eventName" class="form-label">Event Name:</label>
+        <input type="text" id="eventName" name="eventName" placeholder="Name of your event..." required class="form-input">
+    </div>
+
+</div>
+
+<div class="form-group">
+    <label for="eventDate" class="form-label">Event Date:</label>
+    <input type="date" id="eventDate" name="eventDate" placeholder="Date of your event..." required class="form-input">
+</div>
+
+<div class="form-group">
+    <label for="selected-frame" class="form-label">Frame:</label>
+
+    <div id="frame-selection" class="image-grid">
+        {% for frame in frame_styles %}
+        <div
+            class="image-option"
+            data-face-name="{{ frame.name }}"
+            onclick="selectedFrame(this)"
+            {% if loop.index == 1 %} class="selected" {% endif %}
+        >
+            <img
+                src="{{ url_for('plugin.image', plugin_id='countdown', filename=frame.icon) }}"
+                alt="{{ frame.name }}"
+            />
+        </div>
+        {% endfor %}
+    </div>
+    <input type="hidden" id="selected-frame" name="selectedFrame" value="{{ frame_styles[0].Name }}" />
+</div>
+
+<!-- Background Color Picker -->
+<div class="form-group">
+    <label class="form-label">Background:</label>
+    <div class="form-group">
+        <label>
+            <input type="radio" name="backgroundOption" value="color" checked>
+            Color
+        </label>
+        <input type="color" id="backgroundColor" name="backgroundColor" class="color-picker" value="#ffffff">
+    </div>
+    <div class="form-group">
+        <label>
+            <input type="radio" name="backgroundOption" value="image">
+            Image
+        </label>
+        <label for="imageUpload" class="form-input file-upload-label" id="uploadButtonLabel">Upload Image</label>
+        <input type="file" clear-on-submit="true" id="imageUpload" name="backgroundImageFile" accept="image/*" class="file-upload-input" onchange="showFileName()">
+        <div id="fileName" class="file-name" style="display: none;">
+            <span id="fileNameText"></span>
+            <button type="button" id="removeFileButton" class="remove-file-btn" onclick="removeFile()">X</button>
+        </div>
+    </div>
+</div>
+
+<!-- Text Color Picker -->
+<div class="form-group">
+    <label for="textColor" class="form-label">Text Color:</label>
+    <input type="color" id="textColor" name="textColor" class="color-picker" value="#000000">
+</div>
+
+<script>
+    function showFileName() {
+        const fileInput = document.getElementById('imageUpload');
+        const fileNameDisplay = document.getElementById('fileName');
+        const fileNameText = document.getElementById('fileNameText');
+        const uploadButtonLabel = document.getElementById('uploadButtonLabel');
+        const removeFileButton = document.getElementById('removeFileButton');
+        const file = fileInput.files[0];
+
+        if (file) {
+            fileNameText.textContent = `${file.name}`;
+            fileNameDisplay.style.display = 'flex';  // Show the file name and remove button
+            uploadButtonLabel.style.display = 'none';  // Hide the upload button label
+        } else {
+            fileNameDisplay.style.display = 'none';  // Hide if no file is selected
+            uploadButtonLabel.style.display = 'block';  // Show the upload button label
+        }
+    }
+
+    function removeFile() {
+        const fileInput = document.getElementById('imageUpload');
+        const fileNameDisplay = document.getElementById('fileName');
+        const uploadButtonLabel = document.getElementById('uploadButtonLabel');
+
+        fileInput.value = '';  // Clear the file input
+        fileNameDisplay.style.display = 'none';  // Hide the file name and remove button
+        uploadButtonLabel.style.display = 'block';  // Show the upload button label
+    }
+</script>
+
+
+<script>
+    function selectedFrame(element) {
+        // Remove the selected class from any previously selected option
+        const previousSelection = document.querySelector('.image-option.selected');
+        if (previousSelection) {
+            previousSelection.classList.remove('selected');
+        }
+
+        // Add the selected class to the clicked option
+        element.classList.add('selected');
+
+        // Update the hidden input with the selected frame
+        const selectedFaceName = element.getAttribute('data-face-name');
+        document.getElementById('selected-frame').value = selectedFaceName;
+    }
+
+    // Default selection for the first frame
+    document.addEventListener('DOMContentLoaded', () => {
+        const firstOption = document.querySelector('.image-option');
+        if (firstOption) {
+            firstOption.classList.add('selected');
+            document.getElementById('selected-frame').value = firstOption.getAttribute('data-face-name');
+        }
+    });
+</script>

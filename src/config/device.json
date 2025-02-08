@@ -1,0 +1,10 @@
+{
+    "name": "InkyPi",
+    "orientation": "horizontal",
+    "scheduler_sleep_time": 60,
+    "startup": false,
+    "resolution": [
+        800,
+        480
+    ]
+}

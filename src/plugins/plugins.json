@@ -21,6 +21,11 @@
         "image_settings": ["keep-width"]
     },
     {
+        "display_name": "Event Countdown",
+        "id": "countdown",
+        "class": "Countdown"
+    },
+    {
         "display_name": "Clock",
         "id": "clock",
         "class": "Clock"
