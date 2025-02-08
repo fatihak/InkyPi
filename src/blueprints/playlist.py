@@ -4,14 +4,10 @@ import json
 import os
 import logging
 from utils.app_utils import resolve_path, handle_request_files
-from playlist import PlaylistManager, Playlist, Plugin
 
 
 logger = logging.getLogger(__name__)
 playlist_bp = Blueprint("playlist", __name__)
-
-ALLOWED_FILE_EXTENSIONS = {'pdf', 'png', 'jpg', 'jpeg', 'gif'}
-FILE_SAVE_DIR = resolve_path(os.path.join("static", "images", "saved"))
 
 @playlist_bp.route('/add_plugin', methods=['POST'])
 def add_plugin():
@@ -40,13 +36,13 @@ def add_plugin():
         refresh_interval_seconds = calculate_seconds(int(refresh_settings.get("interval")), refresh_settings.get("unit"))
 
         plugin_id = plugin_settings.pop("plugin_id")
-        playlist_dict = {
+        plugin_dict = {
             "plugin_id": plugin_id,
             "interval": refresh_interval_seconds,
             "plugin_settings": plugin_settings,
             "name": instance_name
         }
-        playlist_manager.add_plugin_to_playlist(playlist, playlist_dict)
+        playlist_manager.add_plugin_to_playlist(playlist, plugin_dict)
 
         device_config.update_value("playlist_config", playlist_manager.to_dict())
 

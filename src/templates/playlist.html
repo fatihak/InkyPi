@@ -200,7 +200,7 @@
                     <div class="plugin-list">
                         {% for plugin_instance in playlist.plugins %}
                         <div class="plugin-item">
-                            <img src="{{ url_for('plugin.image', plugin_id=plugin.plugin_id, filename='icon.png') }}" alt="Plugin Icon" class="plugin-icon">
+                            <img src="{{ url_for('plugin.image', plugin_id=plugin_instance.plugin_id, filename='icon.png') }}" alt="Plugin Icon" class="plugin-icon">
                             <span class="plugin-instance">{{ plugin_instance.name }}</span>
                             
                             <!-- Check if the current plugin is the one being displayed -->

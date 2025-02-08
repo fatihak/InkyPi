@@ -154,7 +154,7 @@ class Playlist:
         self.name = name
         self.start_time = start_time
         self.end_time = end_time
-        self.plugins = [Plugin.from_dict(p) for p in (plugins or [])]
+        self.plugins = [PluginInstance.from_dict(p) for p in (plugins or [])]
 
     def is_active(self, current_time):
         """Check if the playlist is active at the given time."""
@@ -165,7 +165,7 @@ class Playlist:
         if self.find_plugin(plugin_data["plugin_id"], plugin_data["name"]):
             logger.warning(f"Plugin '{plugin_data['plugin_id']}' with instance '{plugin_data['name']}' already exists.")
             return False
-        self.plugins.append(Plugin.from_dict(plugin_data))
+        self.plugins.append(PluginInstance.from_dict(plugin_data))
         return True
 
     def update_plugin(self, plugin_id, instance_name, updated_data):
@@ -180,7 +180,7 @@ class Playlist:
     def delete_plugin(self, plugin_id, name):
         """Remove a specific plugin instance from the playlist."""
         initial_count = len(self.plugins)
-        self.plugins = [p for p in self.plugins if not (p.plugin_id == plugin_id and p.name == instance)]
+        self.plugins = [p for p in self.plugins if not (p.plugin_id == plugin_id and p.name == name)]
         
         if len(self.plugins) == initial_count:
             logger.warning(f"Plugin '{plugin_id}' with instance '{name}' not found.")

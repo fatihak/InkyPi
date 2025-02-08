@@ -70,6 +70,7 @@ def generate_startup_image(dimensions=(800,480)):
     return image
 
 def handle_request_files(request_files, form_data={}):
+    allowed_file_extensions = {'pdf', 'png', 'jpg', 'jpeg', 'gif'}
     file_location_map = {}
     # handle existing file locations being provided as part of the form data
     for key in set(request_files.keys()):
@@ -84,11 +85,13 @@ def handle_request_files(request_files, form_data={}):
             continue
 
         extension = os.path.splitext(file_name)[1].replace('.', '')
-        if not extension or extension.lower() not in ALLOWED_FILE_EXTENSIONS:
+        if not extension or extension.lower() not in allowed_file_extensions:
             continue
 
         file_name = os.path.basename(file_name)
-        file_path = os.path.join(FILE_SAVE_DIR, file_name)
+
+        file_save_dir = resolve_path(os.path.join("static", "images", "saved"))
+        file_path = os.path.join(file_save_dir, file_name)
         file.save(file_path)
 
         if is_list:
