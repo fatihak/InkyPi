@@ -1,13 +1,16 @@
 import threading
 import time
 import logging
+from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
 class RefreshTask:
-    def __init__(self, device_config, display_manager):
+    def __init__(self, device_config, display_manager, playlist_manager):
         self.device_config = device_config
         self.display_manager = display_manager
+        self.playlist_manager = playlist_manager
+
         self.thread = None
         self.lock = threading.Lock()
         self.condition = threading.Condition(self.lock)
@@ -59,6 +62,12 @@ class RefreshTask:
                         self.manual_update_settings = {}
                     else:
                         logger.info(f"Running interval refresh check.")
+
+                        current_datetime = datetime.utcnow()
+                        plugin = self.playlist_manager.determine_next_plugin(current_datetime)
+                        self.device_config.update_value("playlist_config", self.playlist_manager.to_dict())
+                        
+
                         # Decrement the timer and check if it's time to update
                         self.time_until_refresh -= sleep_time
                         update_display = self.time_until_refresh <= 0
@@ -109,6 +118,7 @@ class RefreshTask:
                 raise self.refresh_result.get("exception")
         else:
             logger.warn("Background refresh task is not running, unable to update refresh settings")
+
     
 
 

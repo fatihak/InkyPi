@@ -53,7 +53,7 @@ class AIText(BasePlugin):
         if not frame or frame not in [frame['name'] for frame in FRAME_STYLES]:
             frame = "None"
 
-        text_prompt = settings.get('inputText', '')
+        text_prompt = settings.get('textPrompt', '')
         if not text_model.strip():
             raise RuntimeError("Text Prompt is required.")
 

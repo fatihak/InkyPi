@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify, current_app, render_template, send_from_directory
 from plugins.plugin_registry import get_plugin_instance
-from utils.app_utils import resolve_path
+from utils.app_utils import resolve_path, handle_request_files
+import json
 import os
 import logging
 
@@ -18,8 +19,18 @@ def plugin_page(plugin_id):
     plugin_config = next((plugin for plugin in device_config.get_plugins() if plugin['id'] == plugin_id), None)
     if plugin_config:
         try:
-            plugin_instance = get_plugin_instance(plugin_config)
-            template_params = plugin_instance.generate_settings_template()
+            plugin = get_plugin_instance(plugin_config)
+            template_params = plugin.generate_settings_template()
+            
+            # Get the plugin instance from the query parameters
+            plugin_instance_name = request.args.get('instance')
+            if plugin_instance_name:
+                plugin_instance = playlist_manager.find_plugin(plugin_id, plugin_instance_name)
+                if not plugin_instance:
+                    return jsonify({"error": f"Plugin instance: {plugin_instance_name} does not exist"}), 500
+
+                template_params["plugin_settings"] = plugin_instance.settings
+                template_params["plugin_instance"] = plugin_instance_name
 
             template_params["playlists"] = playlist_manager.get_playlist_names()
         except Exception as e:
@@ -32,3 +43,74 @@ def plugin_page(plugin_id):
 @plugin_bp.route('/images/<plugin_id>/<path:filename>')
 def image(plugin_id, filename):
     return send_from_directory(PLUGINS_DIR, os.path.join(plugin_id, filename))
+
+@plugin_bp.route('/delete_plugin_instance', methods=['POST'])
+def delete_plugin_instance():
+    device_config = current_app.config['DEVICE_CONFIG']
+    playlist_manager = current_app.config['PLAYLIST_MANAGER']
+
+    data = request.json
+    playlist_name = data.get("playlist_name")
+    plugin_id = data.get("plugin_id")
+    plugin_instance = data.get("plugin_instance")
+
+    try:
+        playlist = playlist_manager.get_playlist(playlist_name)
+        if not playlist:
+            return jsonify({"success": False, "message": "Playlist not found"}), 400
+
+        result = playlist.delete_plugin(plugin_id, plugin_instance)
+        if not result:
+            return jsonify({"success": False, "message": "Plugin instance not found"}), 400
+
+        # save changes to device config file
+        device_config.update_value("playlist_config", playlist_manager.to_dict())
+
+    except Exception as e:
+        logger.exception("EXCEPTION CAUGHT: " + str(e))
+        return jsonify({"error": f"An error occurred: {str(e)}"}), 500
+
+    return jsonify({"success": True, "message": "Deleted plugin instance."})
+
+@plugin_bp.route('/update_plugin_instance/<string:instance_name>', methods=['PUT'])
+def update_plugin_instance(instance_name):
+    device_config = current_app.config['DEVICE_CONFIG']
+    playlist_manager = current_app.config['PLAYLIST_MANAGER']
+
+    try:
+        form_data = request.form.to_dict()
+
+        if not instance_name:
+            raise RuntimeError("Instance name is required")
+        plugin_settings = form_data
+        plugin_settings.update(handle_request_files(request.files, request.form))
+
+        plugin_id = plugin_settings.pop("plugin_id")
+        plugin_instance = playlist_manager.find_plugin(plugin_id, instance_name)
+        if not plugin_instance:
+            return jsonify({"error": f"Plugin instance: {plugin_instance_name} does not exist"}), 500
+
+        plugin_instance.settings = plugin_settings
+        device_config.update_value("playlist_config", playlist_manager.to_dict())
+    except RuntimeError as e:
+        return jsonify({"error": str(e)}), 500
+    except Exception as e:
+        return jsonify({"error": f"An error occurred: {str(e)}"}), 500
+    return jsonify({"success": True, "message": f"Updated plugin instance {instance_name}."})
+
+@plugin_bp.route('/update_now', methods=['POST'])
+def update_now():
+    device_config = current_app.config['DEVICE_CONFIG']
+    refresh_task = current_app.config['REFRESH_TASK']
+
+    try:
+        plugin_settings = request.form.to_dict()  # Get all form data
+        plugin_settings.update(handle_request_files(request.files))
+
+        refresh_task.manual_update(plugin_settings)
+    except RuntimeError as e:
+        return jsonify({"error": str(e)}), 500
+    except Exception as e:
+        return jsonify({"error": f"An error occurred: {str(e)}"}), 500
+
+    return jsonify({"success": True, "message": "Display updated"}), 200

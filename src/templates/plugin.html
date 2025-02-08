@@ -6,7 +6,20 @@
     <title>{{ plugin.display_name }} Settings</title>
     <link rel= "stylesheet" type= "text/css" href= "{{ url_for('static',filename='styles/main.css') }}">
     <script src="{{ url_for('static', filename='scripts/response_modal.js') }}"></script>
+    <!-- Select2 CSS -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.1.0-beta.1/css/select2.min.css" rel="stylesheet" />
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- Select2 JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.1.0-beta.1/js/select2.min.js"></script>
+
     <script>
+        const pluginSettings = {{ plugin_settings | tojson if plugin_settings else {} }};
+        const pluginInstanceName ='{{ plugin_instance }}';
+        const loadPluginSettings = pluginInstanceName != '';
+
+        let uploadedFiles = {};
+
         async function handleAction(action) {
             const loadingIndicator = document.getElementById('loadingIndicator');
             loadingIndicator.style.display = 'block';
@@ -14,10 +27,27 @@
             // Gather plugin settings form data
             const form = document.getElementById('settingsForm');
             const formData = new FormData(form);
-            let url = '{{ url_for("display.update_now") }}';
+            let url = '{{ url_for("plugin.update_now") }}';
+            let method = 'POST';
+            let clearFormOnSubmit = true;
+            
+            // Add uploaded files to the form under its key
+            Object.keys(uploadedFiles).forEach(key => {
+                if (uploadedFiles[key].length > 0) {
+                    uploadedFiles[key].forEach(file => {
+                        console.log("appended file for key: " + key)
+                        formData.append(key, file);
+                    });
+                }
+            });
 
-            if (action == "schedule"){
-                url = '{{ url_for("display.schedule_plugin") }}';
+            // Debugging: Check form data
+            for (let [key, value] of formData.entries()) {
+                console.log(key, value);  // This should log file keys and File objects
+            }
+
+            if (action == "add_to_playlist"){
+                url = '{{ url_for("playlist.add_plugin") }}';
                 const scheduleForm = document.getElementById('scheduleForm');
                 const scheduleFormData = new FormData(scheduleForm);
                 const scheduleData = {};
@@ -25,15 +55,15 @@
                     scheduleData[key] = value;
                 }
                 formData.append("refresh_settings", JSON.stringify(scheduleData));
+            } else if (action == "update_instance") {
+                url = "{{ url_for('plugin.update_plugin_instance', instance_name='') }}" + pluginInstanceName,
+                method = 'PUT'
+                clearFormOnSubmit = false
             }
 
             // Send data to the server
             try {
-                const response = await fetch(url, {
-                    method: 'POST',
-                    body: formData,
-                });
-                
+                const response = await fetch(url, {method: method, body: formData});
                 const result = await response.json();
                 // Handle the response
                 if (response.ok) {
@@ -41,13 +71,19 @@
                 } else {
                     showResponseModal('failure', `Error!  ${result.error}`);
                 }
-                closeModal(); // Close the modal if successful
-                form.reset()
-                const fileInputs = document.querySelectorAll('input[clear-on-submit="true"]');
-                fileInputs.forEach(fileInput => {
-                    fileInput.value = '';
-                    fileInput.dispatchEvent(new Event('change'));
-                });
+                closeModal();
+
+                if (clearFormOnSubmit) {
+                    form.reset()
+                    uploadedFiles = {};
+                    document.querySelectorAll('input[clear-on-submit]').forEach(input => {
+                        input.value = '';
+                        input.dispatchEvent(new Event('change'));
+                    });
+                    document.querySelectorAll('[delete-on-submit]').forEach(div => {
+                        div.remove();
+                    });
+                }
             } catch (error) {
                 console.error('Error:', error);
                 alert('An error occurred while processing your request.');
@@ -98,11 +134,14 @@
             <!-- Hidden input to pass plugin id -->
             <input type="hidden" name="plugin_id" value="{{ plugin.id }}">
         </form>
- 
-        <!-- Buttons -->
+
         <div class="buttons-container">
-            <button type="button" onclick="handleAction()" class="action-button left">Update Now</button>
-            <button type="button" onclick="openModal()" class="action-button right">Schedule</button>
+            {% if plugin_instance %}
+                <button type="button" onclick="handleAction('update_instance')" class="action-button">Save</button>
+            {% else %}
+                <button type="button" onclick="handleAction()" class="action-button left">Update Now</button>
+                <button type="button" onclick="openModal()" class="action-button right">Add to Playlist</button>
+            {% endif %}
         </div>
     </div>
     <!-- Success/Error Modal -->
@@ -112,7 +151,7 @@
     <div id="scheduleModal" class="modal">
         <div class="modal-content">
             <span class="close-button" onclick="closeModal()">×</span>
-            <h2>Schedule Configuration</h2>
+            <h2>Add to Playlist</h2>
             <div class="separator"></div>
             <form id="scheduleForm" class="settings-form">
                 <!-- Text Model Dropdown -->
@@ -142,7 +181,7 @@
                 </div>
             </form>
             <div class="buttons-container">
-                <button type="button" onclick="handleAction('schedule')" class="action-button">Schedule</button>
+                <button type="button" onclick="handleAction('add_to_playlist')" class="action-button">Save</button>
             </div>
         </div>
     </div>

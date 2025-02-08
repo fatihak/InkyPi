@@ -17,7 +17,8 @@ class DisplayManager:
         self.inky_display.set_border(self.inky_display.BLACK)
 
         # store display resolution in device config
-        device_config.update_value("resolution", [int(self.inky_display.width), int(self.inky_display.height)])
+        if not device_config.get_config("resolution"):
+            device_config.update_value("resolution",[int(self.inky_display.width), int(self.inky_display.height)])
 
     def display_plugin(self, plugin_settings):
         """

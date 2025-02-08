@@ -25,7 +25,7 @@ from refresh_task import RefreshTask
 from blueprints.main import main_bp
 from blueprints.settings import settings_bp
 from blueprints.plugin import plugin_bp
-from blueprints.display import display_bp
+from blueprints.playlist import playlist_bp
 from jinja2 import ChoiceLoader, FileSystemLoader
 from plugins.plugin_registry import load_plugins
 
@@ -42,10 +42,11 @@ app.jinja_loader = ChoiceLoader([FileSystemLoader(directory) for directory in te
 
 device_config = Config()
 display_manager = DisplayManager(device_config)
-refresh_task = RefreshTask(device_config, display_manager)
-playlist_manager = PlaylistManager.from_list(device_config.get_config("playlists"))
+playlist_manager = PlaylistManager.from_dict(device_config.get_config("playlist_config"))
 if not playlist_manager.get_playlists():
     playlist_manager.add_default_playlist()
+
+refresh_task = RefreshTask(device_config, display_manager, playlist_manager)
 
 load_plugins(device_config.get_plugins())
 
@@ -59,7 +60,7 @@ app.config['PLAYLIST_MANAGER'] = playlist_manager
 app.register_blueprint(main_bp)
 app.register_blueprint(settings_bp)
 app.register_blueprint(plugin_bp)
-app.register_blueprint(display_bp)
+app.register_blueprint(playlist_bp)
 
 if __name__ == '__main__':
     from werkzeug.serving import is_running_from_reloader

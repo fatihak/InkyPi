@@ -252,6 +252,14 @@ body {
     text-align: center;
 }
 
+.action-button.warn {
+    background-color: #c4515b;
+}
+
+.action-button.warn:hover {
+    background-color: #a93943;
+}
+
 .action-button:hover {
     background-color: #16a085;
 }
@@ -275,7 +283,7 @@ body {
 /* Input field styling */
 .form-input {
     flex: 1; /* Input spans the remaining width */
-    padding: 0.5rem;
+    padding: 0.4rem;
     font-size: 1rem;
     border: 1px solid #ddd;
     border-radius: 5px;
@@ -446,8 +454,8 @@ body {
 }
 
 .modal-content h2 {
-    font-size: 1.5rem;
-    margin-bottom: 20px;
+    font-size: 1.2rem;
+    margin-bottom: 15px;
     color: #333;
     text-align: center;
 }
@@ -602,16 +610,9 @@ body {
     margin-right: 10px;
 }
 
-/* Plugin Name & Instance */
-.plugin-name {
-    font-weight: bold;
-    color: #333;
-}
-
 .plugin-instance {
-    margin-left: auto;
-    color: #777;
-    font-size: 0.9rem;
+    margin-right: auto;
+    color: #333;
 }
 
 /* Edit & Delete Buttons */
@@ -657,4 +658,49 @@ body {
 .playlist-time {
     font-size: 0.9rem;
     color: #666;
+}
+
+.action-icon {
+    width: 20px;
+    height: 20px;
+}
+
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}
+
+.title-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.create-playlist-button {
+    background-color: #1abc9c;
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 8px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+
+.create-playlist-button:hover {
+    background-color: #16a085;
+}
+
+.hidden {
+    display: none;
+}
+
+.displayed-now {
+    background-color: #16a085;
+    color: white;
+    padding: 4px 6px;
+    border-radius: 3px;
+    font-size: 0.8rem;
 }

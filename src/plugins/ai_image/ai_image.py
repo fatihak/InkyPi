@@ -20,7 +20,7 @@ class AIImage(BasePlugin):
         if not api_key:
             raise RuntimeError("OPEN AI API Key not configured.")
 
-        text_prompt = settings.get("inputText", "")
+        text_prompt = settings.get("textPrompt", "")
 
         image_model = settings.get('imageModel', DEFAULT_IMAGE_MODEL)
         if image_model not in IMAGE_MODELS:

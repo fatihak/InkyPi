@@ -1,24 +1,93 @@
-<!-- Display file name above the upload button -->
 <div class="form-group">
     <label for="imageUpload" class="form-input file-upload-label">Choose Image</label>
-    <input type="file" clear-on-submit="true" id="imageUpload" name="imageFile" accept="image/*" required class="file-upload-input" onchange="showFileName()">
-</div>
-<div class="form-group">
-    <div id="fileName" class="file-name" style="display: none;"></div>
+    <input type="file" clear-on-submit id="imageUpload" name="imageFiles[]" accept="image/*" multiple class="file-upload-input" onchange="addFiles()">
 </div>
 
+<!-- Display uploaded & existing file names -->
+<div class="form-group">
+    <div id="fileNames" class="file-name-list"></div>
+</div>
+
+<!-- Hidden input fields to store existing file data -->
+<div id="hiddenFileInputs"></div>
 
 <script>
-    function showFileName() {
-        const fileInput = document.getElementById('imageUpload');
-        const fileNameDisplay = document.getElementById('fileName');
-        const file = fileInput.files[0];
+    function addFiles() {
+        const fileInput = document.getElementById("imageUpload");
+        const fileNamesDisplay = document.getElementById("fileNames");
+        
+        const files = Array.from(fileInput.files);
 
-        if (file) {
-            fileNameDisplay.textContent = `Selected file: ${file.name}`;
-            fileNameDisplay.style.display = 'block';  // Show the file name
-        } else {
-            fileNameDisplay.style.display = 'none';  // Hide if no file is selected
+        if (!uploadedFiles["imageFiles[]"]) {
+            uploadedFiles["imageFiles[]"] = [];
         }
+
+        files.forEach(file => {
+            const fileName = file.name;
+
+            // Prevent duplicate files
+            if (!uploadedFiles["imageFiles[]"].some(f => f.name === fileName)) {
+                uploadedFiles["imageFiles[]"].push(file);
+
+                const fileElement = document.createElement("div");
+                fileElement.innerHTML = `
+                    <span id="fileNameText">${fileName}</span>
+                    <button type="button" class="remove-file-btn" onclick="removeAddedFile('${fileName}')">X</button>
+                `;
+                fileElement.id = `added-${fileName}`;
+                fileElement.classList.add("file-name");
+                fileElement.setAttribute('delete-on-submit', '');
+                fileNamesDisplay.appendChild(fileElement);
+            }
+        });
+
+        // Clear the input to allow adding the same file again if needed
+        fileInput.value = "";
     }
+
+    function removeAddedFile(fileName) {
+        // Remove the file from uploadedFiles
+        uploadedFiles["imageFiles[]"] = uploadedFiles["imageFiles[]"].filter(f => f.name !== fileName);
+        
+        // Remove the displayed filename
+        document.getElementById(`added-${fileName}`).remove();
+    }
+
+    function removeExistingFile(fileName) {
+        document.getElementById(`existing-${fileName}`).remove(); // Remove from display
+        document.getElementById(`hidden-${fileName}`).remove(); // Remove hidden input
+    }
+
+    // populate form values from plugin settings
+    document.addEventListener('DOMContentLoaded', () => {    
+        const fileNamesDisplay = document.getElementById("fileNames");
+        const hiddenFileInputs = document.getElementById("hiddenFileInputs");
+        if (loadPluginSettings) {
+            const existingFiles = pluginSettings['imageFiles[]'] || []
+
+            // Loop through the existing files and add them to the display and hidden inputs
+            existingFiles.forEach(filePath => {
+                const fileName = filePath.split('/').pop()
+                // Create an element for the file name
+                const fileElement = document.createElement("div");
+                fileElement.innerHTML = `
+                    <span id="fileNameText">${fileName}</span>
+                    <button type="button" class="remove-file-btn" onclick="removeExistingFile('${fileName}')">X</button>
+                `;
+                fileElement.id = `existing-${fileName}`;
+                fileElement.classList.add("file-name");
+                fileElement.setAttribute('delete-on-submit', '');
+                fileNamesDisplay.appendChild(fileElement);
+
+                // Create a hidden input for the existing file
+                const hiddenInput = document.createElement("input");
+                hiddenInput.type = "hidden";
+                hiddenInput.name = "imageFiles[]";
+                hiddenInput.value = filePath;
+                hiddenInput.id = `hidden-${fileName}`;
+                hiddenInput.setAttribute('delete-on-submit', '');
+                hiddenFileInputs.appendChild(hiddenInput);
+            });
+        }
+    });
 </script>

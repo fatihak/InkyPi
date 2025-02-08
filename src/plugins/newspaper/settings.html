@@ -1,10 +1,3 @@
-<!-- Select2 CSS -->
-<link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.1.0-beta.1/css/select2.min.css" rel="stylesheet" />
-<!-- jQuery -->
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<!-- Select2 JS -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.1.0-beta.1/js/select2.min.js"></script>
-
 <!-- Newspaper and Location Search -->
 <div class="form-group">
     <!-- Newspaper Input -->
@@ -53,54 +46,67 @@
     </div>
 </div>
 
-<!-- Pass data to JavaScript -->
 <script>
     // Pass the newspapers data as a JavaScript object
     const newspapers = {{ newspapers|tojson }};
 </script>
 
 <script>
-function updateSlugAndLocation() {
-    const newspaperInput = document.getElementById("newspaper");
-    const slugInput = document.getElementById("newspaperSlug");
-    const locationInput = document.getElementById("locationSearch");
+    function updateSlugAndLocation() {
+        const newspaperInput = document.getElementById("newspaper");
+        const slugInput = document.getElementById("newspaperSlug");
+        const locationInput = document.getElementById("locationSearch");
 
-    // Find the selected newspaper in the JavaScript array
-    const selectedNewspaper = newspapers.find(
-        (newspaper) => newspaper.name === newspaperInput.value
-    );
+        // Find the selected newspaper in the JavaScript array
+        const selectedNewspaper = newspapers.find(
+            (newspaper) => newspaper.name === newspaperInput.value
+        );
 
-    if (selectedNewspaper) {
-        slugInput.value = selectedNewspaper.slug;
-        locationInput.value = `${selectedNewspaper.city}, ${selectedNewspaper.country}`;
-    } else {
-        slugInput.value = "";
-        locationInput.value = ""; // Clear location if no newspaper is selected
+        if (selectedNewspaper) {
+            slugInput.value = selectedNewspaper.slug;
+            locationInput.value = `${selectedNewspaper.city}, ${selectedNewspaper.country}`;
+        } else {
+            slugInput.value = "";
+            locationInput.value = ""; // Clear location if no newspaper is selected
 
-        // Always filter newspapers based on the current location
-        filterNewspapersByLocation();
+            // Always filter newspapers based on the current location
+            filterNewspapersByLocation();
+        }
     }
-}
 
-function filterNewspapersByLocation() {
-    const locationInput = document.getElementById("locationSearch").value.toLowerCase();
-    const newspaperInput = document.getElementById("newspaper");
-    const newspaperList = document.getElementById("newspaperList");
+    function filterNewspapersByLocation() {
+        const locationInput = document.getElementById("locationSearch").value.toLowerCase();
+        const newspaperInput = document.getElementById("newspaper");
+        const newspaperList = document.getElementById("newspaperList");
 
-    // Clear the newspaper list (but not the input) each time the location changes
-    newspaperList.innerHTML = "";
+        // Clear the newspaper list (but not the input) each time the location changes
+        newspaperList.innerHTML = "";
 
-    // Filter newspapers based on the location input
-    newspapers.forEach((newspaper) => {
-        const formattedLocation = `${newspaper.city}, ${newspaper.country}`.toLowerCase();
+        // Filter newspapers based on the location input
+        newspapers.forEach((newspaper) => {
+            const formattedLocation = `${newspaper.city}, ${newspaper.country}`.toLowerCase();
 
-        if (!locationInput || formattedLocation.includes(locationInput)) {
-            const option = document.createElement("option");
-            option.value = newspaper.name;
-            option.setAttribute("slug", newspaper.slug);
-            option.setAttribute("location", `${newspaper.city}, ${newspaper.country}`);
-            newspaperList.appendChild(option);
+            if (!locationInput || formattedLocation.includes(locationInput)) {
+                const option = document.createElement("option");
+                option.value = newspaper.name;
+                option.setAttribute("slug", newspaper.slug);
+                option.setAttribute("location", `${newspaper.city}, ${newspaper.country}`);
+                newspaperList.appendChild(option);
+            }
+        });
+    }
+
+    // Default selection for the first clock face or based on plugin_settings
+    document.addEventListener('DOMContentLoaded', () => {
+        const newspaperInput = document.getElementById("newspaper");
+        const locationInput = document.getElementById("locationSearch");
+        const slugInput = document.getElementById("newspaperSlug");
+
+        if (pluginSettings && pluginSettings.newspaperName) {
+            // Set the newspaper input
+            newspaperInput.value = pluginSettings.newspaperName;
+
+            updateSlugAndLocation();
         }
     });
-}
 </script>

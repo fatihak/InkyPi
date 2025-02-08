@@ -7,16 +7,16 @@
     <!-- Text Model Dropdown -->
     <div class="form-group">
         <label for="textModel" class="form-label">Text Model:</label>
-        <select id="textModel" name="textModel" class="form-input" onchange="toggleQualityDropdown()">
-            <option value="gpt-4o" selected>GPT-4o mini</option>
-            <option value="gpt-4o-mini">GPT-4o</option>
+        <select id="textModel" name="textModel" class="form-input">
+            <option value="gpt-4o-mini">GPT-4o mini</option>
+            <option value="gpt-4o">GPT-4o</option>
         </select>
     </div>
 </div>
 
 <div class="form-group">
-    <label for="inputText" class="form-label">Text Prompt:</label>
-    <input type="text" id="inputText" name="inputText" placeholder="Type something..." required class="form-input">
+    <label for="textPrompt" class="form-label">Text Prompt:</label>
+    <input type="text" id="textPrompt" name="textPrompt" placeholder="Type something..." required class="form-input">
 </div>
 
 <div class="form-group">
@@ -56,13 +56,16 @@
             Image
         </label>
         <label for="imageUpload" class="form-input file-upload-label" id="uploadButtonLabel">Upload Image</label>
-        <input type="file" clear-on-submit="true" id="imageUpload" name="backgroundImageFile" accept="image/*" class="file-upload-input" onchange="showFileName()">
+        <input type="file" clear-on-submit id="imageUpload" name="backgroundImageFile" accept="image/*" class="file-upload-input" onchange="showFileName()">
         <div id="fileName" class="file-name" style="display: none;">
             <span id="fileNameText"></span>
             <button type="button" id="removeFileButton" class="remove-file-btn" onclick="removeFile()">X</button>
         </div>
     </div>
 </div>
+
+<!-- Hidden input fields to store existing file data -->
+<div id="hiddenFileInput"></div>
 
 <!-- Text Color Picker -->
 <div class="form-group">
@@ -97,6 +100,11 @@
         fileInput.value = '';  // Clear the file input
         fileNameDisplay.style.display = 'none';  // Hide the file name and remove button
         uploadButtonLabel.style.display = 'block';  // Show the upload button label
+
+        const hiddenElement = document.getElementById(`hidden-file-name`);
+        if (hiddenElement) {
+            hiddenElement.remove();
+        }
     }
 </script>
 
@@ -117,12 +125,66 @@
         document.getElementById('selected-frame').value = selectedFaceName;
     }
 
-    // Default selection for the first frame
-    document.addEventListener('DOMContentLoaded', () => {
-        const firstOption = document.querySelector('.image-option');
-        if (firstOption) {
-            firstOption.classList.add('selected');
-            document.getElementById('selected-frame').value = firstOption.getAttribute('data-face-name');
+    // populate form values from plugin settings
+    document.addEventListener('DOMContentLoaded', () => {        
+        // default to first frame option
+        let selectedFrameOption = document.querySelector('.image-option');
+
+        if (loadPluginSettings) {
+            // Populate text inputs
+            document.getElementById('title').value = pluginSettings.title || '';
+            document.getElementById('textPrompt').value = pluginSettings.textPrompt || '';
+            
+            // Populate text model
+            document.getElementById('textModel').value = pluginSettings.textModel;
+
+            // Set background color
+            if (pluginSettings.backgroundColor) {
+                document.getElementById('backgroundColor').value = pluginSettings.backgroundColor;
+            }
+
+            // Populate text color
+            if (pluginSettings.textColor) {
+                document.getElementById('textColor').value = pluginSettings.textColor;
+            }
+
+            // Populate background options (color or image)
+            if (pluginSettings.backgroundOption) {
+                document.querySelector(`input[name="backgroundOption"][value="${pluginSettings.backgroundOption}"]`).checked = true;
+            }
+            // Handle background image selection
+            const fileNameDisplay = document.getElementById('fileName');
+            const fileNameText = document.getElementById('fileNameText');
+            const uploadButtonLabel = document.getElementById('uploadButtonLabel');
+
+            if (pluginSettings.backgroundImageFile) {
+                const filePath = pluginSettings.backgroundImageFile
+                const fileName = filePath.split('/').pop();
+
+                // display the file name
+                fileNameText.textContent = fileName;
+                fileNameDisplay.style.display = 'flex';
+                uploadButtonLabel.style.display = 'none';
+
+                // create a hidden input for the existing file
+                const hiddenInput = document.createElement("input");
+                hiddenInput.type = "hidden";
+                hiddenInput.name = "backgroundImageFile";
+                hiddenInput.value = filePath;
+                hiddenInput.id = `hidden-file-name`;
+                hiddenInput.setAttribute('delete-on-submit', '');
+                document.getElementById("hiddenFileInput").appendChild(hiddenInput);
+            } else {
+                fileNameDisplay.style.display = 'none';
+                uploadButtonLabel.style.display = 'block';
+            }
+
+            selectedFrameOption = document.querySelector(`.image-option[data-face-name="${pluginSettings.selectedFrame}"]`);
+        }
+
+        if (selectedFrameOption) {
+            selectedFrameOption.classList.add('selected');
+            document.getElementById('selected-frame').value = selectedFrameOption.getAttribute('data-face-name');
         }
     });
 </script>

@@ -1,10 +1,3 @@
-<!-- Select2 CSS -->
-<link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.1.0-beta.1/css/select2.min.css" rel="stylesheet" />
-<!-- jQuery -->
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<!-- Select2 JS -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.1.0-beta.1/js/select2.min.js"></script>
-
 <div class="form-group">
     <label for="clock-face" class="form-label">Clock Face:</label>
 
@@ -14,7 +7,6 @@
             class="image-option"
             data-face-name="{{ face.name }}"
             onclick="selectClockFace(this)"
-            {% if loop.index == 1 %} class="selected" {% endif %}
         >
             <img
                 src="{{ url_for('plugin.image', plugin_id='clock', filename=face.icon) }}"
@@ -42,12 +34,25 @@
         document.getElementById('selected-clock-face').value = selectedFaceName;
     }
 
-    // Default selection for the first clock face
+    // Default selection for the first clock face or based on plugin_settings
     document.addEventListener('DOMContentLoaded', () => {
-        const firstOption = document.querySelector('.image-option');
-        if (firstOption) {
-            firstOption.classList.add('selected');
-            document.getElementById('selected-clock-face').value = firstOption.getAttribute('data-face-name');
+        const clockFaceContainer = document.getElementById('clock-face-selection');
+        const selectedClockFaceInput = document.getElementById('selected-clock-face');
+        
+        // Check if pluginSettings has a selectedClockFace value
+        const selectedClockFaceFromSettings = pluginSettings && pluginSettings.selectedClockFace;
+
+        let selectedOption = clockFaceContainer.querySelector('.image-option');
+
+        if (selectedClockFaceFromSettings) {
+            // Find the clock face with the name from pluginSettings
+            selectedOption = clockFaceContainer.querySelector(`.image-option[data-face-name="${selectedClockFaceFromSettings}"]`);
+        }
+
+        // If a valid option is found, select it
+        if (selectedOption) {
+            selectedOption.classList.add('selected');
+            selectedClockFaceInput.value = selectedOption.getAttribute('data-face-name');
         }
     });
 </script>
