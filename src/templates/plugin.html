@@ -168,9 +168,11 @@
                     <input type="text" id="instance" name="instance_name" placeholder="Type something..." required class="form-input">
                 </div>
                 <div class="form-group">
-                    <label>Refresh Frequency</label>
+                    <label>Refresh</label>
+                    <span title="Determines how often the data and image should be refreshed.">ⓘ</span>
                 </div>
                 <div class="form-group">
+                    <input type="radio" name="refreshType" value="interval" checked>
                     <label for="interval">Every</label>
                     <input type="number" id="interval" name="interval" class="form-input" required min="1" placeholder="Enter a number">
                     <select id="unit" name="unit" class="form-input" required>
@@ -178,6 +180,11 @@
                         <option value="hour">Hour</option>
                         <option value="day">Day</option>
                     </select>
+                </div>
+                <div class="form-group">
+                    <input type="radio" name="refreshType" value="scheduled">
+                    <label for="scheduled">Daily at </label>
+                    <input id="scheduled" class="time-input" type="time" name="refreshTime" step="900">
                 </div>
             </form>
             <div class="buttons-container">

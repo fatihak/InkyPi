@@ -46,7 +46,7 @@ class DisplayManager:
         self.inky_display.set_image(image)
         self.inky_display.show()
 
-    def display_image(self, image):
+    def display_image(self, image, force=False, image_settings=[]):
         """
         Displays the image provided.
 
@@ -59,7 +59,8 @@ class DisplayManager:
         image.save(self.device_config.current_image_file)
 
         # Resize and adjust orientation
-        image = resize_image(image, self.device_config.get_resolution())
+        image = change_orientation(image, self.device_config.get_config("orientation"))
+        image = resize_image(image, self.device_config.get_resolution(), image_settings)
 
         # Display the image on the Inky display
         self.inky_display.set_image(image)

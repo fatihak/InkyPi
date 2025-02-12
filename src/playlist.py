@@ -102,12 +102,18 @@ class PlaylistManager:
             "current_plugin_index": self.current_plugin_index
         }
     
-    def determine_next_plugin(self, current_datetime, refresh_interval=1*60):
+    def determine_next_plugin(self, current_datetime, refresh_interval=2*60):
+        playlist = self.get_active_playlist(current_datetime)
+        if not playlist:
+            logger.info(f"No active playlist determined.")
+            return None
+
         should_refresh = PlaylistManager.should_refresh(
             self.get_latest_refresh(),
             refresh_interval,
             current_datetime
         )
+
         if not should_refresh:
             logger.info(f"Not time to refresh.")
             return None
@@ -117,7 +123,7 @@ class PlaylistManager:
             logger.info(f"No active playlist determined.")
             return None
         self.current_playlist = playlist.name
-        
+
         if playlist.name != self.get_current_playlist_name():
             self.current_playlist = playlist.name
             self.current_plugin_index = 0
@@ -232,18 +238,17 @@ class Playlist:
 class PluginInstance:
     """Represents an individual plugin instance within a playlist."""
 
-    def __init__(self, plugin_id, name, settings, interval, latest_refresh=None):
+    def __init__(self, plugin_id, name, settings, refresh, latest_refresh=None):
         self.plugin_id = plugin_id
         self.name = name
         self.settings = settings
-        self.interval = interval
+        self.refresh = refresh
         self.latest_refresh = latest_refresh
 
     def update(self, updated_data):
         """Update plugin settings and refresh timestamp."""
         for key, value in updated_data.items():
             setattr(self, key, value)
-        self.latest_refresh = datetime.utcnow().isoformat()
 
     def to_dict(self):
         """Convert plugin instance to dictionary format."""
@@ -251,9 +256,41 @@ class PluginInstance:
             "plugin_id": self.plugin_id,
             "name": self.name,
             "plugin_settings": self.settings,
-            "interval": self.interval,
-            "latest_refresh": self.latest_refresh
+            "refresh": self.refresh,
+            "latest_refresh": self.latest_refresh,
         }
+    
+    def should_refresh(self, current_time):
+        latest_refresh_dt = self.get_latest_refresh()
+        if not latest_refresh_dt:
+            return True
+
+        # Check for interval-based refresh
+        if "interval" in self.refresh:
+            interval = self.refresh.get("interval")
+            if interval and (current_time - latest_refresh_dt) >= timedelta(seconds=interval):
+                return True
+
+        # Check for scheduled refresh (HH:MM format)
+        if "scheduled" in self.refresh:
+            scheduled_time_str = self.refresh.get("scheduled")
+            scheduled_time = datetime.strptime(scheduled_time_str, "%H:%M").replace(
+                year=current_time.year, month=current_time.month, day=current_time.day)
+
+            # If the latest refresh is before the scheduled time today
+            if latest_refresh_dt < scheduled_time:
+                return True
+
+        return False
+    
+    def get_image_path(self):
+        return f"{self.plugin_id}_{self.name.replace(' ', '_')}.png"
+    
+    def get_latest_refresh(self):
+        latest_refresh = None
+        if self.latest_refresh:
+            latest_refresh = datetime.fromisoformat(self.latest_refresh)
+        return latest_refresh
 
     @classmethod
     def from_dict(cls, data):
@@ -262,6 +299,6 @@ class PluginInstance:
             plugin_id=data["plugin_id"],
             name=data["name"],
             settings=data["plugin_settings"],
-            interval=data["interval"],
-            latest_refresh=data.get("latest_refresh", {})
+            refresh=data["refresh"],
+            latest_refresh=data.get("latest_refresh"),
         )

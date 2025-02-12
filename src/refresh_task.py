@@ -1,7 +1,10 @@
 import threading
 import time
+import os
 import logging
 from datetime import datetime
+from plugins.plugin_registry import get_plugin_instance
+from PIL import Image
 
 logger = logging.getLogger(__name__)
 
@@ -14,7 +17,6 @@ class RefreshTask:
         self.thread = None
         self.lock = threading.Lock()
         self.condition = threading.Condition(self.lock)
-        self.time_until_refresh = 0
         self.running = False
         self.manual_update_settings = {}
 
@@ -54,36 +56,44 @@ class RefreshTask:
                     if not self.running:
                         break 
 
+                    image = None
                     # Handle immediate updates
                     if self.manual_update_settings:
                         logger.info("Manual update requested")
                         update_settings = self.manual_update_settings
-                        update_display = True
                         self.manual_update_settings = {}
                     else:
                         logger.info(f"Running interval refresh check.")
 
                         current_datetime = datetime.utcnow()
                         plugin = self.playlist_manager.determine_next_plugin(current_datetime)
-                        self.device_config.update_value("playlist_config", self.playlist_manager.to_dict())
+
+                        if not plugin:
+                            logger.info("No plugin to display.")
+                            continue
                         
+                        # determine if the image should be refreshed
+                        should_refresh = plugin.should_refresh(current_datetime)
+                        
+                        plugin_image_dir = os.path.join(self.device_config.plugin_image_dir, plugin.get_image_path())
+                        if should_refresh:
+                            logger.info("Refreshing plugin")
+                            image = self.refresh_plugin(plugin.plugin_id, plugin.settings)
 
-                        # Decrement the timer and check if it's time to update
-                        self.time_until_refresh -= sleep_time
-                        update_display = self.time_until_refresh <= 0
-                        update_settings = refresh_settings.get("plugin_settings", {})
+                            image.save(plugin_image_dir)
+                            plugin.latest_refresh = current_datetime.isoformat()
+                        else:
+                            logger.info("Using latest image")
+                            image = Image.open(plugin_image_dir)
+                        self.playlist_manager.latest_refresh = current_datetime.isoformat()
+                        self.device_config.update_value("playlist_config", self.playlist_manager.to_dict())                            
 
-                    if self.time_until_refresh <= 0:
-                        self.time_until_refresh = refresh_settings.get("interval", 300)
-
-                    if update_display and update_settings:
+                    if False and image:
                         logger.info("Refreshing display...")
-                        self.display_manager.display_plugin(update_settings)
-                    else:
-                        logger.info(f"Next refresh in {self.time_until_refresh} seconds.")
+                        self.display_manager.display_image(image)
 
             except Exception as e:
-                logger.error(f"Exception during refresh: {e}")
+                logging.exception('Exception during refresh')
                 self.refresh_result["exception"] = e  # Capture exception
             finally:
                 self.refresh_event.set()
@@ -118,6 +128,18 @@ class RefreshTask:
                 raise self.refresh_result.get("exception")
         else:
             logger.warn("Background refresh task is not running, unable to update refresh settings")
+    
+    def refresh_plugin(self, plugin_id, plugin_settings):
+        plugin_config = next((plugin for plugin in self.device_config.get_plugins() if plugin['id'] == plugin_id), None)
+
+        if not plugin_config:
+            raise ValueError(f"Plugin '{plugin_id}' not found.")
+
+        plugin_instance = get_plugin_instance(plugin_config)
+        image = plugin_instance.generate_image(plugin_settings, self.device_config)
+
+        return image
+
 
     
 

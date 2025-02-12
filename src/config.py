@@ -15,6 +15,8 @@ class Config:
 
     current_image_file = os.path.join(BASE_DIR, "static", "images", "current_image.png")
 
+    plugin_image_dir = os.path.join(BASE_DIR, "static", "images", "plugins")
+
     def __init__(self):
         logger.info(self.config_file)
         self.config = self.read_config()

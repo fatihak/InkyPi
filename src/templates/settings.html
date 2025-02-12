@@ -29,6 +29,31 @@
                 alert('An error occurred while processing your request.');
             }
         }
+
+        let pluginCycleIntervalSeconds = {{ device_settings.plugin_cycle_interval_seconds | default(3600) | tojson }};
+    
+        // Function to populate the fields
+        function populateIntervalFields() {
+            const intervalInput = document.getElementById('interval');
+            const unitSelect = document.getElementById('unit');
+
+            // Check if pluginCycleIntervalSeconds is valid
+            if (pluginCycleIntervalSeconds !== null && pluginCycleIntervalSeconds !== undefined) {
+                // Convert seconds to minutes and hours
+                let intervalInMinutes = Math.floor(pluginCycleIntervalSeconds / 60);
+                let intervalInHours = Math.floor(pluginCycleIntervalSeconds / 3600);
+
+                // Determine which unit to use (minute or hour) based on the interval
+                if (intervalInHours > 0) {
+                    intervalInput.value = intervalInHours;
+                    unitSelect.value = "hour";
+                } else {
+                    intervalInput.value = intervalInMinutes;
+                    unitSelect.value = "minute";
+                }
+            }
+        }
+        document.addEventListener('DOMContentLoaded', populateIntervalFields);
     </script>
 </head>
 <body>
@@ -83,6 +108,16 @@
                             {% endfor %}
                         </datalist>
                     </div>
+                </div>
+                <div class="form-group">
+                    <label for="interval">Plugin Cycle Interval:</label>
+                    <span title="Determines how often the display switches to a new plugin.">ⓘ</span>
+                    <span>Every</span>
+                    <input type="number" id="interval" name="interval" class="form-input" required min="1">
+                    <select id="unit" name="unit" class="form-input" required>
+                        <option value="minute">Minute</option>
+                        <option value="hour">Hour</option>
+                    </select>
                 </div>
             </div>
         </form>

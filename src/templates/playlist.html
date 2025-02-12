@@ -23,11 +23,10 @@
                 
                 const result = await response.json();
                 if (response.ok) {
+                    sessionStorage.setItem("storedMessage", JSON.stringify({ type: "success", text: `Success! ${result.message}` }));
                     location.reload();
-                    showResponseModal('success', `Success! ${result.message}`);
                 } else {
                     showResponseModal('failure', `Error!  ${result.error}`);
-                    form.reset();
                 }
             } catch (error) {
                 console.error('Error:', error);
@@ -89,9 +88,9 @@
 
                 const result = await response.json();
                 if (response.ok) {
-                    closeModal(); // Close the modal after success
-                    showResponseModal('success', `Success! ${result.message}`);
-                    location.reload(); // Refresh page to show new playlist
+                    closeModal(); // Close the modal on success
+                    sessionStorage.setItem("storedMessage", JSON.stringify({ type: "success", text: `Success! ${result.message}` }));
+                    location.reload();
                 } else {
                     showResponseModal('failure', `Error!  ${result.error}`);
                 }
@@ -100,7 +99,6 @@
                 alert('An error occurred while processing your request.');
             }
         }
-
 
         async function updatePlaylist() {
             let oldName = document.getElementById("editingPlaylistName").value;
@@ -120,8 +118,8 @@
                 const result = await response.json();
                 if (response.ok) {
                     closeModal(); // Close the modal after success
-                    showResponseModal('success', `Success! ${result.message}`);
-                    location.reload(); // Refresh page to show new playlist
+                    sessionStorage.setItem("storedMessage", JSON.stringify({ type: "success", text: `Success! ${result.message}` }));
+                    location.reload();
                 } else {
                     showResponseModal('failure', `Error!  ${result.error}`);
                 }
@@ -142,8 +140,8 @@
                 const result = await response.json();
                 if (response.ok) {
                     closeModal(); // Close the modal after success
-                    showResponseModal('success', `Success! ${result.message}`);
-                    location.reload(); // Refresh page to show new playlist
+                    sessionStorage.setItem("storedMessage", JSON.stringify({ type: "success", text: `Success! ${result.message}` }));
+                    location.reload();
                 } else {
                     showResponseModal('failure', `Error!  ${result.error}`);
                 }
@@ -160,13 +158,27 @@
             startSelect.innerHTML = "";
             endSelect.innerHTML = "";
 
-            for (let hour = 0; hour <= 24; hour++) {
-                let time = hour.toString().padStart(2, '0') + ":00";
-                startSelect.innerHTML += `<option value="${time}">${time}</option>`;
-                endSelect.innerHTML += `<option value="${time}">${time}</option>`;
+            for (let hour = 0; hour < 24; hour++) { // 24-hour format (0-23)
+                for (let minutes of [0, 15, 30, 45]) {
+                    let time = hour.toString().padStart(2, '0') + ":" + minutes.toString().padStart(2, '0');
+                    startSelect.innerHTML += `<option value="${time}">${time}</option>`;
+                    endSelect.innerHTML += `<option value="${time}">${time}</option>`;
+                }
             }
+            startSelect.innerHTML += `<option value="24:00">24:00</option>`;
+            endSelect.innerHTML += `<option value="24:00">24:00</option>`;
         }
+
         document.addEventListener("DOMContentLoaded", populateTimeOptions);
+
+        window.addEventListener("load", function () {
+            let storedMessage = sessionStorage.getItem("storedMessage");
+            if (storedMessage) {
+                let { type, text } = JSON.parse(storedMessage);
+                showResponseModal(type, text);
+                sessionStorage.removeItem("storedMessage"); // Clear stored message after displaying
+            }
+        });
     </script>
 </head>
 <body>

@@ -21,24 +21,38 @@ def add_plugin():
 
         playlist = refresh_settings.get('playlist')
         instance_name = refresh_settings.get('instance_name')
-        if not refresh_settings.get('interval') or not refresh_settings["interval"].isnumeric():
-            raise RuntimeError("Invalid refresh interval.")
-        if not refresh_settings.get('unit') or refresh_settings["unit"] not in ["minute", "hour", "day"]:
-            raise RuntimeError("Invalid refresh unit.")
         if not playlist:
-            raise RuntimeError("Playlist is required.")
-        if not instance_name:
-            raise RuntimeError("Instance name is required")
+            return jsonify({"error": "Playlist name is required"}), 400
+        if not instance_name or not instance_name.strip():
+            return jsonify({"error": "Instance name is required"}), 400
+        if not all(char.isalpha() or char.isspace() for char in instance_name):
+            return jsonify({"error": "Instance name can only contain alphanumeric characters and spaces"}), 400
+        print(refresh_settings)
+        refresh_type = refresh_settings.get('refreshType')
+        if not refresh_type or refresh_type not in ["interval", "scheduled"]:
+            return jsonify({"error": "Refresh type is required"}), 400
+
+        if refresh_type == "interval":
+            unit, interval = refresh_settings.get('unit'), refresh_settings.get("interval")
+            if not unit or unit not in ["minute", "hour", "day"]:
+                return jsonify({"error": "Refresh interval unit is required"}), 400
+            if not interval:
+                return jsonify({"error": "Refresh interval is required"}), 400
+            refresh_interval_seconds = calculate_seconds(int(interval), unit)
+            refresh_config = {"interval": refresh_interval_seconds}
+        else:
+            refresh_time = refresh_settings.get('refreshTime')
+            if not refresh_settings.get('refreshTime'):
+                return jsonify({"error": "Refresh time is required"}), 400
+            refresh_config = {"scheduled": refresh_time}
 
         plugin_settings = form_data
-
         plugin_settings.update(handle_request_files(request.files))
-        refresh_interval_seconds = calculate_seconds(int(refresh_settings.get("interval")), refresh_settings.get("unit"))
 
         plugin_id = plugin_settings.pop("plugin_id")
         plugin_dict = {
             "plugin_id": plugin_id,
-            "interval": refresh_interval_seconds,
+            "refresh": refresh_config,
             "plugin_settings": plugin_settings,
             "name": instance_name
         }
