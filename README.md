@@ -12,6 +12,7 @@ InkyPi is an open-source, customizable E-Ink display powered by a Raspberry Pi. 
 - Minimize distractions: no LEDS, noise, or notifications, just the content you care about
 - Easy installation and configuration, perfect for beginners and makers alike
 - Open source project allowing you to modify, customize, and create your own plugins
+- Set up scheduled playlists to display different plugins at designated times
 
 **Plugins**:
 
@@ -85,7 +86,6 @@ sudo bash install/uninstall.sh
 The InkyPi project is constantly evolving, with many exciting features and improvements planned for the future.
 
 - Plugins, plugins, plugins
-- Enhanced scheduling functionality
 - Modular layouts to mix and match plugins
 - Support for buttons with customizable action bindings
 - Improved Web UI on mobile devices

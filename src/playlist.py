@@ -10,7 +10,7 @@ class PlaylistManager:
     DEFAULT_PLAYLIST_START = "00:00"
     DEFAULT_PLAYLIST_END = "24:00"
 
-    def __init__(self, playlists=[], current_playlist=None, current_plugin_index=0, latest_refresh=None):
+    def __init__(self, playlists=[], current_playlist=None, current_plugin_index=None, latest_refresh=None):
         self.playlists = playlists
         self.current_playlist = current_playlist
         self.current_plugin_index = current_plugin_index
@@ -48,12 +48,14 @@ class PlaylistManager:
         current_time = current_datetime.strftime("%H:%M")  # Get current time in "HH:MM" format
 
         # get active playlists that have plugins
-        active_playlists = [p for p in self.playlists if p.is_active(current_time) and p.plugins]
+        active_playlists = [p for p in self.playlists if p.is_active(current_time)]
         if not active_playlists:
             return None
         
+        print("Active: " + str([p.name for p in active_playlists]))
         # Sort playlists by priority
         active_playlists.sort(key=lambda p: p.get_priority())
+        print("Sorted: " + str([p.name for p in active_playlists]))
         return active_playlists[0]  # Return the playlist with the smaller priority value
     
     def get_playlist(self, playlist_name):
@@ -105,8 +107,17 @@ class PlaylistManager:
     def determine_next_plugin(self, current_datetime, refresh_interval=2*60):
         playlist = self.get_active_playlist(current_datetime)
         if not playlist:
+            self.active_playlist = None
             logger.info(f"No active playlist determined.")
             return None
+        
+        prev_playlist = self.current_playlist
+        self.current_playlist = playlist.name
+
+        if not playlist.plugins:
+            self.current_plugin_index = None
+            logger.info(f"Active playlist '{playlist.name}' has no plugins.")
+            return
 
         should_refresh = PlaylistManager.should_refresh(
             self.get_latest_refresh(),
@@ -118,14 +129,7 @@ class PlaylistManager:
             logger.info(f"Not time to refresh.")
             return None
 
-        playlist = self.get_active_playlist(current_datetime)
-        if not playlist:
-            logger.info(f"No active playlist determined.")
-            return None
-        self.current_playlist = playlist.name
-
-        if playlist.name != self.get_current_playlist_name():
-            self.current_playlist = playlist.name
+        if playlist.name != prev_playlist or not self.current_plugin_index:
             self.current_plugin_index = 0
         else:
             self.current_plugin_index = (self.current_plugin_index + 1) % len(playlist.plugins)
@@ -141,7 +145,7 @@ class PlaylistManager:
         return cls(
             playlists=[Playlist.from_dict(p) for p in data.get("playlists", [])],
             current_playlist=data.get("current_playlist"),
-            current_plugin_index=data.get("current_plugin_index", 0),
+            current_plugin_index=data.get("current_plugin_index"),
             latest_refresh=data.get("latest_refresh")
         )
 
@@ -164,6 +168,7 @@ class Playlist:
 
     def is_active(self, current_time):
         """Check if the playlist is active at the given time."""
+        print(self.name, self.start_time, current_time, self.end_time)
         return self.start_time <= current_time < self.end_time
 
     def add_plugin(self, plugin_data):
@@ -274,11 +279,10 @@ class PluginInstance:
         # Check for scheduled refresh (HH:MM format)
         if "scheduled" in self.refresh:
             scheduled_time_str = self.refresh.get("scheduled")
-            scheduled_time = datetime.strptime(scheduled_time_str, "%H:%M").replace(
-                year=current_time.year, month=current_time.month, day=current_time.day)
+            latest_refresh_str = latest_refresh_dt.strftime("%H:%M")
 
             # If the latest refresh is before the scheduled time today
-            if latest_refresh_dt < scheduled_time:
+            if latest_refresh_str < scheduled_time_str:
                 return True
 
         return False

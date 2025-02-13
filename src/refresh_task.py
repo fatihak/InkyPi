@@ -2,7 +2,8 @@ import threading
 import time
 import os
 import logging
-from datetime import datetime
+import pytz
+from datetime import datetime, timezone
 from plugins.plugin_registry import get_plugin_instance
 from PIL import Image
 
@@ -18,7 +19,7 @@ class RefreshTask:
         self.lock = threading.Lock()
         self.condition = threading.Condition(self.lock)
         self.running = False
-        self.manual_update_settings = {}
+        self.manual_update_settings = ()
 
         self.refresh_event = threading.Event()
         self.refresh_event.set()
@@ -56,25 +57,34 @@ class RefreshTask:
                     if not self.running:
                         break 
 
+                    tz_str = self.device_config.get_config("timezone", default="UTC")
+                    tz = pytz.timezone(tz_str)
+                    current_datetime = datetime.now(tz)
+
                     image = None
                     # Handle immediate updates
                     if self.manual_update_settings:
                         logger.info("Manual update requested")
-                        update_settings = self.manual_update_settings
-                        self.manual_update_settings = {}
+                        plugin_id, plugin_settings = self.manual_update_settings
+                        self.manual_update_settings = ()
+                        image = self.refresh_plugin(plugin_id, plugin_settings)
+
+                        self.playlist_manager.current_playlist = "Manual Update"
                     else:
                         logger.info(f"Running interval refresh check.")
 
-                        current_datetime = datetime.utcnow()
-                        plugin = self.playlist_manager.determine_next_plugin(current_datetime)
+
+                        refresh_interval = self.device_config.get_config("plugin_cycle_interval_seconds", default=3600)
+                        plugin = self.playlist_manager.determine_next_plugin(current_datetime, refresh_interval)
 
                         if not plugin:
+                            self.device_config.update_value("playlist_config", self.playlist_manager.to_dict())
                             logger.info("No plugin to display.")
                             continue
-                        
+
                         # determine if the image should be refreshed
                         should_refresh = plugin.should_refresh(current_datetime)
-                        
+
                         plugin_image_dir = os.path.join(self.device_config.plugin_image_dir, plugin.get_image_path())
                         if should_refresh:
                             logger.info("Refreshing plugin")
@@ -85,12 +95,12 @@ class RefreshTask:
                         else:
                             logger.info("Using latest image")
                             image = Image.open(plugin_image_dir)
-                        self.playlist_manager.latest_refresh = current_datetime.isoformat()
-                        self.device_config.update_value("playlist_config", self.playlist_manager.to_dict())                            
 
-                    if False and image:
+                    if image:
                         logger.info("Refreshing display...")
-                        self.display_manager.display_image(image)
+                        #self.display_manager.display_image(image)
+                        self.playlist_manager.latest_refresh = current_datetime.isoformat()
+                    self.device_config.update_value("playlist_config", self.playlist_manager.to_dict())
 
             except Exception as e:
                 logging.exception('Exception during refresh')
@@ -98,10 +108,10 @@ class RefreshTask:
             finally:
                 self.refresh_event.set()
 
-    def manual_update(self, settings):
+    def manual_update(self, plugin_id, plugin_settings):
         if self.running:
             with self.condition:
-                self.manual_update_settings = settings
+                self.manual_update_settings = (plugin_id, plugin_settings)
                 self.refresh_result = {}
                 self.refresh_event.clear()
 

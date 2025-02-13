@@ -39,9 +39,9 @@ class Config:
         with open(self.config_file, 'w') as outfile:
             json.dump(self.config, outfile, indent=4)
 
-    def get_config(self, key=None):
+    def get_config(self, key=None, default={}):
         if key is not None:
-            return self.config.get(key, {})
+            return self.config.get(key, default)
         return self.config
 
     def get_plugins(self):

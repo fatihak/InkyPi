@@ -106,15 +106,9 @@ def update_now():
     try:
         plugin_settings = request.form.to_dict()  # Get all form data
         plugin_settings.update(handle_request_files(request.files))
-        
+
         plugin_id = plugin_settings.pop("plugin_id")
-        plugin_dict = {
-            "plugin_id": plugin_id,
-            "interval": refresh_interval_seconds,
-            "plugin_settings": plugin_settings,
-            "name": instance_name
-        }
-        refresh_task.manual_update(plugin_settings)
+        refresh_task.manual_update(plugin_id, plugin_settings)
     except RuntimeError as e:
         return jsonify({"error": str(e)}), 500
     except Exception as e:

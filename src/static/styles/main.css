@@ -425,9 +425,8 @@ body {
 
 .settings-button:hover {
     background-color: #e0e0e0;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    box-shadow: 0px 5px 8px rgba(0, 0, 0, 0.1);
 }
-
 
 /* Modal Styling */
 .modal {
@@ -587,31 +586,33 @@ body {
 
 /* Plugin List */
 .plugin-list {
-    margin-top: 10px;
     display: flex;
     flex-direction: column;
-    gap: 8px;
 }
 
 /* Plugin Item */
 .plugin-item {
     display: flex;
     align-items: center;
-    background-color: #fff;
-    padding: 8px;
-    border-radius: 6px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    padding: 10px 25px 10px 40px;
+    border-top: 2px solid #e0e0e0;
+    gap: 10px;
+}
+
+.plugin-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-grow: 1;
 }
 
 /* Plugin Icon */
 .plugin-icon {
     width: 30px;
     height: 30px;
-    margin-right: 10px;
 }
 
 .plugin-instance {
-    margin-right: auto;
     color: #333;
 }
 
@@ -620,7 +621,6 @@ body {
     background: none;
     border: none;
     cursor: pointer;
-    margin-left: 8px;
 }
 
 /* Playlist List */
@@ -636,18 +636,26 @@ body {
     justify-content: space-between;
     align-items: center;
     width: 100%;
+    padding: 20px 25px 10px 25px;
 }
 
 /* Playlist Item */
 .playlist-item {
     display: flex;
-    padding: 20px;
+    padding: 0px 0px 5px 0px;
     transition: all 0.3s ease;
     border: 2px solid #e0e0e0;
-    border-radius: 16px;
+    border-radius: 10px;
     flex-direction: column;
     width: 100%
 }
+
+/* Active Playlist Item */
+.playlist-item.active {
+    border-color: #16a085; /* Green border */
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+}
+
 
 .playlist-title {
     font-size: 1.2rem;
@@ -700,7 +708,7 @@ body {
 .displayed-now {
     background-color: #16a085;
     color: white;
-    padding: 4px 6px;
+    padding: 4px 8px;
     border-radius: 3px;
     font-size: 0.8rem;
 }
@@ -720,4 +728,13 @@ body {
     outline: none;
     border-color: #1abc9c;
     box-shadow: 0 0 3px rgba(26, 188, 156, 0.5);
+}
+
+.latest-refresh {
+    background-color: lightslategray;
+    color: white;
+    font-style: italic;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.8em;
 }

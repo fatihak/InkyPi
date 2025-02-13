@@ -200,30 +200,36 @@
         <!-- Playlists Container -->
         <div class="playlist-list">
             {% for playlist in playlist_config.playlists %}
-            <div class="playlist-item">
+            <div class="playlist-item {% if playlist.name == playlist_config.current_playlist %}active{% endif %}">
                     <div class="playlist-header">
                         <span class="playlist-title">{{ playlist.name }}</span>
-                        {% if playlist.name == playlist_config.current_playlist %}
-                        <span class="displayed-now">Active</span>
-                        {% endif %}
                         <button class="edit-button" onclick="openEditModal('{{ playlist.name }}', '{{ playlist.start_time }}','{{ playlist.end_time }}')"><img src="{{ url_for('static', filename='icons/settings.png') }}" alt="edit playlist" class="action-icon"></button>
                     </div>
                     <!-- Plugin List -->
                     <div class="plugin-list">
                         {% for plugin_instance in playlist.plugins %}
                         <div class="plugin-item">
-                            <img src="{{ url_for('plugin.image', plugin_id=plugin_instance.plugin_id, filename='icon.png') }}" alt="Plugin Icon" class="plugin-icon">
-                            <span class="plugin-instance">{{ plugin_instance.name }}</span>
-                            
-                            <!-- Check if the current plugin is the one being displayed -->
-                            {% if playlist.name == playlist_config.current_playlist and loop.index0 == playlist_config.current_plugin_index %}
-                            <span class="displayed-now">Displayed Now</span>
+                            <div class="plugin-info">
+                                <img src="{{ url_for('plugin.image', plugin_id=plugin_instance.plugin_id, filename='icon.png') }}" alt="Plugin Icon" class="plugin-icon">
+                                <span class="plugin-instance">{{ plugin_instance.name }}</span>
+                                
+                                <!-- Check if the current plugin is the one being displayed -->
+                                {% if playlist.name == playlist_config.current_playlist and loop.index0 == playlist_config.current_plugin_index %}
+                                <span class="displayed-now">Displayed Now</span>
+                                {% endif %}
+                            </div>
+
+                            {% if plugin_instance.latest_refresh %}
+                                {% set refresh_time = plugin_instance.latest_refresh | format_relative_time %}
+                                <span class="latest-refresh" title="{{plugin_instance.latest_refresh}}">
+                                    Refreshed {{ refresh_time }}
+                                </span>
                             {% endif %}
 
                             <a href="{{ url_for('plugin.plugin_page', plugin_id=plugin_instance.plugin_id) }}?instance={{ plugin_instance.name }}" class="edit-button">
                                 <img src="{{ url_for('static', filename='icons/edit.png') }}" alt="edit plugin" class="action-icon">
                             </a>
-                            <button class="delete-button" onclick="deletePluginInstance('{{ playlist.name }}', '{{ plugin_instance.plugin_id }}','{{ plugin_instance.name }}')"><img src="{{ url_for('static', filename='icons/remove.png') }}" alt="delete plugin" class="action-icon"></button>
+                            <button class="delete-button" title="Delete Plugin Instance" onclick="deletePluginInstance('{{ playlist.name }}', '{{ plugin_instance.plugin_id }}','{{ plugin_instance.name }}')"><img src="{{ url_for('static', filename='icons/remove.png') }}" alt="delete plugin" class="action-icon"></button>
                         </div>
                         {% endfor %}
                     </div>
