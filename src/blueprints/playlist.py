@@ -71,8 +71,13 @@ def add_plugin():
 def playlists():
     device_config = current_app.config['DEVICE_CONFIG']
     playlist_manager = device_config.get_playlist_manager()
+    refresh_info = device_config.get_refresh_info()
 
-    return render_template('playlist.html', playlist_config=playlist_manager.to_dict())
+    return render_template(
+        'playlist.html',
+        playlist_config=playlist_manager.to_dict(),
+        refresh_info=refresh_info.to_dict()
+    )
 
 @playlist_bp.route('/create_playlist', methods=['POST'])
 def create_playlist():

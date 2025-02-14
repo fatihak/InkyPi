@@ -13,16 +13,18 @@ class RefreshInfo:
         image_hash (int): SHA-256 hash of the image.
         refresh_type (str): Refresh type ['Manual Update', 'Playlist'].
         plugin_id (str): Plugin id of the refresh.
-        playlist_name (str): Playlist name if refresh_type is 'Playlist'.
+        playlist (str): Playlist name if refresh_type is 'Playlist'.
+        plugin_instance (str): Plugin instance name if refresh_type is 'Playlist'.
     """
 
-    def __init__(self, refresh_time=None, refresh_type=None, image_hash=None, plugin_id=None, playlist_name=None):
+    def __init__(self, refresh_type, plugin_id, refresh_time, image_hash, playlist=None, plugin_instance=None):
         """Initialize RefreshInfo instance."""
         self.refresh_time = refresh_time
         self.image_hash = image_hash
         self.refresh_type = refresh_type
         self.plugin_id = plugin_id
-        self.playlist_name = playlist_name
+        self.playlist = playlist
+        self.plugin_instance = plugin_instance
 
     def get_refresh_datetime(self):
         """Returns the refresh time as a datetime object or None if not set."""
@@ -32,13 +34,17 @@ class RefreshInfo:
         return latest_refresh
 
     def to_dict(self):
-        return {
+        refresh_dict = {
             "refresh_time": self.refresh_time,
             "image_hash": self.image_hash,
             "refresh_type": self.refresh_type,
             "plugin_id": self.plugin_id,
-            "playlist_name": self.playlist_name
         }
+        if self.playlist:
+            refresh_dict["playlist"] = self.playlist
+        if self.plugin_instance:
+            refresh_dict["plugin_instance"] = plugin_instance
+        return refresh_dict
 
     @classmethod
     def from_dict(cls, data):
@@ -47,7 +53,8 @@ class RefreshInfo:
             image_hash=data.get("image_hash"),
             refresh_type=data.get("refresh_type"),
             plugin_id=data.get("plugin_id"),
-            playlist_name=data.get("playlist_name")
+            playlist=data.get("playlist"),
+            plugin_instance=data.get("plugin_instance")
         )
 
 class PlaylistManager:

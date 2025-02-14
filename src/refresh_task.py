@@ -5,7 +5,7 @@ import logging
 import pytz
 from datetime import datetime, timezone
 from plugins.plugin_registry import get_plugin_instance
-from utils.image_utils import resize_image, change_orientation, compute_image_hash
+from utils.image_utils import compute_image_hash
 from model import RefreshInfo, PlaylistManager
 from PIL import Image
 
@@ -46,8 +46,7 @@ class RefreshTask:
             self.thread.join()
 
     def _run(self):
-        """
-        Background task that manages the periodic refresh of the display.
+        """Background task that manages the periodic refresh of the display.
 
         This function runs in a loop, sleeping for a configured duration (`scheduler_sleep_time`) or until manually 
         triggered via `manual_update()`. Detrmines the next plugin to refresh based on active playlists and 
@@ -96,7 +95,7 @@ class RefreshTask:
                         self.manual_update_settings = ()
 
                         image, image_settings = self._refresh_plugin(plugin_id, plugin_settings)
-                        new_refresh = RefreshInfo(refresh_type="Manual Update", plugin_id=plugin_id)
+                        refresh_info = {"refresh_type": "Manual Update", "plugin_id": plugin_id}
                     else:
                         # handle refresh based on playlists
                         logger.info(f"Running interval refresh check.")
@@ -104,8 +103,13 @@ class RefreshTask:
 
                         if plugin_instance:
                             image, image_settings = self._plugin_instance_refresh(plugin_instance, current_dt)
-                            new_refresh = RefreshInfo(refresh_type="Playlist", playlist_name=playlist.name, plugin_id=plugin_instance.plugin_id)
 
+                            refresh_info = {
+                                "refresh_type": "Playlist",
+                                "playlist": playlist.name,
+                                "plugin_id": plugin_instance.plugin_id,
+                                "plugin_instance": plugin_instance.name
+                            }
                     if image:
                         image_hash = compute_image_hash(image)
                         # check if image is the same as current image
@@ -115,10 +119,9 @@ class RefreshTask:
                         else:
                             logger.info("Image already displayed, skipping refresh")
                         
-                        # update latest refresh data in the config file
-                        new_refresh.refresh_time = current_dt.isoformat()
-                        new_refresh.image_hash = image_hash
-                        self.device_config.refresh_info = new_refresh
+                        # update latest refresh data in the device config
+                        refresh_info.update({"refresh_time": current_dt.isoformat(), "image_hash": image_hash})
+                        self.device_config.refresh_info = RefreshInfo(**refresh_info)
 
                     self.device_config.write_config()
 

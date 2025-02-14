@@ -214,7 +214,7 @@
                                 <span class="plugin-instance">{{ plugin_instance.name }}</span>
 
                                 <!-- Check if the current plugin is the one being displayed -->
-                                {% if playlist.name == playlist_config.active_playlist and loop.index0 == playlist.current_plugin_index %}
+                                {% if playlist.name == refresh_info.playlist and plugin_instance. == refresh_info.plugin_instance %}
                                 <span class="displayed-now">Displayed Now</span>
                                 {% endif %}
                             </div>
