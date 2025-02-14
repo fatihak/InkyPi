@@ -18,7 +18,7 @@ class DisplayManager:
 
         # store display resolution in device config
         if not device_config.get_config("resolution"):
-            device_config.update_value("resolution",[int(self.inky_display.width), int(self.inky_display.height)])
+            device_config.update_value("resolution",[int(self.inky_display.width), int(self.inky_display.height)], write=True)
 
     def display_image(self, image, force=False, image_settings=[]):
         """
@@ -37,5 +37,5 @@ class DisplayManager:
         image = resize_image(image, self.device_config.get_resolution(), image_settings)
 
         # Display the image on the Inky display
-        self.inky_display.set_image(image)
-        self.inky_display.show()
+        # self.inky_display.set_image(image)
+        # self.inky_display.show()

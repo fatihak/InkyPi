@@ -73,19 +73,22 @@ class RefreshTask:
                         # handle refresh based on playlists
                         logger.info(f"Running interval refresh check.")
                         playlist, plugin_instance = self._determine_next_plugin(playlist_manager, latest_refresh, current_dt)
-
-                        image, image_settings = self._plugin_instance_refresh(plugin_instance, current_dt)
-                        new_refresh = RefreshInfo(refresh_type="Playlist", playlist_name=playlist.name, plugin_id=plugin_instance.plugin_id)
+                        
+                        if plugin_instance:
+                            image, image_settings = self._plugin_instance_refresh(plugin_instance, current_dt)
+                            new_refresh = RefreshInfo(refresh_type="Playlist", playlist_name=playlist.name, plugin_id=plugin_instance.plugin_id)
 
                     if image:
                         image_hash = compute_image_hash(image)
                         # check if image is the same as current image
-                        if image_hash != latest_refresh.image_hash
+                        if image_hash != latest_refresh.image_hash:
                             logger.info("Refreshing display...")
                             self.display_manager.display_image(image, image_settings=image_settings)
                         else:
                             logger.info("Image already displayed, skipping refresh")
-                        new_refresh.time = current_dt.isoformat()
+                        
+                        # update latest refresh data in the config file
+                        new_refresh.refresh_time = current_dt.isoformat()
                         new_refresh.image_hash = image_hash
                         self.device_config.refresh_info = new_refresh
 
@@ -152,9 +155,9 @@ class RefreshTask:
         plugin = playlist.get_next_plugin()
         logger.info(f"Current plugin is {plugin.name}")
 
-        return plugin, playlist
+        return playlist, plugin
 
-    def _plugin_instance_refresh(self, plugin_instance, current_dt)
+    def _plugin_instance_refresh(self, plugin_instance, current_dt):
         # determine if the plugin instance needs to be refreshed
         should_refresh = plugin_instance.should_refresh(current_dt)
         plugin_image_path = os.path.join(self.device_config.plugin_image_dir, plugin_instance.get_image_path())

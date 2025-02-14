@@ -47,10 +47,9 @@ class PlaylistManager:
     DEFAULT_PLAYLIST_START = "00:00"
     DEFAULT_PLAYLIST_END = "24:00"
 
-    def __init__(self, playlists=[], active_playlist=None, refresh_info=None):
+    def __init__(self, playlists=[], active_playlist=None):
         self.playlists = playlists
         self.active_playlist = active_playlist
-        self.refresh_info = refresh_info
     
     def get_playlist_names(self):
         return [p.name for p in self.playlists]
@@ -126,8 +125,7 @@ class PlaylistManager:
         """Convert manager state to JSON-compatible dict."""
         return {
             "playlists": [p.to_dict() for p in self.playlists],
-            "active_playlist": self.active_playlist,
-            "refresh_info": self.refresh_info.to_dict()
+            "active_playlist": self.active_playlist
         }
 
     @classmethod
@@ -135,8 +133,7 @@ class PlaylistManager:
         """Create PlaylistManager instance from a dictionary."""
         return cls(
             playlists=[Playlist.from_dict(p) for p in data.get("playlists", [])],
-            active_playlist=data.get("active_playlist"),
-            refresh_info=RefreshInfo.from_dict(data.get("refresh_info", {}))
+            active_playlist=data.get("active_playlist")
         )
 
     @staticmethod

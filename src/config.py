@@ -64,9 +64,10 @@ class Config:
         self.config.update(config)
         self.write_config()
 
-    def update_value(self, key, value, write=True):
+    def update_value(self, key, value, write=False):
         self.config[key] = value
-        self.write_config()
+        if write:
+            self.write_config()
     
     def load_env_key(self, key):
         load_dotenv(override=True)
@@ -74,7 +75,7 @@ class Config:
     
     def load_playlist_manager(self):
         playlist_manager = PlaylistManager.from_dict(self.get_config("playlist_config"))
-        if not playlist_manager.playlists():
+        if not playlist_manager.playlists:
             playlist_manager.add_default_playlist()
         return playlist_manager
     

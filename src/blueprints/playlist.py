@@ -69,6 +69,7 @@ def add_plugin():
 
 @playlist_bp.route('/playlist')
 def playlists():
+    device_config = current_app.config['DEVICE_CONFIG']
     playlist_manager = device_config.get_playlist_manager()
 
     return render_template('playlist.html', playlist_config=playlist_manager.to_dict())

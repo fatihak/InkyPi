@@ -41,7 +41,6 @@ app.jinja_loader = ChoiceLoader([FileSystemLoader(directory) for directory in te
 
 device_config = Config()
 display_manager = DisplayManager(device_config)
-
 refresh_task = RefreshTask(device_config, display_manager)
 
 load_plugins(device_config.get_plugins())
@@ -69,7 +68,7 @@ if __name__ == '__main__':
         logger.info("Startup flag is set, displaying startup image")
         img = generate_startup_image(device_config.get_resolution())
         display_manager.display_image(img)
-        device_config.update_value("startup", False)
+        device_config.update_value("startup", False, write=True)
 
     try:
         # Run the Flask app
