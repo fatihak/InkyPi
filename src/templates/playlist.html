@@ -214,14 +214,14 @@
                                 <span class="plugin-instance">{{ plugin_instance.name }}</span>
 
                                 <!-- Check if the current plugin is the one being displayed -->
-                                {% if playlist.name == refresh_info.playlist and plugin_instance. == refresh_info.plugin_instance %}
+                                {% if playlist.name == refresh_info.playlist and plugin_instance.name == refresh_info.plugin_instance %}
                                 <span class="displayed-now">Displayed Now</span>
                                 {% endif %}
                             </div>
 
-                            {% if plugin_instance.latest_refresh %}
-                                {% set refresh_time = plugin_instance.latest_refresh | format_relative_time %}
-                                <span class="latest-refresh" title="{{plugin_instance.latest_refresh}}">
+                            {% if plugin_instance.latest_refresh_time %}
+                                {% set refresh_time = plugin_instance.latest_refresh_time | format_relative_time %}
+                                <span class="latest-refresh" title="{{plugin_instance.latest_refresh_time}}">
                                     Refreshed {{ refresh_time }}
                                 </span>
                             {% endif %}

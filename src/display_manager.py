@@ -16,7 +16,7 @@ class DisplayManager:
             device_config.update_value("resolution",[int(self.inky_display.width), int(self.inky_display.height)], write=True)
 
     def display_image(self, image, image_settings=[]):
-        """Displays the image provided, applying the image_settings if provided"""
+        """Displays the image provided, applying the image_settings."""
         if not image:
             raise ValueError(f"No image provided.")
 

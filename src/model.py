@@ -43,7 +43,7 @@ class RefreshInfo:
         if self.playlist:
             refresh_dict["playlist"] = self.playlist
         if self.plugin_instance:
-            refresh_dict["plugin_instance"] = plugin_instance
+            refresh_dict["plugin_instance"] = self.plugin_instance
         return refresh_dict
 
     @classmethod
@@ -96,14 +96,12 @@ class PlaylistManager:
         # get active playlists that have plugins
         active_playlists = [p for p in self.playlists if p.is_active(current_time)]
         if not active_playlists:
-            self.active_playlist = None
             return None
 
         # Sort playlists by priority
         active_playlists.sort(key=lambda p: p.get_priority())
         playlist = active_playlists[0]
 
-        self.active_playlist = playlist.name
         return playlist
 
     def get_playlist(self, playlist_name):
@@ -274,7 +272,7 @@ class PluginInstance:
         latest_refresh (str): ISO-formatted string representing the last refresh time.
     """
 
-    def __init__(self, plugin_id, name, settings, refresh, latest_refresh=None):
+    def __init__(self, plugin_id, name, settings, refresh, latest_refresh_time=None):
         self.plugin_id = plugin_id
         self.name = name
         self.settings = settings
