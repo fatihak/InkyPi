@@ -6,12 +6,7 @@ from plugins.plugin_registry import get_plugin_instance
 
 class DisplayManager:
     def __init__(self, device_config):
-        """
-        Manages the display and rendering of images.
-
-        :param config: The device configuration (Config class).
-        :param default_image: Path to the default image to display.
-        """
+        """Manages the display and rendering of images."""
         self.device_config = device_config
         self.inky_display = auto()
         self.inky_display.set_border(self.inky_display.BLACK)
@@ -20,12 +15,8 @@ class DisplayManager:
         if not device_config.get_config("resolution"):
             device_config.update_value("resolution",[int(self.inky_display.width), int(self.inky_display.height)], write=True)
 
-    def display_image(self, image, force=False, image_settings=[]):
-        """
-        Displays the image provided.
-
-        :param image: Pillow Image object.
-        """
+    def display_image(self, image, image_settings=[]):
+        """Displays the image provided, applying the image_settings if provided"""
         if not image:
             raise ValueError(f"No image provided.")
 
@@ -37,5 +28,5 @@ class DisplayManager:
         image = resize_image(image, self.device_config.get_resolution(), image_settings)
 
         # Display the image on the Inky display
-        # self.inky_display.set_image(image)
-        # self.inky_display.show()
+        self.inky_display.set_image(image)
+        self.inky_display.show()
