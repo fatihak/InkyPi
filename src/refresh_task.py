@@ -115,11 +115,11 @@ class RefreshTask:
                         refresh_info.update({"refresh_time": current_dt.isoformat(), "image_hash": image_hash})
                         # check if image is the same as current image
                         if image_hash != latest_refresh.image_hash:
-                            logger.info(f"Refreshing display, refresh_info: {refresh_info}")
+                            logger.info(f"Updating display. | refresh_info: {refresh_info}")
                             self.display_manager.display_image(image, image_settings=image_settings)
                         else:
                             logger.info(f"Image already displayed, skipping refresh. | refresh_info: {refresh_info}")
-                        
+
                         # update latest refresh data in the device config
                         self.device_config.refresh_info = RefreshInfo(**refresh_info)
 

@@ -131,7 +131,6 @@
 
         async function deletePlaylist() {
             let name = document.getElementById("editingPlaylistName").value;
-            console.log(name)
             try {
                 const response = await fetch("{{ url_for('playlist.delete_playlist', playlist_name='') }}" + name, {
                     method: "DELETE",

@@ -26,6 +26,8 @@
 
             // Gather plugin settings form data
             const form = document.getElementById('settingsForm');
+            const scheduleForm = document.getElementById('scheduleForm');
+
             const formData = new FormData(form);
             let url = '{{ url_for("plugin.update_now") }}';
             let method = 'POST';
@@ -35,20 +37,13 @@
             Object.keys(uploadedFiles).forEach(key => {
                 if (uploadedFiles[key].length > 0) {
                     uploadedFiles[key].forEach(file => {
-                        console.log("appended file for key: " + key)
                         formData.append(key, file);
                     });
                 }
             });
 
-            // Debugging: Check form data
-            for (let [key, value] of formData.entries()) {
-                console.log(key, value);  // This should log file keys and File objects
-            }
-
             if (action == "add_to_playlist"){
                 url = '{{ url_for("playlist.add_plugin") }}';
-                const scheduleForm = document.getElementById('scheduleForm');
                 const scheduleFormData = new FormData(scheduleForm);
                 const scheduleData = {};
                 for (const [key, value] of scheduleFormData.entries()) {
@@ -83,6 +78,9 @@
                     document.querySelectorAll('[delete-on-submit]').forEach(div => {
                         div.remove();
                     });
+                    if (action == "add_to_playlist"){
+                        scheduleForm.reset()
+                    }
                 }
             } catch (error) {
                 console.error('Error:', error);
