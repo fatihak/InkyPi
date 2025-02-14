@@ -20,32 +20,6 @@ class DisplayManager:
         if not device_config.get_config("resolution"):
             device_config.update_value("resolution",[int(self.inky_display.width), int(self.inky_display.height)])
 
-    def display_plugin(self, plugin_settings):
-        """
-        Generates and displays an image based on plugin settings.
-
-        :param plugin_settings: Dictionary containing plugin settings.
-        """
-        plugin_id = plugin_settings.get("plugin_id")
-        plugin_config = next((plugin for plugin in self.device_config.get_plugins() if plugin['id'] == plugin_id), None)
-
-        if not plugin_config:
-            raise ValueError(f"Plugin '{plugin_id}' not found.")
-
-        plugin_instance = get_plugin_instance(plugin_config)
-        image = plugin_instance.generate_image(plugin_settings, self.device_config)
-
-        # Save the image
-        image.save(self.device_config.current_image_file)
-
-        # Resize and adjust orientation
-        image = change_orientation(image, self.device_config.get_config("orientation"))
-        image = resize_image(image, self.device_config.get_resolution(), plugin_config.get('image_settings', []))
-
-        # Display the image on the Inky display
-        self.inky_display.set_image(image)
-        self.inky_display.show()
-
     def display_image(self, image, force=False, image_settings=[]):
         """
         Displays the image provided.

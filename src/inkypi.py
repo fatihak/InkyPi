@@ -19,7 +19,6 @@ from utils.app_utils import generate_startup_image
 from flask import Flask, request
 from werkzeug.serving import is_running_from_reloader
 from config import Config
-from playlist import PlaylistManager
 from display_manager import DisplayManager
 from refresh_task import RefreshTask
 from blueprints.main import main_bp
@@ -42,11 +41,8 @@ app.jinja_loader = ChoiceLoader([FileSystemLoader(directory) for directory in te
 
 device_config = Config()
 display_manager = DisplayManager(device_config)
-playlist_manager = PlaylistManager.from_dict(device_config.get_config("playlist_config"))
-if not playlist_manager.get_playlists():
-    playlist_manager.add_default_playlist()
 
-refresh_task = RefreshTask(device_config, display_manager, playlist_manager)
+refresh_task = RefreshTask(device_config, display_manager)
 
 load_plugins(device_config.get_plugins())
 
@@ -54,7 +50,6 @@ load_plugins(device_config.get_plugins())
 app.config['DEVICE_CONFIG'] = device_config
 app.config['DISPLAY_MANAGER'] = display_manager
 app.config['REFRESH_TASK'] = refresh_task
-app.config['PLAYLIST_MANAGER'] = playlist_manager
 
 # Register Blueprints
 app.register_blueprint(main_bp)

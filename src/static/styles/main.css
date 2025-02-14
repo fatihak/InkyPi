@@ -55,11 +55,12 @@ body {
 }
 
 .image-container img {
-    width: auto;
+    height: auto;
+    display: block;
+    margin: auto;
     border-radius: 6px;
     max-width: 20rem;
-    max-height: 20rem;
-    height: auto;
+    max-height: 15rem;
 }
 
 /* Separator styling */
@@ -71,43 +72,39 @@ body {
 }
 
 .plugins-title {
-    font-size: 1rem;
+    font-size: 1.2rem;
     font-weight: 600;
     color: #555555;
-    margin-bottom: 20px;
+    margin-bottom: 10px;
     text-align: left; /* Aligns the title to the left */
+    margin-left: 5px
 }
 
 /* Button grid container styling */
 .button-grid {
     display: grid;
-    grid-template-columns: repeat(5, 1fr); /* 5 items per row */
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); /* auto adjust buttons per row */
     gap: 15px; /* Smaller space between buttons */
     overflow-y: auto; /* Allows scrolling if content exceeds the frame */
+    padding: 10px 5px;
 }
 
 /* Individual button styling */
 .icon-button {
-    background-color: #ffffff;
     border: 1px solid #ddd;
     border-radius: 8px;
     display: flex;
-    flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 10px;
     height: 70px; /* Reduce button height */
-    width: 100%; /* Ensures proper alignment in grid */
-    text-align: center;
     cursor: pointer;
     transition: all 0.3s ease;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
 .icon-button:hover {
-    background-color: #f0f0f0;
-    transform: translateY(-2px);
-    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+    transform: translateY(-3px);
+    box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2);
 }
 
 /* Icon image styling */
@@ -115,16 +112,6 @@ body {
     width: 32px; /* Adjust icon size */
     height: 32px; /* Keep a proportional height */
     margin-bottom: 8px;
-}
-
-/* Button label styling */
-.button-label {
-    font-size: 0.8rem; /* Reduce label size */
-    color: #333;
-    font-weight: 500;
-    text-overflow: ellipsis; /* Ensure long text doesn't overflow */
-    overflow: hidden;
-    white-space: nowrap;
 }
 
 /* App header container */
@@ -149,7 +136,6 @@ body {
     font-weight: bold;
     color: #333;
 }
-
 
 /* Ensure form and settings container expand */
 .settings-form {
@@ -201,23 +187,6 @@ body {
 .buttons-container {
     display: flex;
     gap: 10px;
-}
-/* Adjust button styles for the Show Now and Schedule buttons */
-.submit-button {
-    flex: 0.5;
-    background-color: #1abc9c;
-    color: white;
-    border: none;
-    padding: 0.75rem 1.5rem;
-    border-radius: 6px;
-    font-size: 1rem;
-    cursor: pointer;
-    font-weight: 600;
-    transition: background-color 0.3s;
-}
-
-.submit-button:hover {
-    background-color: #16a085;
 }
 
 /* Back button */
@@ -295,7 +264,6 @@ body {
     border-color: #1abc9c;
     box-shadow: 0 0 0 2px rgba(26, 188, 156, 0.3);
 }
-
 
 /* Toggle Container */
 .toggle-container {
@@ -656,16 +624,10 @@ body {
     box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
 }
 
-
 .playlist-title {
     font-size: 1.2rem;
     font-weight: 600;
     color: #333;
-}
-
-.playlist-time {
-    font-size: 0.9rem;
-    color: #666;
 }
 
 .action-icon {

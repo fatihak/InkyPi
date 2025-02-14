@@ -2,6 +2,7 @@ import requests
 from PIL import Image
 from io import BytesIO
 import logging
+import hashlib
 
 logger = logging.getLogger(__name__)
 
@@ -51,3 +52,9 @@ def resize_image(image, desired_size, image_settings=[]):
 
     # Step 3: Resize to the exact desired dimensions (if necessary)
     return cropped_image.resize((desired_width, desired_height), Image.LANCZOS)
+
+def compute_image_hash(image):
+    """Compute SHA-256 hash of an image."""
+    image = image.convert("RGB")
+    img_bytes = image.tobytes()
+    return hashlib.sha256(img_bytes).hexdigest()

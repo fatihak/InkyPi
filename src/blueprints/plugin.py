@@ -13,10 +13,10 @@ PLUGINS_DIR = resolve_path("plugins")
 @plugin_bp.route('/plugin/<plugin_id>')
 def plugin_page(plugin_id):
     device_config = current_app.config['DEVICE_CONFIG']
-    playlist_manager = current_app.config['PLAYLIST_MANAGER']
+    playlist_manager = device_config.get_playlist_manager()
 
     # Find the plugin by id
-    plugin_config = next((plugin for plugin in device_config.get_plugins() if plugin['id'] == plugin_id), None)
+    plugin_config = device_config.get_plugin(plugin_id)
     if plugin_config:
         try:
             plugin = get_plugin_instance(plugin_config)
@@ -47,7 +47,7 @@ def image(plugin_id, filename):
 @plugin_bp.route('/delete_plugin_instance', methods=['POST'])
 def delete_plugin_instance():
     device_config = current_app.config['DEVICE_CONFIG']
-    playlist_manager = current_app.config['PLAYLIST_MANAGER']
+    playlist_manager = device_config.get_playlist_manager()
 
     data = request.json
     playlist_name = data.get("playlist_name")
@@ -64,7 +64,7 @@ def delete_plugin_instance():
             return jsonify({"success": False, "message": "Plugin instance not found"}), 400
 
         # save changes to device config file
-        device_config.update_value("playlist_config", playlist_manager.to_dict())
+        device_config.write_config()
 
     except Exception as e:
         logger.exception("EXCEPTION CAUGHT: " + str(e))
@@ -75,7 +75,7 @@ def delete_plugin_instance():
 @plugin_bp.route('/update_plugin_instance/<string:instance_name>', methods=['PUT'])
 def update_plugin_instance(instance_name):
     device_config = current_app.config['DEVICE_CONFIG']
-    playlist_manager = current_app.config['PLAYLIST_MANAGER']
+    playlist_manager = device_config.get_playlist_manager()
 
     try:
         form_data = request.form.to_dict()
@@ -91,7 +91,7 @@ def update_plugin_instance(instance_name):
             return jsonify({"error": f"Plugin instance: {plugin_instance_name} does not exist"}), 500
 
         plugin_instance.settings = plugin_settings
-        device_config.update_value("playlist_config", playlist_manager.to_dict())
+        device_config.write_config()
     except RuntimeError as e:
         return jsonify({"error": str(e)}), 500
     except Exception as e:

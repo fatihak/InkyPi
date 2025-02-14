@@ -14,7 +14,7 @@ playlist_bp = Blueprint("playlist", __name__)
 def add_plugin():
     device_config = current_app.config['DEVICE_CONFIG']
     refresh_task = current_app.config['REFRESH_TASK']
-    playlist_manager = current_app.config['PLAYLIST_MANAGER']
+    playlist_manager = device_config.get_playlist_manager()
 
     try:
         form_data = request.form.to_dict()
@@ -56,9 +56,11 @@ def add_plugin():
             "plugin_settings": plugin_settings,
             "name": instance_name
         }
-        playlist_manager.add_plugin_to_playlist(playlist, plugin_dict)
+        result = playlist_manager.add_plugin_to_playlist(playlist, plugin_dict)
+        if not result:
+            return jsonify({"error": "Failed to add to playlist"}), 500
 
-        device_config.update_value("playlist_config", playlist_manager.to_dict())
+        device_config.write_config()
     except RuntimeError as e:
         return jsonify({"error": str(e)}), 500
     except Exception as e:
@@ -67,14 +69,14 @@ def add_plugin():
 
 @playlist_bp.route('/playlist')
 def playlists():
-    playlist_manager = current_app.config['PLAYLIST_MANAGER']
+    playlist_manager = device_config.get_playlist_manager()
 
     return render_template('playlist.html', playlist_config=playlist_manager.to_dict())
 
 @playlist_bp.route('/create_playlist', methods=['POST'])
 def create_playlist():
     device_config = current_app.config['DEVICE_CONFIG']
-    playlist_manager = current_app.config['PLAYLIST_MANAGER']
+    playlist_manager = device_config.get_playlist_manager()
 
     data = request.json
     playlist_name = data.get("playlist_name")
@@ -96,7 +98,7 @@ def create_playlist():
             return jsonify({"error": "Failed to create playlist"}), 500
 
         # save changes to device config file
-        device_config.update_value("playlist_config", playlist_manager.to_dict())
+        device_config.write_config()
 
     except Exception as e:
         logger.exception("EXCEPTION CAUGHT: " + str(e))
@@ -108,7 +110,7 @@ def create_playlist():
 @playlist_bp.route('/update_playlist/<string:playlist_name>', methods=['PUT'])
 def update_playlist(playlist_name):
     device_config = current_app.config['DEVICE_CONFIG']
-    playlist_manager = current_app.config['PLAYLIST_MANAGER']
+    playlist_manager = device_config.get_playlist_manager()
 
     data = request.get_json()
 
@@ -125,14 +127,14 @@ def update_playlist(playlist_name):
     result = playlist_manager.update_playlist(playlist_name, new_name, start_time, end_time)
     if not result:
         return jsonify({"error": "Failed to delete playlist"}), 500
-    device_config.update_value("playlist_config", playlist_manager.to_dict())
+    device_config.write_config()
 
     return jsonify({"success": True, "message": f"Updated playlist '{playlist_name}'!"})
 
 @playlist_bp.route('/delete_playlist/<string:playlist_name>', methods=['DELETE'])
 def delete_playlist(playlist_name):
     device_config = current_app.config['DEVICE_CONFIG']
-    playlist_manager = current_app.config['PLAYLIST_MANAGER']
+    playlist_manager = device_config.get_playlist_manager()
 
     if not playlist_name:
         return jsonify({"error": f"Playlist name is required"}), 400
@@ -142,7 +144,7 @@ def delete_playlist(playlist_name):
         return jsonify({"error": f"Playlist '{playlist_name}' does not exist"}), 400
 
     playlist_manager.delete_playlist(playlist_name)
-    device_config.update_value("playlist_config", playlist_manager.to_dict())
+    device_config.write_config()
 
     return jsonify({"success": True, "message": f"Deleted playlist '{playlist_name}'!"})
 

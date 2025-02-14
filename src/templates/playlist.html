@@ -200,7 +200,7 @@
         <!-- Playlists Container -->
         <div class="playlist-list">
             {% for playlist in playlist_config.playlists %}
-            <div class="playlist-item {% if playlist.name == playlist_config.current_playlist %}active{% endif %}">
+            <div class="playlist-item {% if playlist.name == playlist_config.active_playlist %}active{% endif %}">
                     <div class="playlist-header">
                         <span class="playlist-title">{{ playlist.name }}</span>
                         <button class="edit-button" onclick="openEditModal('{{ playlist.name }}', '{{ playlist.start_time }}','{{ playlist.end_time }}')"><img src="{{ url_for('static', filename='icons/settings.png') }}" alt="edit playlist" class="action-icon"></button>
@@ -212,9 +212,9 @@
                             <div class="plugin-info">
                                 <img src="{{ url_for('plugin.image', plugin_id=plugin_instance.plugin_id, filename='icon.png') }}" alt="Plugin Icon" class="plugin-icon">
                                 <span class="plugin-instance">{{ plugin_instance.name }}</span>
-                                
+
                                 <!-- Check if the current plugin is the one being displayed -->
-                                {% if playlist.name == playlist_config.current_playlist and loop.index0 == playlist_config.current_plugin_index %}
+                                {% if playlist.name == playlist_config.active_playlist and loop.index0 == playlist.current_plugin_index %}
                                 <span class="displayed-now">Displayed Now</span>
                                 {% endif %}
                             </div>

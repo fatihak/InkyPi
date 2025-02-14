@@ -5,15 +5,16 @@ import logging
 import pytz
 from datetime import datetime, timezone
 from plugins.plugin_registry import get_plugin_instance
+from utils.image_utils import resize_image, change_orientation, compute_image_hash
+from model import RefreshInfo, PlaylistManager
 from PIL import Image
 
 logger = logging.getLogger(__name__)
 
 class RefreshTask:
-    def __init__(self, device_config, display_manager, playlist_manager):
+    def __init__(self, device_config, display_manager):
         self.device_config = device_config
         self.display_manager = display_manager
-        self.playlist_manager = playlist_manager
 
         self.thread = None
         self.lock = threading.Lock()
@@ -51,56 +52,44 @@ class RefreshTask:
                     self.refresh_result = {}
                     self.refresh_event.clear()
 
-                    refresh_settings = self.device_config.get_config("refresh_settings")
-
                     # Exit if `stop()` is called
                     if not self.running:
                         break 
 
-                    tz_str = self.device_config.get_config("timezone", default="UTC")
-                    tz = pytz.timezone(tz_str)
-                    current_datetime = datetime.now(tz)
+                    playlist_manager = self.device_config.get_playlist_manager()
+                    latest_refresh = self.device_config.get_refresh_info()
+                    current_dt = self._get_current_datetime()
 
-                    image = None
-                    # Handle immediate updates
+                    image, image_settings = None, None
                     if self.manual_update_settings:
+                        # handle immediate update request
                         logger.info("Manual update requested")
                         plugin_id, plugin_settings = self.manual_update_settings
                         self.manual_update_settings = ()
-                        image = self.refresh_plugin(plugin_id, plugin_settings)
 
-                        self.playlist_manager.current_playlist = "Manual Update"
+                        image, image_settings = self._refresh_plugin(plugin_id, plugin_settings)
+                        new_refresh = RefreshInfo(refresh_type="Manual Update", plugin_id=plugin_id)
                     else:
+                        # handle refresh based on playlists
                         logger.info(f"Running interval refresh check.")
+                        playlist, plugin_instance = self._determine_next_plugin(playlist_manager, latest_refresh, current_dt)
 
-
-                        refresh_interval = self.device_config.get_config("plugin_cycle_interval_seconds", default=3600)
-                        plugin = self.playlist_manager.determine_next_plugin(current_datetime, refresh_interval)
-
-                        if not plugin:
-                            self.device_config.update_value("playlist_config", self.playlist_manager.to_dict())
-                            logger.info("No plugin to display.")
-                            continue
-
-                        # determine if the image should be refreshed
-                        should_refresh = plugin.should_refresh(current_datetime)
-
-                        plugin_image_dir = os.path.join(self.device_config.plugin_image_dir, plugin.get_image_path())
-                        if should_refresh:
-                            logger.info("Refreshing plugin")
-                            image = self.refresh_plugin(plugin.plugin_id, plugin.settings)
-
-                            image.save(plugin_image_dir)
-                            plugin.latest_refresh = current_datetime.isoformat()
-                        else:
-                            logger.info("Using latest image")
-                            image = Image.open(plugin_image_dir)
+                        image, image_settings = self._plugin_instance_refresh(plugin_instance, current_dt)
+                        new_refresh = RefreshInfo(refresh_type="Playlist", playlist_name=playlist.name, plugin_id=plugin_instance.plugin_id)
 
                     if image:
-                        logger.info("Refreshing display...")
-                        #self.display_manager.display_image(image)
-                        self.playlist_manager.latest_refresh = current_datetime.isoformat()
-                    self.device_config.update_value("playlist_config", self.playlist_manager.to_dict())
+                        image_hash = compute_image_hash(image)
+                        # check if image is the same as current image
+                        if image_hash != latest_refresh.image_hash
+                            logger.info("Refreshing display...")
+                            self.display_manager.display_image(image, image_settings=image_settings)
+                        else:
+                            logger.info("Image already displayed, skipping refresh")
+                        new_refresh.time = current_dt.isoformat()
+                        new_refresh.image_hash = image_hash
+                        self.device_config.refresh_info = new_refresh
+
+                    self.device_config.write_config()
 
             except Exception as e:
                 logging.exception('Exception during refresh')
@@ -123,24 +112,8 @@ class RefreshTask:
         else:
             logger.warn("Background refresh task is not running, unable to do a manual update")
 
-    def update_refresh_settings(self):
-        if self.running:
-            with self.condition:
-                self.time_until_refresh = 0
-
-                self.refresh_result = {}
-                self.refresh_event.clear()
-                
-                self.condition.notify_all()  # Wake the thread to re-evaluate the interval
-            
-            self.refresh_event.wait(timeout=60)
-            if self.refresh_result.get("exception"):
-                raise self.refresh_result.get("exception")
-        else:
-            logger.warn("Background refresh task is not running, unable to update refresh settings")
-    
-    def refresh_plugin(self, plugin_id, plugin_settings):
-        plugin_config = next((plugin for plugin in self.device_config.get_plugins() if plugin['id'] == plugin_id), None)
+    def _refresh_plugin(self, plugin_id, plugin_settings):
+        plugin_config = self.device_config.get_plugin(plugin_id)
 
         if not plugin_config:
             raise ValueError(f"Plugin '{plugin_id}' not found.")
@@ -148,9 +121,56 @@ class RefreshTask:
         plugin_instance = get_plugin_instance(plugin_config)
         image = plugin_instance.generate_image(plugin_settings, self.device_config)
 
-        return image
-
-
+        return image, plugin_config.get("image_settings", [])
     
+    def _get_current_datetime(self):
+        """Retrieve the current datetime based on configured timezone."""
+        tz_str = self.device_config.get_config("timezone", default="UTC")
+        return datetime.now(pytz.timezone(tz_str))
+    
+    def _determine_next_plugin(self, playlist_manager, latest_refresh_info, current_dt):
+        playlist = playlist_manager.determine_active_playlist(current_dt)
+        if not playlist:
+            logger.info(f"No active playlist determined.")
+            return None, None
 
+        if not playlist.plugins:
+            logger.info(f"Active playlist '{playlist.name}' has no plugins.")
+            return None, None
+
+        plugin_cycle_interval = self.device_config.get_config("plugin_cycle_interval_seconds", default=3600)
+        should_refresh = PlaylistManager.should_refresh(
+            latest_refresh_info.get_refresh_datetime(),
+            plugin_cycle_interval,
+            current_dt
+        )
+
+        if not should_refresh:
+            logger.info(f"Not time to refresh.")
+            return None, None
+
+        plugin = playlist.get_next_plugin()
+        logger.info(f"Current plugin is {plugin.name}")
+
+        return plugin, playlist
+
+    def _plugin_instance_refresh(self, plugin_instance, current_dt)
+        # determine if the plugin instance needs to be refreshed
+        should_refresh = plugin_instance.should_refresh(current_dt)
+        plugin_image_path = os.path.join(self.device_config.plugin_image_dir, plugin_instance.get_image_path())
+
+        image, image_settings = None, None
+        if should_refresh:
+            # refresh plugin and save the new image
+            logger.info(f"Refreshing plugin for {plugin_instance.name}")
+            image, image_settings = self._refresh_plugin(plugin_instance.plugin_id, plugin_instance.settings)
+
+            image.save(plugin_image_path)
+            plugin_instance.latest_refresh = current_dt.isoformat()
+        else:
+            # read image from latest refresh
+            logger.info(f"Not time to refresh plugin instance, using latest image for {plugin_instance.name}")
+            image = Image.open(plugin_image_path)
+        
+        return image, image_settings
 
