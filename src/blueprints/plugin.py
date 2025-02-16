@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify, current_app, render_template, send_from_directory
 from plugins.plugin_registry import get_plugin_instance
 from utils.app_utils import resolve_path, handle_request_files
+from refresh_task import ManualRefresh, PlaylistRefresh
 import json
 import os
 import logging
@@ -21,7 +22,7 @@ def plugin_page(plugin_id):
         try:
             plugin = get_plugin_instance(plugin_config)
             template_params = plugin.generate_settings_template()
-            
+
             # retrieve plugin instance from the query parameters if updating existing plugin instance
             plugin_instance_name = request.args.get('instance')
             if plugin_instance_name:
@@ -93,11 +94,35 @@ def update_plugin_instance(instance_name):
 
         plugin_instance.settings = plugin_settings
         device_config.write_config()
-    except RuntimeError as e:
-        return jsonify({"error": str(e)}), 500
     except Exception as e:
         return jsonify({"error": f"An error occurred: {str(e)}"}), 500
     return jsonify({"success": True, "message": f"Updated plugin instance {instance_name}."})
+
+@plugin_bp.route('/display_plugin_instance', methods=['POST'])
+def display_plugin_instance():
+    device_config = current_app.config['DEVICE_CONFIG']
+    refresh_task = current_app.config['REFRESH_TASK']
+    playlist_manager = device_config.get_playlist_manager()
+
+    data = request.json
+    playlist_name = data.get("playlist_name")
+    plugin_id = data.get("plugin_id")
+    plugin_instance_name = data.get("plugin_instance")
+
+    try:
+        playlist = playlist_manager.get_playlist(playlist_name)
+        if not playlist:
+            return jsonify({"success": False, "message": f"Playlist {playlist_name} not found"}), 400
+
+        plugin_instance = playlist.find_plugin(plugin_id, plugin_instance_name)
+        if not plugin_instance:
+            return jsonify({"success": False, "message": f"Plugin instance '{plugin_instance_name}' not found"}), 400
+
+        refresh_task.manual_update(PlaylistRefresh(playlist, plugin_instance))
+    except Exception as e:
+        return jsonify({"error": f"An error occurred: {str(e)}"}), 500
+
+    return jsonify({"success": True, "message": "Display updated"}), 200
 
 @plugin_bp.route('/update_now', methods=['POST'])
 def update_now():
@@ -107,11 +132,9 @@ def update_now():
     try:
         plugin_settings = request.form.to_dict()  # Get all form data
         plugin_settings.update(handle_request_files(request.files))
-
         plugin_id = plugin_settings.pop("plugin_id")
-        refresh_task.manual_update(plugin_id, plugin_settings)
-    except RuntimeError as e:
-        return jsonify({"error": str(e)}), 500
+
+        refresh_task.manual_update(ManualRefresh(plugin_id, plugin_settings))
     except Exception as e:
         return jsonify({"error": f"An error occurred: {str(e)}"}), 500
 

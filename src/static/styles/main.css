@@ -505,6 +505,16 @@ body {
     margin-left: auto;
 }
 
+.loading-indicator.small {
+    width: 25px;
+    height: 25px;
+}
+
+.loading-indicator.left-align {
+    margin-right: auto;
+    margin-left: 0;
+}
+
 /* Spinner animation */
 @keyframes spin {
     0% { transform: rotate(0deg); }

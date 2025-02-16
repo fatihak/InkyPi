@@ -34,6 +34,38 @@
             }
         }
 
+        async function displayPluginInstance(playlistName, pluginId, pluginInstance) {
+            const loadingIndicator = document.getElementById(pluginInstance)?.querySelector('.loading-indicator');
+            loadingIndicator.style.display = 'block';
+            try {
+                const response = await fetch("{{ url_for('plugin.display_plugin_instance') }}", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        playlist_name: playlistName,
+                        plugin_id: pluginId,
+                        plugin_instance: pluginInstance
+                    })
+                });
+                
+                const result = await response.json();
+                if (response.ok) {
+                    sessionStorage.setItem("storedMessage", JSON.stringify({ type: "success", text: `Success! ${result.message}` }));
+                    location.reload();
+                } else {
+                    showResponseModal('failure', `Error!  ${result.error}`);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('An error occurred while processing your request.');
+            } finally {
+                // Hide loading indicator after the action is complete
+                loadingIndicator.style.display = 'none';
+            }
+        }
+
         // Open modal for **creating** a new playlist
         function openCreateModal() {
             document.getElementById("modalTitle").textContent = "New Playlist";
@@ -208,7 +240,7 @@
                     <div class="plugin-list">
                         {% for plugin_instance in playlist.plugins %}
                         <div class="plugin-item">
-                            <div class="plugin-info">
+                            <div class="plugin-info" id="{{plugin_instance.name}}">
                                 <img src="{{ url_for('plugin.image', plugin_id=plugin_instance.plugin_id, filename='icon.png') }}" alt="Plugin Icon" class="plugin-icon">
                                 <span class="plugin-instance">{{ plugin_instance.name }}</span>
 
@@ -216,6 +248,8 @@
                                 {% if playlist.name == refresh_info.playlist and plugin_instance.name == refresh_info.plugin_instance %}
                                 <span class="displayed-now">Displayed Now</span>
                                 {% endif %}
+                                <div id="loadingIndicator" class="loading-indicator small left-align"></div>
+
                             </div>
 
                             {% if plugin_instance.latest_refresh_time %}
@@ -228,7 +262,12 @@
                             <a href="{{ url_for('plugin.plugin_page', plugin_id=plugin_instance.plugin_id) }}?instance={{ plugin_instance.name }}" class="edit-button">
                                 <img src="{{ url_for('static', filename='icons/edit.png') }}" alt="edit plugin" class="action-icon">
                             </a>
-                            <button class="delete-button" title="Delete Plugin Instance" onclick="deletePluginInstance('{{ playlist.name }}', '{{ plugin_instance.plugin_id }}','{{ plugin_instance.name }}')"><img src="{{ url_for('static', filename='icons/remove.png') }}" alt="delete plugin" class="action-icon"></button>
+                            <button class="edit-button" title="Display Now" onclick="displayPluginInstance('{{ playlist.name }}', '{{ plugin_instance.plugin_id }}','{{ plugin_instance.name }}')">
+                                <img src="{{ url_for('static', filename='icons/display.png') }}" alt="display now" class="action-icon">
+                            </button>
+                            <button class="delete-button" title="Delete Plugin Instance" onclick="deletePluginInstance('{{ playlist.name }}', '{{ plugin_instance.plugin_id }}','{{ plugin_instance.name }}')">
+                                <img src="{{ url_for('static', filename='icons/remove.png') }}" alt="delete plugin" class="action-icon">
+                            </button>
                         </div>
                         {% endfor %}
                     </div>

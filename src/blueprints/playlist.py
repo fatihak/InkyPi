@@ -17,8 +17,9 @@ def add_plugin():
     playlist_manager = device_config.get_playlist_manager()
 
     try:
-        form_data = request.form.to_dict()
-        refresh_settings = json.loads(form_data.pop("refresh_settings"))
+        plugin_settings = request.form.to_dict()
+        refresh_settings = json.loads(plugin_settings.pop("refresh_settings"))
+        plugin_id = plugin_settings.pop("plugin_id")
 
         playlist = refresh_settings.get('playlist')
         instance_name = refresh_settings.get('instance_name')
@@ -31,6 +32,10 @@ def add_plugin():
         refresh_type = refresh_settings.get('refreshType')
         if not refresh_type or refresh_type not in ["interval", "scheduled"]:
             return jsonify({"error": "Refresh type is required"}), 400
+
+        existing = playlist_manager.find_plugin(plugin_id, instance_name)
+        if existing:
+            return jsonify({"error": f"Plugin instance '{instance_name}' already exists"}), 400
 
         if refresh_type == "interval":
             unit, interval = refresh_settings.get('unit'), refresh_settings.get("interval")
@@ -46,10 +51,7 @@ def add_plugin():
                 return jsonify({"error": "Refresh time is required"}), 400
             refresh_config = {"scheduled": refresh_time}
 
-        plugin_settings = form_data
         plugin_settings.update(handle_request_files(request.files))
-
-        plugin_id = plugin_settings.pop("plugin_id")
         plugin_dict = {
             "plugin_id": plugin_id,
             "refresh": refresh_config,
@@ -61,8 +63,6 @@ def add_plugin():
             return jsonify({"error": "Failed to add to playlist"}), 500
 
         device_config.write_config()
-    except RuntimeError as e:
-        return jsonify({"error": str(e)}), 500
     except Exception as e:
         return jsonify({"error": f"An error occurred: {str(e)}"}), 500
     return jsonify({"success": True, "message": "Scheduled refresh configured."})
