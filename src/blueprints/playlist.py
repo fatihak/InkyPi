@@ -27,7 +27,7 @@ def add_plugin():
             return jsonify({"error": "Playlist name is required"}), 400
         if not instance_name or not instance_name.strip():
             return jsonify({"error": "Instance name is required"}), 400
-        if not all(char.isalpha() or char.isspace() for char in instance_name):
+        if not all(char.isalpha() or char.isspace() or char.isnumeric() for char in instance_name):
             return jsonify({"error": "Instance name can only contain alphanumeric characters and spaces"}), 400
         refresh_type = refresh_settings.get('refreshType')
         if not refresh_type or refresh_type not in ["interval", "scheduled"]:
