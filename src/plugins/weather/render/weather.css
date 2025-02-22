@@ -1,0 +1,179 @@
+/* Basic Reset */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+.weather-dashboard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5vw;
+  padding: 1rem;
+  font-family: sans-serif;
+  width: 100%;
+  height: 100%;
+}
+
+/* Current Date */
+.current-date {
+  font-size: 4vw; /* Use viewport width for responsiveness */
+  text-align: center;
+}
+
+.current-weather {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  width: 100%;
+  align-items: center;
+  gap: 5vw;
+}
+
+/* Current Weather Row */
+.current-temperature {
+  display: flex;
+  flex-direction: row; /* Column on small screens */
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  gap: 3vw;
+}
+
+
+.current-icon {
+  max-width: 15vw;  /* Icon resizes based on viewport width */
+  height: auto;
+}
+
+.current-temp {
+  font-size: 10vw; /* Large temperature font */
+}
+
+.feels-like {
+  font-size: 2vw;
+}
+
+/* Data Points Grid */
+.data-points {
+  display: grid;
+  justify-content: center;
+  grid-template-columns: repeat(2, auto); /* Max 3 columns */
+  gap: 2vw; /* Space between items */
+  width: 100%;
+}
+
+.data-point {
+  width: 20vw;
+  justify-content: left;
+}
+
+.data-point-img-container {
+  width: 4vw;
+  align-content: center;
+}
+
+.data-point-icon {
+  width: 100%;
+  height: auto;
+}
+
+.data-point-data {
+  width: 70%;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  justify-content: center
+}
+
+.data-point-label {
+  font-size: 1.5vw;
+  text-align: center;
+  font-weight: lighter;
+}
+
+.data-point-measurement {
+  font-size: 2.5vw;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.data-point-unit {
+  font-size: 1.5vw;
+  font-weight: lighter;
+  margin-left: 0.2vw;
+}
+
+/* Forecast Row */
+.forecast {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1vw;
+  width: 100%;
+}
+
+.forecast-day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 12vw;
+  padding: 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 0.5rem;
+}
+
+.forecast-day-name {
+  font-size: 2vw;
+  margin-bottom: 0.25rem;
+}
+
+.forecast-icon {
+  width: 5vw;
+  height: auto;
+  margin: 1vw;
+}
+
+.forecast-temps {
+  font-size: 2vw;
+  text-align: center;
+  margin: 0.5vw;
+}
+
+.high {
+  font-weight: bold;
+}
+
+.low {
+  color: #666;
+}
+
+/* Responsive Adjustments:
+   If the height is significantly larger than width, allow the data-points to appear under 
+   the current weather instead of to the side. 
+   (This is mostly handled by flex-direction: column on smaller widths, 
+   but you can add a media query if you want more control.)
+*/
+@media (max-aspect-ratio: 3/4) {
+  .current-weather {
+    flex-direction: column;
+  }
+
+  /* Current Weather Row */
+  .current-temperature {
+    justify-content: center;
+  }
+
+  .data-points {
+    grid-template-columns: repeat(4, auto);
+    grid-template-rows: repeat(2, auto);
+    justify-content: center;
+  }
+
+  .data-point {
+    height: 7vw;
+  }
+
+}

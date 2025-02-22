@@ -1,0 +1,92 @@
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+<div class="form-group">
+    <label class="form-label">Location: </label>
+    <div class="form-group">
+        <span>Latitude </span>
+        <input readonly type="text" id="latitude" name="latitude" class="form-input" />
+    </div>
+    <div class="form-group">
+        <span>Longitude </span>
+        <input readonly type="text" id="longitude" name="longitude" class="form-input" />
+    </div>
+    <div class="form-group">
+        <button type="button" id="openMap" class="action-button compact">Select Location</button>
+    </div>
+</div>
+
+<!-- Text Model Dropdown -->
+<div class="form-group">
+    <label for="units" class="form-label">Units:</label>
+    <select id="units" name="units" class="form-input">
+        <option value="metric">Metric (°C)</option>
+        <option value="imperial">Imperial (°F)</option>
+        <option value="standard">Standard (K)</option>
+    </select>
+</div>
+
+<!-- Modal -->
+<div id="mapModal" class="modal">
+    <div class="modal-content">
+        <span class="close-button" onclick="closeModal()">×</span>
+        <h2 id="modalTitle">Select Location</h2>
+        <div class="separator"></div>
+        <div id="map" style="width: 100%; height: 200px"></div>
+        <div class="form-group">
+            <button id="closeMap" class="action-button">Save</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    function closeModal() {
+        const mapModal = document.getElementById('mapModal');
+        mapModal.style.display = 'none';
+    }
+    function openModal() {
+        const mapModal = document.getElementById('mapModal');
+        mapModal.style.display = 'block';
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const OSM_TILE_URL = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+        const $latitude = document.querySelector('#latitude');
+        const $longitude = document.querySelector('#longitude');
+        const $openMap = document.querySelector('#openMap');
+        const $mapModal = document.querySelector('#mapModal');
+        const $closeMap = document.querySelector('#closeMap');
+
+        let default_latitude = Math.min(60, Math.max(-60, Math.random() * 180 - 90));
+        let default_longitude = Math.min(180, Math.max(-180, Math.random() * 360 - 180));
+        
+        let latitude = +$latitude.value;
+        let longitude = +$longitude.value;
+        let zoom = latitude && longitude ? 4.5 : 2.5;
+        
+        let map, marker;
+        
+        $openMap.addEventListener('click', () => {
+            openModal()
+
+            setTimeout(() => {
+                if (!map) {
+                    map = L.map('map').setView([latitude, longitude], zoom);
+                    L.tileLayer(OSM_TILE_URL).addTo(map);
+                    marker = L.marker([latitude, longitude], { draggable: true }).addTo(map);
+                    
+                    map.on('click', event => {
+                        marker.setLatLng(event.latlng);
+                    });
+                }
+            }, 100);
+        });
+        
+        $closeMap.addEventListener('click', () => {
+            const position = marker.getLatLng();
+            $latitude.value = position.lat;
+            $longitude.value = position.lng;
+            closeModal()
+        });
+    });
+</script>

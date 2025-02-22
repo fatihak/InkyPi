@@ -233,6 +233,11 @@ body {
     background-color: #16a085;
 }
 
+.action-button.compact {
+    font-size: 0.9rem;
+    padding: 10px;
+}
+
 /* Form styling for inline layout */
 .form-inline {
     display: flex;

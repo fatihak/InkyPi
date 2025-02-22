@@ -1,0 +1,50 @@
+{% extends "plugin.html" %}
+
+{% block content %}
+<div class="weather-dashboard">
+  <!-- Current Date -->
+  <div class="current-date">{{ current_date }}</div>
+
+  <div class="current-weather">
+    <!-- Current Weather Row -->
+    <div class="current-temperature">
+      <!-- Icon + Temperature -->
+        <img class="current-icon" src="data:image/png;base64,{{current_day_icon}}" alt="Current Weather Icon">
+        <div class="row-container">
+          <div class="current-temp">{{ current_temperature }}</div>
+          <div class="feels-like">Feels Like {{ feels_like }}</div>
+        </div>
+    </div>
+
+    <!-- Data Points Grid (Sunset, Wind, UV, etc.) -->
+    <div class="data-points">
+      {% for dp in data_points %}
+        <div class="data-point column-container">
+          <div class="data-point-img-container">
+            <img class="data-point-icon" src="data:image/png;base64,{{dp.icon}}" alt="{{ dp.label }}">
+          </div>
+          <div class="data-point-data">
+            <div class="data-point-label">{{ dp.label }}</div>
+            <div class="data-point-measurement">{{ dp.measurement }}{% if dp.unit %}<span class="data-point-unit">{{ dp.unit }}</span>{% endif %}
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Forecast Row -->
+  <div class="forecast">
+    {% for day in forecast %}
+      <div class="forecast-day">
+        <div class="forecast-day-name">{{ day.day }}</div>
+        <img class="forecast-icon" src="data:image/png;base64,{{day.icon}}" alt="{{ day.day }} Weather Icon">
+        <div class="forecast-temps">
+          <span class="high">{{ day.high }}°</span> / 
+          <span class="low">{{ day.low }}°</span>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

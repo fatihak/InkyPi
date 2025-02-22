@@ -24,5 +24,10 @@
         "display_name": "Clock",
         "id": "clock",
         "class": "Clock"
+    },
+    {
+        "display_name": "Weather",
+        "id": "weather",
+        "class": "Weather"
     }
 ]

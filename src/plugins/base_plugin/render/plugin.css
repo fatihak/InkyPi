@@ -1,0 +1,28 @@
+.container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: 100%;
+    background-color: #f0f0f0;
+}
+
+.row-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.row-container.center {
+    justify-content: center;
+}
+
+.column-container {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+}
+
+.column-container.center {
+    justify-content: center;
+}
