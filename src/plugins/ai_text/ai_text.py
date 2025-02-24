@@ -1,4 +1,3 @@
-import urllib.request
 from plugins.base_plugin.base_plugin import BasePlugin
 from utils.app_utils import resolve_path, get_font
 from openai import OpenAI
@@ -36,6 +35,11 @@ class AIText(BasePlugin):
     def generate_settings_template(self):
         template_params = super().generate_settings_template()
         template_params['frame_styles'] = FRAME_STYLES
+        template_params['api_key'] = {
+            "required": True,
+            "service": "OpenAI",
+            "expected_key": "OPEN_AI_SECRET"
+        }
         return template_params
 
     def generate_image(self, settings, device_config):

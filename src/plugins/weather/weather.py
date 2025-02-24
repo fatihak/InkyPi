@@ -14,6 +14,15 @@ WEATHER_URL = "https://api.openweathermap.org/data/3.0/onecall?lat={lat}&lon={lo
 AIR_QUALITY_URL = "http://api.openweathermap.org/data/2.5/air_pollution?lat={lat}&lon={long}&appid={api_key}"
 
 class Weather(BasePlugin):
+    def generate_settings_template(self):
+        template_params = super().generate_settings_template()
+        template_params['api_key'] = {
+            "required": True,
+            "service": "OpenWeatherMap",
+            "expected_key": "OPEN_WEATHER_MAP_SECRET"
+        }
+        return template_params
+
     def generate_image(self, settings, device_config):
         api_key = device_config.load_env_key("OPEN_WEATHER_MAP_SECRET")
         if not api_key:
@@ -48,7 +57,7 @@ class Weather(BasePlugin):
     def parse_weather_data(self, weather_data, aqi_data, tz, units):
         data = {
             "current_date": "Friday, February 21",
-            "current_day_icon": f"{self.read_file(self.get_plugin_dir('icons/sun.png'))}",
+            "current_day_icon": f"{self.get_plugin_dir('icons/sun.png')}",
             "current_temperature": "76°",
             "feels_like": "82°"
         }
@@ -129,7 +138,7 @@ class Weather(BasePlugin):
         data_points.append({
             "label": "Air Quality Index",
             "measurement": aqi,
-            "unit": ["Good", "Fair", "Moderate", "Poor", "Very Poor"][int(aqi)],
+            "unit": ["Good", "Fair", "Moderate", "Poor", "Very Poor"][int(aqi)+1],
             "icon": f"{self.read_file(self.get_plugin_dir('icons/sun.png'))}"
         })
 
@@ -159,23 +168,22 @@ class Weather(BasePlugin):
     
     def render_weather_image(self, dimensions, template_params):
         template_name = "weather.html"
-        print(template_params)
         image = self.render_image(dimensions, template_name, template_params)
         return image
 
 
 
-# class MyConfig:
-#     def get_resolution(self):
-#         return [800,480]
+class MyConfig:
+    def get_resolution(self):
+        return [800,480]
     
-#     def get_config(self, var, default="None"):
-#         if default:
-#             return default
-#         return "horizontal"
+    def get_config(self, var, default="None"):
+        if default:
+            return default
+        return "horizontal"
     
-#     def load_env_key(sef, var):
-#         return "e0f4d7d67e3ddb4b9f4f625f61fef37b"
+    def load_env_key(sef, var):
+        return "e0f4d7d67e3ddb4b9f4f625f61fef37b"
 
 # weather_plugin = Weather({"id": "weather"})
 # settings = {

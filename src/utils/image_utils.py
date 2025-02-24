@@ -1,12 +1,12 @@
 import requests
 from PIL import Image
 from io import BytesIO
+import os
 import logging
 import hashlib
 import imgkit
-from pyppeteer import launch
-import asyncio
-
+import tempfile
+import subprocess
 
 logger = logging.getLogger(__name__)
 
@@ -63,44 +63,40 @@ def compute_image_hash(image):
     img_bytes = image.tobytes()
     return hashlib.sha256(img_bytes).hexdigest()
 
-def take_screenshot(dimensions, html, css=[]):
-    """Takes a screenshot of the given html and css files"""
-    width, height = dimensions
-    options = {
-        'width': width,
-        'height': height,
-        'disable-smart-width': '',
-        'enable-local-file-access': ''
-    }
-    image_data = imgkit.from_string(html, False, options=options, css=css)
-    image = Image.open(BytesIO(image_data))
-    return image
+def take_screenshot_html(html_str, dimensions):
+    image = None
+    try:
+        # Create a temporary HTML file
+        with tempfile.NamedTemporaryFile(suffix=".html", delete=False) as html_file:
+            html_file.write(html_str.encode("utf-8"))
+            html_file_path = html_file.name
 
-async def take_screenshot_html(dimensions, html_content, css_files=[]):
-    width, height = dimensions
-    browser = await launch(headless=True)
-    page = await browser.newPage()
+        # Create a temporary output file for the screenshot
+        with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as img_file:
+            img_file_path = img_file.name
 
-    # Set the HTML content
-    await page.setContent(html_content)
-    for css in css_files:
-        await page.addStyleTag(
-            { "path": css }
-        )
+        command = [
+            "chromium-browser", html_file_path, "--headless=old", # headless new doesn't respect window-size
+            f"--screenshot={img_file_path}", f"--window-size={dimensions[0]},{dimensions[1]}",
+            "--no-sandbox", "--disable-gpu", "--disable-software-rasterizer",
+            "--disable-dev-shm-usage", "--hide-scrollbars"
+        ]
+        result = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
-    await page.setViewport({
-        "width": width,
-        "height": height,
-        "deviceScaleFactor": 0.5
-    })
+        # Check if the process failed or the output file is missing
+        if result.returncode != 0 or not os.path.exists(img_file_path):
+            logger.error("Failed to take screenshot:")
+            logger.error(result.stderr.decode('utf-8'))
+            return None
 
-    await page.waitForSelector('.container')
+        # Load the image using PIL
+        image = Image.open(img_file_path)
+
+        # Cleanup temp files
+        os.remove(html_file_path)
+        os.remove(img_file_path)
+
+    except Exception as e:
+        logger.error(f"Failed to take screenshot: {str(e)}")
     
-    # Take screenshot and get the binary data
-    screenshot_bytes = await page.screenshot({'fullPage': True})
-    
-    await browser.close()
-    
-    # Load bytes data into a Pillow Image object
-    image = Image.open(BytesIO(screenshot_bytes))
     return image

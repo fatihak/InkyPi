@@ -1,8 +1,13 @@
-
-{% for style in style_sheets %}
-    <link rel="stylesheet" href="{{style}}">
-{% endfor %}
-<div class="container">
-    {% block content %}
-    {% endblock %}
-</div>
+<html>
+    <head>
+    {% for style in style_sheets %}
+        <link rel="stylesheet" href="{{style}}">
+    {% endfor %}
+    </head>
+    <body>
+        <div class="container">
+            {% block content %}
+            {% endblock %}
+        </div>
+    </body>
+</html>

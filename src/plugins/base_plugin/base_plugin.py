@@ -1,7 +1,7 @@
 import logging
 import os
 from utils.app_utils import resolve_path
-from utils.image_utils import take_screenshot, take_screenshot_html
+from utils.image_utils import take_screenshot_html
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from pathlib import Path
 import asyncio
@@ -36,7 +36,7 @@ class BasePlugin:
         if Path(settings_path).is_file():
             template_params["settings_template"] = f"{self.get_plugin_id()}/settings.html"
         return template_params
-    
+
     def read_file(self, file):
         return base64.b64encode(open(file, "rb").read()).decode('utf-8')
 
@@ -56,11 +56,13 @@ class BasePlugin:
         if Path(plugin_css).is_file():
             css_files.append(plugin_css)
 
+        template_params["style_sheets"] = css_files
+
         # load and render the given html template
         template = env.get_template(plugin_template_name)
         rendered_html = template.render(template_params)
 
-        with open('rendered.html', 'w') as output:
+        with open(os.path.join(BASE_PLUGIN_DIR, 'rendered.html'), 'w') as output:
             output.write(rendered_html)
 
-        return asyncio.run(take_screenshot_html(dimensions, rendered_html, css_files))
+        return take_screenshot_html(rendered_html, dimensions)

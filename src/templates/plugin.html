@@ -119,6 +119,7 @@
         <div class="app-header">
             <img src="{{ url_for('plugin.image', plugin_id=plugin.id, filename='icon.png') }}" alt="{{ plugin.display_name }} icon" class="app-icon">
             <h1 class="app-title">{{ plugin.display_name }}</h1>
+            {% if api_key and api_key.required %}<span class="api-key-label" title="{{api_key.service}} (Set {{api_key.expected_key}} in .env)">Requires API Key</span>{% endif %}
             <div id="loadingIndicator" class="loading-indicator"></div>
         </div>
         <div class="separator"></div>

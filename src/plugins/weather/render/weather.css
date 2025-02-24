@@ -10,7 +10,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 5vw;
+  gap: 3vw;
   padding: 1rem;
   font-family: sans-serif;
   width: 100%;
@@ -44,34 +44,35 @@
 
 
 .current-icon {
-  max-width: 15vw;  /* Icon resizes based on viewport width */
+  max-width: 18vw;  /* Icon resizes based on viewport width */
   height: auto;
 }
 
 .current-temp {
-  font-size: 10vw; /* Large temperature font */
+  font-size: 12vw; /* Large temperature font */
 }
 
 .feels-like {
-  font-size: 2vw;
+  font-size: 2.5vw;
+  text-align: center;
 }
 
 /* Data Points Grid */
 .data-points {
   display: grid;
   justify-content: center;
-  grid-template-columns: repeat(2, auto); /* Max 3 columns */
-  gap: 2vw; /* Space between items */
+  grid-template-columns: repeat(2, 1fr); /* Max 3 columns */
+  gap: 1vw; /* Space between items */
   width: 100%;
 }
 
 .data-point {
-  width: 20vw;
+  width: 100%;
   justify-content: left;
 }
 
 .data-point-img-container {
-  width: 4vw;
+  width: 25%;
   align-content: center;
 }
 
@@ -81,7 +82,7 @@
 }
 
 .data-point-data {
-  width: 70%;
+  width: 75%;
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -89,19 +90,19 @@
 }
 
 .data-point-label {
-  font-size: 1.5vw;
+  font-size: 2vw;
   text-align: center;
   font-weight: lighter;
 }
 
 .data-point-measurement {
-  font-size: 2.5vw;
+  font-size: 3.5vw;
   text-align: center;
   white-space: nowrap;
 }
 
 .data-point-unit {
-  font-size: 1.5vw;
+  font-size: 2.5vw;
   font-weight: lighter;
   margin-left: 0.2vw;
 }
@@ -126,20 +127,19 @@
 }
 
 .forecast-day-name {
-  font-size: 2vw;
-  margin-bottom: 0.25rem;
+  font-size: 3vw;
 }
 
 .forecast-icon {
-  width: 5vw;
+  width: 8vw;
   height: auto;
-  margin: 1vw;
+  margin: 0.5vw;
 }
 
 .forecast-temps {
-  font-size: 2vw;
+  font-size: 2.5vw;
   text-align: center;
-  margin: 0.5vw;
+  white-space: nowrap
 }
 
 .high {

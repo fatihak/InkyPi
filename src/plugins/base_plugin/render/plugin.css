@@ -1,3 +1,19 @@
+/* Basic Reset */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-smooth: never;
+    -webkit-font-smoothing: none;
+    -moz-osx-font-smoothing: grayscale; /* Alternative for macOS */
+}
+
+img {
+    image-rendering: pixelated; /* Preserve sharp edges */
+    image-rendering: crisp-edges;
+    image-rendering: -webkit-optimize-contrast;
+}
+
 .container {
     display: flex;
     justify-content: center;

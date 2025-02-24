@@ -715,3 +715,12 @@ body {
     border-radius: 4px;
     font-size: 0.8em;
 }
+
+.api-key-label {
+    background-color: lightslategray;
+    color: white;
+    font-style: italic;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.8em;
+}

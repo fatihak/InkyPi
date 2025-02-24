@@ -1,4 +1,3 @@
-import urllib.request
 from plugins.base_plugin.base_plugin import BasePlugin
 from openai import OpenAI
 from PIL import Image
@@ -14,6 +13,15 @@ DEFAULT_IMAGE_MODEL = "dall-e-3"
 IMAGE_QUALITIES = ["hd", "standard"]
 DEFAULT_IMAGE_QUALITY = "standard"
 class AIImage(BasePlugin):
+    def generate_settings_template(self):
+        template_params = super().generate_settings_template()
+        template_params['api_key'] = {
+            "required": True,
+            "service": "OpenAI",
+            "expected_key": "OPEN_AI_SECRET"
+        }
+        return template_params
+
     def generate_image(self, settings, device_config):
 
         api_key = device_config.load_env_key("OPEN_AI_SECRET")
