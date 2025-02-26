@@ -76,8 +76,8 @@ def take_screenshot_html(html_str, dimensions):
             img_file_path = img_file.name
 
         command = [
-            "chromium-browser", html_file_path, "--headless=old", # headless new doesn't respect window-size
-            f"--screenshot={img_file_path}", f"--window-size={dimensions[0]},{dimensions[1]}",
+            "chromium", html_file_path, "--headless",
+            f"--screenshot={img_file_path}", f'--window-size="{dimensions[0]},{dimensions[1]}"',
             "--no-sandbox", "--disable-gpu", "--disable-software-rasterizer",
             "--disable-dev-shm-usage", "--hide-scrollbars"
         ]

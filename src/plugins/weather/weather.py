@@ -50,8 +50,9 @@ class Weather(BasePlugin):
         tz = pytz.timezone(timezone)
         template_params = self.parse_weather_data(weather_data, aqi_data, tz, units)
 
-        image = self.render_weather_image(dimensions, template_params)
+        template_params["plugin_settings"] = settings
 
+        image = self.render_image(dimensions, "weather.html", template_params)
         return image
     
     def parse_weather_data(self, weather_data, aqi_data, tz, units):
@@ -73,7 +74,7 @@ class Weather(BasePlugin):
                 "day": dt.strftime("%a"),
                 "high": int(day.get("temp", {}).get("max")),
                 "low": int(day.get("temp", {}).get("min")),
-                "icon": f"{self.read_file(self.get_plugin_dir('icons/sun.png'))}",
+                "icon": f"{self.get_plugin_dir('icons/sun.png')}",
             }
             forecast.append(day_forecast)
         return forecast
@@ -87,7 +88,7 @@ class Weather(BasePlugin):
             "label": "Sunrise",
             "measurement": sunrise_dt.strftime('%I:%M').lstrip("0"),
             "unit": sunrise_dt.strftime('%p'),
-            "icon": f"{self.read_file(self.get_plugin_dir('icons/sun.png'))}"
+            "icon": f"{self.get_plugin_dir('icons/sun.png')}"
         })
 
         sunset_epoch = weather.get('current', {}).get("sunset")
@@ -96,42 +97,42 @@ class Weather(BasePlugin):
             "label": "Sunset",
             "measurement": sunset_dt.strftime('%I:%M').lstrip("0"),
             "unit": sunset_dt.strftime('%p'),
-            "icon": f"{self.read_file(self.get_plugin_dir('icons/sun.png'))}"
+            "icon": f"{self.get_plugin_dir('icons/sun.png')}"
         })
 
         data_points.append({
             "label": "Wind",
             "measurement": weather.get('current', {}).get("wind_speed"),
             "unit": 'mph' if units == 'imperial' else 'm/s',
-            "icon": f"{self.read_file(self.get_plugin_dir('icons/sun.png'))}"
+            "icon": f"{self.get_plugin_dir('icons/sun.png')}"
         })
 
         data_points.append({
             "label": "Humidity",
             "measurement": weather.get('current', {}).get("humidity"),
             "unit": '%',
-            "icon": f"{self.read_file(self.get_plugin_dir('icons/sun.png'))}"
+            "icon": f"{self.get_plugin_dir('icons/sun.png')}"
         })
 
         data_points.append({
             "label": "Pressure",
             "measurement": weather.get('current', {}).get("pressure"),
             "unit": 'hPa',
-            "icon": f"{self.read_file(self.get_plugin_dir('icons/sun.png'))}"
+            "icon": f"{self.get_plugin_dir('icons/sun.png')}"
         })
 
         data_points.append({
             "label": "UV Index",
             "measurement": weather.get('current', {}).get("uvi"),
             "unit": '',
-            "icon": f"{self.read_file(self.get_plugin_dir('icons/sun.png'))}"
+            "icon": f"{self.get_plugin_dir('icons/sun.png')}"
         })
 
         data_points.append({
             "label": "Visibility",
             "measurement": weather.get('current', {}).get("visibility")/1000,
             "unit": 'km',
-            "icon": f"{self.read_file(self.get_plugin_dir('icons/sun.png'))}"
+            "icon": f"{self.get_plugin_dir('icons/sun.png')}"
         })
 
         aqi = air_quality.get('list', [])[0].get("main", {}).get("aqi")
@@ -139,7 +140,7 @@ class Weather(BasePlugin):
             "label": "Air Quality Index",
             "measurement": aqi,
             "unit": ["Good", "Fair", "Moderate", "Poor", "Very Poor"][int(aqi)+1],
-            "icon": f"{self.read_file(self.get_plugin_dir('icons/sun.png'))}"
+            "icon": f"{self.get_plugin_dir('icons/sun.png')}"
         })
 
         return data_points
@@ -165,31 +166,3 @@ class Weather(BasePlugin):
         
         logging.info("Successfully retrieved air quality data")
         return response.json()
-    
-    def render_weather_image(self, dimensions, template_params):
-        template_name = "weather.html"
-        image = self.render_image(dimensions, template_name, template_params)
-        return image
-
-
-
-class MyConfig:
-    def get_resolution(self):
-        return [800,480]
-    
-    def get_config(self, var, default="None"):
-        if default:
-            return default
-        return "horizontal"
-    
-    def load_env_key(sef, var):
-        return "e0f4d7d67e3ddb4b9f4f625f61fef37b"
-
-# weather_plugin = Weather({"id": "weather"})
-# settings = {
-#     "latitude": 39.09,
-#     "longitude": -76.84,
-#     "units": "metric"
-# }
-# image = weather_plugin.generate_image(settings, MyConfig())
-# image.show()

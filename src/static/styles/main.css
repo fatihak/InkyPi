@@ -145,11 +145,10 @@ body {
     margin: 0px 0px 10px 0px
 }
 
-#settings-container {
+.settings-container {
     display: flex;
-    align-items: center;
+    /* align-items: center; */
     justify-content: center;
-    padding: 1rem;
     flex-direction: column
 }
 
@@ -157,9 +156,10 @@ body {
 .form-group {
     display: flex;
     align-items: center;
-    width: 100%;
-    gap: 1rem;
+    gap: 0.2rem 1rem;
     margin: 5px 0 5px 0; /* Bottom margin reduced for spacing */
+    flex-wrap: wrap;
+    flex:1;
 }
 
 .form-group label {
@@ -175,6 +175,11 @@ body {
     border: 1px solid #ddd;
     border-radius: 6px;
     box-sizing: border-box;
+    width:100%
+}
+
+.form-group input[type="number"] {
+    width:100%
 }
 
 .form-group input[type="text"]:focus {
@@ -219,6 +224,7 @@ body {
     font-weight: bold;
     cursor: pointer;
     text-align: center;
+    width:100%;
 }
 
 .action-button.warn {
@@ -236,6 +242,7 @@ body {
 .action-button.compact {
     font-size: 0.9rem;
     padding: 10px;
+    width: auto;
 }
 
 /* Form styling for inline layout */
@@ -354,11 +361,9 @@ body {
 }
 
 .image-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); /* Ensures grid items wrap */
+    display: flex;
     gap: 10px;
     margin-top: 10px; /* Adds spacing between label and grid */
-    width: 100%
 }
 
 .image-option {
@@ -723,4 +728,29 @@ body {
     padding: 4px 8px;
     border-radius: 4px;
     font-size: 0.8em;
+}
+
+.collapsible {
+    width: 100%;
+}
+
+.collapsible-header {
+    background-color: #f1f1f1;
+    border: none;
+    cursor: pointer;
+    padding: 10px;
+    width: 100%;
+    text-align: left;
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 10px 0px 5px 0px;
+}
+
+.collapsible-icon {
+    float: right;
+    opacity: 50%;
+}
+
+.collapsible-content {
+    display: none;
 }

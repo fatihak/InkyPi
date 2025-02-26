@@ -11,9 +11,7 @@
         <span>Longitude </span>
         <input readonly type="text" id="longitude" name="longitude" class="form-input" />
     </div>
-    <div class="form-group">
-        <button type="button" id="openMap" class="action-button compact">Select Location</button>
-    </div>
+    <button type="button" id="openMap" class="action-button compact">Select Location</button>
 </div>
 
 <!-- Text Model Dropdown -->
@@ -29,25 +27,15 @@
 <!-- Modal -->
 <div id="mapModal" class="modal">
     <div class="modal-content">
-        <span class="close-button" onclick="closeModal()">×</span>
+        <span class="close-button" onclick="closeModal('mapModal')">×</span>
         <h2 id="modalTitle">Select Location</h2>
         <div class="separator"></div>
         <div id="map" style="width: 100%; height: 200px"></div>
-        <div class="form-group">
-            <button id="closeMap" class="action-button">Save</button>
-        </div>
+        <button id="closeMap" class="action-button">Save</button>
     </div>
 </div>
 
 <script>
-    function closeModal() {
-        const mapModal = document.getElementById('mapModal');
-        mapModal.style.display = 'none';
-    }
-    function openModal() {
-        const mapModal = document.getElementById('mapModal');
-        mapModal.style.display = 'block';
-    }
 
     document.addEventListener('DOMContentLoaded', () => {
         const OSM_TILE_URL = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
@@ -67,7 +55,7 @@
         let map, marker;
         
         $openMap.addEventListener('click', () => {
-            openModal()
+            openModal('mapModal')
 
             setTimeout(() => {
                 if (!map) {
@@ -86,7 +74,7 @@
             const position = marker.getLatLng();
             $latitude.value = position.lat;
             $longitude.value = position.lng;
-            closeModal()
+            closeModal('mapModal')
         });
     });
 </script>

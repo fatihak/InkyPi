@@ -12,6 +12,25 @@ logger = logging.getLogger(__name__)
 PLUGINS_DIR = resolve_path("plugins")
 BASE_PLUGIN_DIR =  os.path.join(PLUGINS_DIR, "base_plugin")
 
+FRAME_STYLES = [
+    {
+        "name": "None",
+        "icon": "frames/blank.png"
+    },
+    {
+        "name": "Corner",
+        "icon": "frames/corner.png"
+    },
+    {
+        "name": "Top and Bottom",
+        "icon": "frames/top_and_bottom.png"
+    },
+    {
+        "name": "Rectangle",
+        "icon": "frames/rectangle.png"
+    }
+]
+
 class BasePlugin:
     """Base class for all plugins."""
     def __init__(self, config, **dependencies):
@@ -35,6 +54,8 @@ class BasePlugin:
         settings_path = self.get_plugin_dir("settings.html")
         if Path(settings_path).is_file():
             template_params["settings_template"] = f"{self.get_plugin_id()}/settings.html"
+        
+        template_params['frame_styles'] = FRAME_STYLES
         return template_params
 
     def read_file(self, file):
@@ -57,6 +78,10 @@ class BasePlugin:
             css_files.append(plugin_css)
 
         template_params["style_sheets"] = css_files
+        template_params["width"] = dimensions[0]
+        template_params["height"] = dimensions[1]
+
+        print(template_params)
 
         # load and render the given html template
         template = env.get_template(plugin_template_name)

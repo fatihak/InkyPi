@@ -11,7 +11,6 @@
   align-items: center;
   justify-content: center;
   gap: 3vw;
-  padding: 1rem;
   font-family: sans-serif;
   width: 100%;
   height: 100%;
@@ -60,7 +59,7 @@
 /* Data Points Grid */
 .data-points {
   display: grid;
-  justify-content: center;
+  justify-content: space-evenly;
   grid-template-columns: repeat(2, 1fr); /* Max 3 columns */
   gap: 1vw; /* Space between items */
   width: 100%;
@@ -79,6 +78,7 @@
 .data-point-icon {
   width: 100%;
   height: auto;
+  max-height: 100%;
 }
 
 .data-point-data {
@@ -111,8 +111,7 @@
 .forecast {
   display: flex;
   flex-wrap: wrap;
-  justify-content: center;
-  gap: 1vw;
+  justify-content: space-evenly;
   width: 100%;
 }
 
@@ -122,8 +121,8 @@
   align-items: center;
   width: 12vw;
   padding: 0.5rem;
-  border: 1px solid #ccc;
-  border-radius: 0.5rem;
+  border: 1px solid;
+  border-radius: 1.2vw;
 }
 
 .forecast-day-name {
@@ -147,7 +146,7 @@
 }
 
 .low {
-  color: #666;
+  font-weight: normal;
 }
 
 /* Responsive Adjustments:
@@ -156,7 +155,7 @@
    (This is mostly handled by flex-direction: column on smaller widths, 
    but you can add a media query if you want more control.)
 */
-@media (max-aspect-ratio: 3/4) {
+@media (max-aspect-ratio: 1) {
   .current-weather {
     flex-direction: column;
   }
@@ -169,11 +168,18 @@
   .data-points {
     grid-template-columns: repeat(4, auto);
     grid-template-rows: repeat(2, auto);
-    justify-content: center;
   }
 
   .data-point {
     height: 7vw;
+  }
+
+}
+
+@media (max-aspect-ratio: 1/2) {
+  .data-points {
+    grid-template-columns: repeat(3, auto);
+    grid-template-rows: repeat(2, auto);
   }
 
 }

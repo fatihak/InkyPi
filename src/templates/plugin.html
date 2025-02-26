@@ -66,7 +66,7 @@
                 } else {
                     showResponseModal('failure', `Error!  ${result.error}`);
                 }
-                closeModal();
+                closeModal('scheduleModal');
 
                 if (clearFormOnSubmit) {
                     form.reset()
@@ -91,13 +91,13 @@
             }
         }
 
-        function openModal() {
-            const modal = document.getElementById('scheduleModal');
+        function openModal(modal_id) {
+            const modal = document.getElementById(modal_id);
             modal.style.display = 'block';
         }
     
-        function closeModal() {
-            const modal = document.getElementById('scheduleModal');
+        function closeModal(modal_id) {
+            const modal = document.getElementById(modal_id);
             modal.style.display = 'none';
         }
     
@@ -108,6 +108,62 @@
                 modal.style.display = 'none';
             }
         };
+
+        function toggleCollapsible(button) {
+            const content = button.nextElementSibling;
+            const icon = button.querySelector(".collapsible-icon");
+            button.classList.toggle("active");
+            content.style.display = content.style.display === "block" ? "none" : "block";
+            icon.textContent = content.style.display === "block" ? "▲" : "▼";
+        }
+
+        function selectedFrame(element) {
+            // Remove the selected class from any previously selected option
+            const previousSelection = document.querySelector('.image-option.selected');
+            if (previousSelection) {
+                previousSelection.classList.remove('selected');
+            }
+
+            // Add the selected class to the clicked option
+            element.classList.add('selected');
+
+            // Update the hidden input with the selected frame
+            const selectedFaceName = element.getAttribute('data-face-name');
+            document.getElementById('selected-frame').value = selectedFaceName;
+        }
+
+        function showFileName() {
+            const fileInput = document.getElementById('imageUpload');
+            const fileNameDisplay = document.getElementById('fileName');
+            const fileNameText = document.getElementById('fileNameText');
+            const uploadButtonLabel = document.getElementById('uploadButtonLabel');
+            const removeFileButton = document.getElementById('removeFileButton');
+            const file = fileInput.files[0];
+
+            if (file) {
+                fileNameText.textContent = `${file.name}`;
+                fileNameDisplay.style.display = 'flex';  // Show the file name and remove button
+                uploadButtonLabel.style.display = 'none';  // Hide the upload button label
+            } else {
+                fileNameDisplay.style.display = 'none';  // Hide if no file is selected
+                uploadButtonLabel.style.display = 'block';  // Show the upload button label
+            }
+        }
+
+        function removeFile() {
+            const fileInput = document.getElementById('imageUpload');
+            const fileNameDisplay = document.getElementById('fileName');
+            const uploadButtonLabel = document.getElementById('uploadButtonLabel');
+
+            fileInput.value = '';  // Clear the file input
+            fileNameDisplay.style.display = 'none';  // Hide the file name and remove button
+            uploadButtonLabel.style.display = 'block';  // Show the upload button label
+
+            const hiddenElement = document.getElementById(`hidden-file-name`);
+            if (hiddenElement) {
+                hiddenElement.remove();
+            }
+        }
     </script>
 </head>
 <body>
@@ -126,8 +182,68 @@
 
         <!-- Include plugin settings -->
         <form id = "settingsForm" class="settings-form" onsubmit="return false;">
-            <div id="settings-container">
+            <div class="settings-container">
                 {% include settings_template %}
+
+                <!-- Collapsible Style Settings Section -->
+                <div class="collapsible">
+                    <button type="button" class="collapsible-header" onclick="toggleCollapsible(this)">
+                        Style Settings <span class="collapsible-icon">▼</span>
+                    </button>
+                    <div class="collapsible-content settings-container">
+                        <div class="form-group">
+                            <label for="selected-frame" class="form-label">Frame:</label>
+                            <div id="frame-selection" class="image-grid">
+                                {% for frame in frame_styles %}
+                                <div
+                                    class="image-option {% if loop.index == 1 %} selected {% endif %}"
+                                    data-face-name="{{ frame.name }}"
+                                    onclick="selectedFrame(this)"
+                                >
+                                    <img
+                                        src="{{ url_for('plugin.image', plugin_id='base_blugin', filename=frame.icon) }}"
+                                        alt="{{ frame.name }}"
+                                    />
+                                </div>
+                                {% endfor %}
+                            </div>
+                            <input type="hidden" id="selected-frame" name="selectedFrame" value="{{ frame_styles[0].Name }}" />
+                        </div>
+                        
+                        <!-- Background Color Picker -->
+                        <div class="form-group">
+                            <label class="form-label">Background:</label>
+                            <div class="form-group">
+                                <label>
+                                    <input type="radio" name="backgroundOption" value="color" checked>
+                                    Color
+                                </label>
+                                <input type="color" id="backgroundColor" name="backgroundColor" class="color-picker" value="#ffffff">
+                            </div>
+                            <div class="form-group">
+                                <label>
+                                    <input type="radio" name="backgroundOption" value="image">
+                                    Image
+                                </label>
+                                <label for="imageUpload" class="form-input file-upload-label" id="uploadButtonLabel">Upload Image</label>
+                                <input type="file" clear-on-submit id="imageUpload" name="backgroundImageFile" accept="image/*" class="file-upload-input" onchange="showFileName()">
+                                <div id="fileName" class="file-name" style="display: none;">
+                                    <span id="fileNameText"></span>
+                                    <button type="button" id="removeFileButton" class="remove-file-btn" onclick="removeFile()">X</button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Hidden input fields to store existing file data -->
+                        <div id="hiddenFileInput"></div>
+                        
+                        <!-- Text Color Picker -->
+                        <div class="form-group">
+                            <label for="textColor" class="form-label">Text Color:</label>
+                            <input type="color" id="textColor" name="textColor" class="color-picker" value="#000000">
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- Hidden input to pass plugin id -->
@@ -139,7 +255,7 @@
                 <button type="button" onclick="handleAction('update_instance')" class="action-button">Save</button>
             {% else %}
                 <button type="button" onclick="handleAction()" class="action-button left">Update Now</button>
-                <button type="button" onclick="openModal()" class="action-button right">Add to Playlist</button>
+                <button type="button" onclick="openModal('scheduleModal')" class="action-button right">Add to Playlist</button>
             {% endif %}
         </div>
     </div>
@@ -149,7 +265,7 @@
     <!-- Schedule Configuration Modal -->
     <div id="scheduleModal" class="modal">
         <div class="modal-content">
-            <span class="close-button" onclick="closeModal()">×</span>
+            <span class="close-button" onclick="closeModal('scheduleModal')">×</span>
             <h2>Add to Playlist</h2>
             <div class="separator"></div>
             <form id="scheduleForm" class="settings-form">

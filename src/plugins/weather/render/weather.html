@@ -21,7 +21,7 @@
       {% for dp in data_points %}
         <div class="data-point column-container">
           <div class="data-point-img-container">
-            <img class="data-point-icon" src="data:image/png;base64,{{dp.icon}}" alt="{{ dp.label }}">
+            <img class="data-point-icon" src="{{dp.icon}}" alt="{{ dp.label }}">
           </div>
           <div class="data-point-data">
             <div class="data-point-label">{{ dp.label }}</div>
@@ -38,7 +38,7 @@
     {% for day in forecast %}
       <div class="forecast-day">
         <div class="forecast-day-name">{{ day.day }}</div>
-        <img class="forecast-icon" src="data:image/png;base64,{{day.icon}}" alt="{{ day.day }} Weather Icon">
+        <img class="forecast-icon" src="{{day.icon}}" alt="{{ day.day }} Weather Icon">
         <div class="forecast-temps">
           <span class="high">{{ day.high }}°</span> / 
           <span class="low">{{ day.low }}°</span>
