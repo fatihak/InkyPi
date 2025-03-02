@@ -51,7 +51,7 @@ sudo /usr/local/bin/inkypi -d
 
 ## API Key not configured
 
-Some plugins require API Keys to be configured in order to run. These need to be configured in a .env file at the root of the project. See [Storing API Credentials](installation.md#storing-api-credentials) for details.
+Some plugins require API Keys to be configured in order to run. These need to be configured in a .env file at the root of the project. See [API Keys](api_keys.md) for details.
 
 ## Known Issues during Pi Zero W Installation
 

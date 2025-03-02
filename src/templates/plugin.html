@@ -186,41 +186,55 @@
                 {% include settings_template %}
 
                 <!-- Collapsible Style Settings Section -->
+                {% if style_settings %}
                 <div class="collapsible">
                     <button type="button" class="collapsible-header" onclick="toggleCollapsible(this)">
-                        Style Settings <span class="collapsible-icon">▼</span>
+                        Style <span class="collapsible-icon">▼</span>
                     </button>
-                    <div class="collapsible-content settings-container">
+                    <div class="settings-container collapsible-content">
                         <div class="form-group">
-                            <label for="selected-frame" class="form-label">Frame:</label>
-                            <div id="frame-selection" class="image-grid">
-                                {% for frame in frame_styles %}
-                                <div
-                                    class="image-option {% if loop.index == 1 %} selected {% endif %}"
-                                    data-face-name="{{ frame.name }}"
-                                    onclick="selectedFrame(this)"
-                                >
-                                    <img
-                                        src="{{ url_for('plugin.image', plugin_id='base_blugin', filename=frame.icon) }}"
-                                        alt="{{ frame.name }}"
-                                    />
+                            
+                            {% if style_settings is true or "selectedFrame" in style_settings %}
+                            <div class="form-group nowrap">
+                                <label for="selected-frame" class="form-label">Frame:</label>
+                                <div id="frame-selection" class="image-grid">
+                                    {% for frame in frame_styles %}
+                                    <div
+                                        class="image-option {% if loop.index == 1 %} selected {% endif %}"
+                                        data-face-name="{{ frame.name }}"
+                                        onclick="selectedFrame(this)"
+                                    >
+                                        <img
+                                            src="{{ url_for('plugin.image', plugin_id='base_plugin', filename=frame.icon) }}"
+                                            alt="{{ frame.name }}"
+                                        />
+                                    </div>
+                                    {% endfor %}
                                 </div>
-                                {% endfor %}
+                                <input type="hidden" id="selected-frame" name="selectedFrame" value="{{ frame_styles[0].Name }}" />
                             </div>
-                            <input type="hidden" id="selected-frame" name="selectedFrame" value="{{ frame_styles[0].Name }}" />
-                        </div>
+                            {% endif %}
+
+                            {% if style_settings is true or "margin" in style_settings %}
+                            <div class="form-group nowrap">
+                                <label for="margin" class="form-label">Margin:</label>
+                                <input type="number" class="form-input" id="margin" name="margin" min="5" max="40" step="5">px
+                            </div>
+                            {% endif %}
+                        </div>    
                         
-                        <!-- Background Color Picker -->
+                        {% if style_settings is true or "backgroundOption" in style_settings %}
+                        <!-- Background Color Option -->
                         <div class="form-group">
                             <label class="form-label">Background:</label>
-                            <div class="form-group">
+                            <div class="form-group nowrap">
                                 <label>
                                     <input type="radio" name="backgroundOption" value="color" checked>
                                     Color
                                 </label>
                                 <input type="color" id="backgroundColor" name="backgroundColor" class="color-picker" value="#ffffff">
                             </div>
-                            <div class="form-group">
+                            <div class="form-group nowrap">
                                 <label>
                                     <input type="radio" name="backgroundOption" value="image">
                                     Image
@@ -233,32 +247,37 @@
                                 </div>
                             </div>
                         </div>
+                        {% endif %}
                         
                         <!-- Hidden input fields to store existing file data -->
                         <div id="hiddenFileInput"></div>
                         
+                        {% if style_settings is true or "textColor" in style_settings %}
                         <!-- Text Color Picker -->
                         <div class="form-group">
                             <label for="textColor" class="form-label">Text Color:</label>
                             <input type="color" id="textColor" name="textColor" class="color-picker" value="#000000">
                         </div>
+                        {% endif %}
                     </div>
                 </div>
+                {% endif %}
             </div>
 
             <!-- Hidden input to pass plugin id -->
             <input type="hidden" name="plugin_id" value="{{ plugin.id }}">
-        </form>
 
-        <div class="buttons-container">
-            {% if plugin_instance %}
-                <button type="button" onclick="handleAction('update_instance')" class="action-button">Save</button>
-            {% else %}
-                <button type="button" onclick="handleAction()" class="action-button left">Update Now</button>
-                <button type="button" onclick="openModal('scheduleModal')" class="action-button right">Add to Playlist</button>
-            {% endif %}
-        </div>
+            <div class="buttons-container">
+                {% if plugin_instance %}
+                    <button type="button" onclick="handleAction('update_instance')" class="action-button">Save</button>
+                {% else %}
+                    <button type="button" onclick="handleAction()" class="action-button left">Update Now</button>
+                    <button type="button" onclick="openModal('scheduleModal')" class="action-button right">Add to Playlist</button>
+                {% endif %}
+            </div>
+        </form>
     </div>
+
     <!-- Success/Error Modal -->
     {% include 'response_modal.html' %}
 
@@ -286,7 +305,7 @@
                     <label>Refresh</label>
                     <span title="Determines how often the data and image should be refreshed.">ⓘ</span>
                 </div>
-                <div class="form-group">
+                <div class="form-group nowrap">
                     <input type="radio" name="refreshType" value="interval" checked>
                     <label for="interval">Every</label>
                     <input type="number" id="interval" name="interval" class="form-input" required min="1" placeholder="Enter a number">
@@ -296,7 +315,7 @@
                         <option value="day">Day</option>
                     </select>
                 </div>
-                <div class="form-group">
+                <div class="form-group nowrap">
                     <input type="radio" name="refreshType" value="scheduled">
                     <label for="scheduled">Daily at </label>
                     <input id="scheduled" class="time-input" type="time" name="refreshTime" step="900">

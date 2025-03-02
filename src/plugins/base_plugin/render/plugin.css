@@ -45,12 +45,12 @@ img {
 /* Frame Styling */
 
 .rectangle-frame {
-    border: 0.5vw solid;
+    border: 0.7vw solid;
 }
 
 .top-bottom-frame {
-    border-top: 0.5vw solid;
-    border-bottom: 0.5vw solid;
+    border-top: 0.7vw solid;
+    border-bottom: 0.7vw solid;
 }
 
 .corner-frame {
@@ -64,8 +64,8 @@ img {
     position: absolute;
     top: 0;
     left: 0;
-    border-top: 0.5vw solid;
-    border-left: 0.5vw solid;
+    border-top: 0.7vw solid;
+    border-left: 0.7vw solid;
   }
   
   .corner-frame:after {

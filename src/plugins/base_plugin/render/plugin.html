@@ -3,6 +3,16 @@
     {% for style in style_sheets %}
         <link rel="stylesheet" href="{{style}}">
     {% endfor %}
+    <style>
+        {% for font in font_faces %}
+        @font-face {
+            font-family: "{{font.font_family}}";
+            font-weight: {{font.font_weight}};
+            font-style:  {{font.font_style}};
+            src: url({{font.url}}) format("truetype");
+        }
+        {% endfor %}
+    </style>
     </head>
     <body 
         class="

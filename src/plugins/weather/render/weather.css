@@ -10,25 +10,43 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 3vw;
-  font-family: sans-serif;
+  gap: 2vh;
   width: 100%;
   height: 100%;
+  font-family: "Jost"
 }
 
-/* Current Date */
-.current-date {
-  font-size: 4vw; /* Use viewport width for responsiveness */
+.header {
+  height: 15dvh;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: end;
+  container-type: size;
+}
+
+.location {
+  font-size: min(40cqh, 10cqi);
   text-align: center;
+  align-content: end;
+  width: 100%;
+  font-weight: bold;
 }
 
-.current-weather {
+.current-date {
+  font-size: min(20cqh, 5cqi);
+  text-align: center;
+  align-content: end;
+  width: 100%;
+  line-height: 80%;
+}
+
+.today-container {
   display: flex;
   flex-direction: row;
   justify-content: center;
   width: 100%;
-  align-items: center;
-  gap: 5vw;
+  overflow: hidden;
 }
 
 /* Current Weather Row */
@@ -37,48 +55,67 @@
   flex-direction: row; /* Column on small screens */
   align-items: center;
   justify-content: center;
-  width: 100%;
-  gap: 3vw;
+  width: 50%;
+  padding: 0 4vw;
+  height: 100%;
+  overflow: hidden;
 }
 
-
 .current-icon {
-  max-width: 18vw;  /* Icon resizes based on viewport width */
   height: auto;
+  max-height: 100%;
+  width: auto;
+  max-height: 100%;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  object-fit: contain;
 }
 
 .current-temp {
-  font-size: 12vw; /* Large temperature font */
+  font-size: 45cqmin;
+  text-align: center;
+  align-content: end;
+  position: relative;
+}
+
+.temperature-unit {
+  font-size: 0.4em;
+  position: absolute;
+  top: 0.6em;
 }
 
 .feels-like {
-  font-size: 2.5vw;
+  font-size: 10cqmin;
   text-align: center;
+  position: relative;
 }
 
 /* Data Points Grid */
 .data-points {
   display: grid;
   justify-content: space-evenly;
-  grid-template-columns: repeat(2, 1fr); /* Max 3 columns */
-  gap: 1vw; /* Space between items */
-  width: 100%;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1vw;
+  width: 50%;
 }
 
 .data-point {
   width: 100%;
   justify-content: left;
+  overflow: hidden;
 }
 
 .data-point-img-container {
   width: 25%;
+  height: 80%;
   align-content: center;
 }
 
 .data-point-icon {
   width: 100%;
-  height: auto;
-  max-height: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 
 .data-point-data {
@@ -86,23 +123,29 @@
   display: flex;
   flex-direction: column;
   height: 100%;
-  justify-content: center
+  justify-content: center;
+  container-type: size;
+
 }
 
 .data-point-label {
-  font-size: 2vw;
+  font-size: min(30cqh, 15cqi);
   text-align: center;
   font-weight: lighter;
+  height: 30%
 }
 
 .data-point-measurement {
-  font-size: 3.5vw;
+  font-size: min(40cqh, 25cqi);
   text-align: center;
   white-space: nowrap;
+  align-content: center;
+  height: 70%;
+  font-weight: bold;
 }
 
 .data-point-unit {
-  font-size: 2.5vw;
+  font-size: 0.6em;
   font-weight: lighter;
   margin-left: 0.2vw;
 }
@@ -110,43 +153,74 @@
 /* Forecast Row */
 .forecast {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: row;
+  flex-wrap: nowrap;
   justify-content: space-evenly;
+  align-items:center;
   width: 100%;
+  gap: 2vw;
+  overflow: hidden;
 }
 
 .forecast-day {
   display: flex;
   flex-direction: column;
   align-items: center;
-  width: 12vw;
-  padding: 0.5rem;
+  width: 100%;
+  padding: 1dvh 1vw;
   border: 1px solid;
   border-radius: 1.2vw;
+  min-width: 0;
+  max-height: 100%;
+  gap: 1dvh
 }
 
 .forecast-day-name {
-  font-size: 3vw;
-}
-
-.forecast-icon {
-  width: 8vw;
-  height: auto;
-  margin: 0.5vw;
-}
-
-.forecast-temps {
-  font-size: 2.5vw;
+  font-size: min(3.5dvh, 3.5vw);
+  flex: 1;
+  height: 100%;
+  min-height: 0;
+  min-width: 0;
+  width: 100%;
   text-align: center;
-  white-space: nowrap
-}
-
-.high {
+  align-content: center;
   font-weight: bold;
 }
 
-.low {
+.forecast-icon {
+  max-width: 100%;
+  width: 100%;
+  height: 100%;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  object-fit: contain;
+  padding: 0 1vw;
+}
+
+.forecast-temps {
+  flex: 1;
+  text-align: center;
+  white-space: nowrap;
+  min-height: 0;
+  min-width: 0;
+  height: 100%;
+  font-size: min(3dvh, 2.5vw);
+}
+
+.low .high {
   font-weight: normal;
+}
+
+.current-weather {
+  container-type: size;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  flex: 1;
+  width: 100%;
+  justify-content: center;
+  min-width: 0;
 }
 
 /* Responsive Adjustments:
@@ -156,30 +230,47 @@
    but you can add a media query if you want more control.)
 */
 @media (max-aspect-ratio: 1) {
-  .current-weather {
+  .today-container {
     flex-direction: column;
+    gap: 2vh
   }
 
   /* Current Weather Row */
   .current-temperature {
     justify-content: center;
+    width: 100%;
   }
 
   .data-points {
-    grid-template-columns: repeat(4, auto);
-    grid-template-rows: repeat(2, auto);
+    grid-template-columns: repeat(4, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+    width: 100%;
   }
 
   .data-point {
-    height: 7vw;
+    height: 7dvh;
   }
 
 }
 
 @media (max-aspect-ratio: 1/2) {
   .data-points {
-    grid-template-columns: repeat(3, auto);
-    grid-template-rows: repeat(2, auto);
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(2, 1fr);
   }
 
+}
+
+@media (min-aspect-ratio: 2) {
+  .data-points {
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+  }
+
+}
+
+@media (max-width: 250px) {
+  .weather-dashboard {
+      font-family: "Dogica";
+  }
 }

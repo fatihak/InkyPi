@@ -31,22 +31,3 @@
 </p>
 
 4. Click Yes to apply OS customization options and confirm
-
-## Storing API Credentials
-
-Certain plugins, like the AI Image plugin, require API credentials to function. These credentials must be stored in a .env file located at the root of the project. Once you have your API token, follow these steps:
-
-1. SSH into your Raspberry Pi and navigate to the InkyPi directory:
-    ```bash
-    cd InkyPi
-    ```
-2. Create or edit the .env file using your preferred text editor (e.g., vi, nano):
-    ```bash
-    vi .env
-    ```
-3. Add the required API key and token in the following format:
-    ```
-    {plugin_key}={your_token}
-    ```
-    For the AI Image plugin, the plugin_key would be OPEN_AI_SECRET.
-4. Save and exit the editor

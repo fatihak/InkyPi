@@ -1,5 +1,5 @@
 from plugins.base_plugin.base_plugin import BasePlugin
-from utils.app_utils import resolve_path, get_font
+from utils.app_utils import resolve_path
 from openai import OpenAI
 from PIL import Image, ImageDraw, ImageFont
 from utils.image_utils import resize_image
@@ -20,6 +20,7 @@ class AIText(BasePlugin):
             "service": "OpenAI",
             "expected_key": "OPEN_AI_SECRET"
         }
+        template_params['style_settings'] = True
         return template_params
 
     def generate_image(self, settings, device_config):
@@ -54,7 +55,7 @@ class AIText(BasePlugin):
             "plugin_settings": settings
         }
         
-        image = self.render_image(dimensions, "ai_text.html", image_template_params)
+        image = self.render_image(dimensions, "ai_text.html", "ai_text.css", image_template_params)
 
         return image
     

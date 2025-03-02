@@ -1,6 +1,6 @@
 import logging
 import os
-from utils.app_utils import resolve_path
+from utils.app_utils import resolve_path, get_fonts
 from utils.image_utils import take_screenshot_html
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from pathlib import Path
@@ -61,7 +61,7 @@ class BasePlugin:
     def read_file(self, file):
         return base64.b64encode(open(file, "rb").read()).decode('utf-8')
 
-    def render_image(self, dimensions, plugin_template_name, template_params):
+    def render_image(self, dimensions, html_file, css_file=None, template_params={}):
         # instantiate jinja2 env with base plugin and current plugin render directories
         base_render_dir = os.path.join(BASE_PLUGIN_DIR, "render")
         plugin_render_dir = self.get_plugin_dir("render")
@@ -73,18 +73,18 @@ class BasePlugin:
 
         # load the base plugin and current plugin css files
         css_files = [os.path.join(base_render_dir, "plugin.css")]
-        plugin_css = os.path.join(plugin_render_dir, f"{self.get_plugin_id()}.css")
-        if Path(plugin_css).is_file():
-            css_files.append(plugin_css)
+        if css_file:
+            plugin_css = os.path.join(plugin_render_dir, css_file)
+            if Path(plugin_css).is_file():
+                css_files.append(plugin_css)
 
         template_params["style_sheets"] = css_files
         template_params["width"] = dimensions[0]
         template_params["height"] = dimensions[1]
-
-        print(template_params)
+        template_params["font_faces"] = get_fonts()
 
         # load and render the given html template
-        template = env.get_template(plugin_template_name)
+        template = env.get_template(html_file)
         rendered_html = template.render(template_params)
 
         with open(os.path.join(BASE_PLUGIN_DIR, 'rendered.html'), 'w') as output:

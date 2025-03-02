@@ -19,15 +19,18 @@ This guide walks you through the process of creating a new plugin for InkyPi.
     - Arguments:
         - `settings`: A dictionary of plugin configuration values from the form inputs in the web UI.
         - `device_config`: An instance of the Config class, used to retrieve device configurations such as display resolution or dotenv keys for any secrets.
+    - Images can be generated via the Pillow library or rendered from HTML and CSS file, see [See Generating Images by Rendering HTML and CSS](#generating-images-by-rendering-html-and-css) for details.
     - Return a single `PIL.Image` object to be displayed
     - If there are any issues (e.g., missing configuration options or API keys), raise a `RuntimeError` exception with a clear and concise message to be displayed in the web UI.
 - (Optional) If your settings template requires any additional variables, override the default `generate_settings_template` function
     - In this function, call `BasePlugin`'s `generate_settings_template` method to retrieve the default template parameters. Add any extra key-value pairs needed for your template and return the updated dictionary.
+    - To add the predefined style settings (see the Weather and AI Text plugins in the Web UI) to your plugin settings page, set `style_settings` to True.
     - Example:
         ```python
         def generate_settings_template(self):
             template_params = super().generate_settings_template()
             template_params['custom_template_variable'] = self.get_custom_variable()
+            template_params['style_settings'] = True
             return template_params
         ```
 - (Optional) If your plugin needs to cache or store data across refreshes, you can manage this within the `generate_image` function.
@@ -77,6 +80,7 @@ If your plugin requires user configuration through the web UI, you’ll need to 
 - Test and ensure that your plugin:
     - Loads correctly on service start.
     - Appears under the "Plugins" section in the web UI with it's icon.
+    - Generates images for different display sizes and orientations.
     - Settings template is rendered correctly.
     - Generates and displays images with immediate updates and in a playlist.
     - Setting template is prepopulated and saved correctly when editing an existing playlist
@@ -90,10 +94,11 @@ plugins/{plugin_id}/
     ├── {plugin_id}.py          # Main plugin script
     ├── icon.png                # Plugin icon
     ├── settings.html           # Optional: Plugin settings page (if applicable)
+    ├── render/                 # Optional: If generating images from html and css files, store them here
     └── {other files/resources} # Any additional files or resources used by the plugin
 ```
 
-## Preopulating forms for Plugin Instances
+## Prepopulating forms for Plugin Instances
 
 When a plugin is added to a playlist, a "Plugin Instance" is created, and its settings are stored in the `src/config/device.json` file. These settings can be updated from the playlist page, so the form in settings.html should be prepopulated with the existing settings.
 
@@ -116,3 +121,34 @@ When a plugin is added to a playlist, a "Plugin Instance" is created, and its se
         }
     });
     ```
+
+## Generating Images by Rendering HTML and CSS
+
+For more complex plugins or dashboards that display dynamic content, you can generate images from HTML and CSS files.
+
+### Using `render_image`
+You can generate an image by calling the `BasePlugin`'s `render_image` function, which accepts the following arguments:
+- `dimensions` (tuple)                  The width and height of the generated image.
+- `html_file` (str)                     Name of the HTML file to render, located in the `render/` directory.
+- `css_file` (str, optional)            Name of the CSS file in the `render/` directory.
+- `template_params`(dict, optional)     A dictionary of values to be passed into the Jinja template.
+
+### Defining HTML and CSS files
+- Place your HTML and CSS files in the `render/` subdirectory, as `render_image` looks for them there.
+- Your HTML file should extend `BasePlugin`'s `plugin.html` and define its content like this:
+```
+{% extends "plugin.html" %}
+
+{% block content %}
+<!-- Your content here -->
+{% endblock %}
+```
+- The `plugin.html` base template includes all font faces found in the `static/fonts/` directory, making them available for use in your templates
+- The base template also handles style options such as text color, background image or color, margin and frame settings. To apply these styles, pass the `settings` parameter from the `generate_image` function as part of template_params argument with the `plugin_settings` key.
+
+For reference, see the Weather and AI Text plugins.
+
+### Behind the Scenes
+1. The `render_image` function renders the HTML template using the Jinja2 library.
+2. It then calls the `take_screenshot_html` function in `image_utils.py`.
+3. This function uses the Chromium Browser in headless mode to load the HTML file and capture a screenshot.

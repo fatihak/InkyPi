@@ -21,6 +21,7 @@ InkyPi is an open-source, customizable E-Ink display powered by a Raspberry Pi. 
 - Clock: Customizable clock faces for displaying time
 - AI Image: Generate images from text prompts using OpenAI's DALL·E 
 - AI Text: Display dynamic text content using OpenAI's GPT-4o text models
+- Weather: Display current weather conditions and multi-day forecasts with a customizable layout
 
 And additional plugins coming soon! For documentation on building custom plugins, see [Building InkyPi Plugins](./docs/building_plugins.md).
 
@@ -96,6 +97,8 @@ Check out the public [trello board](https://trello.com/b/SWJYWqe4/inkypi) to exp
 ## License
 
 Distributed under the GPL 3.0 License, see [LICENSE](./LICENSE) for more information.
+
+This project includes fonts and icons with separate licensing and attribution requirements. See [Attribution](./docs/attribution.md) for details.
 
 ## Issues
 

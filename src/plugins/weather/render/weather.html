@@ -3,16 +3,19 @@
 {% block content %}
 <div class="weather-dashboard">
   <!-- Current Date -->
-  <div class="current-date">{{ current_date }}</div>
+  <div class="header">
+    <div class="location">{{ location }}</div>
+    <div class="current-date">{{ current_date }}</div>
+  </div>
 
-  <div class="current-weather">
+  <div class="today-container">
     <!-- Current Weather Row -->
     <div class="current-temperature">
       <!-- Icon + Temperature -->
         <img class="current-icon" src="{{current_day_icon}}" alt="Current Weather Icon">
-        <div class="row-container">
-          <div class="current-temp">{{ current_temperature }}</div>
-          <div class="feels-like">Feels Like {{ feels_like }}</div>
+        <div class="current-weather">
+          <div class="current-temp">{{ current_temperature }}<span class="temperature-unit">{{temperature_unit}}</span></div>
+          <div class="feels-like">Feels Like {{ feels_like }}{% if units != "standard" %}°{% endif %}</div>
         </div>
     </div>
 
@@ -40,8 +43,8 @@
         <div class="forecast-day-name">{{ day.day }}</div>
         <img class="forecast-icon" src="{{day.icon}}" alt="{{ day.day }} Weather Icon">
         <div class="forecast-temps">
-          <span class="high">{{ day.high }}°</span> / 
-          <span class="low">{{ day.low }}°</span>
+          <span class="high">{{ day.high }}{% if units != "standard" %}°{% endif %}</span> / 
+          <span class="low">{{ day.low }}{% if units != "standard" %}°{% endif %}</span>
         </div>
       </div>
     {% endfor %}

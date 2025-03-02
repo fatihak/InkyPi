@@ -7,6 +7,31 @@ from PIL import Image, ImageDraw, ImageFont
 
 logger = logging.getLogger(__name__)
 
+FONT_FAMILIES = {
+    "Dogica": [{
+        "font-weight": "normal",
+        "file": "dogicapixel.ttf"
+    },{
+        "font-weight": "bold",
+        "file": "dogicapixelbold.ttf"
+    }],
+    "Jost": [{
+        "font-weight": "normal",
+        "file": "Jost.ttf"
+    },{
+        "font-weight": "bold",
+        "file": "Jost-SemiBold.ttf"
+    }],
+    "Napoli": [{
+        "font-weight": "normal",
+        "file": "Napoli.ttf"
+    }],
+    "DS-Digital": [{
+        "font-weight": "normal",
+        "file": os.path.join("DS-DIGI", "DS-DIGI.TTF")
+    }]
+}
+
 FONTS = {
     "ds-gigi": "DS-DIGI.TTF",
     "napoli": "Napoli.ttf",
@@ -41,17 +66,38 @@ def is_connected():
     except OSError:
         return False
 
-def get_font(font_name, font_size=50):
-    if font_name in FONTS:
-        font_path = resolve_path(os.path.join("static", "fonts", FONTS[font_name]))
-        return ImageFont.truetype(font_path, font_size)
+def get_font(font_name, font_size=50, font_weight="normal"):
+    if font_name in FONT_FAMILIES:
+        font_variants = FONT_FAMILIES[font_name]
+
+        font_entry = next((entry for entry in font_variants if entry["font-weight"] == font_weight), None)
+        if font_entry is None:
+            font_entry = font_variants[0]  # Default to first available variant
+
+        if font_entry:
+            font_path = resolve_path(os.path.join("static", "fonts", font_entry["file"]))
+            return ImageFont.truetype(font_path, font_size)
+        else:
+            logger.warn(f"Requested font weight not found: font_name={font_name}, font_weight={font_weight}")
     else:
-        logger.warn(f"Requested font not found: font_name: {font_name}")
+        logger.warn(f"Requested font not found: font_name={font_name}")
+
     return None
+
+def get_fonts():
+    fonts_list = []
+    for font_family, variants in FONT_FAMILIES.items():
+        for variant in variants:
+            fonts_list.append({
+                "font_family": font_family,
+                "url": resolve_path(os.path.join("static", "fonts", variant["file"])),
+                "font_weight": variant.get("font-weight", "normal"),
+                "font_style": variant.get("font-style", "normal"),
+            })
+    return fonts_list
 
 def get_font_path(font_name):
     return resolve_path(os.path.join("static", "fonts", FONTS[font_name]))
-
 
 def generate_startup_image(dimensions=(800,480)):
     bg_color = (255,255,255)
@@ -65,11 +111,11 @@ def generate_startup_image(dimensions=(800,480)):
     image_draw = ImageDraw.Draw(image)
 
     title_font_size = width * 0.145
-    image_draw.text((width/2, height/2), "inkypi", anchor="mm", fill=text_color, font=get_font("jost", title_font_size))
+    image_draw.text((width/2, height/2), "inkypi", anchor="mm", fill=text_color, font=get_font("Jost", title_font_size))
 
     text = f"To get started, visit http://{hostname}.local"
     text_font_size = width * 0.032
-    image_draw.text((width/2, height*3/4), text, anchor="mm", fill=text_color, font=get_font("jost", text_font_size))
+    image_draw.text((width/2, height*3/4), text, anchor="mm", fill=text_color, font=get_font("Jost", text_font_size))
 
     return image
 

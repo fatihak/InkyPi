@@ -12,7 +12,6 @@ body {
     justify-content: center;
     align-items: center;
     min-height: 100vh;
-    padding: 20px;
 }
 
 /* Subtle frame container */
@@ -22,7 +21,7 @@ body {
     border-radius: 16px;
     padding: 20px;
     width: 90%;
-    height: 90vh; /* Take up 90% of the viewport height */
+    min-height: 90vh; /* Take up 90% of the viewport height */
     max-width: 900px;
     box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1); /* Slight shadow for depth */
     display: flex;
@@ -142,14 +141,15 @@ body {
     display: flex;
     flex-direction: column;
     height: 100%;
-    margin: 0px 0px 10px 0px
+    margin: 0px 0px 10px 0px;
+    flex-grow: 1;
 }
 
 .settings-container {
     display: flex;
-    /* align-items: center; */
     justify-content: center;
-    flex-direction: column
+    flex-direction: column;
+    padding: 0px 10px;
 }
 
 /* Style the form inputs and labels */
@@ -159,7 +159,15 @@ body {
     gap: 0.2rem 1rem;
     margin: 5px 0 5px 0; /* Bottom margin reduced for spacing */
     flex-wrap: wrap;
-    flex:1;
+    flex: auto;
+}
+
+.form-group .nowrap{
+    flex-wrap: nowrap;
+}
+
+.nowrap{
+    flex-wrap: nowrap;
 }
 
 .form-group label {
@@ -175,11 +183,11 @@ body {
     border: 1px solid #ddd;
     border-radius: 6px;
     box-sizing: border-box;
-    width:100%
+    min-width: 50px;
 }
 
 .form-group input[type="number"] {
-    width:100%
+    min-width: 50px;
 }
 
 .form-group input[type="text"]:focus {
@@ -192,6 +200,7 @@ body {
 .buttons-container {
     display: flex;
     gap: 10px;
+    margin-top: auto;
 }
 
 /* Back button */
@@ -263,7 +272,7 @@ body {
 
 /* Input field styling */
 .form-input {
-    flex: 1; /* Input spans the remaining width */
+    flex: auto;
     padding: 0.4rem;
     font-size: 1rem;
     border: 1px solid #ddd;
@@ -363,7 +372,8 @@ body {
 .image-grid {
     display: flex;
     gap: 10px;
-    margin-top: 10px; /* Adds spacing between label and grid */
+    margin-top: 10px;
+    flex-wrap: wrap;
 }
 
 .image-option {
@@ -376,7 +386,7 @@ body {
 }
 
 .image-option img {
-    width: 100%;
+    width: auto;
     height: auto; /* Ensures aspect ratio is maintained */
     max-width: 100px; /* Optional: Limits the max width of images */
 }
@@ -728,6 +738,7 @@ body {
     padding: 4px 8px;
     border-radius: 4px;
     font-size: 0.8em;
+    text-align: center;
 }
 
 .collapsible {
@@ -735,14 +746,13 @@ body {
 }
 
 .collapsible-header {
-    background-color: #f1f1f1;
+    background-color:#edebeb;
     border: none;
     cursor: pointer;
     padding: 10px;
     width: 100%;
     text-align: left;
     font-size: 1rem;
-    font-weight: 600;
     margin: 10px 0px 5px 0px;
 }
 
@@ -753,4 +763,11 @@ body {
 
 .collapsible-content {
     display: none;
+    padding: 0px 0px;
+}
+
+@media (max-aspect-ratio: 3/4) {
+    .frame {
+      width: 95%;
+    }
 }

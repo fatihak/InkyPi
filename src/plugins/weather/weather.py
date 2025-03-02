@@ -1,6 +1,5 @@
 from plugins.base_plugin.base_plugin import BasePlugin
 from PIL import Image
-from jinja2 import Environment, FileSystemLoader, select_autoescape
 import os
 import requests
 import logging
@@ -10,8 +9,25 @@ from io import BytesIO
 
 logger = logging.getLogger(__name__)
 
+UNITS = {
+    "standard": {
+        "temperature": "K",
+        "speed": "m/s"
+    },
+    "metric": {
+        "temperature": "°C",
+        "speed": "m/s"
+
+    },
+    "imperial": {
+        "temperature": "°F",
+        "speed": "mph"
+    }
+}
+
 WEATHER_URL = "https://api.openweathermap.org/data/3.0/onecall?lat={lat}&lon={long}&units={units}&exclude=minutely&appid={api_key}"
 AIR_QUALITY_URL = "http://api.openweathermap.org/data/2.5/air_pollution?lat={lat}&lon={long}&appid={api_key}"
+GEOCODING_URL = "http://api.openweathermap.org/geo/1.0/reverse?lat={lat}&lon={long}&limit=1&appid={api_key}"
 
 class Weather(BasePlugin):
     def generate_settings_template(self):
@@ -21,6 +37,8 @@ class Weather(BasePlugin):
             "service": "OpenWeatherMap",
             "expected_key": "OPEN_WEATHER_MAP_SECRET"
         }
+        template_params['style_settings'] = True
+
         return template_params
 
     def generate_image(self, settings, device_config):
@@ -39,28 +57,34 @@ class Weather(BasePlugin):
 
         weather_data = self.get_weather_data(api_key, units, lat, long)
         aqi_data = self.get_air_quality(api_key, lat, long)
+        location_data = self.get_location(api_key, lat, long)
 
         dimensions = device_config.get_resolution()
         if device_config.get_config("orientation") == "vertical":
             dimensions = dimensions[::-1]
-        
-        image = Image.new("RGBA", dimensions, "white")
 
         timezone = device_config.get_config("timezone", default="America/New_York")
         tz = pytz.timezone(timezone)
-        template_params = self.parse_weather_data(weather_data, aqi_data, tz, units)
+        template_params = self.parse_weather_data(weather_data, aqi_data, location_data, tz, units)
 
         template_params["plugin_settings"] = settings
 
-        image = self.render_image(dimensions, "weather.html", template_params)
+        image = self.render_image(dimensions, "weather.html", "weather.css", template_params)
         return image
     
-    def parse_weather_data(self, weather_data, aqi_data, tz, units):
+    def parse_weather_data(self, weather_data, aqi_data, location_data, tz, units):
+        current = weather_data.get("current")
+        dt = datetime.fromtimestamp(current.get('dt'), tz=timezone.utc).astimezone(tz)
+        current_icon = current.get("weather")[0].get("icon").replace("n", "d")
+        location_str = f"{location_data.get("name")}, {location_data.get("state", location_data.get("country"))}"
         data = {
-            "current_date": "Friday, February 21",
-            "current_day_icon": f"{self.get_plugin_dir('icons/sun.png')}",
-            "current_temperature": "76°",
-            "feels_like": "82°"
+            "current_date": dt.strftime("%A, %B %d"),
+            "location": location_str,
+            "current_day_icon": f"{self.get_plugin_dir(f'icons/{current_icon}.png')}",
+            "current_temperature": str(round(current.get("temp"))),
+            "feels_like": str(round(current.get("feels_like"))),
+            "temperature_unit": UNITS[units]["temperature"],
+            "units": units
         }
         data['forecast'] = self.parse_forecast(weather_data.get('daily'), tz)
         data['data_points'] = self.parse_data_points(weather_data, aqi_data, tz, units)
@@ -69,12 +93,13 @@ class Weather(BasePlugin):
     def parse_forecast(self, daily_forecast, tz):
         forecast = []
         for day in daily_forecast[1:]:
+            icon = day.get("weather")[0].get("icon")
             dt = datetime.fromtimestamp(day.get('dt'), tz=timezone.utc).astimezone(tz)
             day_forecast = {
                 "day": dt.strftime("%a"),
                 "high": int(day.get("temp", {}).get("max")),
                 "low": int(day.get("temp", {}).get("min")),
-                "icon": f"{self.get_plugin_dir('icons/sun.png')}",
+                "icon": f"{self.get_plugin_dir(f"icons/{icon.replace('n', 'd')}.png")}",
             }
             forecast.append(day_forecast)
         return forecast
@@ -88,7 +113,7 @@ class Weather(BasePlugin):
             "label": "Sunrise",
             "measurement": sunrise_dt.strftime('%I:%M').lstrip("0"),
             "unit": sunrise_dt.strftime('%p'),
-            "icon": f"{self.get_plugin_dir('icons/sun.png')}"
+            "icon": f"{self.get_plugin_dir('icons/sunrise.png')}"
         })
 
         sunset_epoch = weather.get('current', {}).get("sunset")
@@ -97,50 +122,52 @@ class Weather(BasePlugin):
             "label": "Sunset",
             "measurement": sunset_dt.strftime('%I:%M').lstrip("0"),
             "unit": sunset_dt.strftime('%p'),
-            "icon": f"{self.get_plugin_dir('icons/sun.png')}"
+            "icon": f"{self.get_plugin_dir('icons/sunset.png')}"
         })
 
         data_points.append({
             "label": "Wind",
             "measurement": weather.get('current', {}).get("wind_speed"),
-            "unit": 'mph' if units == 'imperial' else 'm/s',
-            "icon": f"{self.get_plugin_dir('icons/sun.png')}"
+            "unit": UNITS[units]["speed"],
+            "icon": f"{self.get_plugin_dir('icons/wind.png')}"
         })
 
         data_points.append({
             "label": "Humidity",
             "measurement": weather.get('current', {}).get("humidity"),
             "unit": '%',
-            "icon": f"{self.get_plugin_dir('icons/sun.png')}"
+            "icon": f"{self.get_plugin_dir('icons/humidity.png')}"
         })
 
         data_points.append({
             "label": "Pressure",
             "measurement": weather.get('current', {}).get("pressure"),
             "unit": 'hPa',
-            "icon": f"{self.get_plugin_dir('icons/sun.png')}"
+            "icon": f"{self.get_plugin_dir('icons/pressure.png')}"
         })
 
         data_points.append({
             "label": "UV Index",
             "measurement": weather.get('current', {}).get("uvi"),
             "unit": '',
-            "icon": f"{self.get_plugin_dir('icons/sun.png')}"
+            "icon": f"{self.get_plugin_dir('icons/uvi.png')}"
         })
 
+        visibility = weather.get('current', {}).get("visibility")/1000
+        visibility_str = f">{visibility}" if visibility >= 10 else visibility
         data_points.append({
             "label": "Visibility",
-            "measurement": weather.get('current', {}).get("visibility")/1000,
+            "measurement": visibility_str,
             "unit": 'km',
-            "icon": f"{self.get_plugin_dir('icons/sun.png')}"
+            "icon": f"{self.get_plugin_dir('icons/visibility.png')}"
         })
 
         aqi = air_quality.get('list', [])[0].get("main", {}).get("aqi")
         data_points.append({
             "label": "Air Quality Index",
             "measurement": aqi,
-            "unit": ["Good", "Fair", "Moderate", "Poor", "Very Poor"][int(aqi)+1],
-            "icon": f"{self.get_plugin_dir('icons/sun.png')}"
+            "unit": ["Good", "Fair", "Moderate", "Poor", "Very Poor"][int(aqi)-1],
+            "icon": f"{self.get_plugin_dir('icons/aqi.png')}"
         })
 
         return data_points
@@ -148,12 +175,10 @@ class Weather(BasePlugin):
     def get_weather_data(self, api_key, units, lat, long):
         url = WEATHER_URL.format(lat=lat, long=long, units=units, api_key=api_key)
         response = requests.get(url)
-
         if not 200 <= response.status_code < 300:
-            logging.error("Failed to retrieve weather data.")
+            logging.error(f"Failed to retrieve weather data: {response.content}")
             raise RuntimeError("Failed to retrieve weather data.")
         
-        logging.info("Successfully retrieved weather data")
         return response.json()
     
     def get_air_quality(self, api_key, lat, long):
@@ -161,8 +186,17 @@ class Weather(BasePlugin):
         response = requests.get(url)
 
         if not 200 <= response.status_code < 300:
-            logging.error("Failed to get air quality data.")
+            logging.error(f"Failed to get air quality data: {response.content}")
             raise RuntimeError("Failed to retrieve air quality data.")
         
-        logging.info("Successfully retrieved air quality data")
         return response.json()
+    
+    def get_location(self, api_key, lat, long):
+        url = GEOCODING_URL.format(lat=lat, long=long, api_key=api_key)
+        response = requests.get(url)
+
+        if not 200 <= response.status_code < 300:
+            logging.error(f"Failed to get location: {response.content}")
+            raise RuntimeError("Failed to retrieve location.")
+        
+        return response.json()[0]
