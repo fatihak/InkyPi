@@ -4,7 +4,6 @@ from io import BytesIO
 import os
 import logging
 import hashlib
-import imgkit
 import tempfile
 import subprocess
 
