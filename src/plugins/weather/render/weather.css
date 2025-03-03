@@ -10,7 +10,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2vh;
+  gap: 1dvh;
   width: 100%;
   height: 100%;
   font-family: "Jost"
@@ -26,17 +26,17 @@
 }
 
 .location {
-  font-size: min(37cqh, 12cqi);
+  font-size: min(50cqh, 8cqi);
   text-align: center;
   align-content: end;
   width: 100%;
   font-weight: bold;
   line-height: 102%;
-
+  height: 100%;
 }
 
 .current-date {
-  font-size: min(20cqh, 12cqi);
+  font-size: min(30cqh, 7cqi);
   text-align: center;
   align-content: end;
   width: 100%;
@@ -58,14 +58,14 @@
   align-items: center;
   justify-content: center;
   width: 50%;
-  padding: 0 4vw;
+  padding: 0 2vw;
   height: 100%;
   overflow: hidden;
 }
 
 .current-icon {
   height: auto;
-  max-height: 100%;
+  max-width: 90%;
   width: auto;
   max-height: 100%;
   flex: 1;
@@ -79,6 +79,7 @@
   text-align: center;
   align-content: end;
   position: relative;
+  height: 55%;
 }
 
 .temperature-unit {
@@ -91,6 +92,7 @@
   font-size: 10cqmin;
   text-align: center;
   position: relative;
+  line-height: 110%;
 }
 
 /* Data Points Grid */
@@ -98,7 +100,7 @@
   display: grid;
   justify-content: space-evenly;
   grid-template-columns: repeat(2, 1fr);
-  gap: 1vw;
+  gap: 0.5vh 1vw;
   width: 50%;
 }
 
@@ -131,19 +133,20 @@
 }
 
 .data-point-label {
-  font-size: min(30cqh, 15cqi);
+  font-size: min(32cqh, 15cqi);
   text-align: center;
   font-weight: lighter;
   height: 30%
 }
 
 .data-point-measurement {
-  font-size: min(40cqh, 25cqi);
+  font-size: min(46cqh, 26cqi);
   text-align: center;
   white-space: nowrap;
   align-content: center;
   height: 70%;
   font-weight: bold;
+  line-height:105%;
 }
 
 .data-point-unit {
@@ -160,7 +163,7 @@
   justify-content: space-evenly;
   align-items:center;
   width: 100%;
-  gap: 2vw;
+  gap: 1.5dvw;
   overflow: hidden;
 }
 
@@ -168,13 +171,12 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  width: 100%;
   padding: 1dvh 1vw;
   border: 1px solid;
   border-radius: 1.2vw;
   min-width: 0;
   max-height: 100%;
-  gap: 1dvh
+  gap: 0.5dvh
 }
 
 .forecast-day-name {
@@ -199,6 +201,7 @@
   min-height: 0;
   object-fit: contain;
   padding: 0 1vw;
+  max-width: 15dvw;
 }
 
 .forecast-temps {
@@ -228,13 +231,13 @@
 
 .chart-container {
   width: 100%;
-  height: 15dvh;
+  height: 16dvh;
 }
 
 @media (max-aspect-ratio: 1) {
   .today-container {
     flex-direction: column;
-    gap: 2vh
+    gap: 1dvh
   }
 
   /* Current Weather Row */

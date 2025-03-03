@@ -23,9 +23,6 @@
 
     // populate form values from plugin settings
     document.addEventListener('DOMContentLoaded', () => {        
-        // default to first frame option
-        let selectedFrameOption = document.querySelector('.image-option');
-
         if (loadPluginSettings) {
             // Populate text inputs
             document.getElementById('title').value = pluginSettings.title || '';
@@ -33,54 +30,6 @@
             
             // Populate text model
             document.getElementById('textModel').value = pluginSettings.textModel;
-
-            // Set background color
-            if (pluginSettings.backgroundColor) {
-                document.getElementById('backgroundColor').value = pluginSettings.backgroundColor;
-            }
-
-            // Populate text color
-            if (pluginSettings.textColor) {
-                document.getElementById('textColor').value = pluginSettings.textColor;
-            }
-
-            // Populate background options (color or image)
-            if (pluginSettings.backgroundOption) {
-                document.querySelector(`input[name="backgroundOption"][value="${pluginSettings.backgroundOption}"]`).checked = true;
-            }
-            // Handle background image selection
-            const fileNameDisplay = document.getElementById('fileName');
-            const fileNameText = document.getElementById('fileNameText');
-            const uploadButtonLabel = document.getElementById('uploadButtonLabel');
-
-            if (pluginSettings.backgroundImageFile) {
-                const filePath = pluginSettings.backgroundImageFile
-                const fileName = filePath.split('/').pop();
-
-                // display the file name
-                fileNameText.textContent = fileName;
-                fileNameDisplay.style.display = 'flex';
-                uploadButtonLabel.style.display = 'none';
-
-                // create a hidden input for the existing file
-                const hiddenInput = document.createElement("input");
-                hiddenInput.type = "hidden";
-                hiddenInput.name = "backgroundImageFile";
-                hiddenInput.value = filePath;
-                hiddenInput.id = `hidden-file-name`;
-                hiddenInput.setAttribute('delete-on-submit', '');
-                document.getElementById("hiddenFileInput").appendChild(hiddenInput);
-            } else {
-                fileNameDisplay.style.display = 'none';
-                uploadButtonLabel.style.display = 'block';
-            }
-
-            selectedFrameOption = document.querySelector(`.image-option[data-face-name="${pluginSettings.selectedFrame}"]`);
-        }
-
-        if (selectedFrameOption) {
-            selectedFrameOption.classList.add('selected');
-            document.getElementById('selected-frame').value = selectedFrameOption.getAttribute('data-face-name');
         }
     });
 </script>

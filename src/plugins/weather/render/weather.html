@@ -20,6 +20,7 @@
     </div>
 
     <!-- Data Points Grid (Sunset, Wind, UV, etc.) -->
+    {% if plugin_settings.displayMetrics and  plugin_settings.displayMetrics == "true" %}
     <div class="data-points">
       {% for dp in data_points %}
         <div class="data-point column-container">
@@ -34,16 +35,20 @@
         </div>
       {% endfor %}
     </div>
+    {% endif %}
   </div>
 
   <!-- Hourly Temperature Graph -->
+  {% if plugin_settings.displayGraph and plugin_settings.displayGraph == "true" %}
   <div class="chart-container">
     <canvas id="hourlyTemperatureChart"></canvas>
   </div>
+  {% endif %}
 
   <!-- Forecast Row -->
+  {% if plugin_settings.displayForecast and plugin_settings.displayForecast == "true" %}
   <div class="forecast">
-    {% for day in forecast %}
+    {% for day in forecast[:plugin_settings.forecastDays | int] %}
       <div class="forecast-day">
         <div class="forecast-day-name">{{ day.day }}</div>
         <img class="forecast-icon" src="{{day.icon}}" alt="{{ day.day }} Weather Icon">
@@ -54,6 +59,7 @@
       </div>
     {% endfor %}
   </div>
+  {% endif %}
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -63,8 +69,6 @@
     const canvas = document.getElementById('hourlyTemperatureChart');
     const ctx = canvas.getContext('2d');
     const rect = canvas.getBoundingClientRect();
-
-    console.log(canvas.height);
 
     // Extract hourly temperature and labels from template variables
     const labels = [{% for hour in hourly_forecast %}"{{ hour.time }}"{% if not loop.last %}, {% endif %}{% endfor %}];
@@ -76,7 +80,7 @@
     var maxTemp = Math.max(...temperatures);
 
     if (maxTemp - minTemp < 5){
-      maxTemp += 10;
+      maxTemp += 5;
     }
   
     const chart = new Chart(ctx, {
@@ -142,8 +146,9 @@
               font: {
                 family: 'Jost'
               },
+              autoSkip: false,
               callback: function(value, index, values) {
-                if (index === values.length - 1) return maxTemp + "°";
+                if (index === values.length-1) return maxTemp + "°";
                 else if (index === 0) return minTemp + "°";
                 else return '';
               }
@@ -161,6 +166,7 @@
               font: {
                 family: 'Jost'
               },
+              autoSkip: false,
               callback: function(value, index, values) {
                 if (index === values.length - 1) return "100%";
                 else if (index === 0) return "0%";

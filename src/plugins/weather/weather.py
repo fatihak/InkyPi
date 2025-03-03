@@ -214,28 +214,3 @@ class Weather(BasePlugin):
             raise RuntimeError("Failed to retrieve location.")
         
         return response.json()[0]
-
-class MyConfig:
-    def get_resolution(self):
-        return [800,480]
-    
-    def get_config(self, var, default="None"):
-        if default:
-            return default
-        return "horizontal"
-    
-    def load_env_key(sef, var):
-        return "e0f4d7d67e3ddb4b9f4f625f61fef37b"
-
-weather_plugin = Weather({"id": "weather"})
-settings = {
-    "latitude": 55.7558,
-    "longitude": 37.6173,
-    "units": "imperial",
-    "backgroundOption": "color",
-    "backgroundColor": "#ffffff",
-    "textColor": "#000000",
-    "selectedFrame": "Rectangle"
-}
-image = weather_plugin.generate_image(settings, MyConfig())
-image.show()
