@@ -73,7 +73,11 @@
 
     // Find min and max temperatures
     const minTemp = Math.min(...temperatures);
-    const maxTemp = Math.max(...temperatures);
+    var maxTemp = Math.max(...temperatures);
+
+    if (maxTemp - minTemp < 5){
+      maxTemp += 10;
+    }
   
     const chart = new Chart(ctx, {
       type: 'line',
@@ -83,18 +87,27 @@
           type: 'line',
           label: 'Hourly Temperature',
           data: temperatures,
-          borderColor: 'rgba(252,180,28, 1)', // Line color
+          borderColor: 'rgba(241, 122, 36, 0.9)', // Line color
           borderWidth: 2,
           pointRadius: 0, // Hide points
           fill: true, // Enable filling the area under the line
+          tension: 0.5
         },
         {
           type: 'bar',
           label: 'Precipitation Probability',
           data: precipitation,
-          backgroundColor: 'rgba(0, 123, 255, 0.5)', // Semi-transparent blue
-          borderWidth: 0,
+          borderColor: 'rgba(26, 111, 176, 0.9)', // Semi-transparent blue
+          borderWidth: {
+            top: 2,
+            right: 0,
+            bottom: 0,
+            left: 0
+          },
           yAxisID: 'y1',
+          barPercentage: 1.0, // Ensures full width
+          categoryPercentage: 1.0,  // Ensures full width
+          fill: true, // Enable filling the area under the line
         }
       ]
       },
@@ -117,7 +130,10 @@
               tickLength: 0,
               display: false // Hide x-axis grid
             },
-            offset: true
+            offset: true,
+            gridLines: {
+                drawBorder: false,
+            }
           },
           y: {
             ticks: {
@@ -132,15 +148,15 @@
                 else return '';
               }
             },
-            grid: {
-              tickLength: 0,
-              display: false // Hide y-axis grid
-            }
+            grid: { display: false },
+            suggestedMin: minTemp,
+            suggestedMax: maxTemp,
           },
           y1: {
             position: 'right',
             grid: { display: false },
             ticks: {
+              padding: 0,
               color: "{{ plugin_settings.textColor }}",
               font: {
                 family: 'Jost'
@@ -152,7 +168,7 @@
               }
             },
             suggestedMin: 0,
-            suggestedMax: 100
+            suggestedMax: 100,
           }
         },
         plugins: { legend: { display: false}}, // Hide legend
@@ -178,7 +194,7 @@
 
     // Create gradient based on y-axis values
     const precipitationGradient = ctx.createLinearGradient(0, gradientStart, 0, gradientEnd);
-    precipitationGradient.addColorStop(0, 'rgba(26, 111, 176, 1.0)'); // Top of the gradient (max temperature)
+    precipitationGradient.addColorStop(0, 'rgba(26, 111, 176, 0.6)'); // Top of the gradient (max temperature)
     precipitationGradient.addColorStop(1, 'rgba(194, 223, 246, 0)'); // Bottom of the gradient (min temperature)
 
     chart.data.datasets[1].backgroundColor = precipitationGradient;

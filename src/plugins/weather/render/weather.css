@@ -26,19 +26,21 @@
 }
 
 .location {
-  font-size: min(40cqh, 10cqi);
+  font-size: min(37cqh, 12cqi);
   text-align: center;
   align-content: end;
   width: 100%;
   font-weight: bold;
+  line-height: 102%;
+
 }
 
 .current-date {
-  font-size: min(20cqh, 5cqi);
+  font-size: min(20cqh, 12cqi);
   text-align: center;
   align-content: end;
   width: 100%;
-  line-height: 80%;
+  line-height: 105%;
 }
 
 .today-container {
@@ -185,6 +187,7 @@
   text-align: center;
   align-content: center;
   font-weight: bold;
+  line-height: 100%;
 }
 
 .forecast-icon {
