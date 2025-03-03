@@ -76,11 +76,11 @@ class Weather(BasePlugin):
         current = weather_data.get("current")
         dt = datetime.fromtimestamp(current.get('dt'), tz=timezone.utc).astimezone(tz)
         current_icon = current.get("weather")[0].get("icon").replace("n", "d")
-        location_str = f"{location_data.get("name")}, {location_data.get("state", location_data.get("country"))}"
+        location_str = f"{location_data.get('name')}, {location_data.get('state', location_data.get('country'))}"
         data = {
             "current_date": dt.strftime("%A, %B %d"),
             "location": location_str,
-            "current_day_icon": f"{self.get_plugin_dir(f'icons/{current_icon}.png')}",
+            "current_day_icon": self.get_plugin_dir(f'icons/{current_icon}.png'),
             "current_temperature": str(round(current.get("temp"))),
             "feels_like": str(round(current.get("feels_like"))),
             "temperature_unit": UNITS[units]["temperature"],
@@ -88,6 +88,8 @@ class Weather(BasePlugin):
         }
         data['forecast'] = self.parse_forecast(weather_data.get('daily'), tz)
         data['data_points'] = self.parse_data_points(weather_data, aqi_data, tz, units)
+
+        data['hourly_forecast'] = self.parse_hourly(weather_data.get('hourly'), tz)
         return data
 
     def parse_forecast(self, daily_forecast, tz):
@@ -99,10 +101,22 @@ class Weather(BasePlugin):
                 "day": dt.strftime("%a"),
                 "high": int(day.get("temp", {}).get("max")),
                 "low": int(day.get("temp", {}).get("min")),
-                "icon": f"{self.get_plugin_dir(f"icons/{icon.replace('n', 'd')}.png")}",
+                "icon": self.get_plugin_dir(f"icons/{icon.replace('n', 'd')}.png")
             }
             forecast.append(day_forecast)
         return forecast
+
+    def parse_hourly(self, hourly_forecast, tz):
+        hourly = []
+        for hour in hourly_forecast[:24]:
+            dt = datetime.fromtimestamp(hour.get('dt'), tz=timezone.utc).astimezone(tz)
+            hour_forecast = {
+                "time": dt.strftime("%-I %p"),
+                "temperature": int(hour.get("temp")),
+                "precipitiation": hour.get("pop")
+            }
+            hourly.append(hour_forecast)
+        return hourly
         
     def parse_data_points(self, weather, air_quality, tz, units):
         data_points = []
@@ -113,7 +127,7 @@ class Weather(BasePlugin):
             "label": "Sunrise",
             "measurement": sunrise_dt.strftime('%I:%M').lstrip("0"),
             "unit": sunrise_dt.strftime('%p'),
-            "icon": f"{self.get_plugin_dir('icons/sunrise.png')}"
+            "icon": self.get_plugin_dir('icons/sunrise.png')
         })
 
         sunset_epoch = weather.get('current', {}).get("sunset")
@@ -122,35 +136,35 @@ class Weather(BasePlugin):
             "label": "Sunset",
             "measurement": sunset_dt.strftime('%I:%M').lstrip("0"),
             "unit": sunset_dt.strftime('%p'),
-            "icon": f"{self.get_plugin_dir('icons/sunset.png')}"
+            "icon": self.get_plugin_dir('icons/sunset.png')
         })
 
         data_points.append({
             "label": "Wind",
             "measurement": weather.get('current', {}).get("wind_speed"),
             "unit": UNITS[units]["speed"],
-            "icon": f"{self.get_plugin_dir('icons/wind.png')}"
+            "icon": self.get_plugin_dir('icons/wind.png')
         })
 
         data_points.append({
             "label": "Humidity",
             "measurement": weather.get('current', {}).get("humidity"),
             "unit": '%',
-            "icon": f"{self.get_plugin_dir('icons/humidity.png')}"
+            "icon": self.get_plugin_dir('icons/humidity.png')
         })
 
         data_points.append({
             "label": "Pressure",
             "measurement": weather.get('current', {}).get("pressure"),
             "unit": 'hPa',
-            "icon": f"{self.get_plugin_dir('icons/pressure.png')}"
+            "icon": self.get_plugin_dir('icons/pressure.png')
         })
 
         data_points.append({
             "label": "UV Index",
             "measurement": weather.get('current', {}).get("uvi"),
             "unit": '',
-            "icon": f"{self.get_plugin_dir('icons/uvi.png')}"
+            "icon": self.get_plugin_dir('icons/uvi.png')
         })
 
         visibility = weather.get('current', {}).get("visibility")/1000
@@ -159,15 +173,15 @@ class Weather(BasePlugin):
             "label": "Visibility",
             "measurement": visibility_str,
             "unit": 'km',
-            "icon": f"{self.get_plugin_dir('icons/visibility.png')}"
+            "icon": self.get_plugin_dir('icons/visibility.png')
         })
 
         aqi = air_quality.get('list', [])[0].get("main", {}).get("aqi")
         data_points.append({
-            "label": "Air Quality Index",
+            "label": "Air Quality",
             "measurement": aqi,
             "unit": ["Good", "Fair", "Moderate", "Poor", "Very Poor"][int(aqi)-1],
-            "icon": f"{self.get_plugin_dir('icons/aqi.png')}"
+            "icon": self.get_plugin_dir('icons/aqi.png')
         })
 
         return data_points

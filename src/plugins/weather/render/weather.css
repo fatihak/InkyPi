@@ -223,12 +223,11 @@
   min-width: 0;
 }
 
-/* Responsive Adjustments:
-   If the height is significantly larger than width, allow the data-points to appear under 
-   the current weather instead of to the side. 
-   (This is mostly handled by flex-direction: column on smaller widths, 
-   but you can add a media query if you want more control.)
-*/
+.chart-container {
+  width: 100%;
+  height: 15dvh;
+}
+
 @media (max-aspect-ratio: 1) {
   .today-container {
     flex-direction: column;

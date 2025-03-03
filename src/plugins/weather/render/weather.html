@@ -36,6 +36,11 @@
     </div>
   </div>
 
+  <!-- Hourly Temperature Graph -->
+  <div class="chart-container">
+    <canvas id="hourlyTemperatureChart"></canvas>
+  </div>
+
   <!-- Forecast Row -->
   <div class="forecast">
     {% for day in forecast %}
@@ -50,4 +55,135 @@
     {% endfor %}
   </div>
 </div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const canvas = document.getElementById('hourlyTemperatureChart');
+    const ctx = canvas.getContext('2d');
+    const rect = canvas.getBoundingClientRect();
+
+    console.log(canvas.height);
+
+    // Extract hourly temperature and labels from template variables
+    const labels = [{% for hour in hourly_forecast %}"{{ hour.time }}"{% if not loop.last %}, {% endif %}{% endfor %}];
+    const temperatures = [{% for hour in hourly_forecast %}{{ hour.temperature }}{% if not loop.last %}, {% endif %}{% endfor %}];
+    const precipitation = [{% for hour in hourly_forecast %}{{ hour.precipitiation * 100}}{% if not loop.last %}, {% endif %}{% endfor %}]; // Convert to percentage
+
+    // Find min and max temperatures
+    const minTemp = Math.min(...temperatures);
+    const maxTemp = Math.max(...temperatures);
+  
+    const chart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [{
+          type: 'line',
+          label: 'Hourly Temperature',
+          data: temperatures,
+          borderColor: 'rgba(252,180,28, 1)', // Line color
+          borderWidth: 2,
+          pointRadius: 0, // Hide points
+          fill: true, // Enable filling the area under the line
+        },
+        {
+          type: 'bar',
+          label: 'Precipitation Probability',
+          data: precipitation,
+          backgroundColor: 'rgba(0, 123, 255, 0.5)', // Semi-transparent blue
+          borderWidth: 0,
+          yAxisID: 'y1',
+        }
+      ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: {
+            ticks: {
+              autoSkip: true,
+              padding: 0,
+              maxRotation: 0, // Prevent label rotation
+              minRotation: 0, // Prevent label rotation
+              color: "{{ plugin_settings.textColor }}",
+              font: {
+                family: 'Jost'
+              }
+            },
+            grid: {
+              tickLength: 0,
+              display: false // Hide x-axis grid
+            },
+            offset: true
+          },
+          y: {
+            ticks: {
+              padding: 0,
+              color: "{{ plugin_settings.textColor }}",
+              font: {
+                family: 'Jost'
+              },
+              callback: function(value, index, values) {
+                if (index === values.length - 1) return maxTemp + "°";
+                else if (index === 0) return minTemp + "°";
+                else return '';
+              }
+            },
+            grid: {
+              tickLength: 0,
+              display: false // Hide y-axis grid
+            }
+          },
+          y1: {
+            position: 'right',
+            grid: { display: false },
+            ticks: {
+              color: "{{ plugin_settings.textColor }}",
+              font: {
+                family: 'Jost'
+              },
+              callback: function(value, index, values) {
+                if (index === values.length - 1) return "100%";
+                else if (index === 0) return "0%";
+                else return '';
+              }
+            },
+            suggestedMin: 0,
+            suggestedMax: 100
+          }
+        },
+        plugins: { legend: { display: false}}, // Hide legend
+        elements: {
+          line: {
+            borderJoinStyle: 'round' // Smoother line connection
+          }
+        }
+      }
+    });
+
+    // Now, after the chart is created, we can access the scales
+    const gradientStart = chart.scales['y'].getPixelForValue(maxTemp); // Max temperature
+    const gradientEnd = chart.scales['y'].getPixelForValue(minTemp);   // Min temperature
+
+    // Create gradient based on y-axis values
+    const tempGradient = ctx.createLinearGradient(0, gradientStart, 0, gradientEnd+10);
+    tempGradient.addColorStop(0, 'rgba(252,204,5, 0.6)'); // Top of the gradient (max temperature)
+    tempGradient.addColorStop(1, 'rgba(252,204,5, 0.01)'); // Bottom of the gradient (min temperature)
+
+    // Update the chart to apply the gradient
+    chart.data.datasets[0].backgroundColor = tempGradient;
+
+    // Create gradient based on y-axis values
+    const precipitationGradient = ctx.createLinearGradient(0, gradientStart, 0, gradientEnd);
+    precipitationGradient.addColorStop(0, 'rgba(26, 111, 176, 1.0)'); // Top of the gradient (max temperature)
+    precipitationGradient.addColorStop(1, 'rgba(194, 223, 246, 0)'); // Bottom of the gradient (min temperature)
+
+    chart.data.datasets[1].backgroundColor = precipitationGradient;
+
+    chart.update();
+  });
+</script>
 {% endblock %}

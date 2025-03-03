@@ -17,7 +17,7 @@
     <body 
         class="
         {% if plugin_settings.selectedFrame == 'Corner' %}corner-frame{% endif %}
-        {% if plugin_settings.selectedFrame == 'Top And Bottom' %}top-bottom-frame{% endif %}
+        {% if plugin_settings.selectedFrame == 'Top and Bottom' %}top-bottom-frame{% endif %}
         {% if plugin_settings.selectedFrame == 'Rectangle' %}rectangle-frame{% endif %}"
         style="padding: 1.5vw;
         {% if plugin_settings.backgroundOption == 'color' %}
@@ -28,7 +28,7 @@
             background-position: center;
         {% endif %}
         color: {{ plugin_settings.textColor }};
-        {% if plugin_settings.margin is defined and plugin_settings.margin %}
+        {% if plugin_settings.margin %}
             margin: {{ plugin_settings.margin }}px;
         {% else %}
             margin: 5px;
