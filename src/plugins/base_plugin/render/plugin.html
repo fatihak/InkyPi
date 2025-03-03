@@ -22,7 +22,7 @@
         style="padding: 1.5vw;
         {% if plugin_settings.backgroundOption == 'color' %}
             background-color: {{ plugin_settings.backgroundColor }};
-        {% elif backgroundOption == 'image' %}
+        {% elif plugin_settings.backgroundOption == 'image' %}
             background-image: url('{{ plugin_settings.backgroundImage }}');
             background-size: cover;
             background-position: center;
