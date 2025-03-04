@@ -28,19 +28,12 @@ img {
     height: 100%;
 }
 
-.row-container.center {
-    justify-content: center;
-}
-
 .column-container {
     display: flex;
     flex-direction: row;
     width: 100%;
 }
 
-.column-container.center {
-    justify-content: center;
-}
 
 /* Frame Styling */
 

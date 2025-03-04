@@ -22,6 +22,8 @@ def save_settings():
             return jsonify({"error": "Plugin cycle interval unit is required"}), 400
         if not interval or not interval.isnumeric():
             return jsonify({"error": "Refresh interval is required"}), 400
+        if not form_data.get("timezoneName"):
+            return jsonify({"error": "Time Zone is required"}), 400
         plugin_cycle_interval_seconds = calculate_seconds(int(interval), unit)
         if plugin_cycle_interval_seconds > 86400 or plugin_cycle_interval_seconds <= 0:
             return jsonify({"error": "Plugin cycle interval must be less than 24 hours"}), 400
