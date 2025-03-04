@@ -101,7 +101,7 @@
           type: 'bar',
           label: 'Precipitation Probability',
           data: precipitation,
-          borderColor: 'rgba(26, 111, 176, 0.9)', // Semi-transparent blue
+          borderColor: 'rgba(26, 111, 176, 1)', // Semi-transparent blue
           borderWidth: {
             top: 2,
             right: 0,
@@ -192,7 +192,7 @@
 
     // Create gradient based on y-axis values
     const tempGradient = ctx.createLinearGradient(0, gradientStart, 0, gradientEnd+10);
-    tempGradient.addColorStop(0, 'rgba(252,204,5, 0.6)'); // Top of the gradient (max temperature)
+    tempGradient.addColorStop(0, 'rgba(252,204,5, 0.9)'); // Top of the gradient (max temperature)
     tempGradient.addColorStop(1, 'rgba(252,204,5, 0.01)'); // Bottom of the gradient (min temperature)
 
     // Update the chart to apply the gradient
@@ -200,7 +200,7 @@
 
     // Create gradient based on y-axis values
     const precipitationGradient = ctx.createLinearGradient(0, gradientStart, 0, gradientEnd);
-    precipitationGradient.addColorStop(0, 'rgba(26, 111, 176, 0.6)'); // Top of the gradient (max temperature)
+    precipitationGradient.addColorStop(0, 'rgba(26, 111, 176, 0.9)'); // Top of the gradient (max temperature)
     precipitationGradient.addColorStop(1, 'rgba(194, 223, 246, 0)'); // Bottom of the gradient (min temperature)
 
     chart.data.datasets[1].backgroundColor = precipitationGradient;

@@ -36,7 +36,7 @@
 }
 
 .current-date {
-  font-size: min(30cqh, 7cqi);
+  font-size: min(30cqh, 6cqi);
   text-align: center;
   align-content: end;
   width: 100%;
