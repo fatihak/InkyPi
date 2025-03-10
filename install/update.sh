@@ -44,8 +44,6 @@ else
   exit 1
 fi
 
-install_chrome_headless_shell
-
 # Check if virtual environment exists
 if [ ! -d "$VENV_PATH" ]; then
   echo_error "ERROR: Virtual environment not found at $VENV_PATH. Run the installation script first."

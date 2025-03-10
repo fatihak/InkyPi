@@ -36,7 +36,7 @@ Required for the Weather Plugin
 
 - Login or create an account on [OpenWeatherMap](https://home.openweathermap.org/users/sign_in)
     - Verify your email after signing up
-- The weather plugin usse the [One Call API 3.0](https://openweathermap.org/price) which requires a subscription but is free for up to 1,000 API requests per day.
+- The weather plugin uses the [One Call API 3.0](https://openweathermap.org/price) which requires a subscription but is free for up to 1,000 requests per day.
     - Subscribe at [One Call API 3.0 Subscription](https://home.openweathermap.org/subscriptions/billing_info/onecall_30/base?key=base&service=onecall_30)
     - Follow the instructions to complete the subscription.
     - Navigate to [Your Subscriptions](https://home.openweathermap.org/subscriptions) and set "Calls per day (no more than)" to 1,000 to avoid exceeding the free limit

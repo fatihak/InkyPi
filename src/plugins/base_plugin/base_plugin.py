@@ -87,7 +87,4 @@ class BasePlugin:
         template = env.get_template(html_file)
         rendered_html = template.render(template_params)
 
-        with open(os.path.join(BASE_PLUGIN_DIR, 'rendered.html'), 'w') as output:
-            output.write(rendered_html)
-
         return take_screenshot_html(rendered_html, dimensions)
