@@ -87,6 +87,8 @@
                         <select id="orientation" name="orientation" class="form-input">
                             <option value="horizontal" {% if device_settings.orientation == "horizontal" %}selected{% endif %}>Horizontal</option>
                             <option value="vertical" {% if device_settings.orientation == "vertical" %}selected{% endif %}>Vertical</option>
+                            <option value="horizontalinverted" {% if device_settings.orientation == "horizontalinverted" %}selected{% endif %}>Horizontal (Inverted)</option>
+                            <option value="verticalinverted" {% if device_settings.orientation == "verticalinverted" %}selected{% endif %}>Vertical (Inverted)</option>
                         </select>
                     </div>
                     
