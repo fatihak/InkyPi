@@ -1,0 +1,18 @@
+{
+  "feels_like": "Feels Like",
+  "sunrise": "Sunrise",
+  "sunset": "Sunset",
+  "wind": "Wind",
+  "humidity": "Humidity",
+  "pressure": "Pressure",
+  "uv_index": "UV Index",
+  "visibility": "Visibility",
+  "air_quality": "Air Quality",
+  "aqi_levels": {
+    "1": "Good",
+    "2": "Fair",
+    "3": "Moderate",
+    "4": "Poor",
+    "5": "Very Poor"
+  }
+}
