@@ -23,6 +23,10 @@ def change_orientation(image, orientation):
         image = image.rotate(0, expand=1)
     elif orientation == 'vertical':
         image = image.rotate(90, expand=1)
+    elif orientation == 'horizontalinverted':
+        image = image.rotate(180, expand=1)
+    elif orientation == 'verticalinverted':
+        image = image.rotate(270, expand=1)
     return image
 
 def resize_image(image, desired_size, image_settings=[]):
