@@ -1,0 +1,18 @@
+{
+  "feels_like": "Sensación térmica",
+  "sunrise": "Amanecer",
+  "sunset": "Atardecer",
+  "wind": "Viento",
+  "humidity": "Humedad",
+  "pressure": "Presión",
+  "uv_index": "Índice UV",
+  "visibility": "Visibilidad",
+  "air_quality": "Calidad del aire",
+  "aqi_levels": {
+    "1": "Buena",
+    "2": "Aceptable",
+    "3": "Moderada",
+    "4": "Mala",
+    "5": "Muy mala"
+  }
+}

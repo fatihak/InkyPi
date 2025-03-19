@@ -47,6 +47,15 @@
     </div>
 </div>
 
+<div class="form-group">
+    <label for="language">Language</label>
+    <select class="form-control" id="language" name="language">
+        <option value="en" {% if settings.language == "en" %}selected{% endif %}>English</option>
+        <option value="es" {% if settings.language == "es" %}selected{% endif %}>Español</option>
+        <option value="el" {% if settings.language == "el" %}selected{% endif %}>Ελληνικά</option>
+    </select>
+</div>
+
 <!-- Modal -->
 <div id="mapModal" class="modal">
     <div class="modal-content">

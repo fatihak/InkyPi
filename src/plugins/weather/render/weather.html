@@ -1,6 +1,4 @@
-{% extends "plugin.html" %}
-
-{% block content %}
+{% extends "plugin.html" %} {% block content %}
 <div class="weather-dashboard">
   <!-- Current Date -->
   <div class="header">
@@ -12,51 +10,77 @@
     <!-- Current Weather Row -->
     <div class="current-temperature">
       <!-- Icon + Temperature -->
-        <img class="current-icon" src="{{current_day_icon}}" alt="Current Weather Icon">
-        <div class="current-weather">
-          <div class="current-temp">{{ current_temperature }}<span class="temperature-unit">{{temperature_unit}}</span></div>
-          <div class="feels-like">Feels Like {{ feels_like }}{% if units != "standard" %}°{% endif %}</div>
+      <img
+        class="current-icon"
+        src="{{current_day_icon}}"
+        alt="Current Weather Icon"
+      />
+      <div class="current-weather">
+        <div class="current-temp">
+          {{ current_temperature }}<span class="temperature-unit"
+            >{{temperature_unit}}</span
+          >
         </div>
+        <div class="feels-like">
+          {{ t('feels_like') }} {{ feels_like }}{% if units != "standard" %}°{%
+          endif %}
+        </div>
+      </div>
     </div>
 
     <!-- Data Points Grid (Sunset, Wind, UV, etc.) -->
-    {% if plugin_settings.displayMetrics and  plugin_settings.displayMetrics == "true" %}
+    {% if plugin_settings.displayMetrics and plugin_settings.displayMetrics ==
+    "true" %}
     <div class="data-points">
       {% for dp in data_points %}
-        <div class="data-point column-container">
-          <div class="data-point-img-container">
-            <img class="data-point-icon" src="{{dp.icon}}" alt="{{ dp.label }}">
-          </div>
-          <div class="data-point-data">
-            <div class="data-point-label">{{ dp.label }}</div>
-            <div class="data-point-measurement">{{ dp.measurement }}{% if dp.unit %}<span class="data-point-unit">{{ dp.unit }}</span>{% endif %}
-            </div>
+      <div class="data-point column-container">
+        <div class="data-point-img-container">
+          <img class="data-point-icon" src="{{dp.icon}}" alt="{{ dp.label }}" />
+        </div>
+        <div class="data-point-data">
+          <div class="data-point-label">{{ dp.label }}</div>
+          <div class="data-point-measurement">
+            {{ dp.measurement }}{% if dp.unit %}<span class="data-point-unit"
+              >{{ dp.unit }}</span
+            >{% endif %}
           </div>
         </div>
+      </div>
       {% endfor %}
     </div>
     {% endif %}
   </div>
 
   <!-- Hourly Temperature Graph -->
-  {% if plugin_settings.displayGraph and plugin_settings.displayGraph == "true" %}
+  {% if plugin_settings.displayGraph and plugin_settings.displayGraph == "true"
+  %}
   <div class="chart-container">
     <canvas id="hourlyTemperatureChart"></canvas>
   </div>
   {% endif %}
 
   <!-- Forecast Row -->
-  {% if plugin_settings.displayForecast and plugin_settings.displayForecast == "true" %}
+  {% if plugin_settings.displayForecast and plugin_settings.displayForecast ==
+  "true" %}
   <div class="forecast">
     {% for day in forecast[:plugin_settings.forecastDays | int] %}
-      <div class="forecast-day">
-        <div class="forecast-day-name">{{ day.day }}</div>
-        <img class="forecast-icon" src="{{day.icon}}" alt="{{ day.day }} Weather Icon">
-        <div class="forecast-temps">
-          <span class="high">{{ day.high }}{% if units != "standard" %}°{% endif %}</span> / 
-          <span class="low">{{ day.low }}{% if units != "standard" %}°{% endif %}</span>
-        </div>
+    <div class="forecast-day">
+      <div class="forecast-day-name">{{ day.day }}</div>
+      <img
+        class="forecast-icon"
+        src="{{day.icon}}"
+        alt="{{ day.day }} Weather Icon"
+      />
+      <div class="forecast-temps">
+        <span class="high"
+          >{{ day.high }}{% if units != "standard" %}°{% endif %}</span
+        >
+        /
+        <span class="low"
+          >{{ day.low }}{% if units != "standard" %}°{% endif %}</span
+        >
       </div>
+    </div>
     {% endfor %}
   </div>
   {% endif %}
@@ -82,7 +106,7 @@
     if (maxTemp - minTemp < 5){
       maxTemp += 5;
     }
-  
+
     const chart = new Chart(ctx, {
       type: 'line',
       data: {
