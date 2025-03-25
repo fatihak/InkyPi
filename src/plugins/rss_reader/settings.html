@@ -1,0 +1,33 @@
+<div class="form-group">
+    <div class="form-group nowrap">
+        <label for="title" class="form-label">Title:</label>
+        <input type="text" id="title" name="title" placeholder="Type something..." required class="form-input">
+    </div>
+
+</div>
+
+<div class="form-group">
+    <label for="URL" class="form-label">URL:</label>
+    <input type="text" id="URL" name="URL" placeholder="Type something..." required class="form-input">
+</div>
+
+<div class="form-group">
+    <label for="timef_str" class="form-label">Time Format:</label>
+    <input type="text" id="timef_str" name="timef_str" placeholder="Type something..." required class="form-input" value="%Y.%m.%d. %H:%M">
+</div>
+
+<script>
+
+    // populate form values from plugin settings
+    document.addEventListener('DOMContentLoaded', () => {        
+        if (loadPluginSettings) {
+            // Populate text inputs
+            document.getElementById('title').value = pluginSettings.title || '';
+            document.getElementById('URL').value = pluginSettings.URL || '';
+            document.getElementById('timef_str').value = pluginSettings.timef_str || '';
+            
+            // Populate text model
+            document.getElementById('textModel').value = pluginSettings.textModel;
+        }
+    });
+</script>
