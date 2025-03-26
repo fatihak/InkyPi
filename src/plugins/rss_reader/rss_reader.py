@@ -27,13 +27,13 @@ class RSSReader(BasePlugin):
         dimensions = device_config.get_resolution()
         if device_config.get_config("orientation") == "vertical":
             dimensions = dimensions[::-1]
-        logger.info(settings)
+        logger.debug('Settings: ', settings)
         image_template_params = {
             "title": title,
             "content": self.get_feed(settings.get('URL'),settings.get('timef_str')),
             "plugin_settings": settings
         }
-        logger.info(image_template_params)
+        logger.debug('Template parameters: ', image_template_params)
 
         image = self.render_image(dimensions, "rss_reader.html", "rss_reader.css", image_template_params)
 
