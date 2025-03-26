@@ -1,0 +1,12 @@
+{% extends "plugin.html" %}
+
+{% block content %}
+<div class="text-content">
+  <div class="title">{{ title }}</div>
+  <div class="content">
+    {% for line in content %}
+    <div class="entry_title">{{ line.time }} - {{ line.title }}</div>
+    <div class="entry_summary">{{ line.summary }}</div>
+    {% endfor %}</div>
+</div>
+{% endblock %}

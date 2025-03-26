@@ -1,0 +1,38 @@
+
+.text-content {
+    display: flex;
+    flex-direction: column;
+    justify-content: left;
+    align-items: left;
+    text-align: left;
+    height: 100%;
+    width: 100%;
+    gap: 1dvh;
+    font-family: "Jost";
+    container-type: size;
+  }
+  
+  .title {
+    font-weight: bold;
+    font-size: 4em;
+    max-width: 100%;
+    font-size: min(10cqh, 8cqi);
+  }
+  
+  .entry_title {
+    font-weight: bold;
+    overflow-wrap: break-word;
+    max-width: 100%;
+    max-height: 80%;
+    font-size: 1.1em;
+    white-space: pre-line;
+    overflow: hidden;
+  }
+  .entry_summary {
+    overflow-wrap: break-word;
+    max-width: 100%;
+    max-height: 80%;
+    font-size: 1.1em;
+    white-space: pre-line;
+    overflow: hidden;
+  }
