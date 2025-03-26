@@ -13,6 +13,7 @@ import os
 import random
 import logging
 from utils.app_utils import generate_startup_image
+from utils.wifi import connect_to_wifi, open_hotspot
 from flask import Flask, request
 from werkzeug.serving import is_running_from_reloader
 from config import Config
@@ -25,7 +26,6 @@ from blueprints.playlist import playlist_bp
 from blueprints.config import config_bp
 from jinja2 import ChoiceLoader, FileSystemLoader
 from plugins.plugin_registry import load_plugins
-from utils.wifi import connect_to_wifi, open_hotspot
 
 
 logger = logging.getLogger(__name__)
