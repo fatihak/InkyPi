@@ -23,6 +23,9 @@
                 if (response.ok) {
                     showResponseModal('success', `Success! ${result.message}`);
                     document.querySelector('.frame').innerHTML = "<h2>The System will reboot now, please wait...</h2>"
+                    await fetch("{{ url_for('config.reboot') }}", {
+                        method: 'GET'
+                    });
                 } else {
                     showResponseModal('failure', `Error!  ${result.error}`);
                     actionButton.disabled = false;

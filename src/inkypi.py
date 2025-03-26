@@ -14,7 +14,7 @@ import os
 import random
 import logging
 from utils.app_utils import generate_startup_image
-from utils.wifi import connect_to_wifi, open_hotspot
+from utils.wifi import connect_to_wifi, open_hotspot, is_connected
 from flask import Flask
 from config import Config
 from display_manager import DisplayManager
@@ -68,7 +68,7 @@ if __name__ == '__main__':
         # display default inkypi image on startup
         if device_config.get_config("startup") is True:
             logger.info("Startup flag is set, displaying startup image")
-            img = generate_startup_image(device_config.get_resolution())
+            img = generate_startup_image(False, device_config.get_resolution())
             display_manager.display_image(img)
             device_config.update_value("startup", False, write=True)
     else:
