@@ -32,7 +32,7 @@
     },
     {
         "display_name": "RSS Reader",
-        "id": "rssreader",
+        "id": "rss_reader",
         "class": "RSSReader"
     } 
 ]
