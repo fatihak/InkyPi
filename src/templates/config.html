@@ -22,7 +22,7 @@
                 const result = await response.json();
                 if (response.ok) {
                     showResponseModal('success', `Success! ${result.message}`);
-                    window.location.href = result.ip;
+                    document.querySelector('.frame').innerHTML = "<h2>The System will reboot now, please wait...</h2>"
                 } else {
                     showResponseModal('failure', `Error!  ${result.error}`);
                     actionButton.disabled = false;
@@ -36,8 +36,6 @@
 </head>
 <body>
 <div class="frame">
-    <!-- Back Button -->
-    <button onclick="history.back()" class="back-button">← Back</button>
     <!-- Settings Header -->
     <div class="app-header">
         <h1 class="app-title">Config</h1>
@@ -48,13 +46,16 @@
         <div class="config-container">
             <div class="form-inline">
                 <label for="deviceName" class="form-label">Device Name:</label>
-                <input id="deviceName" name="deviceName" class="form-input" placeholder="SSID" value="{{ device_settings.name }}"><span>.local</span>
+                <input id="deviceName" name="deviceName" class="form-input" placeholder="SSID"
+                       value="{{ device_settings.name }}"><span>.local</span>
             </div>
             <div class="form-group">
                 <label for="ssid" class="form-label">SSID:</label>
-                <input id="ssid" name="ssid" class="form-input" placeholder="SSID" value="{{ device_settings.ssid }}">
+                <input id="ssid" name="ssid" class="form-input" placeholder="SSID"
+                       value="{{ device_settings.ssid }}">
                 <label for="password" class="form-label">Password:</label>
-                <input id="password" name="password" class="form-input" placeholder="Password" value="{{ device_settings.password }}">
+                <input id="password" name="password" class="form-input" placeholder="Password"
+                       value="{{ device_settings.password }}">
             </div>
         </div>
     </form>
