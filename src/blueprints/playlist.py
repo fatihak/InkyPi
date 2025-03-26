@@ -1,11 +1,10 @@
-from flask import Blueprint, request, jsonify, current_app, render_template
-from utils.time_utils import calculate_seconds
 import json
-from datetime import datetime
-import os
 import logging
-from utils.app_utils import resolve_path, handle_request_files
+from datetime import datetime
 
+from flask import Blueprint, request, jsonify, current_app, render_template
+from utils.app_utils import resolve_path, handle_request_files
+from utils.time_utils import calculate_seconds
 
 logger = logging.getLogger(__name__)
 playlist_bp = Blueprint("playlist", __name__)

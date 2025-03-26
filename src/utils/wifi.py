@@ -15,12 +15,11 @@ def close_hotspot():
         os.system(f"sudo nmcli connection delete '{hotspot_name}'")
 
 def connect_to_wifi(ssid, password):
-    os.system(f"sudo nmcli device wifi connect '{ssid}' password '{password}'")
+    close_hotspot()
     time.sleep(5)
-    if is_connected():
-        logger.info(f"Successfully connected to {ssid} !")
-        close_hotspot()
+    os.system(f"sudo nmcli device wifi connect '{ssid}' password '{password}'")
 
 def is_connected():
     ssid = os.popen("iwgetid -r").read().strip()
     return bool(ssid)
+

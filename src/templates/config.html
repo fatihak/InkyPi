@@ -8,6 +8,8 @@
     <script src="{{ url_for('static', filename='scripts/response_modal.js') }}"></script>
     <script>
         async function handleAction() {
+            const actionButton = document.querySelector('.action-button');
+            actionButton.disabled = true;
             const form = document.querySelector('.config-form');
             const formData = new FormData(form);
 
@@ -20,9 +22,10 @@
                 const result = await response.json();
                 if (response.ok) {
                     showResponseModal('success', `Success! ${result.message}`);
+                    window.location.href = result.ip;
                 } else {
                     showResponseModal('failure', `Error!  ${result.error}`);
-                    form.reset();
+                    actionButton.disabled = false;
                 }
             } catch (error) {
                 console.error('Error:', error);

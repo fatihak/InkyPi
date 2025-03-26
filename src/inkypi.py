@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 
 # set up logging
-import os, logging.config
+import logging.config
+import os
 
 logging.config.fileConfig(os.path.join(os.path.dirname(__file__), 'config', 'logging.conf'))
 
@@ -14,8 +15,7 @@ import random
 import logging
 from utils.app_utils import generate_startup_image
 from utils.wifi import connect_to_wifi, open_hotspot
-from flask import Flask, request
-from werkzeug.serving import is_running_from_reloader
+from flask import Flask
 from config import Config
 from display_manager import DisplayManager
 from refresh_task import RefreshTask

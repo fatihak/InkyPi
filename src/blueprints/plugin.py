@@ -1,10 +1,10 @@
+import logging
+import os
+
 from flask import Blueprint, request, jsonify, current_app, render_template, send_from_directory
 from plugins.plugin_registry import get_plugin_instance
-from utils.app_utils import resolve_path, handle_request_files
 from refresh_task import ManualRefresh, PlaylistRefresh
-import json
-import os
-import logging
+from utils.app_utils import resolve_path, handle_request_files
 
 logger = logging.getLogger(__name__)
 plugin_bp = Blueprint("plugin", __name__)
