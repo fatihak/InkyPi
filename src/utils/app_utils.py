@@ -114,11 +114,11 @@ def generate_startup_image(install = False, dimensions=(800,480)):
     image_draw.text((width/2, height/2), "inkypi", anchor="mm", fill=text_color, font=get_font("Jost", title_font_size))
 
     if install:
-        text = f"To get started, connect your device with the display via WIFI.\nSSID: INKY\nPassword: INKY"
+        text = f"To get started, connect a device (like your phone) \n with the display via WIFI: \nSSID: INKY\nPassword: SuperSecret123"
     else:
         text = f"To get started, visit http://{hostname}.local"
     text_font_size = width * 0.032
-    image_draw.text((width/2, height*3/4), text, anchor="mm", fill=text_color, font=get_font("Jost", text_font_size))
+    image_draw.text((width/2, height*3/4), text, anchor="mm", fill=text_color, font=get_font("Jost", text_font_size), align="center")
 
     return image
 

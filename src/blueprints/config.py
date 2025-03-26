@@ -33,7 +33,7 @@ def save_config():
         connect_to_wifi(ssid, form_data.get("password"))
         if is_connected():
             device_config.update_config(config)
-            return redirect(url_for("main"))
+            return redirect(url_for("main.main_page"))
         else:
             return jsonify({"error": "Connection to wifi failed!"}), 500
     except RuntimeError as e:

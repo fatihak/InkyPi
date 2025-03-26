@@ -8,7 +8,7 @@
     <script src="{{ url_for('static', filename='scripts/response_modal.js') }}"></script>
     <script>
         async function handleAction() {
-            const form = document.querySelector('.settings-form');
+            const form = document.querySelector('.config-form');
             const formData = new FormData(form);
 
             try {
@@ -43,7 +43,7 @@
     <!-- Config Content -->
     <form class="config-form">
         <div class="config-container">
-            <div class="form-group">
+            <div class="form-inline">
                 <label for="deviceName" class="form-label">Device Name:</label>
                 <input id="deviceName" name="deviceName" class="form-input" placeholder="SSID" value="{{ device_settings.name }}"><span>.local</span>
             </div>
