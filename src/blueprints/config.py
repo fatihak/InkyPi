@@ -1,7 +1,7 @@
 import os
 
-from flask import Blueprint, request, jsonify, current_app, render_template
-from wifi import close_hotspot, connect_to_wifi, is_connected, open_hotspot
+from flask import Blueprint, request, jsonify, current_app, render_template, redirect, url_for
+from utils.wifi import close_hotspot, connect_to_wifi, is_connected, open_hotspot
 
 config_bp = Blueprint("config", __name__)
 
@@ -33,11 +33,10 @@ def save_config():
         connect_to_wifi(ssid, form_data.get("password"))
         if is_connected():
             device_config.update_config(config)
-            os.system("sudo shutdown -r now")
+            return redirect(url_for("main"))
         else:
             return jsonify({"error": "Connection to wifi failed!"}), 500
     except RuntimeError as e:
         return jsonify({"error": str(e)}), 500
     except Exception as e:
         return jsonify({"error": f"An error occurred: {str(e)}"}), 500
-    return jsonify({"success": True, "message": "Saved config. Device is rebooting now."})

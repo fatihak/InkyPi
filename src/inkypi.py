@@ -3,8 +3,6 @@
 # set up logging
 import os, logging.config
 
-from src.wifi import open_hotspot
-
 logging.config.fileConfig(os.path.join(os.path.dirname(__file__), 'config', 'logging.conf'))
 
 # suppress warning from inky library https://github.com/pimoroni/inky/issues/205
@@ -13,11 +11,7 @@ warnings.filterwarnings("ignore", message=".*Busy Wait: Held high.*")
 
 import os
 import random
-import time
-import sys
-import json
 import logging
-import threading
 from utils.app_utils import generate_startup_image
 from flask import Flask, request
 from werkzeug.serving import is_running_from_reloader
@@ -31,7 +25,7 @@ from blueprints.playlist import playlist_bp
 from blueprints.config import config_bp
 from jinja2 import ChoiceLoader, FileSystemLoader
 from plugins.plugin_registry import load_plugins
-from wifi import connect_to_wifi
+from utils.wifi import connect_to_wifi, open_hotspot
 
 
 logger = logging.getLogger(__name__)
