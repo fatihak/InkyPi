@@ -6,8 +6,6 @@ import subprocess
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
 
-from src.inkypi import device_config
-
 logger = logging.getLogger(__name__)
 
 FONT_FAMILIES = {
@@ -48,14 +46,6 @@ def resolve_path(file_path):
     return str(src_path / file_path)
 
 def get_ip_address():
-    if device_config.get_config("installed") is False:
-        result = subprocess.run(['ip', 'a'], stdout=subprocess.PIPE)
-        output = result.stdout.decode('utf-8')
-
-        for line in output.split('\n'):
-            if 'inet ' in line and 'wlan0' in line:
-                ip_address = line.strip().split()[1]
-                return ip_address
     with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
         s.connect(("8.8.8.8", 80))
         ip_address = s.getsockname()[0]
@@ -116,7 +106,6 @@ def generate_startup_image(install = False, dimensions=(800,480)):
     width,height = dimensions
 
     hostname = socket.gethostname()
-    ip = get_ip_address()
 
     image = Image.new("RGBA", dimensions, bg_color)
     image_draw = ImageDraw.Draw(image)
@@ -125,9 +114,10 @@ def generate_startup_image(install = False, dimensions=(800,480)):
     image_draw.text((width/2, height*1/4), "inkypi", anchor="mm", fill=text_color, font=get_font("Jost", title_font_size))
 
     if install:
-        text = f"To get started, connect a device (like your phone)\nwith the display via WIFI: \nSSID: INKY\nPassword: SuperSecret123\n\nand connect to http://${ip}"
+        text = f"To get started, connect a device (like your phone)\nwith the display via WIFI: \nSSID: INKY\nPassword: SuperSecret123\n\nand connect to http://10.42.0.1"
     else:
-        text = f"To get started, visit\nhttp://{hostname}.local\nor\nhttp://{ip}"
+        ip = get_ip_address()
+        text = f"Your inkypi is now connected to your wifi, please visit\nhttp://{hostname}.local\nor\nhttp://{ip}\nto configure more."
     text_font_size = width * 0.032
     image_draw.text((width/2, height*2/4), text, anchor="mm", fill=text_color, font=get_font("Jost", text_font_size), align="center")
 
