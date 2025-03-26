@@ -72,10 +72,10 @@ if __name__ == '__main__':
             display_manager.display_image(img)
             device_config.update_value("startup", False, write=True)
     else:
+        open_hotspot()
         logger.info("Device is not configured, displaying install image")
         img = generate_startup_image(True, device_config.get_resolution())
         display_manager.display_image(img)
-        open_hotspot()
 
     try:
         # Run the Flask app
