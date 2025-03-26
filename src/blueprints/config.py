@@ -32,7 +32,7 @@ def save_config():
             "installed": True
         }
         device_config.update_config(config)
-        return jsonify({"success": "Connection to wifi established" }), 500
+        return jsonify({"success": "Connection to wifi established" })
     except RuntimeError as e:
         return jsonify({"error": str(e)}), 500
     except Exception as e:
