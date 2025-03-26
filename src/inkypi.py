@@ -2,6 +2,9 @@
 
 # set up logging
 import os, logging.config
+
+from src.wifi import open_hotspot
+
 logging.config.fileConfig(os.path.join(os.path.dirname(__file__), 'config', 'logging.conf'))
 
 # suppress warning from inky library https://github.com/pimoroni/inky/issues/205
@@ -25,8 +28,10 @@ from blueprints.main import main_bp
 from blueprints.settings import settings_bp
 from blueprints.plugin import plugin_bp
 from blueprints.playlist import playlist_bp
+from blueprints.config import config_bp
 from jinja2 import ChoiceLoader, FileSystemLoader
 from plugins.plugin_registry import load_plugins
+from wifi import connect_to_wifi
 
 
 logger = logging.getLogger(__name__)
@@ -54,6 +59,7 @@ app.config['REFRESH_TASK'] = refresh_task
 app.register_blueprint(main_bp)
 app.register_blueprint(settings_bp)
 app.register_blueprint(plugin_bp)
+app.register_blueprint(config_bp)
 app.register_blueprint(playlist_bp)
 
 if __name__ == '__main__':
@@ -63,12 +69,19 @@ if __name__ == '__main__':
     if not is_running_from_reloader():
         refresh_task.start()
 
-    # display default inkypi image on startup
-    if device_config.get_config("startup") is True:
-        logger.info("Startup flag is set, displaying startup image")
-        img = generate_startup_image(device_config.get_resolution())
+    if device_config.get_config("installed") is True:
+        connect_to_wifi(device_config.get_config("ssid"), device_config.get_config("password"))
+        # display default inkypi image on startup
+        if device_config.get_config("startup") is True:
+            logger.info("Startup flag is set, displaying startup image")
+            img = generate_startup_image(device_config.get_resolution())
+            display_manager.display_image(img)
+            device_config.update_value("startup", False, write=True)
+    else:
+        logger.info("Device is not configured, displaying install image")
+        img = generate_startup_image(True, device_config.get_resolution())
         display_manager.display_image(img)
-        device_config.update_value("startup", False, write=True)
+        open_hotspot()
 
     try:
         # Run the Flask app

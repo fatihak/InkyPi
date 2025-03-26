@@ -99,7 +99,7 @@ def get_fonts():
 def get_font_path(font_name):
     return resolve_path(os.path.join("static", "fonts", FONTS[font_name]))
 
-def generate_startup_image(dimensions=(800,480)):
+def generate_startup_image(install = False, dimensions=(800,480)):
     bg_color = (255,255,255)
     text_color = (0,0,0)
     width,height = dimensions
@@ -113,7 +113,10 @@ def generate_startup_image(dimensions=(800,480)):
     title_font_size = width * 0.145
     image_draw.text((width/2, height/2), "inkypi", anchor="mm", fill=text_color, font=get_font("Jost", title_font_size))
 
-    text = f"To get started, visit http://{hostname}.local"
+    if install:
+        text = f"To get started, connect your device with the display via WIFI.\nSSID: INKY\nPassword: INKY"
+    else:
+        text = f"To get started, visit http://{hostname}.local"
     text_font_size = width * 0.032
     image_draw.text((width/2, height*3/4), text, anchor="mm", fill=text_color, font=get_font("Jost", text_font_size))
 

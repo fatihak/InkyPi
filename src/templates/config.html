@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ config.name }}</title>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='styles/main.css') }}">
+    <script src="{{ url_for('static', filename='scripts/response_modal.js') }}"></script>
+    <script>
+        async function handleAction() {
+            const form = document.querySelector('.settings-form');
+            const formData = new FormData(form);
+
+            try {
+                const response = await fetch("{{ url_for('config.save_config') }}", {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                const result = await response.json();
+                if (response.ok) {
+                    showResponseModal('success', `Success! ${result.message}`);
+                } else {
+                    showResponseModal('failure', `Error!  ${result.error}`);
+                    form.reset();
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('An error occurred while processing your request.');
+            }
+        }
+    </script>
+</head>
+<body>
+<div class="frame">
+    <!-- Back Button -->
+    <button onclick="history.back()" class="back-button">← Back</button>
+    <!-- Settings Header -->
+    <div class="app-header">
+        <h1 class="app-title">Config</h1>
+    </div>
+    <div class="separator"></div>
+    <!-- Config Content -->
+    <form class="config-form">
+        <div class="config-container">
+            <div class="form-group">
+                <label for="deviceName" class="form-label">Device Name:</label>
+                <input id="deviceName" name="deviceName" class="form-input" placeholder="SSID" value="{{ device_settings.name }}"><span>.local</span>
+            </div>
+            <div class="form-group">
+                <label for="ssid" class="form-label">SSID:</label>
+                <input id="ssid" name="ssid" class="form-input" placeholder="SSID" value="{{ device_settings.ssid }}">
+                <label for="password" class="form-label">Password:</label>
+                <input id="password" name="password" class="form-input" placeholder="Password" value="{{ device_settings.password }}">
+            </div>
+        </div>
+    </form>
+
+    <!-- Buttons -->
+    <div class="buttons-container">
+        <button type="button" onclick="handleAction()" class="action-button">Save</button>
+    </div>
+</div>
+<!-- Success/Error Modal -->
+{% include 'response_modal.html' %}
+</body>
+</html>

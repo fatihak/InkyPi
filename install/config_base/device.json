@@ -2,5 +2,8 @@
     "name": "InkyPi",
     "orientation": "horizontal",
     "scheduler_sleep_time": 60,
-    "startup": true
+    "startup": true,
+    "installed": false,
+    "ssid": "",
+    "password": ""
 }
