@@ -44,14 +44,7 @@
             });
         }
 
-        let pluginCycleIntervalSeconds = {
-        {
-            device_settings.plugin_cycle_interval_seconds |
-        default
-            (3600) | tojson
-        }
-        }
-        ;
+        let pluginCycleIntervalSeconds = {{ device_settings.plugin_cycle_interval_seconds | default(3600) | tojson }};
 
         // Function to populate the fields
         function populateIntervalFields() {
