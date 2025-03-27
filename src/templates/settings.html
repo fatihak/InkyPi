@@ -36,6 +36,7 @@
             } else {
                 showResponseModal('success', 'The system will be shut down.');
             }
+            await new Promise(resolve => setTimeout(resolve, 1000));
             // we cannot await a response here
             await fetch("{{ url_for('settings.shutdown') }}", {
                 method: 'POST',
@@ -83,8 +84,8 @@
     <div class="settings-header-buttons">
         <button onclick="history.back()" class="header-button">← Back</button>
         <div class="settings-shutdown-buttons">
-            <button onclick="handleShutdown(true)" class="header-button">Reboot</button>
-            <button onclick="handleShutdown(false)" class="header-button">Shutdown</button>
+            <button type="button" onclick="handleShutdown(true)" class="header-button">Reboot</button>
+            <button type="button" onclick="handleShutdown(false)" class="header-button">Shutdown</button>
         </div>
     </div>
     <!-- Settings Header -->
