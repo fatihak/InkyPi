@@ -1,3 +1,5 @@
+import os
+
 from quart import Blueprint, request, jsonify, current_app, render_template
 from utils.time_utils import calculate_seconds
 import pytz
@@ -41,3 +43,13 @@ async def save_settings():
     except Exception as e:
         return jsonify({"error": f"An error occurred: {str(e)}"}), 500
     return jsonify({"success": True, "message": "Saved settings."})
+
+
+@settings_bp.route('/shutdown', methods=['POST'])
+async def shutdown():
+    data = await request.json
+    if data.reboot:
+        os.system("sudo reboot")
+    else:
+        os.system("sudo shutdown -h now")
+    return jsonify({"success": True})

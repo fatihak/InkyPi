@@ -16,7 +16,7 @@
                     method: 'POST',
                     body: formData,
                 });
-                
+
                 const result = await response.json();
                 if (response.ok) {
                     showResponseModal('success', `Success! ${result.message}`);
@@ -30,8 +30,28 @@
             }
         }
 
-        let pluginCycleIntervalSeconds = {{ device_settings.plugin_cycle_interval_seconds | default(3600) | tojson }};
-    
+        async function handleShutdown(reboot) {
+            // we cannot await a response here
+            await fetch("{{ url_for('settings.shutdown') }}", {
+                method: 'POST',
+                body: JSON.stringify({reboot: reboot})
+            });
+            if (reboot) {
+                showResponseModal('success', 'The system will reboot now.');
+            } else {
+                showResponseModal('success', 'The system will be shut down.');
+            }
+        }
+
+        let pluginCycleIntervalSeconds = {
+        {
+            device_settings.plugin_cycle_interval_seconds |
+        default
+            (3600) | tojson
+        }
+        }
+        ;
+
         // Function to populate the fields
         function populateIntervalFields() {
             const intervalInput = document.getElementById('interval');
@@ -53,47 +73,56 @@
                 }
             }
         }
+
         document.addEventListener('DOMContentLoaded', populateIntervalFields);
     </script>
 </head>
 <body>
-    <div class="frame">
-        <!-- Back Button -->
+<div class="frame">
+    <!-- Back Button -->
+    <div class="settings-header-buttons">
         <button onclick="history.back()" class="back-button">← Back</button>
-        <!-- Settings Header -->
-        <div class="app-header">
-            <img src="{{ url_for('static', filename='icons/settings.png') }}" alt="settings icon" class="app-icon">
-            <h1 class="app-title">Settings</h1>
+        <div class="settings-shutdown-buttons">
+            <button onclick="handleShutdown(true)" class="shutdown-button">Reboot</button>
+            <button onclick="handleShutdown(false)" class="shutdown-button">Shutdown</button>
         </div>
-        <div class="separator"></div>
-        <!-- Settings Content -->
-        <form class="settings-form">
-            <div id="settings-container">
-                <!-- Device Name -->
+    </div>
+    <!-- Settings Header -->
+    <div class="app-header">
+        <img src="{{ url_for('static', filename='icons/settings.png') }}" alt="settings icon" class="app-icon">
+        <h1 class="app-title">Settings</h1>
+    </div>
+    <div class="separator"></div>
+    <!-- Settings Content -->
+    <form class="settings-form">
+        <div id="settings-container">
+            <!-- Device Name -->
+            <div class="form-group">
+                <label for="deviceName" class="form-label">Device Name:</label>
+                <input type="text"
+                       id="deviceName"
+                       name="deviceName"
+                       placeholder="Type something..."
+                       value="{{ device_settings.name }}"
+                       required
+                       class="form-input">
+            </div>
+            <div class="form-group">
+                <!-- Orientation Dropdown -->
                 <div class="form-group">
-                    <label for="deviceName" class="form-label">Device Name:</label>
-                    <input type="text" 
-                           id="deviceName" 
-                           name="deviceName" 
-                           placeholder="Type something..." 
-                           value="{{ device_settings.name }}" 
-                           required 
-                           class="form-input">
+                    <label for="orientation" class="form-label">Orientation:</label>
+                    <select id="orientation" name="orientation" class="form-input">
+                        <option value="horizontal" {% if device_settings.orientation==
+                        "horizontal" %}selected{% endif %}>Horizontal</option>
+                        <option value="vertical" {% if device_settings.orientation==
+                        "vertical" %}selected{% endif %}>Vertical</option>
+                    </select>
                 </div>
+
+                <!-- Timezone Dropdown -->
                 <div class="form-group">
-                    <!-- Orientation Dropdown -->
-                    <div class="form-group">
-                        <label for="orientation" class="form-label">Orientation:</label>
-                        <select id="orientation" name="orientation" class="form-input">
-                            <option value="horizontal" {% if device_settings.orientation == "horizontal" %}selected{% endif %}>Horizontal</option>
-                            <option value="vertical" {% if device_settings.orientation == "vertical" %}selected{% endif %}>Vertical</option>
-                        </select>
-                    </div>
-                    
-                    <!-- Timezone Dropdown -->
-                    <div class="form-group">
-                        <label for="timezone" class="form-label">Time Zone:</label>
-                        <input
+                    <label for="timezone" class="form-label">Time Zone:</label>
+                    <input
                             type="text"
                             id="timezone"
                             name="timezoneName"
@@ -101,33 +130,33 @@
                             list="timezoneList"
                             placeholder="Type to search..."
                             value="{{ device_settings.timezone }}"
-                        />
-                        <datalist id="timezoneList">
-                            {% for timezone in timezones %}
-                            <option value="{{ timezone }}"></option>
-                            {% endfor %}
-                        </datalist>
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label for="interval">Plugin Cycle Interval:</label>
-                    <span title="Determines how often the display switches to a new plugin.">ⓘ</span>
-                    <span>Every</span>
-                    <input type="number" id="interval" name="interval" class="form-input" required min="1">
-                    <select id="unit" name="unit" class="form-input" required>
-                        <option value="minute">Minute</option>
-                        <option value="hour">Hour</option>
-                    </select>
+                    />
+                    <datalist id="timezoneList">
+                        {% for timezone in timezones %}
+                        <option value="{{ timezone }}"></option>
+                        {% endfor %}
+                    </datalist>
                 </div>
             </div>
-        </form>
- 
-        <!-- Buttons -->
-        <div class="buttons-container">
-            <button type="button" onclick="handleAction()" class="action-button">Save</button>
+            <div class="form-group">
+                <label for="interval">Plugin Cycle Interval:</label>
+                <span title="Determines how often the display switches to a new plugin.">ⓘ</span>
+                <span>Every</span>
+                <input type="number" id="interval" name="interval" class="form-input" required min="1">
+                <select id="unit" name="unit" class="form-input" required>
+                    <option value="minute">Minute</option>
+                    <option value="hour">Hour</option>
+                </select>
+            </div>
         </div>
+    </form>
+
+    <!-- Buttons -->
+    <div class="buttons-container">
+        <button type="button" onclick="handleAction()" class="action-button">Save</button>
     </div>
-    <!-- Success/Error Modal -->
-    {% include 'response_modal.html' %}
+</div>
+<!-- Success/Error Modal -->
+{% include 'response_modal.html' %}
 </body>
 </html>

@@ -56,6 +56,16 @@ app.register_blueprint(plugin_bp)
 app.register_blueprint(config_bp)
 app.register_blueprint(playlist_bp)
 
+
+def display_startup_image():
+    # display default inkypi image on startup
+    if device_config.get_config("startup") is True:
+        logger.info("Startup flag is set, displaying startup image")
+        img = generate_startup_image(False, device_config.get_resolution())
+        display_manager.display_image(img)
+        device_config.update_value("startup", False, write=True)
+
+
 if __name__ == '__main__':
     from werkzeug.serving import is_running_from_reloader
 
@@ -63,15 +73,18 @@ if __name__ == '__main__':
     if not is_running_from_reloader():
         refresh_task.start()
 
+    # if the device is already connected to Wi-Fi skip hotspot
+    if is_connected():
+        device_config.update_value("installed", True, write=True)
+        display_startup_image()
+
     if device_config.get_config("installed") is True:
-        connect_to_wifi(device_config.get_config("ssid"), device_config.get_config("password"))
-        # display default inkypi image on startup
-        if device_config.get_config("startup") is True:
-            logger.info("Startup flag is set, displaying startup image")
-            img = generate_startup_image(False, device_config.get_resolution())
-            display_manager.display_image(img)
-            device_config.update_value("startup", False, write=True)
+        # if the device was installed via hotspot connect to Wi-Fi with saved credentials
+        if not is_connected():
+            connect_to_wifi(device_config.get_config("ssid"), device_config.get_config("password"))
+        display_startup_image()
     else:
+        # if no Wi-Fi connection is available open a hotspot and display hotspot credentials
         open_hotspot()
         logger.info("Device is not configured, displaying install image")
         img = generate_startup_image(True, device_config.get_resolution())

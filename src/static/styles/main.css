@@ -152,6 +152,19 @@ body {
     padding: 0px 10px;
 }
 
+.settings-header-buttons {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.settings-shutdown-buttons {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
 /* Style the form inputs and labels */
 .form-group {
     display: flex;
@@ -204,7 +217,7 @@ body {
 }
 
 /* Back button */
-.back-button {
+.back-button, .shutdown-button {
     background-color: #f4f4f9;
     color: #333;
     border: 1px solid #ddd;
