@@ -124,6 +124,7 @@ def generate_startup_image(install = False, dimensions=(800,480)):
     return image
 
 def handle_request_files(request_files, form_data={}):
+    logging.info("Got files: %s", request_files)
     allowed_file_extensions = {'pdf', 'png', 'jpg', 'jpeg', 'gif'}
     file_location_map = {}
     # handle existing file locations being provided as part of the form data
