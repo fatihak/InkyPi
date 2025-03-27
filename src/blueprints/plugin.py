@@ -135,7 +135,8 @@ async def update_now():
         plugin_settings = await request.form
         plugin_settings = plugin_settings.to_dict()  # Get all form data
         files = await request.files
-        plugin_settings.update(handle_request_files(files))
+        handled_files = await handle_request_files(files)
+        plugin_settings.update(handled_files)
         plugin_id = plugin_settings.pop("plugin_id")
 
         refresh_task.manual_update(ManualRefresh(plugin_id, plugin_settings))
