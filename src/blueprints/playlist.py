@@ -2,7 +2,7 @@ import json
 import logging
 from datetime import datetime
 
-from flask import Blueprint, request, jsonify, current_app, render_template
+from quart import Blueprint, request, jsonify, current_app, render_template
 from utils.app_utils import resolve_path, handle_request_files
 from utils.time_utils import calculate_seconds
 
@@ -10,13 +10,14 @@ logger = logging.getLogger(__name__)
 playlist_bp = Blueprint("playlist", __name__)
 
 @playlist_bp.route('/add_plugin', methods=['POST'])
-def add_plugin():
+async def add_plugin():
     device_config = current_app.config['DEVICE_CONFIG']
     refresh_task = current_app.config['REFRESH_TASK']
     playlist_manager = device_config.get_playlist_manager()
 
     try:
-        plugin_settings = request.form.to_dict()
+        plugin_settings = await request.form
+        plugin_settings = plugin_settings.to_dict()
         refresh_settings = json.loads(plugin_settings.pop("refresh_settings"))
         plugin_id = plugin_settings.pop("plugin_id")
 
@@ -67,23 +68,23 @@ def add_plugin():
     return jsonify({"success": True, "message": "Scheduled refresh configured."})
 
 @playlist_bp.route('/playlist')
-def playlists():
+async def playlists():
     device_config = current_app.config['DEVICE_CONFIG']
     playlist_manager = device_config.get_playlist_manager()
     refresh_info = device_config.get_refresh_info()
 
-    return render_template(
+    return await render_template(
         'playlist.html',
         playlist_config=playlist_manager.to_dict(),
         refresh_info=refresh_info.to_dict()
     )
 
 @playlist_bp.route('/create_playlist', methods=['POST'])
-def create_playlist():
+async def create_playlist():
     device_config = current_app.config['DEVICE_CONFIG']
     playlist_manager = device_config.get_playlist_manager()
 
-    data = request.json
+    data = await request.json
     playlist_name = data.get("playlist_name")
     start_time = data.get("start_time")
     end_time = data.get("end_time")
@@ -115,11 +116,11 @@ def create_playlist():
 
 
 @playlist_bp.route('/update_playlist/<string:playlist_name>', methods=['PUT'])
-def update_playlist(playlist_name):
+async def update_playlist(playlist_name):
     device_config = current_app.config['DEVICE_CONFIG']
     playlist_manager = device_config.get_playlist_manager()
 
-    data = request.get_json()
+    data = await request.get_json()
 
     new_name = data.get("new_name")
     start_time = data.get("start_time")
@@ -158,7 +159,7 @@ def delete_playlist(playlist_name):
     return jsonify({"success": True, "message": f"Deleted playlist '{playlist_name}'!"})
 
 @playlist_bp.app_template_filter('format_relative_time')
-def format_relative_time(iso_date_string):
+async def format_relative_time(iso_date_string):
     # Parse the input ISO date string
     dt = datetime.fromisoformat(iso_date_string)
     

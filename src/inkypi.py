@@ -15,7 +15,7 @@ import random
 import logging
 from utils.app_utils import generate_startup_image
 from utils.wifi import connect_to_wifi, open_hotspot, is_connected
-from flask import Flask
+from quart import Quart
 from config import Config
 from display_manager import DisplayManager
 from refresh_task import RefreshTask
@@ -31,7 +31,7 @@ from plugins.plugin_registry import load_plugins
 logger = logging.getLogger(__name__)
 
 logger.info("Starting web server")
-app = Flask(__name__)
+app = Quart(__name__)
 template_dirs = [
    os.path.join(os.path.dirname(__file__), "templates"),    # Default template folder
    os.path.join(os.path.dirname(__file__), "plugins"),      # Plugin templates

@@ -1,23 +1,24 @@
 import logging
 import os
 
-from flask import Blueprint, request, jsonify, current_app, render_template, redirect, url_for
+from quart import Blueprint, request, jsonify, current_app, render_template, redirect, url_for
 
 logger = logging.getLogger(__name__)
 
 config_bp = Blueprint("config", __name__)
 
 @config_bp.route('/config')
-def config_page():
+async def config_page():
     device_config = current_app.config['DEVICE_CONFIG']
-    return render_template('config.html', device_settings=device_config.get_config())
+    return await render_template('config.html', device_settings=device_config.get_config())
 
 @config_bp.route('/save_config', methods=['POST'])
-def save_config():
+async def save_config():
     device_config = current_app.config['DEVICE_CONFIG']
 
     try:
-        form_data = request.form.to_dict()
+        form_data = await request.form
+        form_data = form_data.to_dict()
 
         name, ssid = form_data.get('deviceName'), form_data.get('ssid')
         if not name:
@@ -32,7 +33,7 @@ def save_config():
             "installed": True
         }
         device_config.update_config(config)
-        return jsonify({"success": "Connection to wifi established" })
+        return jsonify({"success": True, "message": "Connection to wifi established" })
     except RuntimeError as e:
         return jsonify({"error": str(e)}), 500
     except Exception as e:
@@ -41,3 +42,4 @@ def save_config():
 @config_bp.route('/reboot', methods=['GET'])
 def reboot():
     os.system("sudo shutdown -r now")
+    return jsonify({"success": True, "message": "Rebooting"})

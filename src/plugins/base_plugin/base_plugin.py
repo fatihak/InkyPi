@@ -1,11 +1,11 @@
+import base64
 import logging
 import os
+from pathlib import Path
+
+from jinja2 import Environment, FileSystemLoader, select_autoescape
 from utils.app_utils import resolve_path, get_fonts
 from utils.image_utils import take_screenshot_html
-from jinja2 import Environment, FileSystemLoader, select_autoescape
-from pathlib import Path
-import asyncio
-import base64
 
 logger = logging.getLogger(__name__)
 

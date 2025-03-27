@@ -1,21 +1,22 @@
-from flask import Blueprint, request, jsonify, current_app, render_template
+from quart import Blueprint, request, jsonify, current_app, render_template
 from utils.time_utils import calculate_seconds
 import pytz
 
 settings_bp = Blueprint("settings", __name__)
 
 @settings_bp.route('/settings')
-def settings_page():
+async def settings_page():
     device_config = current_app.config['DEVICE_CONFIG']
     timezones = sorted(pytz.all_timezones_set)
-    return render_template('settings.html', device_settings=device_config.get_config(), timezones = timezones)
+    return await render_template('settings.html', device_settings=device_config.get_config(), timezones = timezones)
 
 @settings_bp.route('/save_settings', methods=['POST'])
-def save_settings():
+async def save_settings():
     device_config = current_app.config['DEVICE_CONFIG']
 
     try:
-        form_data = request.form.to_dict()
+        form_data = await request.form
+        form_data = form_data.to_dict()
 
         unit, interval = form_data.get('unit'), form_data.get("interval")
         if not unit or unit not in ["minute", "hour"]:

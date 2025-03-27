@@ -22,7 +22,7 @@
                 const result = await response.json();
                 if (response.ok) {
                     showResponseModal('success', `Success! ${result.message}`);
-                    document.querySelector('.frame').innerHTML = "<h2>The System will reboot now, please wait...</h2>"
+                    document.querySelector('.frame').innerHTML = "<h2>The System will reboot now, please wait until the display is refreshed.</h2>"
                     await fetch("{{ url_for('config.reboot') }}", {
                         method: 'GET'
                     });
