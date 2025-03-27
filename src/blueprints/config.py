@@ -34,7 +34,7 @@ async def save_config():
             "installed": True
         }
         device_config.update_config(config)
-        set_hostname(name)
+        await set_hostname(name)
         return jsonify({"success": True, "message": "Config updated, rebooting..." })
     except RuntimeError as e:
         return jsonify({"error": str(e)}), 500

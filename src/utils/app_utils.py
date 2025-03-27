@@ -123,8 +123,7 @@ def generate_startup_image(install = False, dimensions=(800,480)):
 
     return image
 
-def handle_request_files(request_files, form_data={}):
-    logging.info("Got files: %s", request_files)
+async def handle_request_files(request_files, form_data={}):
     allowed_file_extensions = {'pdf', 'png', 'jpg', 'jpeg', 'gif'}
     file_location_map = {}
     # handle existing file locations being provided as part of the form data
@@ -147,7 +146,7 @@ def handle_request_files(request_files, form_data={}):
 
         file_save_dir = resolve_path(os.path.join("static", "images", "saved"))
         file_path = os.path.join(file_save_dir, file_name)
-        file.save(file_path)
+        await file.save(file_path)
 
         if is_list:
             file_location_map.setdefault(key, [])
