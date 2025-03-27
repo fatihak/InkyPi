@@ -1,6 +1,7 @@
 import logging
 import os
 import socket
+import subprocess
 
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
@@ -99,27 +100,30 @@ def get_fonts():
 def get_font_path(font_name):
     return resolve_path(os.path.join("static", "fonts", FONTS[font_name]))
 
-def generate_startup_image(dimensions=(800,480)):
+def generate_startup_image(install = False, dimensions=(800,480)):
     bg_color = (255,255,255)
     text_color = (0,0,0)
     width,height = dimensions
 
     hostname = socket.gethostname()
-    ip = get_ip_address()
 
     image = Image.new("RGBA", dimensions, bg_color)
     image_draw = ImageDraw.Draw(image)
 
     title_font_size = width * 0.145
-    image_draw.text((width/2, height/2), "inkypi", anchor="mm", fill=text_color, font=get_font("Jost", title_font_size))
+    image_draw.text((width/2, height*0.20), "inkypi", anchor="mm", fill=text_color, font=get_font("Jost", title_font_size))
 
-    text = f"To get started, visit http://{hostname}.local"
+    if install:
+        text = f"To get started, connect a device (like your phone)\nwith the display via WIFI: \nSSID: INKY\nPassword: SuperSecret123\n\nand connect to http://10.42.0.1"
+    else:
+        ip = get_ip_address()
+        text = f"Your inkypi is now connected to your wifi, please visit\nhttp://{hostname}.local\nor\nhttp://{ip}\nto configure more."
     text_font_size = width * 0.032
-    image_draw.text((width/2, height*3/4), text, anchor="mm", fill=text_color, font=get_font("Jost", text_font_size))
+    image_draw.text((width/2, height*0.60), text, anchor="mm", fill=text_color, font=get_font("Jost", text_font_size), align="center")
 
     return image
 
-def handle_request_files(request_files, form_data={}):
+async def handle_request_files(request_files, form_data={}):
     allowed_file_extensions = {'pdf', 'png', 'jpg', 'jpeg', 'gif'}
     file_location_map = {}
     # handle existing file locations being provided as part of the form data
@@ -142,7 +146,7 @@ def handle_request_files(request_files, form_data={}):
 
         file_save_dir = resolve_path(os.path.join("static", "images", "saved"))
         file_path = os.path.join(file_save_dir, file_name)
-        file.save(file_path)
+        await file.save(file_path)
 
         if is_list:
             file_location_map.setdefault(key, [])
@@ -150,3 +154,23 @@ def handle_request_files(request_files, form_data={}):
         else:
             file_location_map[key] = file_path
     return file_location_map
+
+def set_hostname(new_hostname):
+    # Set hostname
+    with open('/etc/hostname', 'w') as f:
+        f.write(new_hostname)
+
+    # edit hosts file
+    with open('/etc/hosts', 'r') as f:
+        lines = f.readlines()
+
+    with open('/etc/hosts', 'w') as f:
+        for line in lines:
+            if socket.gethostname() in line:
+                f.write(line.replace(socket.gethostname(), new_hostname))
+            else:
+                f.write(line)
+
+    # set hostname with hostnamectl
+    os.system(f'hostnamectl set-hostname {new_hostname}')
+    logger.info(f"set hostname to {new_hostname}")

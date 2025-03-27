@@ -1,13 +1,14 @@
-import threading
-import time
-import os
 import logging
+import os
+import threading
+from datetime import datetime
+
 import pytz
-from datetime import datetime, timezone
+from PIL import Image
+
+from model import RefreshInfo, PlaylistManager
 from plugins.plugin_registry import get_plugin_instance
 from utils.image_utils import compute_image_hash
-from model import RefreshInfo, PlaylistManager
-from PIL import Image
 
 logger = logging.getLogger(__name__)
 

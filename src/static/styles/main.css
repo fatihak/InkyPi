@@ -137,7 +137,7 @@ body {
 }
 
 /* Ensure form and settings container expand */
-.settings-form {
+.settings-form, .config-form {
     display: flex;
     flex-direction: column;
     height: 100%;
@@ -145,11 +145,24 @@ body {
     flex-grow: 1;
 }
 
-.settings-container {
+.settings-container, .config-container {
     display: flex;
     justify-content: center;
     flex-direction: column;
     padding: 0px 10px;
+}
+
+.settings-header-buttons {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.settings-shutdown-buttons {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
 }
 
 /* Style the form inputs and labels */
@@ -203,8 +216,8 @@ body {
     margin-top: auto;
 }
 
-/* Back button */
-.back-button {
+/* Header button */
+.header-button {
     background-color: #f4f4f9;
     color: #333;
     border: 1px solid #ddd;
@@ -217,7 +230,7 @@ body {
     text-align: left;
     width: fit-content; /* Button takes up only the width of the text */
 }
-.back-button:hover {
+.header-button:hover {
     background-color: #e0e0e0;
 }
 

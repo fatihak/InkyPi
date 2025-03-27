@@ -1,11 +1,9 @@
-from plugins.base_plugin.base_plugin import BasePlugin
-from PIL import Image
-import os
-import requests
 import logging
 from datetime import datetime, timezone
+
 import pytz
-from io import BytesIO
+import requests
+from plugins.base_plugin.base_plugin import BasePlugin
 
 logger = logging.getLogger(__name__)
 
