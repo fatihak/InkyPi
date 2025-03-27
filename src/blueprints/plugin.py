@@ -80,13 +80,14 @@ async def update_plugin_instance(instance_name):
     playlist_manager = device_config.get_playlist_manager()
 
     try:
-        form_data = await request.form
-        form_data = form_data.to_dict()
+        form = await request.form
+        form_data = form.to_dict()
 
         if not instance_name:
             raise RuntimeError("Instance name is required")
         plugin_settings = form_data
-        plugin_settings.update(handle_request_files(request.files, request.form))
+        files = await request.files
+        plugin_settings.update(handle_request_files(files, form))
 
         plugin_id = plugin_settings.pop("plugin_id")
         plugin_instance = playlist_manager.find_plugin(plugin_id, instance_name)
@@ -133,7 +134,8 @@ async def update_now():
     try:
         plugin_settings = await request.form
         plugin_settings = plugin_settings.to_dict()  # Get all form data
-        plugin_settings.update(handle_request_files(request.files))
+        files = await request.files
+        plugin_settings.update(handle_request_files(files))
         plugin_id = plugin_settings.pop("plugin_id")
 
         refresh_task.manual_update(ManualRefresh(plugin_id, plugin_settings))
