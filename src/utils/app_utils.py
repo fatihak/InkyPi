@@ -154,3 +154,23 @@ def handle_request_files(request_files, form_data={}):
         else:
             file_location_map[key] = file_path
     return file_location_map
+
+def set_hostname(new_hostname):
+    # Set hostname
+    with open('/etc/hostname', 'w') as f:
+        f.write(new_hostname)
+
+    # edit hosts file
+    with open('/etc/hosts', 'r') as f:
+        lines = f.readlines()
+
+    with open('/etc/hosts', 'w') as f:
+        for line in lines:
+            if socket.gethostname() in line:
+                f.write(line.replace(socket.gethostname(), new_hostname))
+            else:
+                f.write(line)
+
+    # set hostname with hostnamectl
+    os.system(f'hostnamectl set-hostname {new_hostname}')
+    logger.info(f"set hostname to {new_hostname}")

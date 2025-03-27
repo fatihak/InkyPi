@@ -1,7 +1,8 @@
 import logging
 import os
 
-from quart import Blueprint, request, jsonify, current_app, render_template, redirect, url_for
+from quart import Blueprint, request, jsonify, current_app, render_template
+from utils.app_utils import set_hostname
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +34,8 @@ async def save_config():
             "installed": True
         }
         device_config.update_config(config)
-        return jsonify({"success": True, "message": "Connection to wifi established" })
+        set_hostname(name)
+        return jsonify({"success": True, "message": "Config updated, rebooting..." })
     except RuntimeError as e:
         return jsonify({"error": str(e)}), 500
     except Exception as e:
