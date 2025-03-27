@@ -216,8 +216,8 @@ body {
     margin-top: auto;
 }
 
-/* Back button */
-.back-button, .shutdown-button {
+/* Header button */
+.header-button {
     background-color: #f4f4f9;
     color: #333;
     border: 1px solid #ddd;
@@ -230,7 +230,7 @@ body {
     text-align: left;
     width: fit-content; /* Button takes up only the width of the text */
 }
-.back-button:hover {
+.header-button:hover {
     background-color: #e0e0e0;
 }
 

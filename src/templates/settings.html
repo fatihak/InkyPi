@@ -31,16 +31,16 @@
         }
 
         async function handleShutdown(reboot) {
-            // we cannot await a response here
-            await fetch("{{ url_for('settings.shutdown') }}", {
-                method: 'POST',
-                body: JSON.stringify({reboot: reboot})
-            });
             if (reboot) {
                 showResponseModal('success', 'The system will reboot now.');
             } else {
                 showResponseModal('success', 'The system will be shut down.');
             }
+            // we cannot await a response here
+            await fetch("{{ url_for('settings.shutdown') }}", {
+                method: 'POST',
+                body: JSON.stringify({reboot: reboot})
+            });
         }
 
         let pluginCycleIntervalSeconds = {
@@ -81,10 +81,10 @@
 <div class="frame">
     <!-- Back Button -->
     <div class="settings-header-buttons">
-        <button onclick="history.back()" class="back-button">← Back</button>
+        <button onclick="history.back()" class="header-button">← Back</button>
         <div class="settings-shutdown-buttons">
-            <button onclick="handleShutdown(true)" class="shutdown-button">Reboot</button>
-            <button onclick="handleShutdown(false)" class="shutdown-button">Shutdown</button>
+            <button onclick="handleShutdown(true)" class="header-button">Reboot</button>
+            <button onclick="handleShutdown(false)" class="header-button">Shutdown</button>
         </div>
     </div>
     <!-- Settings Header -->

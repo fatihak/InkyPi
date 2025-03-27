@@ -48,7 +48,7 @@ async def save_settings():
 @settings_bp.route('/shutdown', methods=['POST'])
 async def shutdown():
     data = await request.json
-    if data.reboot:
+    if data.reboot is True:
         os.system("sudo reboot")
     else:
         os.system("sudo shutdown -h now")
