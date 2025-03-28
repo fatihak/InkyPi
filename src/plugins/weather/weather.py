@@ -30,6 +30,9 @@ class Weather(BasePlugin):
         }
         template_params["style_settings"] = True
 
+        # Add settings with default values
+        template_params["settings"] = {"language": "en"}  # Default to English
+
         return template_params
 
     def generate_image(self, settings, device_config):
