@@ -79,8 +79,8 @@
     const minTemp = Math.min(...temperatures);
     var maxTemp = Math.max(...temperatures);
 
-    if (maxTemp - minTemp < 5){
-      maxTemp += 5;
+    if (maxTemp - minTemp < 4){
+      maxTemp += 2;
     }
   
     const chart = new Chart(ctx, {

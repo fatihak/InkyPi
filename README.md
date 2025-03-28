@@ -35,6 +35,7 @@ And additional plugins coming soon! For documentation on building custom plugins
     - **[5.7 Inch Display](https://collabs.shop/ns6m6m)**
     - **[4 Inch Display](https://collabs.shop/cpwtbh)**
 - Picture Frame or 3D Stand
+    - See [community.md](./docs/community.md) for 3D models, custom builds, and other submissions from the community
 
 ## Installation
 To install InkyPi, follow these steps:

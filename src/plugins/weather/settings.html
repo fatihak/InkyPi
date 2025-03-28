@@ -91,7 +91,7 @@
         });
         
         $closeMap.addEventListener('click', () => {
-            const position = marker.getLatLng();
+            const position = marker.getLatLng().wrap();
             $latitude.value = position.lat;
             $longitude.value = position.lng;
             closeModal('mapModal');

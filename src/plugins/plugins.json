@@ -29,5 +29,10 @@
         "display_name": "Weather",
         "id": "weather",
         "class": "Weather"
+    },
+    {
+        "display_name": "Screenshot",
+        "id": "screenshot",
+        "class": "Screenshot"
     }
 ]

@@ -70,12 +70,25 @@ def take_screenshot_html(html_str, dimensions):
             html_file.write(html_str.encode("utf-8"))
             html_file_path = html_file.name
 
+        take_screenshot_html(html_file_path, dimensions)
+
+        # Remove html file
+        os.remove(html_file_path)
+
+    except Exception as e:
+        logger.error(f"Failed to take screenshot: {str(e)}")
+
+    return image
+
+def take_screenshot(target, dimensions):
+    image = None
+    try:
         # Create a temporary output file for the screenshot
         with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as img_file:
             img_file_path = img_file.name
 
         command = [
-            "chromium-browser", html_file_path, "--headless=old",
+            "chromium-browser", target, "--headless=old",
             f"--screenshot={img_file_path}", f'--window-size={dimensions[0]},{dimensions[1]}',
             "--no-sandbox", "--disable-gpu", "--disable-software-rasterizer",
             "--disable-dev-shm-usage", "--hide-scrollbars"
@@ -91,8 +104,7 @@ def take_screenshot_html(html_str, dimensions):
         # Load the image using PIL
         image = Image.open(img_file_path)
 
-        # Cleanup temp files
-        os.remove(html_file_path)
+        # Remove image files
         os.remove(img_file_path)
 
     except Exception as e:

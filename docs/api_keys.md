@@ -30,7 +30,7 @@ Required for the AI Image and AI Text Plugins
     OPEN_AI_SECRET=your-key
     ```
 
-## Open Weather Map
+## Open Weather Map Key
 
 Required for the Weather Plugin
 
