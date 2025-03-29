@@ -82,7 +82,7 @@ body {
 /* Button grid container styling */
 .button-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); /* auto adjust buttons per row */
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); /* auto adjust buttons per row */
     gap: 15px; /* Smaller space between buttons */
     overflow-y: auto; /* Allows scrolling if content exceeds the frame */
     padding: 10px 5px;

@@ -17,6 +17,7 @@
         const pluginSettings = {{ plugin_settings | tojson if plugin_settings else {} }};
         const pluginInstanceName ='{{ plugin_instance }}';
         const loadPluginSettings = pluginInstanceName != '';
+        const styleSettings = {{ style_settings | default(false) | tojson }};
 
         let uploadedFiles = {};
 
@@ -167,6 +168,9 @@
 
         // populate form values from plugin settings
         document.addEventListener('DOMContentLoaded', () => {
+            if (!styleSettings){
+                return;
+            }
             if (loadPluginSettings) {
                 if (pluginSettings.margin) {
                     document.getElementById('margin').value = pluginSettings.margin;
@@ -253,7 +257,6 @@
                     <div class="settings-container collapsible-content">
                         <div class="form-group">
                             
-                            {% if style_settings is true or "selectedFrame" in style_settings %}
                             <div class="form-group nowrap">
                                 <label for="selected-frame" class="form-label">Frame:</label>
                                 <div id="frame-selection" class="image-grid">
@@ -272,17 +275,13 @@
                                 </div>
                                 <input type="hidden" id="selected-frame" name="selectedFrame" value="{{ frame_styles[0].Name }}" />
                             </div>
-                            {% endif %}
 
-                            {% if style_settings is true or "margin" in style_settings %}
                             <div class="form-group nowrap">
                                 <label for="margin" class="form-label">Margin:</label>
                                 <input type="number" class="form-input" id="margin" name="margin" min="0" max="40" step="5">px
                             </div>
-                            {% endif %}
                         </div>    
                         
-                        {% if style_settings is true or "backgroundOption" in style_settings %}
                         <!-- Background Color Option -->
                         <div class="form-group">
                             <label class="form-label">Background:</label>
@@ -306,18 +305,15 @@
                                 </div>
                             </div>
                         </div>
-                        {% endif %}
                         
                         <!-- Hidden input fields to store existing file data -->
                         <div id="hiddenFileInput"></div>
                         
-                        {% if style_settings is true or "textColor" in style_settings %}
                         <!-- Text Color Picker -->
                         <div class="form-group">
                             <label for="textColor" class="form-label">Text Color:</label>
                             <input type="color" id="textColor" name="textColor" class="color-picker" value="#000000">
                         </div>
-                        {% endif %}
                     </div>
                 </div>
                 {% endif %}
