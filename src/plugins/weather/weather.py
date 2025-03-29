@@ -70,6 +70,9 @@ class Weather(BasePlugin):
         template_params["plugin_settings"] = settings
 
         image = self.render_image(dimensions, "weather.html", "weather.css", template_params)
+
+        if not image:
+            raise RuntimeError("Failed to take screenshot, please check logs.")
         return image
     
     def parse_weather_data(self, weather_data, aqi_data, location_data, tz, units):

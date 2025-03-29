@@ -62,7 +62,7 @@ def compute_image_hash(image):
     img_bytes = image.tobytes()
     return hashlib.sha256(img_bytes).hexdigest()
 
-def take_screenshot_html(html_str, dimensions):
+def take_screenshot_html(html_str, dimensions, timeout_ms=None):
     image = None
     try:
         # Create a temporary HTML file
@@ -70,7 +70,7 @@ def take_screenshot_html(html_str, dimensions):
             html_file.write(html_str.encode("utf-8"))
             html_file_path = html_file.name
 
-        take_screenshot_html(html_file_path, dimensions)
+        image = take_screenshot(html_file_path, dimensions, timeout_ms)
 
         # Remove html file
         os.remove(html_file_path)
@@ -80,7 +80,7 @@ def take_screenshot_html(html_str, dimensions):
 
     return image
 
-def take_screenshot(target, dimensions):
+def take_screenshot(target, dimensions, timeout_ms=None):
     image = None
     try:
         # Create a temporary output file for the screenshot
@@ -93,6 +93,8 @@ def take_screenshot(target, dimensions):
             "--no-sandbox", "--disable-gpu", "--disable-software-rasterizer",
             "--disable-dev-shm-usage", "--hide-scrollbars"
         ]
+        if timeout_ms:
+            command.append(f"--timeout={timeout_ms}")
         result = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
         # Check if the process failed or the output file is missing

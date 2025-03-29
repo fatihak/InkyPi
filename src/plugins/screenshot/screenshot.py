@@ -1,6 +1,7 @@
 from plugins.base_plugin.base_plugin import BasePlugin
 from PIL import Image
-from utils.image_utils import take_screenshot_html
+from utils.image_utils import take_screenshot
+import logging
 
 logger = logging.getLogger(__name__)
 
@@ -15,7 +16,9 @@ class Screenshot(BasePlugin):
         if device_config.get_config("orientation") == "vertical":
             dimensions = dimensions[::-1]
 
-        image = take_screenshot(url, dimensions)
+        logger.info(f"Taking screenshot of url: {url}")
+
+        image = take_screenshot(url, dimensions, timeout_ms=40000)
 
         if not image:
             raise RuntimeError("Failed to take screenshot, please check logs.")
