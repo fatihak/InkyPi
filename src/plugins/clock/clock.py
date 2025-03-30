@@ -1,7 +1,7 @@
 import os
 from utils.app_utils import resolve_path, get_font
 from plugins.base_plugin.base_plugin import BasePlugin
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageColor, ImageDraw, ImageFont
 from io import BytesIO
 import logging
 import numpy as np
@@ -14,18 +14,26 @@ logger = logging.getLogger(__name__)
 CLOCK_FACES = [
     {
         "name": "Gradient Clock",
+        "primary_color": "#db3246",
+        "secondary_color": "#000000",
         "icon": "faces/gradient.png"
     },
     {
         "name": "Digital Clock",
+        "primary_color": "#ffffff",
+        "secondary_color": "#000000",
         "icon": "faces/digital.png"
     },
     {
         "name": "Divided Clock",
+        "primary_color": "#20b7ae",
+        "secondary_color": "#ffffff",
         "icon": "faces/divided.png"
     },
     {
         "name": "Word Clock",
+        "primary_color": "#000000",
+        "secondary_color": "#ffffff",
         "icon": "faces/word.png"
     }
 ]
@@ -41,6 +49,8 @@ class Clock(BasePlugin):
 
     def generate_image(self, settings, device_config):
         clock_face = settings.get('selectedClockFace')
+        primary_color = ImageColor.getcolor(settings.get('primaryColor') or (255,255,255), "RGB")
+        secondary_color = ImageColor.getcolor(settings.get('secondaryColor') or (0,0,0), "RGB")
         if not clock_face or clock_face not in [face['name'] for face in CLOCK_FACES]:
             clock_face = DEFAULT_CLOCK_FACE
 
@@ -55,13 +65,13 @@ class Clock(BasePlugin):
         img = None
         try:
             if clock_face == "Gradient Clock":
-                img = self.draw_conic_clock(dimensions, current_time)
+                img = self.draw_conic_clock(dimensions, current_time, primary_color, secondary_color)
             elif clock_face == "Digital Clock":
-                img = self.draw_digital_clock(dimensions, current_time)
+                img = self.draw_digital_clock(dimensions, current_time, primary_color, secondary_color)
             elif clock_face == "Divided Clock":
-                img = self.draw_divided_clock(dimensions, current_time)
+                img = self.draw_divided_clock(dimensions, current_time, primary_color, secondary_color)
             elif clock_face == "Word Clock":
-                img = self.draw_word_clock(dimensions, current_time)
+                img = self.draw_word_clock(dimensions, current_time, primary_color, secondary_color)
         except Exception as e:
             logger.error(f"Failed to draw clock image: {str(e)}")
             raise RuntimeError("Failed to display clock.")
