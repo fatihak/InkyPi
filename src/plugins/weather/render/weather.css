@@ -41,6 +41,9 @@
   align-content: end;
   width: 100%;
   line-height: 105%;
+  display: flex;
+  justify-content: center;
+  gap: 1vw;
 }
 
 .today-container {
@@ -95,6 +98,12 @@
   line-height: 110%;
 }
 
+.min-max {
+  font-size: 15cqmin;
+  text-align: center;
+  position: relative;
+  line-height: 110%;
+}
 /* Data Points Grid */
 .data-points {
   display: grid;

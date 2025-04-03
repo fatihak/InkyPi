@@ -87,7 +87,8 @@ class Weather(BasePlugin):
             "current_temperature": str(round(current.get("temp"))),
             "feels_like": str(round(current.get("feels_like"))),
             "temperature_unit": UNITS[units]["temperature"],
-            "units": units
+            "units": units,
+            "last_update": dt.strftime("%I:%M %p")
         }
         data['forecast'] = self.parse_forecast(weather_data.get('daily'), tz)
         data['data_points'] = self.parse_data_points(weather_data, aqi_data, tz, units)
