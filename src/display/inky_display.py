@@ -26,8 +26,12 @@ class InkyDisplay(AbstractDisplay):
         Raises:
             ValueError: If the resolution cannot be retrieved or stored.
         """
-        
-        self.inky_display = auto()
+
+        if self.device_config.get_config("mock"):
+            self.inky_display = auto(ask_user=True)
+        else:
+            self.inky_display = auto()
+
         self.inky_display.set_border(self.inky_display.BLACK)
 
         # store display resolution in device config
@@ -58,5 +62,8 @@ class InkyDisplay(AbstractDisplay):
             raise ValueError(f"No image provided.")
 
         # Display the image on the Inky display
+        if self.device_config.get_config("mock"):
+            logger.info("MOCK image display enabled.")
+            return
         self.inky_display.set_image(image)
         self.inky_display.show()
