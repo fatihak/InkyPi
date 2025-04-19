@@ -36,7 +36,7 @@ WS_TYPE=""
 WS_REQUIREMENTS_FILE="$SCRIPT_DIR/ws_requirements.txt"
 
 # Parse the agumments, looking for the -W option.
-parseArguments() {
+parse_arguments() {
     while getopts ":W:" opt; do
         case $opt in
             W) WS_VALUE=$OPTARG
