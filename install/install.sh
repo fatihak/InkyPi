@@ -1,5 +1,18 @@
 #!/bin/bash
 
+# =============================================================================
+# Script Name: install.sh
+# Description: This script automates the installatin of InkyPI and creation of
+#              the InkyPI service.
+#
+# Usage: ./install.sh [-W <waveshare_device>]
+#        -W <waveshare_device> (optional) Install for a Waveshare device, 
+#                               specifying the device model type, e.g. epd7in3e.
+#
+#                               If not specified then the Pimoroni Inky display
+#                               is assumed.
+# =============================================================================
+
 # Formatting stuff
 bold=$(tput bold)
 normal=$(tput sgr0)
