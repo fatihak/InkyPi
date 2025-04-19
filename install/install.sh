@@ -197,22 +197,23 @@ install_config() {
 #
 update_config() {
   if [[ -n "$WS_TYPE" ]]; then
-    local DEVICE_JSON="$CONFIG_DIR/device.json"
+      local DEVICE_JSON="$CONFIG_DIR/device.json"
 
-    if grep -q '"display_type":' "$DEVICE_JSON"; then
-      # display_type is defined - update it with supplied value
-      sed -i "s/\"display_type\": \".*\"/\"display_type\": \"$WS_TYPE\"/" "$DEVICE_JSON"
-      echo "Updated ws_value to: $WS_TYPE" 
-    else
-      # is not there so append it
-      # Ensure proper comma placement before adding ws_value
-      sed -i '$s/}/,/' "$DEVICE_JSON"  # Replace last } with a comma
-      echo "  \"display_type\": \"$WS_TYPE\"" >> "$DEVICE_JSON"
-      echo "}" >> "$DEVICE_JSON"  # Add the trailing }
-      echo "Added ws_value: $WS_TYPE"
-    fi
+      if grep -q '"display_type":' "$DEVICE_JSON"; then
+          # Update existing display_type value
+          sed -i "s/\"display_type\": \".*\"/\"display_type\": \"$WS_TYPE\"/" "$DEVICE_JSON"
+          echo "Updated display_type to: $WS_TYPE" 
+      else
+          # Append display_type safely, ensuring proper comma placement
+          if grep -q '}$' "$DEVICE_JSON"; then
+              sed -i '$s/}/,/' "$DEVICE_JSON"  # Replace last } with a comma
+          fi
+          echo "  \"display_type\": \"$WS_TYPE\"" >> "$DEVICE_JSON"
+          echo "}" >> "$DEVICE_JSON"  # Add trailing }
+          echo "Added display_type: $WS_TYPE"
+      fi
   else
-    echo "Config not updated as WS type flag not set"
+      echo "Config not updated as WS_TYPE flag is not set"
   fi
 }
 
