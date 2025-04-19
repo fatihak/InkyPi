@@ -27,6 +27,30 @@ SERVICE_FILE_TARGET="/etc/systemd/system/$SERVICE_FILE"
 APT_REQUIREMENTS_FILE="$SCRIPT_DIR/debian-requirements.txt"
 PIP_REQUIREMENTS_FILE="$SCRIPT_DIR/requirements.txt"
 
+# 
+# Additional requirements for Waveshare support.
+#
+# empty means no WS support required, otherwise we expect the type of display
+# as per the WS naming convention.
+WS_TYPE=""
+WS_REQUIREMENTS_FILE="$SCRIPT_DIR/ws_requirements.txt"
+
+# Parse the agumments, looking for the -W option.
+parseArguments() {
+    while getopts ":W:" opt; do
+        case $opt in
+            W) WS_VALUE=$OPTARG
+                echo "WS flag is set with value: $WS_VALUE"
+                ;;
+            \?) echo "Invalid option: -$OPTARG." >&2
+                exit 1
+                ;;
+            :) echo "Option -$OPTARG requires an argument." >&2
+               exit 1
+               ;;
+        esac
+    done
+}
 
 check_permissions() {
   # Ensure the script is run with sudo
@@ -48,7 +72,23 @@ enable_interfaces(){
   sudo sed -i 's/^#dtparam=i2c_arm=.*/dtparam=i2c_arm=on/' /boot/config.txt
   sudo raspi-config nonint do_i2c 0
   echo_success "\tI2C Interface has been enabled."
-  sed -i '/^dtparam=spi=on/a dtoverlay=spi0-0cs' /boot/firmware/config.txt
+
+  # Is a Waveshare device specified as an install parameter?
+  if [[ -n "$WS_TYPE" ]]; then
+    # WS parameter is set for Waveshare support so endure that both CS lines
+    # are enabled in the config.txt file.  This is different to INKY which
+    # only needs one line set.
+    #
+    echo "Enabling both CS lines for SPI interface in config.txt"
+    sed -i '/^dtparam=spi=on/a dtoverlay=spi0-2cs' /boot/firmware/config.txt
+  else
+    # TODO - check if really need the dtparam set for INKY as this seems to be 
+    # only for the older screens (as per INKY docs)
+    echo "Enabling single CS line for SPI interface in config.txt"
+    sed -i '/^dtparam=spi=on/a dtoverlay=spi0-0cs' /boot/firmware/config.txt
+  fi
+
+  
 }
 
 show_loader() {
@@ -105,6 +145,13 @@ create_venv(){
   python3 -m venv "$VENV_PATH"
   $VENV_PATH/bin/python -m pip install -r $PIP_REQUIREMENTS_FILE > /dev/null &
   show_loader "\tInstalling python dependencies. "
+
+  # do additional dependencies for Waveshare support.
+  if [[ -n "$WS_TYPE" ]]; then
+    echo "Adding additional dependencies for waveshare to the python virtual environment. "
+    $VENV_PATH/bin/python -m pip install -r $WS_REQUIREMENTS_FILE > /dev/null &
+  fi
+
 }
 
 install_app_service() {
@@ -205,7 +252,9 @@ ask_for_reboot() {
   fi
 }
 
-
+# check if we have an argument for WS display support.  Parameter is not required
+# to maintain default INKY display support.
+parse_arguments "$@"
 check_permissions
 stop_service
 enable_interfaces
