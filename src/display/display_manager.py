@@ -8,14 +8,24 @@ from display.waveshare_display import WaveshareDisplay
 logger = logging.getLogger(__name__)
 
 class DisplayManager:
+
+    """Manages the display and rendering of images."""
+
     def __init__(self, device_config):
-        """Manages the display and rendering of images."""
-        self.device_config = device_config
 
-        prettyJson = json.dumps(device_config.config, indent=3)
+        """
+        Initializes the display manager and selects the correct display type 
+        based on the configuration.
 
-        logger.info(f"Starting display manager with config {prettyJson}")
+        Args:
+            device_config (object): Configuration object containing display settings.
+
+        Raises:
+            ValueError: If an unsupported display type is specified.
+        """
         
+        self.device_config = device_config
+     
         display_type = device_config.get_config("display_type", default="inky")
 
         if display_type == "inky":
@@ -30,5 +40,19 @@ class DisplayManager:
             raise ValueError(f"Unsupported display type: {display_type}")
 
     def display_image(self, image, image_settings=[]):
-        """Delegate image display to the appropriate concrete instance."""
+        
+        """
+        Delegates image rendering to the appropriate display instance.
+
+        Args:
+            image (PIL.Image): The image to be displayed.
+            image_settings (list, optional): List of settings to modify image rendering.
+
+        Raises:
+            ValueError: If no valid display instance is found.
+        """
+
+        if not hasattr(self, "display"):
+            raise ValueError("No valid display instance initialized.")
+        
         self.display.display_image(image, image_settings)
