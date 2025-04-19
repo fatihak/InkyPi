@@ -33,19 +33,19 @@ PIP_REQUIREMENTS_FILE="$SCRIPT_DIR/requirements.txt"
 # empty means no WS support required, otherwise we expect the type of display
 # as per the WS naming convention.
 WS_TYPE=""
-WS_REQUIREMENTS_FILE="$SCRIPT_DIR/ws_requirements.txt"
+WS_REQUIREMENTS_FILE="$SCRIPT_DIR/ws-requirements.txt"
 
 # Parse the agumments, looking for the -W option.
 parse_arguments() {
     while getopts ":W:" opt; do
         case $opt in
-            W) WS_VALUE=$OPTARG
-                echo "WS flag is set with value: $WS_VALUE"
+            W) WS_TYPE=$OPTARG
+                echo "Optional parameter WS is set for Waveshare support.  Screen type is: $WS_TYPE"
                 ;;
             \?) echo "Invalid option: -$OPTARG." >&2
                 exit 1
                 ;;
-            :) echo "Option -$OPTARG requires an argument." >&2
+            :) echo "Option -$OPTARG requires an the model type of the Waveshare screen." >&2
                exit 1
                ;;
         esac
@@ -75,11 +75,10 @@ enable_interfaces(){
 
   # Is a Waveshare device specified as an install parameter?
   if [[ -n "$WS_TYPE" ]]; then
-    # WS parameter is set for Waveshare support so endure that both CS lines
+    # WS parameter is set for Waveshare support so ensure that both CS lines
     # are enabled in the config.txt file.  This is different to INKY which
-    # only needs one line set.
-    #
-    echo "Enabling both CS lines for SPI interface in config.txt"
+    # only needs one line set.n
+    echo_success "Enabling both CS lines for SPI interface in config.txt"
     sed -i '/^dtparam=spi=on/a dtoverlay=spi0-2cs' /boot/firmware/config.txt
   else
     # TODO - check if really need the dtparam set for INKY as this seems to be 
