@@ -19,7 +19,7 @@ from utils.app_utils import generate_startup_image
 from flask import Flask, request
 from werkzeug.serving import is_running_from_reloader
 from config import Config
-from display_manager import DisplayManager
+from display.display_manager import DisplayManager
 from refresh_task import RefreshTask
 from blueprints.main import main_bp
 from blueprints.settings import settings_bp
