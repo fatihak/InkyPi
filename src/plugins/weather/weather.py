@@ -97,14 +97,46 @@ class Weather(BasePlugin):
 
     def parse_forecast(self, daily_forecast, tz):
         forecast = []
-        for day in daily_forecast[1:]:
+        for i in range(1, len(daily_forecast)):
+            day = daily_forecast[i]
+            prev_day = daily_forecast[i - 1]
             icon = day.get("weather")[0].get("icon")
+
+            prev_day = daily_forecast[i - 1]
+            moonPhaseIcon = "fullmoon"
+            moonPhase = float(day.get("moon_phase"))
+            prevMoonPhase = float(prev_day.get("moon_phase"))
+
+            # Determine local trend
+            # Consider wrapping around the cycle (e.g., 0.95 → 0.05 means it's waning)
+            delta = moonPhase - prevMoonPhase
+            if delta > 0.05 or (prevMoonPhase > 0.95 and moonPhase < 0.05):
+                trend = "g"
+            elif delta < -0.05 or (prevMoonPhase < 0.05 and moonPhase > 0.95):
+                trend = "s"
+            else:
+                trend = "g" if delta >= 0 else "s"  # fallback for subtle changes
+                
+            # Select the appropriate icon based on moon phase and trend (growing or shrinking)
+            if moonPhase >= 0 and moonPhase <= 0.05:
+                moonPhaseIcon = "newmoon"
+            elif moonPhase >= 0.06 and moonPhase <= 0.30:
+                moonPhaseIcon = f"25moon{trend}"  # 25moon growing or shrinking
+            elif moonPhase >= 0.31 and moonPhase <= 0.70:
+                moonPhaseIcon = f"halfmoon{trend}"  # halfmoon growing or shrinking
+            elif moonPhase >= 0.71 and moonPhase <= 0.95:
+                moonPhaseIcon = f"75moon{trend}"  # almostfullmoon growing or shrinking
+            elif moonPhase >= 0.96 and moonPhase <= 1:
+                moonPhaseIcon = "fullmoon"
+
             dt = datetime.fromtimestamp(day.get('dt'), tz=timezone.utc).astimezone(tz)
             day_forecast = {
                 "day": dt.strftime("%a"),
                 "high": int(day.get("temp", {}).get("max")),
                 "low": int(day.get("temp", {}).get("min")),
-                "icon": self.get_plugin_dir(f"icons/{icon.replace('n', 'd')}.png")
+                "icon": self.get_plugin_dir(f"icons/{icon.replace('n', 'd')}.png"),
+                "moon_phase": f"{moonPhase * 100:.0f}",
+                "moon_phase_icon":self.get_plugin_dir(f"icons/{moonPhaseIcon}.png")
             }
             forecast.append(day_forecast)
         return forecast
