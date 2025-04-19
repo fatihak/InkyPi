@@ -31,6 +31,9 @@ class Config:
         logger.debug(f"Reading device config from {self.config_file}")
         with open(self.config_file) as f:
             config = json.load(f)
+
+        logger.debug("Loaded config:\n%s", json.dumps(config, indent=3))
+
         return config
 
     def read_plugins_list(self):
