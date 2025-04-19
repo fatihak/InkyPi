@@ -78,16 +78,22 @@ enable_interfaces(){
     # WS parameter is set for Waveshare support so ensure that both CS lines
     # are enabled in the config.txt file.  This is different to INKY which
     # only needs one line set.n
-    echo_success "Enabling both CS lines for SPI interface in config.txt"
-    sed -i '/^dtparam=spi=on/a dtoverlay=spi0-2cs' /boot/firmware/config.txt
+    echo "Enabling both CS lines for SPI interface in config.txt"
+    if ! grep -E -q '^[[:space:]]*dtoverlay=spi0-2cs' /boot/firmware/config.txt; then
+        sed -i '/^dtparam=spi=on/a dtoverlay=spi0-2cs' /boot/firmware/config.txt
+    else
+        echo "dtoverlay for spi0-2cs already specified"
+    fi
   else
     # TODO - check if really need the dtparam set for INKY as this seems to be 
     # only for the older screens (as per INKY docs)
     echo "Enabling single CS line for SPI interface in config.txt"
-    sed -i '/^dtparam=spi=on/a dtoverlay=spi0-0cs' /boot/firmware/config.txt
-  fi
-
-  
+    if ! grep -E -q '^[[:space:]]*dtoverlay=spi0-0cs' /boot/firmware/config.txt; then
+        sed -i '/^dtparam=spi=on/a dtoverlay=spi0-0cs' /boot/firmware/config.txt
+    else
+        echo "dtoverlay for spi0-0cs already specified"
+    fi
+  fi 
 }
 
 show_loader() {
