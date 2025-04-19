@@ -149,7 +149,8 @@ create_venv(){
   # do additional dependencies for Waveshare support.
   if [[ -n "$WS_TYPE" ]]; then
     echo "Adding additional dependencies for waveshare to the python virtual environment. "
-    $VENV_PATH/bin/python -m pip install -r $WS_REQUIREMENTS_FILE > /dev/null &
+    $VENV_PATH/bin/python -m pip install -r $WS_REQUIREMENTS_FILE > ws_pip_install.log &
+    show_loader "\tInstalling additional Waveshare python dependencies. "
   fi
 
 }
@@ -183,6 +184,30 @@ install_config() {
     show_loader "\tCopying device.config to $CONFIG_DIR"
   else
     echo_success "\tdevice.json already exists in $CONFIG_DIR"
+  fi
+}
+
+#
+# Update the device.json file with the supplied Waveshare parameter (if set).
+#
+update_config() {
+  if [[ -n "$WS_TYPE" ]]; then
+    local DEVICE_JSON="$CONFIG_DIR/device.json"
+
+    if grep -q '"display_type":' "$DEVICE_JSON"; then
+      # display_type is defined - update it with supplied value
+      sed -i "s/\"display_type\": \".*\"/\"display_type\": \"$WS_TYPE\"/" "$DEVICE_JSON"
+      echo "Updated ws_value to: $WS_TYPE" 
+    else
+      # is not there so append it
+      # Ensure proper comma placement before adding ws_value
+      sed -i '$s/}/,/' "$DEVICE_JSON"  # Replace last } with a comma
+      echo "  \"display_type\": \"$WS_TYPE\"" >> "$DEVICE_JSON"
+      echo "}" >> "$DEVICE_JSON"  # Add the trailing }
+      echo "Added ws_value: $WS_TYPE"
+    fi
+  else
+    echo "Config not updated as WS type flag not set"
   fi
 }
 
@@ -263,5 +288,9 @@ copy_project
 create_venv
 install_executable
 install_config
+# update the config file with additional WS if defined.
+if [[ -n "$WS_TYPE" ]]; then
+  update_config
+fi
 install_app_service
 ask_for_reboot
