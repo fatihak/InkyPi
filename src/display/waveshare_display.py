@@ -49,6 +49,7 @@ class WaveshareDisplay(AbstractDisplay):
             self.epd_display = epd_module.EPD()  
             
             self.epd_display.init()
+            self.epd_display.Clear()
 
         except ModuleNotFoundError:
             raise ValueError(f"Unsupported Waveshare display type: {display_type}")
@@ -87,6 +88,9 @@ class WaveshareDisplay(AbstractDisplay):
         # Resize and adjust orientation
         image = change_orientation(image, self.device_config.get_config("orientation"))
         image = resize_image(image, self.device_config.get_resolution(), image_settings)
+
+        # Clear residual pixels before updating the image.
+        self.epd_display.Clear()
 
         # Display the image on the Inky display
         self.epd_display.display(self.epd_display.getbuffer(image))
