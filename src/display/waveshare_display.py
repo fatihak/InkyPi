@@ -89,6 +89,8 @@ class WaveshareDisplay(AbstractDisplay):
         image = change_orientation(image, self.device_config.get_config("orientation"))
         image = resize_image(image, self.device_config.get_resolution(), image_settings)
 
+        self.epd_display.init()
+
         # Clear residual pixels before updating the image.
         self.epd_display.Clear()
 
