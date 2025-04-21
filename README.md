@@ -60,7 +60,7 @@ To install InkyPi, follow these steps:
     ``` 
      Option: 
     
-    * -W \<waveshare device model\> - specify this parameter **only** if installing for a Waveshare device.  After the -W option specify the Waveshare device model e.g. epd7in3e.
+    * -W \<waveshare device model\> - specify this parameter **only** if installing for a Waveshare device.  After the -W option specify the Waveshare device model e.g. epd7in3f.
 
     e.g. for Inky device use:
     ```bash
@@ -69,7 +69,7 @@ To install InkyPi, follow these steps:
 
     and for [Waveshare devices](#waveshare-device-support)  use:
     ```bash
-    sudo bash install/install.sh -W epd7in3e
+    sudo bash install/install.sh -W epd7in3f
     ```
 
 
@@ -121,7 +121,7 @@ Waveshare have a range of screens, similar to the Inky screens.  They have sligh
 
 Waveshare device support is now available, but unlike the Inky screens which are auto configuring they require specific [Waveshare EPD drivers](https://github.com/waveshareteam/e-Paper/tree/master/RaspberryPi_JetsonNano/python/lib/waveshare_epd).
 
-Currently only the epd7in3e 7.3inch 7 color display has been tested and its driver is included in the deployment in package `display.waveshare_epd`.  To add a specific screen copy the necessary epd_X_ in_Y_ .py file into the project `src\display\waveshare_epd` folder and specify that filename for the device model (without the _.py_ extension).
+Currently only the epd7in3f 7.3inch 7 color display has been tested and its driver is included in the deployment in package `display.waveshare_epd`.  To add a specific screen copy the necessary epd_X_ in_Y_ .py file into the project `src\display\waveshare_epd` folder and specify that filename for the device model (without the _.py_ extension).
 
 It is assumed that if the device is supported as part of Waveshares EPD package then it should work.  
 
