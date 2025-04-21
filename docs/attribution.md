@@ -40,3 +40,27 @@ This project uses various fonts and icons, each with specific licensing terms. B
 | <img src="../src/plugins/weather/icons/visibility.png" width="32" height="32"> |<a href="https://www.flaticon.com/free-icons/observe" title="observe icons">Observe icons created by meaicon - Flaticon</a>|
 | <img src="../src/plugins/weather/icons/wind.png" width="32" height="32"> |<a href="https://www.flaticon.com/free-icons/wind" title="wind icons">Wind icons created by riajulislam - Flaticon</a>|
 
+## Waveshare e-Paper
+This project includes Waveshare e-Paper display drivers licensed under an MIT license.
+
+See [Waveshare Team Github](https://github.com/waveshare/e-Paper) for further details.
+
+```
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+```
