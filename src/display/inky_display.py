@@ -31,8 +31,8 @@ class InkyDisplay(AbstractDisplay):
         self.inky_display.set_border(self.inky_display.BLACK)
 
         # store display resolution in device config
-        if not device_config.get_config("resolution"):
-            device_config.update_value(
+        if not self.device_config.get_config("resolution"):
+            self.device_config.update_value(
                 "resolution",
                 [int(self.inky_display.width), int(self.inky_display.height)], 
                 write=True)
