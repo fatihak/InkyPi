@@ -37,7 +37,7 @@ class Config:
         """Reads the plugin-info.json config JSON from each plugin folder. Excludes the base plugin."""
         # Iterate over all plugin folders
         plugins_list = []
-        for plugin in os.listdir(os.path.join(self.BASE_DIR, "plugins")):
+        for plugin in sorted(os.listdir(os.path.join(self.BASE_DIR, "plugins"))):
             plugin_path = os.path.join(self.BASE_DIR, "plugins", plugin)
             if os.path.isdir(plugin_path) and plugin != "__pycache__":
                 # Check if the plugin-info.json file exists
