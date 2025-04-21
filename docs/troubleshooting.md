@@ -117,7 +117,7 @@ If only the first is visible, check _/boot/firmware/config.txt_. The regular ins
 
 ### My device is not supported/available in package display.waveshare_epd
 
-Only the epd7in3e driver is pacakged in the install as this has been physically tested.  It is assumed that other devices in the [Waveshare EPD drivers](https://github.com/waveshareteam/e-Paper/tree/master/RaspberryPi_JetsonNano/python/lib/waveshare_epd) repository will work.  Locate the correct _epd_ file for your screen and copy that to the installation directory _src/display/waveshare_epd_ folder and run the installation script again using the `-W <device>` parameter.
+Only the epd7in3f driver is pacakged in the install as this has been physically tested.  It is assumed that other devices in the [Waveshare EPD drivers](https://github.com/waveshareteam/e-Paper/tree/master/RaspberryPi_JetsonNano/python/lib/waveshare_epd) repository will work.  Locate the correct _epd_ file for your screen and copy that to the installation directory _src/display/waveshare_epd_ folder and run the installation script again using the `-W <device>` parameter.
 
 
 ## Today's Newspaper not found
