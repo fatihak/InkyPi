@@ -125,7 +125,7 @@ Currently only the epd7in3f 7.3inch 7 color display has been tested and its driv
 
 It is assumed that if the device is supported as part of Waveshares EPD package then it should work.  
 
-It is noted taht some devices such as the 7in8 device is different, requires single CS on the SPI interfaces.  those devices are currenty definitely not supported out of the box.
+It is noted that some devices such as the 7in8 device is different, requires single CS on the SPI interfaces.  those devices are currenty definitely not supported out of the box.
 
 ## License
 
