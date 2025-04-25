@@ -61,8 +61,8 @@ If your plugin requires user configuration through the web UI, you’ll need to 
 
 ### 5. Register Your Plugin
 
-- Open the `src/plugins/plugins.json` file.
-- Add an entry for your plugin using the following structure:
+- Create a `plugin-info.json` in your plugin folder
+- Add an object for your plugin using the following structure:
     ```json
     {
         "display_name": "Clock",    # The name shown in the web UI for the plugin.
@@ -70,6 +70,7 @@ If your plugin requires user configuration through the web UI, you’ll need to 
         "class": "Clock"            # The name of your plugin’s Python class.
     }
     ```
+- Plugins will be loaded on startup if the folder contains a `plugin-info.json`
 
 ## Test Your Plugin
 

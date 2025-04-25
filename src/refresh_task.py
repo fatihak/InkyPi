@@ -102,6 +102,9 @@ class RefreshTask:
 
                     if refresh_action:
                         plugin_config = self.device_config.get_plugin(refresh_action.get_plugin_id())
+                        if plugin_config is None:
+                            logger.error(f"Plugin config not found for '{refresh_action.get_plugin_id()}'.")
+                            continue
                         plugin = get_plugin_instance(plugin_config)
                         image = refresh_action.execute(plugin, self.device_config, current_dt)
                         image_hash = compute_image_hash(image)

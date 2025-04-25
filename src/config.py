@@ -34,10 +34,20 @@ class Config:
         return config
 
     def read_plugins_list(self):
-        """Reads the plugin config JSON file and returns it as a list."""
-        logger.debug(f"Reading plugins list from from {self.plugins_file}")
-        with open(self.plugins_file) as f:
-            plugins_list = json.load(f)
+        """Reads the plugin-info.json config JSON from each plugin folder. Excludes the base plugin."""
+        # Iterate over all plugin folders
+        plugins_list = []
+        for plugin in sorted(os.listdir(os.path.join(self.BASE_DIR, "plugins"))):
+            plugin_path = os.path.join(self.BASE_DIR, "plugins", plugin)
+            if os.path.isdir(plugin_path) and plugin != "__pycache__":
+                # Check if the plugin-info.json file exists
+                plugin_info_file = os.path.join(plugin_path, "plugin-info.json")
+                if os.path.isfile(plugin_info_file):
+                    logger.info(f"Reading plugin info from {plugin_info_file}")
+                    with open(plugin_info_file) as f:
+                        plugin_info = json.load(f)
+                    plugins_list.append(plugin_info)
+
         return plugins_list
 
     def write_config(self):
