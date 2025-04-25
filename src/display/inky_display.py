@@ -1,7 +1,7 @@
 import logging
 from inky.auto import auto
 from display.abstract_display import AbstractDisplay
-from utils.image_utils import resize_image, change_orientation
+
 
 logger = logging.getLogger(__name__)
 
@@ -42,8 +42,8 @@ class InkyDisplay(AbstractDisplay):
         """
         Displays the provided image on the Inky display.
 
-        The image is processed by adjusting orientation and resizing before 
-        being sent to the display.
+        The image has been processed by adjusting orientation and resizing 
+        before being sent to the display.
 
         Args:
             image (PIL.Image): The image to be displayed.
@@ -56,14 +56,6 @@ class InkyDisplay(AbstractDisplay):
         logger.info("Displaying image to Inky display.")
         if not image:
             raise ValueError(f"No image provided.")
-
-        # Save the image
-        logger.info(f"Saving image to {self.device_config.current_image_file}")
-        image.save(self.device_config.current_image_file)
-
-        # Resize and adjust orientation
-        image = change_orientation(image, self.device_config.get_config("orientation"))
-        image = resize_image(image, self.device_config.get_resolution(), image_settings)
 
         # Display the image on the Inky display
         self.inky_display.set_image(image)

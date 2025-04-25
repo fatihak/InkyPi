@@ -2,6 +2,7 @@ import fnmatch
 import json
 import logging
 
+from utils.image_utils import resize_image, change_orientation
 from display.inky_display import InkyDisplay
 from display.waveshare_display import WaveshareDisplay
 
@@ -35,6 +36,8 @@ class DisplayManager:
             # otherwise we will have to enshring the manufacturer in the 
             # display_type and then have a display_model parameter.  Will leave
             # that for future use if the need arises.
+            #
+            # see https://github.com/waveshareteam/e-Paper
             self.display = WaveshareDisplay(device_config)
         else:
             raise ValueError(f"Unsupported display type: {display_type}")
@@ -55,4 +58,13 @@ class DisplayManager:
         if not hasattr(self, "display"):
             raise ValueError("No valid display instance initialized.")
         
+        # Save the image
+        logger.info(f"Saving image to {self.device_config.current_image_file}")
+        image.save(self.device_config.current_image_file)
+
+        # Resize and adjust orientation
+        image = change_orientation(image, self.device_config.get_config("orientation"))
+        image = resize_image(image, self.device_config.get_resolution(), image_settings)
+
+        # Pass to the concrete instance to render to the device.
         self.display.display_image(image, image_settings)
