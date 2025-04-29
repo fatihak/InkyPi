@@ -31,6 +31,11 @@
         "class": "Weather"
     },
     {
+        "display_name": "Image URL",
+        "id": "image_url",
+        "class": "ImageURL"
+    },
+    {
         "display_name": "Screenshot",
         "id": "screenshot",
         "class": "Screenshot"
