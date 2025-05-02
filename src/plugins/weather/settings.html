@@ -36,6 +36,11 @@
     </div>
 
     <div class="form-group">
+        <input type="checkbox" id="moonPhase" name="moonPhase" onclick="this.value=this.checked ? 'true' : 'false';">
+        <span>Moon Phase</span>
+    </div>
+
+    <div class="form-group">
         <input type="checkbox" id="displayForecast" name="displayForecast" onclick="this.value=this.checked ? 'true' : 'false';">
         <span>Forecast</span>
         <select id="forecastDays" name="forecastDays" class="form-input">
@@ -113,6 +118,7 @@
             document.getElementById('displayForecast').value = pluginSettings.displayForecast;
 
             document.getElementById('forecastDays').value = pluginSettings.forecastDays;
+            document.getElementById('moonPhase').checked = pluginSettings.moonPhase;
         } else {
             // set default values
             document.getElementById('units').value = "imperial";
@@ -123,8 +129,9 @@
             document.getElementById('displayGraph').value = "true";
             document.getElementById('displayForecast').checked = true;
             document.getElementById('displayForecast').value = "true";
-
+            
             document.getElementById('forecastDays').value = 7
+            document.getElementById('moonPhase').checked = false;
         }
     });
 </script>
