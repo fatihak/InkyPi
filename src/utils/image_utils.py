@@ -18,12 +18,16 @@ def get_image(image_url):
         logger.error(f"Received non-200 response from {image_url}: status_code: {response.status_code}")
     return img
 
-def change_orientation(image, orientation):
+def change_orientation(image, orientation, inverted=False):
     if orientation == 'horizontal':
-        image = image.rotate(0, expand=1)
+        angle = 0
     elif orientation == 'vertical':
-        image = image.rotate(90, expand=1)
-    return image
+        angle = 90
+
+    if inverted:
+        angle = (angle + 180) % 360
+
+    return image.rotate(angle, expand=1)
 
 def resize_image(image, desired_size, image_settings=[]):
     img_width, img_height = image.size

@@ -88,7 +88,11 @@
                             <option value="horizontal" {% if device_settings.orientation == "horizontal" %}selected{% endif %}>Horizontal</option>
                             <option value="vertical" {% if device_settings.orientation == "vertical" %}selected{% endif %}>Vertical</option>
                         </select>
-                    </div>
+                        <!-- Invert Image Checkbox -->
+                        <label class="form-label" for="invertImage">Invert Image</label>
+                        <input type="checkbox" id="invertImage" name="invertImage" {% if device_settings.inverted_image %}checked{% endif %}>
+                        </label>
+                </div>
                     
                     <!-- Timezone Dropdown -->
                     <div class="form-group">
