@@ -31,6 +31,7 @@ def save_settings():
         settings = {
             "name": form_data.get("deviceName"),
             "orientation": form_data.get("orientation"),
+            "inverted_image": form_data.get("invertImage"),
             "timezone": form_data.get("timezoneName"),
             "plugin_cycle_interval_seconds": plugin_cycle_interval_seconds
         }

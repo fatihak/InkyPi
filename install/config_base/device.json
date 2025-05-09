@@ -1,6 +1,7 @@
 {
     "name": "InkyPi",
     "orientation": "horizontal",
+    "inverted_image": false,
     "scheduler_sleep_time": 60,
     "startup": true
 }
