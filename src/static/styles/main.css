@@ -12,7 +12,6 @@ body {
     justify-content: center;
     align-items: center;
     min-height: 100vh;
-    padding: 20px;
 }
 
 /* Subtle frame container */
@@ -22,7 +21,7 @@ body {
     border-radius: 16px;
     padding: 20px;
     width: 90%;
-    height: 90vh; /* Take up 90% of the viewport height */
+    min-height: 90vh; /* Take up 90% of the viewport height */
     max-width: 900px;
     box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1); /* Slight shadow for depth */
     display: flex;
@@ -55,11 +54,12 @@ body {
 }
 
 .image-container img {
-    width: auto;
+    height: auto;
+    display: block;
+    margin: auto;
     border-radius: 6px;
     max-width: 20rem;
-    max-height: 20rem;
-    height: auto;
+    max-height: 15rem;
 }
 
 /* Separator styling */
@@ -71,43 +71,39 @@ body {
 }
 
 .plugins-title {
-    font-size: 1rem;
+    font-size: 1.2rem;
     font-weight: 600;
     color: #555555;
-    margin-bottom: 20px;
+    margin-bottom: 10px;
     text-align: left; /* Aligns the title to the left */
+    margin-left: 5px
 }
 
 /* Button grid container styling */
 .button-grid {
     display: grid;
-    grid-template-columns: repeat(5, 1fr); /* 5 items per row */
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); /* auto adjust buttons per row */
     gap: 15px; /* Smaller space between buttons */
     overflow-y: auto; /* Allows scrolling if content exceeds the frame */
+    padding: 10px 5px;
 }
 
 /* Individual button styling */
 .icon-button {
-    background-color: #ffffff;
     border: 1px solid #ddd;
     border-radius: 8px;
     display: flex;
-    flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 10px;
     height: 70px; /* Reduce button height */
-    width: 100%; /* Ensures proper alignment in grid */
-    text-align: center;
     cursor: pointer;
     transition: all 0.3s ease;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
 .icon-button:hover {
-    background-color: #f0f0f0;
-    transform: translateY(-2px);
-    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+    transform: translateY(-3px);
+    box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2);
 }
 
 /* Icon image styling */
@@ -115,16 +111,6 @@ body {
     width: 32px; /* Adjust icon size */
     height: 32px; /* Keep a proportional height */
     margin-bottom: 8px;
-}
-
-/* Button label styling */
-.button-label {
-    font-size: 0.8rem; /* Reduce label size */
-    color: #333;
-    font-weight: 500;
-    text-overflow: ellipsis; /* Ensure long text doesn't overflow */
-    overflow: hidden;
-    white-space: nowrap;
 }
 
 /* App header container */
@@ -150,29 +136,38 @@ body {
     color: #333;
 }
 
-
 /* Ensure form and settings container expand */
 .settings-form {
     display: flex;
     flex-direction: column;
     height: 100%;
+    margin: 0px 0px 10px 0px;
+    flex-grow: 1;
 }
 
-#settings-container {
+.settings-container {
     display: flex;
-    align-items: center;
     justify-content: center;
-    padding: 1rem;
-    flex-direction: column
+    flex-direction: column;
+    padding: 0px 10px;
 }
 
 /* Style the form inputs and labels */
 .form-group {
     display: flex;
     align-items: center;
-    width: 100%;
-    gap: 1rem;
+    gap: 0.2rem 1rem;
     margin: 5px 0 5px 0; /* Bottom margin reduced for spacing */
+    flex-wrap: wrap;
+    flex: auto;
+}
+
+.form-group .nowrap{
+    flex-wrap: nowrap;
+}
+
+.nowrap{
+    flex-wrap: nowrap;
 }
 
 .form-group label {
@@ -188,6 +183,11 @@ body {
     border: 1px solid #ddd;
     border-radius: 6px;
     box-sizing: border-box;
+    min-width: 50px;
+}
+
+.form-group input[type="number"] {
+    min-width: 50px;
 }
 
 .form-group input[type="text"]:focus {
@@ -200,23 +200,7 @@ body {
 .buttons-container {
     display: flex;
     gap: 10px;
-}
-/* Adjust button styles for the Show Now and Schedule buttons */
-.submit-button {
-    flex: 0.5;
-    background-color: #1abc9c;
-    color: white;
-    border: none;
-    padding: 0.75rem 1.5rem;
-    border-radius: 6px;
-    font-size: 1rem;
-    cursor: pointer;
-    font-weight: 600;
-    transition: background-color 0.3s;
-}
-
-.submit-button:hover {
-    background-color: #16a085;
+    margin-top: auto;
 }
 
 /* Back button */
@@ -249,10 +233,25 @@ body {
     font-weight: bold;
     cursor: pointer;
     text-align: center;
+    width:100%;
+}
+
+.action-button.warn {
+    background-color: #c4515b;
+}
+
+.action-button.warn:hover {
+    background-color: #a93943;
 }
 
 .action-button:hover {
     background-color: #16a085;
+}
+
+.action-button.compact {
+    font-size: 0.9rem;
+    padding: 10px;
+    width: auto;
 }
 
 /* Form styling for inline layout */
@@ -273,8 +272,8 @@ body {
 
 /* Input field styling */
 .form-input {
-    flex: 1; /* Input spans the remaining width */
-    padding: 0.5rem;
+    flex: auto;
+    padding: 0.4rem;
     font-size: 1rem;
     border: 1px solid #ddd;
     border-radius: 5px;
@@ -286,7 +285,6 @@ body {
     border-color: #1abc9c;
     box-shadow: 0 0 0 2px rgba(26, 188, 156, 0.3);
 }
-
 
 /* Toggle Container */
 .toggle-container {
@@ -372,11 +370,10 @@ body {
 }
 
 .image-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); /* Ensures grid items wrap */
+    display: flex;
     gap: 10px;
-    margin-top: 10px; /* Adds spacing between label and grid */
-    width: 100%
+    margin-top: 10px;
+    flex-wrap: wrap;
 }
 
 .image-option {
@@ -389,7 +386,7 @@ body {
 }
 
 .image-option img {
-    width: 100%;
+    width: auto;
     height: auto; /* Ensures aspect ratio is maintained */
     max-width: 100px; /* Optional: Limits the max width of images */
 }
@@ -416,9 +413,8 @@ body {
 
 .settings-button:hover {
     background-color: #e0e0e0;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    box-shadow: 0px 5px 8px rgba(0, 0, 0, 0.1);
 }
-
 
 /* Modal Styling */
 .modal {
@@ -445,8 +441,8 @@ body {
 }
 
 .modal-content h2 {
-    font-size: 1.5rem;
-    margin-bottom: 20px;
+    font-size: 1.2rem;
+    margin-bottom: 15px;
     color: #333;
     text-align: center;
 }
@@ -529,6 +525,16 @@ body {
     margin-left: auto;
 }
 
+.loading-indicator.small {
+    width: 25px;
+    height: 25px;
+}
+
+.loading-indicator.left-align {
+    margin-right: auto;
+    margin-left: 0;
+}
+
 /* Spinner animation */
 @keyframes spin {
     0% { transform: rotate(0deg); }
@@ -574,4 +580,194 @@ body {
 .remove-file-btn:focus {
     outline: none;
     box-shadow: 0 0 3px rgba(26, 188, 156, 0.5); /* Adding a focus effect similar to inputs */
+}
+
+/* Plugin List */
+.plugin-list {
+    display: flex;
+    flex-direction: column;
+}
+
+/* Plugin Item */
+.plugin-item {
+    display: flex;
+    align-items: center;
+    padding: 10px 25px 10px 40px;
+    border-top: 2px solid #e0e0e0;
+    gap: 10px;
+}
+
+.plugin-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-grow: 1;
+}
+
+/* Plugin Icon */
+.plugin-icon {
+    width: 30px;
+    height: 30px;
+}
+
+.plugin-instance {
+    color: #333;
+}
+
+/* Edit & Delete Buttons */
+.edit-button, .delete-button {
+    background: none;
+    border: none;
+    cursor: pointer;
+}
+
+/* Playlist List */
+.playlist-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    overflow-y: auto;
+}
+
+.playlist-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    padding: 20px 25px 10px 25px;
+}
+
+/* Playlist Item */
+.playlist-item {
+    display: flex;
+    padding: 0px 0px 5px 0px;
+    transition: all 0.3s ease;
+    border: 2px solid #e0e0e0;
+    border-radius: 10px;
+    flex-direction: column;
+    width: 100%
+}
+
+/* Active Playlist Item */
+.playlist-item.active {
+    border-color: #16a085; /* Green border */
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.playlist-title {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #333;
+}
+
+.action-icon {
+    width: 20px;
+    height: 20px;
+}
+
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}
+
+.title-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.create-playlist-button {
+    background-color: #1abc9c;
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 8px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+
+.create-playlist-button:hover {
+    background-color: #16a085;
+}
+
+.hidden {
+    display: none;
+}
+
+.displayed-now {
+    background-color: #16a085;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 3px;
+    font-size: 0.8rem;
+}
+
+/* Time input styling */
+.time-input {
+    flex: 1;
+    padding: 0.4rem;
+    font-size: 1rem;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    box-sizing: border-box;
+    text-align: center;
+}
+
+.time-input:focus {
+    outline: none;
+    border-color: #1abc9c;
+    box-shadow: 0 0 3px rgba(26, 188, 156, 0.5);
+}
+
+.latest-refresh {
+    background-color: lightslategray;
+    color: white;
+    font-style: italic;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.8em;
+}
+
+.api-key-label {
+    background-color: lightslategray;
+    color: white;
+    font-style: italic;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.8em;
+    text-align: center;
+}
+
+.collapsible {
+    width: 100%;
+}
+
+.collapsible-header {
+    background-color:#edebeb;
+    border: none;
+    cursor: pointer;
+    padding: 10px;
+    width: 100%;
+    text-align: left;
+    font-size: 1rem;
+    margin: 10px 0px 5px 0px;
+}
+
+.collapsible-icon {
+    float: right;
+    opacity: 50%;
+}
+
+.collapsible-content {
+    display: none;
+    padding: 0px 0px;
+}
+
+@media (max-aspect-ratio: 3/4) {
+    .frame {
+      width: 95%;
+    }
 }

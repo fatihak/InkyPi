@@ -1,0 +1,74 @@
+/* Basic Reset */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-smooth: never;
+    -webkit-font-smoothing: none;
+    -moz-osx-font-smoothing: grayscale; /* Alternative for macOS */
+}
+
+img {
+    image-rendering: pixelated; /* Preserve sharp edges */
+    image-rendering: crisp-edges;
+    image-rendering: -webkit-optimize-contrast;
+}
+
+.container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: 100%;
+}
+
+.row-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.column-container {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+}
+
+
+/* Frame Styling */
+
+.rectangle-frame {
+    border: 0.7vw solid;
+}
+
+.top-bottom-frame {
+    border-top: 0.7vw solid;
+    border-bottom: 0.7vw solid;
+}
+
+.corner-frame {
+    position:relative;
+}
+.corner-frame:before {
+    display: block;
+    content: "";
+    width: 10vw;
+    height: 10vw;
+    position: absolute;
+    top: 0;
+    left: 0;
+    border-top: 0.7vw solid;
+    border-left: 0.7vw solid;
+  }
+  
+  .corner-frame:after {
+    display: block;
+    content: "";
+    width: 10vw;
+    height: 10vw;
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    border-bottom: 0.5vw solid;
+    border-right: 0.5vw solid;
+  }

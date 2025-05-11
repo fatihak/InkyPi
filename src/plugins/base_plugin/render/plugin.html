@@ -1,0 +1,44 @@
+<html>
+    <head>
+    {% for style in style_sheets %}
+        <link rel="stylesheet" href="{{style}}">
+    {% endfor %}
+    <style>
+        {% for font in font_faces %}
+        @font-face {
+            font-family: "{{font.font_family}}";
+            font-weight: {{font.font_weight}};
+            font-style:  {{font.font_style}};
+            src: url({{font.url}}) format("truetype");
+        }
+        {% endfor %}
+    </style>
+    </head>
+    <body 
+        class="
+        {% if plugin_settings.selectedFrame == 'Corner' %}corner-frame{% endif %}
+        {% if plugin_settings.selectedFrame == 'Top and Bottom' %}top-bottom-frame{% endif %}
+        {% if plugin_settings.selectedFrame == 'Rectangle' %}rectangle-frame{% endif %}"
+        style="padding: 1.5vw;
+        {% if plugin_settings.backgroundOption == 'color' %}
+            background-color: {{ plugin_settings.backgroundColor }};
+        {% elif plugin_settings.backgroundOption == 'image' %}
+            background-image: url('{{ plugin_settings.backgroundImageFile }}');
+            background-size: cover;
+            background-position: center;
+        {% endif %}
+        color: {{ plugin_settings.textColor }};
+        {% if plugin_settings.margin %}
+            margin: {{ plugin_settings.margin }}px;
+        {% else %}
+            margin: 5px;
+        {% endif %}
+        --container-height: {{ height }}px;
+        --container-width: {{ width }}px;
+    ">
+        <div class="container">
+            {% block content %}
+            {% endblock %}
+        </div>
+    </body>
+</html>

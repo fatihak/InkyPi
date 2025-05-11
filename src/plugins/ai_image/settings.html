@@ -1,6 +1,6 @@
 <div class="form-group">
-    <label for="inputText" class="form-label">Text Prompt:</label>
-    <input type="text" id="inputText" name="inputText" placeholder="Type something..." required class="form-input">
+    <label for="textPrompt" class="form-label">Text Prompt:</label>
+    <input type="text" id="textPrompt" name="textPrompt" placeholder="Type something..." required class="form-input">
 </div>
 
 
@@ -47,4 +47,19 @@
             qualityDropdown.value = "standard"; // Clear selection
         }
     }
+
+    // populate form values from plugin settings
+    document.addEventListener('DOMContentLoaded', () => {        
+        if (loadPluginSettings) {
+            document.getElementById('textPrompt').value = pluginSettings.textPrompt || '';
+
+            document.getElementById('randomizePrompt').checked = pluginSettings.randomizePrompt || false;
+
+            // Populate text model
+            document.getElementById('textModel').value = pluginSettings.textModel;
+
+            // Populate quality
+            document.getElementById('quality').value = pluginSettings.quality;
+        }
+    });
 </script>

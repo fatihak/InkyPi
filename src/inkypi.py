@@ -24,7 +24,7 @@ from refresh_task import RefreshTask
 from blueprints.main import main_bp
 from blueprints.settings import settings_bp
 from blueprints.plugin import plugin_bp
-from blueprints.display import display_bp
+from blueprints.playlist import playlist_bp
 from jinja2 import ChoiceLoader, FileSystemLoader
 from plugins.plugin_registry import load_plugins
 
@@ -54,7 +54,7 @@ app.config['REFRESH_TASK'] = refresh_task
 app.register_blueprint(main_bp)
 app.register_blueprint(settings_bp)
 app.register_blueprint(plugin_bp)
-app.register_blueprint(display_bp)
+app.register_blueprint(playlist_bp)
 
 if __name__ == '__main__':
     from werkzeug.serving import is_running_from_reloader
@@ -68,7 +68,7 @@ if __name__ == '__main__':
         logger.info("Startup flag is set, displaying startup image")
         img = generate_startup_image(device_config.get_resolution())
         display_manager.display_image(img)
-        device_config.update_value("startup", False)
+        device_config.update_value("startup", False, write=True)
 
     try:
         # Run the Flask app

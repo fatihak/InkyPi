@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Playlists</title>
+    <link rel= "stylesheet" type= "text/css" href= "{{ url_for('static',filename='styles/main.css') }}">
+    <script src="{{ url_for('static', filename='scripts/response_modal.js') }}"></script>
+    <script>
+        async function deletePluginInstance(playlistName, pluginId, pluginInstance) {
+            try {
+                const response = await fetch("{{ url_for('plugin.delete_plugin_instance') }}", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        playlist_name: playlistName,
+                        plugin_id: pluginId,
+                        plugin_instance: pluginInstance
+                    })
+                });
+                
+                const result = await response.json();
+                if (response.ok) {
+                    sessionStorage.setItem("storedMessage", JSON.stringify({ type: "success", text: `Success! ${result.message}` }));
+                    location.reload();
+                } else {
+                    showResponseModal('failure', `Error!  ${result.error}`);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('An error occurred while processing your request.');
+            }
+        }
+
+        async function displayPluginInstance(playlistName, pluginId, pluginInstance) {
+            const loadingIndicator = document.getElementById(pluginInstance)?.querySelector('.loading-indicator');
+            loadingIndicator.style.display = 'block';
+            try {
+                const response = await fetch("{{ url_for('plugin.display_plugin_instance') }}", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        playlist_name: playlistName,
+                        plugin_id: pluginId,
+                        plugin_instance: pluginInstance
+                    })
+                });
+                
+                const result = await response.json();
+                if (response.ok) {
+                    sessionStorage.setItem("storedMessage", JSON.stringify({ type: "success", text: `Success! ${result.message}` }));
+                    location.reload();
+                } else {
+                    showResponseModal('failure', `Error!  ${result.error}`);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('An error occurred while processing your request.');
+            } finally {
+                // Hide loading indicator after the action is complete
+                loadingIndicator.style.display = 'none';
+            }
+        }
+
+        // Open modal for **creating** a new playlist
+        function openCreateModal() {
+            document.getElementById("modalTitle").textContent = "New Playlist";
+            document.getElementById("playlist_name").value = "";
+            document.getElementById("editingPlaylistName").value = ""; // Empty value means it's new
+            document.getElementById("start_time").value = "00:00";
+            document.getElementById("end_time").value = "24:00";
+            
+            document.getElementById("saveButton").setAttribute("onclick", "createPlaylist()");
+            document.getElementById("deleteButton").classList.add("hidden"); // Hide delete button
+
+            document.getElementById("playlistModal").style.display = "block";
+        }
+
+        // Open modal for **editing** an existing playlist
+        function openEditModal(playlistName, startTime, endTime) {
+            document.getElementById("modalTitle").textContent = "Update Playlist";
+            document.getElementById("playlist_name").value = playlistName;
+            document.getElementById("editingPlaylistName").value = playlistName;
+            document.getElementById("start_time").value = startTime;
+            document.getElementById("end_time").value = endTime;
+
+            document.getElementById("saveButton").setAttribute("onclick", "updatePlaylist()");
+            document.getElementById("deleteButton").classList.remove("hidden"); // Show delete button
+
+            document.getElementById("playlistModal").style.display = "block";
+        }
+
+        function openModal() {
+            const modal = document.getElementById('playlistModal');
+            modal.style.display = 'block';
+        }
+    
+        function closeModal() {
+            const modal = document.getElementById('playlistModal');
+            modal.style.display = 'none';
+        }
+
+        async function createPlaylist() {
+            let playlistName = document.getElementById("playlist_name").value.trim();
+            let startTime = document.getElementById("start_time").value;
+            let endTime = document.getElementById("end_time").value;
+
+            try {
+                const response = await fetch("{{ url_for('playlist.create_playlist') }}", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({ playlist_name: playlistName, start_time: startTime, end_time: endTime })
+                });
+
+                const result = await response.json();
+                if (response.ok) {
+                    closeModal(); // Close the modal on success
+                    sessionStorage.setItem("storedMessage", JSON.stringify({ type: "success", text: `Success! ${result.message}` }));
+                    location.reload();
+                } else {
+                    showResponseModal('failure', `Error!  ${result.error}`);
+                }
+            } catch (error) {
+                console.error("Error:", error);
+                alert('An error occurred while processing your request.');
+            }
+        }
+
+        async function updatePlaylist() {
+            let oldName = document.getElementById("editingPlaylistName").value;
+            let newName = document.getElementById("playlist_name").value;
+            let startTime = document.getElementById("start_time").value;
+            let endTime = document.getElementById("end_time").value;
+
+            try {
+                const response = await fetch("{{ url_for('playlist.update_playlist', playlist_name='') }}" + oldName, {
+                    method: "PUT",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({ new_name: newName, start_time: startTime, end_time: endTime })
+                });
+
+                const result = await response.json();
+                if (response.ok) {
+                    closeModal(); // Close the modal after success
+                    sessionStorage.setItem("storedMessage", JSON.stringify({ type: "success", text: `Success! ${result.message}` }));
+                    location.reload();
+                } else {
+                    showResponseModal('failure', `Error!  ${result.error}`);
+                }
+            } catch (error) {
+                console.error("Error:", error);
+                alert('An error occurred while processing your request.');
+            }
+        }
+
+        async function deletePlaylist() {
+            let name = document.getElementById("editingPlaylistName").value;
+            try {
+                const response = await fetch("{{ url_for('playlist.delete_playlist', playlist_name='') }}" + name, {
+                    method: "DELETE",
+                });
+
+                const result = await response.json();
+                if (response.ok) {
+                    closeModal(); // Close the modal after success
+                    sessionStorage.setItem("storedMessage", JSON.stringify({ type: "success", text: `Success! ${result.message}` }));
+                    location.reload();
+                } else {
+                    showResponseModal('failure', `Error!  ${result.error}`);
+                }
+            } catch (error) {
+                console.error("Error:", error);
+                alert('An error occurred while processing your request.');
+            }
+        }
+
+        function populateTimeOptions() {
+            let startSelect = document.getElementById("start_time");
+            let endSelect = document.getElementById("end_time");
+
+            startSelect.innerHTML = "";
+            endSelect.innerHTML = "";
+
+            for (let hour = 0; hour < 24; hour++) { // 24-hour format (0-23)
+                for (let minutes of [0, 15, 30, 45]) {
+                    let time = hour.toString().padStart(2, '0') + ":" + minutes.toString().padStart(2, '0');
+                    startSelect.innerHTML += `<option value="${time}">${time}</option>`;
+                    endSelect.innerHTML += `<option value="${time}">${time}</option>`;
+                }
+            }
+            startSelect.innerHTML += `<option value="24:00">24:00</option>`;
+            endSelect.innerHTML += `<option value="24:00">24:00</option>`;
+        }
+
+        document.addEventListener("DOMContentLoaded", populateTimeOptions);
+
+        window.addEventListener("load", function () {
+            let storedMessage = sessionStorage.getItem("storedMessage");
+            if (storedMessage) {
+                let { type, text } = JSON.parse(storedMessage);
+                showResponseModal(type, text);
+                sessionStorage.removeItem("storedMessage"); // Clear stored message after displaying
+            }
+        });
+    </script>
+</head>
+<body>
+    <div class="frame">
+        <!-- Back Button -->
+        <button onclick="history.back()" class="back-button">← Back</button>
+        <!-- Settings Header -->
+        <div class="app-header">
+            <div class="header-content">
+                <div class="title-container">
+                    <img src="{{ url_for('static', filename='icons/playlist.png') }}" alt="playlist icon" class="app-icon">
+                    <h1 class="app-title">Playlists</h1>
+                </div>
+                <button class="create-playlist-button" onclick="openCreateModal()">New Playlist</button>
+            </div>
+        </div>
+        <div class="separator"></div>
+        
+        <!-- Playlists Container -->
+        <div class="playlist-list">
+            {% for playlist in playlist_config.playlists %}
+            <div class="playlist-item {% if playlist.name == playlist_config.active_playlist %}active{% endif %}">
+                    <div class="playlist-header">
+                        <span class="playlist-title">{{ playlist.name }}</span>
+                        <button class="edit-button" onclick="openEditModal('{{ playlist.name }}', '{{ playlist.start_time }}','{{ playlist.end_time }}')"><img src="{{ url_for('static', filename='icons/settings.png') }}" alt="edit playlist" class="action-icon"></button>
+                    </div>
+                    <!-- Plugin List -->
+                    <div class="plugin-list">
+                        {% for plugin_instance in playlist.plugins %}
+                        <div class="plugin-item">
+                            <div class="plugin-info" id="{{plugin_instance.name}}">
+                                <img src="{{ url_for('plugin.image', plugin_id=plugin_instance.plugin_id, filename='icon.png') }}" alt="Plugin Icon" class="plugin-icon">
+                                <span class="plugin-instance">{{ plugin_instance.name }}</span>
+
+                                <!-- Check if the current plugin is the one being displayed -->
+                                {% if playlist.name == refresh_info.playlist and plugin_instance.name == refresh_info.plugin_instance %}
+                                <span class="displayed-now">Displayed Now</span>
+                                {% endif %}
+                                <div id="loadingIndicator" class="loading-indicator small left-align"></div>
+
+                            </div>
+
+                            {% if plugin_instance.latest_refresh_time %}
+                                {% set refresh_time = plugin_instance.latest_refresh_time | format_relative_time %}
+                                <span class="latest-refresh" title="{{plugin_instance.latest_refresh_time}}">
+                                    Refreshed {{ refresh_time }}
+                                </span>
+                            {% endif %}
+
+                            <a href="{{ url_for('plugin.plugin_page', plugin_id=plugin_instance.plugin_id) }}?instance={{ plugin_instance.name }}" class="edit-button">
+                                <img src="{{ url_for('static', filename='icons/edit.png') }}" alt="edit plugin" class="action-icon">
+                            </a>
+                            <button class="edit-button" title="Display Now" onclick="displayPluginInstance('{{ playlist.name }}', '{{ plugin_instance.plugin_id }}','{{ plugin_instance.name }}')">
+                                <img src="{{ url_for('static', filename='icons/display.png') }}" alt="display now" class="action-icon">
+                            </button>
+                            <button class="delete-button" title="Delete Plugin Instance" onclick="deletePluginInstance('{{ playlist.name }}', '{{ plugin_instance.plugin_id }}','{{ plugin_instance.name }}')">
+                                <img src="{{ url_for('static', filename='icons/remove.png') }}" alt="delete plugin" class="action-icon">
+                            </button>
+                        </div>
+                        {% endfor %}
+                    </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Schedule Configuration Modal -->
+    <div id="playlistModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" onclick="closeModal()">×</span>
+            <h2 id="modalTitle">New Playlist</h2>
+            <div class="separator"></div>
+            <form id="scheduleForm" class="settings-form">
+                <input type="hidden" id="editingPlaylistName" value="">  <!-- Track existing playlist -->
+
+                <div class="form-group">
+                    <label for="playlist_name" class="form-label">Playlist Name:</label>
+                    <input type="text" id="playlist_name" name="playlist_name" placeholder="Type something..." required class="form-input">
+                </div>
+                <div class="form-group">
+                    <label for="start_time" class="form-label">Display from </label>
+                    <select id="start_time" name="start_time" class="form-input"></select>
+                    <span> - </span>
+                    <select id="end_time" name="end_time" class="form-input"></select>
+                </div>
+            </form>
+            <div class="buttons-container">
+                <button type="button" class="action-button" id="saveButton">Save</button>
+                <button type="button" class="action-button warn hidden" id="deleteButton" onclick="deletePlaylist()">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success/Error Modal -->
+    {% include 'response_modal.html' %}
+</body>
+</html>

@@ -17,6 +17,8 @@ SCRIPT_DIR=$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )
 APPNAME="inkypi"
 INSTALL_PATH="/usr/local/$APPNAME"
 VENV_PATH="$INSTALL_PATH/venv_$APPNAME"
+
+APT_REQUIREMENTS_FILE="$SCRIPT_DIR/debian-requirements.txt"
 PIP_REQUIREMENTS_FILE="$SCRIPT_DIR/requirements.txt"
 
 echo_success() {
@@ -30,6 +32,15 @@ echo_error() {
 # Ensure script is run with sudo
 if [ "$EUID" -ne 0 ]; then
   echo_error "ERROR: This script requires root privileges. Please run it with sudo."
+  exit 1
+fi
+
+apt-get update -y
+if [ -f "$APT_REQUIREMENTS_FILE" ]; then
+  echo "Installing system dependencies. "
+  xargs -a "$APT_REQUIREMENTS_FILE" sudo apt-get install -y > /dev/null &
+else
+  echo_error "ERROR: System dependencies file $APT_REQUIREMENTS_FILE not found!"
   exit 1
 fi
 

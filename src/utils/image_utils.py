@@ -1,7 +1,11 @@
 import requests
 from PIL import Image
 from io import BytesIO
+import os
 import logging
+import hashlib
+import tempfile
+import subprocess
 
 logger = logging.getLogger(__name__)
 
@@ -51,3 +55,61 @@ def resize_image(image, desired_size, image_settings=[]):
 
     # Step 3: Resize to the exact desired dimensions (if necessary)
     return cropped_image.resize((desired_width, desired_height), Image.LANCZOS)
+
+def compute_image_hash(image):
+    """Compute SHA-256 hash of an image."""
+    image = image.convert("RGB")
+    img_bytes = image.tobytes()
+    return hashlib.sha256(img_bytes).hexdigest()
+
+def take_screenshot_html(html_str, dimensions, timeout_ms=None):
+    image = None
+    try:
+        # Create a temporary HTML file
+        with tempfile.NamedTemporaryFile(suffix=".html", delete=False) as html_file:
+            html_file.write(html_str.encode("utf-8"))
+            html_file_path = html_file.name
+
+        image = take_screenshot(html_file_path, dimensions, timeout_ms)
+
+        # Remove html file
+        os.remove(html_file_path)
+
+    except Exception as e:
+        logger.error(f"Failed to take screenshot: {str(e)}")
+
+    return image
+
+def take_screenshot(target, dimensions, timeout_ms=None):
+    image = None
+    try:
+        # Create a temporary output file for the screenshot
+        with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as img_file:
+            img_file_path = img_file.name
+
+        command = [
+            "chromium-headless-shell", target, "--headless",
+            f"--screenshot={img_file_path}", f'--window-size={dimensions[0]},{dimensions[1]}',
+            "--no-sandbox", "--disable-gpu", "--disable-software-rasterizer",
+            "--disable-dev-shm-usage", "--hide-scrollbars"
+        ]
+        if timeout_ms:
+            command.append(f"--timeout={timeout_ms}")
+        result = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+        # Check if the process failed or the output file is missing
+        if result.returncode != 0 or not os.path.exists(img_file_path):
+            logger.error("Failed to take screenshot:")
+            logger.error(result.stderr.decode('utf-8'))
+            return None
+
+        # Load the image using PIL
+        image = Image.open(img_file_path)
+
+        # Remove image files
+        os.remove(img_file_path)
+
+    except Exception as e:
+        logger.error(f"Failed to take screenshot: {str(e)}")
+    
+    return image

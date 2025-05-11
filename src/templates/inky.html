@@ -15,6 +15,9 @@
             <a href="{{ url_for('settings.settings_page') }}" class="settings-button">
                 <img src="{{ url_for('static', filename='icons/settings.png') }}" title="Settings" alt="settings icon" class="icon-image">
             </a>
+            <a href="{{ url_for('playlist.playlists') }}" class="settings-button">
+                <img src="{{ url_for('static', filename='icons/playlist.png') }}" title="Playlists" alt="playlists icon" class="icon-image">
+            </a>
         </header>
 
         <!-- Display the current image -->
@@ -27,8 +30,8 @@
         <h2 class="plugins-title">Plugins</h2>
         <div class="button-grid">
             {% for plugin in plugins %}
-            <a href="{{ url_for('plugin.plugin_page', plugin_id=plugin.id) }}" class="icon-button">
-                <img src="{{ url_for('plugin.image', plugin_id=plugin.id, filename='icon.png') }}" title="{{ plugin.display_name }}" alt="{{ plugin.display_name }} icon" class="icon-image">
+            <a href="{{ url_for('plugin.plugin_page', plugin_id=plugin.id) }}" class="icon-button" title="{{ plugin.display_name }}" >
+                <img src="{{ url_for('plugin.image', plugin_id=plugin.id, filename='icon.png') }}" alt="{{ plugin.display_name }} icon" class="icon-image">
             </a>
             {% endfor %}
         </div>

@@ -12,6 +12,7 @@ InkyPi is an open-source, customizable E-Ink display powered by a Raspberry Pi. 
 - Minimize distractions: no LEDS, noise, or notifications, just the content you care about
 - Easy installation and configuration, perfect for beginners and makers alike
 - Open source project allowing you to modify, customize, and create your own plugins
+- Set up scheduled playlists to display different plugins at designated times
 
 **Plugins**:
 
@@ -20,6 +21,7 @@ InkyPi is an open-source, customizable E-Ink display powered by a Raspberry Pi. 
 - Clock: Customizable clock faces for displaying time
 - AI Image: Generate images from text prompts using OpenAI's DALL·E 
 - AI Text: Display dynamic text content using OpenAI's GPT-4o text models
+- Weather: Display current weather conditions and multi-day forecasts with a customizable layout
 
 And additional plugins coming soon! For documentation on building custom plugins, see [Building InkyPi Plugins](./docs/building_plugins.md).
 
@@ -28,11 +30,12 @@ And additional plugins coming soon! For documentation on building custom plugins
 - Raspberry Pi (4 | 3 | Zero 2 W)
     - Recommended to get 40 pin Pre Soldered Header
 - MicroSD Card (min 8 GB)
-- E-Ink Display: Pimoroni Inky Impression, available in 3 sizes:
-    - **[7.3 Inch Display](https://shop.pimoroni.com/products/inky-impression-7-3)**
-    - **[5.7 Inch Display](https://shop.pimoroni.com/products/inky-impression-5-7)**
-    - **[4 Inch Display](https://shop.pimoroni.com/products/inky-impression-4)**
+- E-Ink Display: Inky Impression from Pimoroni, available in 3 sizes (affiliate links)
+    - **[7.3 Inch Display](https://collabs.shop/q2jmza)**
+    - **[5.7 Inch Display](https://collabs.shop/ns6m6m)**
+    - **[4 Inch Display](https://collabs.shop/cpwtbh)**
 - Picture Frame or 3D Stand
+    - See [community.md](./docs/community.md) for 3D models, custom builds, and other submissions from the community
 
 ## Installation
 To install InkyPi, follow these steps:
@@ -85,21 +88,35 @@ sudo bash install/uninstall.sh
 The InkyPi project is constantly evolving, with many exciting features and improvements planned for the future.
 
 - Plugins, plugins, plugins
-- Enhanced scheduling functionality
 - Modular layouts to mix and match plugins
 - Support for buttons with customizable action bindings
 - Improved Web UI on mobile devices
 - Support for Waveshare devices
 
+Check out the public [trello board](https://trello.com/b/SWJYWqe4/inkypi) to explore upcoming features and vote on what you'd like to see next!
+
 ## License
 
 Distributed under the GPL 3.0 License, see [LICENSE](./LICENSE) for more information.
+
+This project includes fonts and icons with separate licensing and attribution requirements. See [Attribution](./docs/attribution.md) for details.
 
 ## Issues
 
 Check out the [troubleshooting guide](./docs/troubleshooting.md). If you're still having trouble, feel free to create an issue on the [GitHub Issues](https://github.com/fatihak/InkyPi/issues) page.
 
 If you're using a Pi Zero W, note that there are known issues during the installation process. See [Known Issues during Pi Zero W Installation](./docs/troubleshooting.md#known-issues-during-pi-zero-w-installation) section in the troubleshooting guide for additional details..
+
+## Sponsoring
+
+InkyPi is maintained and developed with the help of sponsors. If you enjoy the project or find it useful, consider supporting its continued development.
+
+<p align="center">
+<a href="https://github.com/sponsors/fatihak" target="_blank"><img src="https://user-images.githubusercontent.com/345274/133218454-014a4101-b36a-48c6-a1f6-342881974938.png" alt="Become a Patreon" height="35" width="auto"></a>
+<a href="https://www.patreon.com/akzdev" target="_blank"><img src="https://c5.patreon.com/external/logo/become_a_patron_button.png" alt="Become a Patreon" height="35" width="auto"></a>
+<a href="https://www.buymeacoffee.com/akzdev" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="35" width="auto"></a>
+</p>
+
 
 ## Acknowledgements
 

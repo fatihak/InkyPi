@@ -1,0 +1,30 @@
+
+.text-content {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  height: 100%;
+  width: 100%;
+  gap: 1dvh;
+  font-family: "Jost";
+  container-type: size;
+}
+
+.title {
+  font-weight: bold;
+  font-size: 4rem;
+  max-width: 100%;
+  font-size: min(10cqh, 8cqi);
+}
+
+.content {
+  overflow-wrap: break-word;
+  max-width: 100%;
+  max-height: 80%;
+  font-weight: 200;
+  font-size: min(6cqh, 5cqi);
+  white-space: pre-line;
+  overflow: hidden;
+}
