@@ -15,6 +15,22 @@
 </div>
 
 <div class="form-group">
+    <label class="form-label">Manual Location Name: </label>
+    <div class="form-group">
+        <input type="checkbox" id="enableName" name="enableName" onclick="this.value=this.checked ? 'true' : 'false';">
+        <span>Enable?</span>
+    </div>
+    <div class="form-group">
+        <span>City: </span>
+        <input type="text" id="cityName" name="cityName" class="form-input" />
+    </div>
+    <div class="form-group">
+        <span>State/Country: </span>
+        <input type="text" id="stateName" name="stateName" class="form-input" />
+    </div>
+</div>
+
+<div class="form-group">
     <label for="units" class="form-label">Units:</label>
     <select id="units" name="units" class="form-input">
         <option value="imperial">Imperial (°F)</option>
