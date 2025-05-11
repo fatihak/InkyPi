@@ -57,7 +57,11 @@ class Weather(BasePlugin):
 
         weather_data = self.get_weather_data(api_key, units, lat, long)
         aqi_data = self.get_air_quality(api_key, lat, long)
-        location_data = self.get_location(api_key, lat, long)
+        # Check if manual name is enabled, create dict as needed in parsing of weather data. When enabled, avoids request to OpenWeather API for location
+        if settings.get('enableName'):
+            location_data = {'name': settings.get('cityName'), 'state': settings.get('stateName')}
+        else:
+            location_data = self.get_location(api_key, lat, long)
 
         dimensions = device_config.get_resolution()
         if device_config.get_config("orientation") == "vertical":
