@@ -1,0 +1,19 @@
+{
+    "name": "InkyPi",
+    "orientation": "horizontal",
+    "scheduler_sleep_time": 60,
+    "startup": false,
+    "resolution": [
+        800,
+        480
+    ],
+    "timezone": "Europe/Berlin",
+    "refresh_settings": {
+        "interval": 300,
+        "plugin_settings": {
+            "api_url": "https://immich.evalte.uk/api",
+            "album_id": "2a0b2deb-fca8-41d7-af9d-6382e24f7d4c",
+            "plugin_id": "immich"
+        }
+    }
+}
