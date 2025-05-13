@@ -97,6 +97,29 @@ Then restart the inkypi service:
 sudo systemctl restart inkypi.service
 ```
 
+## Waveshare e-Paper EPD Devices
+
+### Missing modules
+
+Ensure that the necessary modeules are available in the python environment. Waveshare requires:
+
+- gpiozero
+- lgpio
+- RPi.GPIO
+
+in addition to the libraries that are normally installed for Inky screens.
+
+### Screen not updating
+
+Verify SPI configuration using `ls /dev/sp*`.  There should be two entries for _spidev0.0_ and _spidev0.1_.  
+
+If only the first is visible, check _/boot/firmware/config.txt_. The regular install of InkyPi adds `dtoverlay=spi0-0cs` to the this file.  If it is there, either delete it (for default behaviour) or specifically add `dtoverlay=spi0-2cs`.
+
+### My device is not supported/available in package display.waveshare_epd
+
+Only the epd7in3f driver is pacakged in the install as this has been physically tested.  It is assumed that other devices in the [Waveshare EPD drivers](https://github.com/waveshareteam/e-Paper/tree/master/RaspberryPi_JetsonNano/python/lib/waveshare_epd) repository will work.  Locate the correct _epd_ file for your screen and copy that to the installation directory _src/display/waveshare_epd_ folder and run the installation script again using the `-W <device>` parameter.
+
+
 ## Today's Newspaper not found
 
 Daily newspaper front pages are sourced from [Freedom Forum](https://frontpages.freedomforum.org/gallery). The list of available newspapers may change periodically. InkyPi maintains an up-to-date list of newspapers provided by Freedom Forum, but there may be times when the list becomes outdated.
