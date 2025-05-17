@@ -56,7 +56,7 @@
           <span class="high">{{ day.high }}{% if units != "standard" %}°{% endif %}</span> / 
           <span class="low">{{ day.low }}{% if units != "standard" %}°{% endif %}</span>
         </div>
-        {% if plugin_settings.displayForecast and plugin_settings.displayForecast == "true" %}
+        {% if plugin_settings.moonPhase and plugin_settings.moonPhase == "true" %}
         <div class="separator"></div>
         <div class="moon-phase-container">
         <img class="moon-phase-icon" src="{{day.moon_phase_icon}}" alt="Moon phase icon">
