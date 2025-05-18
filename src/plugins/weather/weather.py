@@ -45,12 +45,12 @@ class Weather(BasePlugin):
         api_key = device_config.load_env_key("OPEN_WEATHER_MAP_SECRET")
         if not api_key:
             raise RuntimeError("Open Weather Map API Key not configured.")
-        
+
         lat = settings.get('latitude')
         long = settings.get('longitude')
         if not lat or not long:
             raise RuntimeError("Latitude and Longitude are required.")
-        
+
         units = settings.get('units')
         if not units or units not in ['metric', 'imperial', 'standard']:
             raise RuntimeError("Units are required.")
@@ -66,15 +66,19 @@ class Weather(BasePlugin):
         timezone = device_config.get_config("timezone", default="America/New_York")
         tz = pytz.timezone(timezone)
         template_params = self.parse_weather_data(weather_data, aqi_data, location_data, tz, units)
-
         template_params["plugin_settings"] = settings
+
+        # Add last refresh time
+        now = datetime.now(tz)
+        last_refresh_time = now.strftime("%Y-%m-%d %I:%M %p")
+        template_params["last_refresh_time"] = last_refresh_time
 
         image = self.render_image(dimensions, "weather.html", "weather.css", template_params)
 
         if not image:
             raise RuntimeError("Failed to take screenshot, please check logs.")
         return image
-    
+
     def parse_weather_data(self, weather_data, aqi_data, location_data, tz, units):
         current = weather_data.get("current")
         dt = datetime.fromtimestamp(current.get('dt'), tz=timezone.utc).astimezone(tz)
@@ -120,7 +124,7 @@ class Weather(BasePlugin):
             }
             hourly.append(hour_forecast)
         return hourly
-        
+
     def parse_data_points(self, weather, air_quality, tz, units):
         data_points = []
 
@@ -195,9 +199,9 @@ class Weather(BasePlugin):
         if not 200 <= response.status_code < 300:
             logging.error(f"Failed to retrieve weather data: {response.content}")
             raise RuntimeError("Failed to retrieve weather data.")
-        
+
         return response.json()
-    
+
     def get_air_quality(self, api_key, lat, long):
         url = AIR_QUALITY_URL.format(lat=lat, long=long, api_key=api_key)
         response = requests.get(url)
@@ -205,9 +209,9 @@ class Weather(BasePlugin):
         if not 200 <= response.status_code < 300:
             logging.error(f"Failed to get air quality data: {response.content}")
             raise RuntimeError("Failed to retrieve air quality data.")
-        
+
         return response.json()
-    
+
     def get_location(self, api_key, lat, long):
         url = GEOCODING_URL.format(lat=lat, long=long, api_key=api_key)
         response = requests.get(url)
@@ -215,5 +219,6 @@ class Weather(BasePlugin):
         if not 200 <= response.status_code < 300:
             logging.error(f"Failed to get location: {response.content}")
             raise RuntimeError("Failed to retrieve location.")
-        
+
         return response.json()[0]
+
