@@ -247,6 +247,8 @@ class Clock(BasePlugin):
 
         # Interpolate colors between start and end within the mask
         gradient = np.zeros((h, w, 4), dtype=np.uint8)
+        start_color = Clock.pad_color(start_color)
+        end_color = Clock.pad_color(end_color)
         for c in range(4):  # Iterate through RGBA channels
             gradient[..., c] = (
                 start_color[c] * (1 - theta) + end_color[c] * (theta)
@@ -255,6 +257,11 @@ class Clock(BasePlugin):
         # Fill with the specified solid color
         gradient[~anglemask] = (0, 0, 0, 0)
         return Image.fromarray(gradient, mode="RGBA")
+
+    @staticmethod
+    def pad_color(color):
+        # Add 255, until 4 values (RGBA) are in that array
+        return tuple(list(color) + [255] * (4 - len(color)))
 
     @staticmethod
     def draw_clock_hand(image, length, angle, hand_color, hand_length=14, border_color=None, border_width = 0, hand_offset=0, round_corners=True, offset_width=4, hand_width=4):
@@ -438,4 +445,3 @@ class Clock(BasePlugin):
             letters.extend([[9,5],[9,6],[9,7],[9,8],[9,9],[9,10]]) # OCLOCK
 
         return letters
-

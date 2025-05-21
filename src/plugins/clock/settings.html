@@ -66,5 +66,12 @@
             selectedOption.classList.add('selected');
             selectedClockFaceInput.value = selectedOption.getAttribute('data-face-name');
         }
+
+        if (pluginSettings.primaryColor) {
+            document.querySelector("[name=primaryColor]").value = pluginSettings.primaryColor;
+        }
+        if (pluginSettings.secondaryColor) {
+            document.querySelector("[name=secondaryColor]").value = pluginSettings.secondaryColor;
+        }
     });
 </script>

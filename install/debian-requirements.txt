@@ -5,4 +5,4 @@ python3-pip
 avahi-daemon
 libopenblas-dev
 libopenjp2-7
-chromium-browser
+chromium-headless-shell
