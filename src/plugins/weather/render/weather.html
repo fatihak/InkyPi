@@ -60,6 +60,13 @@
           <span class="high">{{ day.high }}{% if units != "standard" %}°{% endif %}</span> / 
           <span class="low">{{ day.low }}{% if units != "standard" %}°{% endif %}</span>
         </div>
+        {% if plugin_settings.moonPhase and plugin_settings.moonPhase == "true" %}
+        <div class="separator"></div>
+        <div class="moon-phase-container">
+        <img class="moon-phase-icon" src="{{day.moon_phase_icon}}" alt="Moon phase icon">
+        <span style="flex: 1;">{{day.moon_phase_pct}} %</span>
+        </div>
+        {% endif %}
       </div>
     {% endfor %}
   </div>
@@ -82,10 +89,6 @@
     // Find min and max temperatures
     const minTemp = Math.min(...temperatures);
     var maxTemp = Math.max(...temperatures);
-
-    if (maxTemp - minTemp < 4){
-      maxTemp += 2;
-    }
   
     const chart = new Chart(ctx, {
       type: 'line',
@@ -120,6 +123,9 @@
       ]
       },
       options: {
+        animation: {
+          duration: 0, // general animation time
+        },
         responsive: true,
         maintainAspectRatio: false,
         scales: {
@@ -158,8 +164,8 @@
               }
             },
             grid: { display: false },
-            suggestedMin: minTemp,
-            suggestedMax: maxTemp,
+            min: minTemp,
+            max: maxTemp,
           },
           y1: {
             position: 'right',
@@ -177,8 +183,8 @@
                 else return '';
               }
             },
-            suggestedMin: 0,
-            suggestedMax: 100,
+            min: 0,
+            max: 100,
           }
         },
         plugins: { legend: { display: false}}, // Hide legend
@@ -190,13 +196,15 @@
       }
     });
 
+    chart.update();
+
     // Now, after the chart is created, we can access the scales
     const gradientStart = chart.scales['y'].getPixelForValue(maxTemp); // Max temperature
     const gradientEnd = chart.scales['y'].getPixelForValue(minTemp);   // Min temperature
 
     // Create gradient based on y-axis values
     const tempGradient = ctx.createLinearGradient(0, gradientStart, 0, gradientEnd+10);
-    tempGradient.addColorStop(0, 'rgba(252,204,5, 0.9)'); // Top of the gradient (max temperature)
+    tempGradient.addColorStop(0, 'rgba(252,204,5, 0.95)'); // Top of the gradient (max temperature)
     tempGradient.addColorStop(1, 'rgba(252,204,5, 0.01)'); // Bottom of the gradient (min temperature)
 
     // Update the chart to apply the gradient
@@ -204,7 +212,7 @@
 
     // Create gradient based on y-axis values
     const precipitationGradient = ctx.createLinearGradient(0, gradientStart, 0, gradientEnd);
-    precipitationGradient.addColorStop(0, 'rgba(26, 111, 176, 0.9)'); // Top of the gradient (max temperature)
+    precipitationGradient.addColorStop(0, 'rgba(26, 111, 176, 0.8)'); // Top of the gradient (max temperature)
     precipitationGradient.addColorStop(1, 'rgba(194, 223, 246, 0)'); // Bottom of the gradient (min temperature)
 
     chart.data.datasets[1].backgroundColor = precipitationGradient;
