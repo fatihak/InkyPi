@@ -98,7 +98,7 @@ class Weather(BasePlugin):
 
     def parse_forecast(self, daily_forecast, tz):
         forecast = []
-        for day in daily_forecast[1:]:
+        for day in daily_forecast[0:]:
             icon = day.get("weather")[0].get("icon")
             dt = datetime.fromtimestamp(day.get('dt'), tz=timezone.utc).astimezone(tz)
             day_forecast = {

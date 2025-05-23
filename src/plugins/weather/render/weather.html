@@ -52,7 +52,7 @@
   <!-- Forecast Row -->
   {% if plugin_settings.displayForecast and plugin_settings.displayForecast == "true" %}
   <div class="forecast">
-    {% for day in forecast[1:plugin_settings.forecastDays+1 | int] %}
+    {% for day in forecast[1:(plugin_settings.forecastDays | int) + 1] %}
       <div class="forecast-day">
         <div class="forecast-day-name">{{ day.day }}</div>
         <img class="forecast-icon" src="{{day.icon}}" alt="{{ day.day }} Weather Icon">
