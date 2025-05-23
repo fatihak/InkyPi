@@ -7,7 +7,9 @@
     <div class="location">{{ location }}</div>
     <div class="current-date">
       {{ current_date }}
+	  {% if plugin_settings.lastUpdate and plugin_settings.lastUpdate == "true" %}
       <span class="last-update">(Last updated: {{ last_update }})</span>
+	  {% endif %}
     </div>
   </div>
 
@@ -17,7 +19,9 @@
       <!-- Icon + Temperature -->
         <img class="current-icon" src="{{current_day_icon}}" alt="Current Weather Icon">
         <div class="current-weather">
+		{% if plugin_settings.currentMinMax and plugin_settings.currentMinMax == "true" %}
           <div class="min-max">( {{ forecast[0].low }}{% if units != "standard" %}°{% endif %} / {{ forecast[0].high }}{% if units != "standard" %}°{% endif %} )</div>
+		{% endif %}
           <div class="current-temp">{{ current_temperature }}<span class="temperature-unit">{{temperature_unit}}</span></div>
           <div class="feels-like">Feels Like {{ feels_like }}{% if units != "standard" %}°{% endif %}</div>
         </div>
