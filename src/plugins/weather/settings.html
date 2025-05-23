@@ -39,6 +39,16 @@
         <input type="checkbox" id="moonPhase" name="moonPhase" onclick="this.value=this.checked ? 'true' : 'false';">
         <span>Moon Phase</span>
     </div>
+	
+	<div class="form-group">
+        <input type="checkbox" id="currentMinMax" name="currentMinMax" onclick="this.value=this.checked ? 'true' : 'false';">
+        <span>Current Day Min/Max</span>
+    </div>
+	
+	<div class="form-group">
+        <input type="checkbox" id="lastUpdate" name="lastUpdate" onclick="this.value=this.checked ? 'true' : 'false';">
+        <span>Last update</span>
+    </div>
 
     <div class="form-group">
         <input type="checkbox" id="displayForecast" name="displayForecast" onclick="this.value=this.checked ? 'true' : 'false';">
@@ -119,6 +129,8 @@
 
             document.getElementById('forecastDays').value = pluginSettings.forecastDays;
             document.getElementById('moonPhase').checked = pluginSettings.moonPhase;
+			document.getElementById('currentMinMax').checked = pluginSettings.currentMinMax;
+			document.getElementById('lastUpdate').checked = pluginSettings.lastUpdate;
         } else {
             // set default values
             document.getElementById('units').value = "imperial";
@@ -132,6 +144,8 @@
             
             document.getElementById('forecastDays').value = 7
             document.getElementById('moonPhase').checked = false;
+			document.getElementById('currentMinMax').checked = false;
+			document.getElementById('lastUpdate').checked = false;
         }
     });
 </script>

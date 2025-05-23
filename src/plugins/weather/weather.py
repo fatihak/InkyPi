@@ -92,7 +92,8 @@ class Weather(BasePlugin):
             "current_temperature": str(round(current.get("temp"))),
             "feels_like": str(round(current.get("feels_like"))),
             "temperature_unit": UNITS[units]["temperature"],
-            "units": units
+            "units": units,
+            "last_update": dt.strftime("%I:%M %p")
         }
         data['forecast'] = self.parse_forecast(weather_data.get('daily'), tz)
         data['data_points'] = self.parse_data_points(weather_data, aqi_data, tz, units)
@@ -130,8 +131,9 @@ class Weather(BasePlugin):
                 return "waningcrescent"
 
         forecast = []
+
         # skip today (i=0)
-        for day in daily_forecast[1:]:
+        for day in daily_forecast[0:]:
             # --- weather icon ---
             weather_icon = day["weather"][0]["icon"]  # e.g. "10d", "01n"
             # always show day‑style icon
