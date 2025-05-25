@@ -1,3 +1,9 @@
+"""APOD Plugin for InkyPi
+This plugin fetches the Astronomy Picture of the Day (APOD) from NASA's API
+and displays it on the InkyPi device. It supports custom dates and handles image resizing and orientation.
+For the API key, set `NASA_SECRET={API_KEY}` in your .env file.
+"""
+
 from plugins.base_plugin.base_plugin import BasePlugin
 from PIL import Image
 from io import BytesIO
@@ -8,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 class Apod(BasePlugin):
     def generate_settings_template(self):
-        # Store your API key with NASA_SECRET={API_KEY} in the .env file
+        # NASA_SECRET={API_KEY} in .env
         template_params = super().generate_settings_template()
         template_params['api_key'] = {
             "required": True,
