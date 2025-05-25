@@ -1,3 +1,5 @@
+> Fork of https://github.com/fatihak/InkyPi project
+
 # InkyPi 
 
 <img src="./docs/images/inky_clock.jpg" />
