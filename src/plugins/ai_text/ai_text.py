@@ -35,7 +35,7 @@ class AIText(BasePlugin):
             raise RuntimeError("Text Model is required.")
 
         text_prompt = settings.get('textPrompt', '')
-        if not text_model.strip():
+        if not text_prompt.strip():
             raise RuntimeError("Text Prompt is required.")
 
         try:
