@@ -59,23 +59,23 @@ class Apod(BasePlugin):
             logger.error(f"Failed to load APOD image: {str(e)}")
             raise RuntimeError("Failed to load APOD image.")
 
-        # Adapter l'image a la resolution du device sans distorsion
+        # Resize and crop the image to fit the display
         target_w, target_h = device_config.get_resolution()
         if device_config.get_config("orientation") == "vertical":
             target_w, target_h = target_h, target_w  # inverse
 
-        # Rotation si necessaire : image paysage sur ecran portrait ou inversement
+        # Rotate the image if necessary
         img_w, img_h = image.size
         if (img_w > img_h and target_h > target_w) or (img_h > img_w and target_w > target_h):
               image = image.rotate(-90, expand=True)
 
-        # Redimensionne en conservant le ratio, puis centre dans un cadre
+        # Resize the image to fit the display while maintaining aspect ratio
         img_w, img_h = image.size
         scale = max(target_w / img_w, target_h / img_h)
         resized_w, resized_h = int(img_w * scale), int(img_h * scale)
         image = image.resize((resized_w, resized_h), Image.LANCZOS)
 
-        # Recadrage centre la taille exacte du display
+        # Crop the image to fit the display
         left = (resized_w - target_w) // 2
         top = (resized_h - target_h) // 2
         image = image.crop((left, top, left + target_w, top + target_h))
