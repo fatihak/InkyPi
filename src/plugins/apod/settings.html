@@ -1,0 +1,51 @@
+<div class="form-group">
+    <label for="customDate" class="form-label">Date (today by default)</label>
+    <input type="date" id="customDate" name="customDate" class="form-input" />
+</div>
+
+<div class="form-group">
+    <label for="randomizeApod" class="form-label">Randomize date</label>
+    <div class="toggle-container">
+        <input type="checkbox" id="randomizeApod" name="randomizeApod" class="toggle-checkbox" value="false"
+            onclick="this.value = this.checked ? 'true' : 'false'; handleRandomApodToggle(this)">
+        <label for="randomizeApod" class="toggle-label"></label>
+    </div>
+</div>
+
+<script>
+    function getRandomDate() {
+        const start = new Date(2015, 0, 1); // First image uploaded
+        const end = new Date();
+        const randomTime = start.getTime() + Math.random() * (end.getTime() - start.getTime());
+        return new Date(randomTime).toISOString().split('T')[0];
+    }
+
+    function handleRandomApodToggle(toggle) {
+        const $date = document.getElementById('customDate');
+        if (toggle.checked) {
+            $date.value = getRandomDate();
+        } else {
+            $date.value = new Date().toISOString().split('T')[0];
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const $date = document.getElementById('customDate');
+        const $toggle = document.getElementById('randomizeApod');
+        const today = new Date().toISOString().split('T')[0];
+
+        if (loadPluginSettings) {
+            $toggle.checked = pluginSettings.randomizeApod === 'true';
+            $toggle.value = pluginSettings.randomizeApod;
+            $date.value = pluginSettings.customDate || today;
+
+            if ($toggle.checked) {
+                $date.value = getRandomDate(); // force une nouvelle à chaque chargement
+            }
+        } else {
+            $toggle.checked = false;
+            $toggle.value = "false";
+            $date.value = today;
+        }
+    });
+</script>
