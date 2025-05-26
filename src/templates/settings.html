@@ -53,6 +53,34 @@
                 }
             }
         }
+
+        function toggleCollapsible(button) {
+            const content = button.nextElementSibling;
+            const icon = button.querySelector(".collapsible-icon");
+            button.classList.toggle("active");
+            content.style.display = content.style.display === "block" ? "none" : "block";
+            icon.textContent = content.style.display === "block" ? "▲" : "▼";
+        }
+
+        async function handleShutdown(reboot) {
+            if (reboot) {
+                showResponseModal('success', 'The system will reboot now');
+            } else {
+                showResponseModal('success', 'The system wil be shut down.');
+            }
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            // we cannot await a response here
+            await fetch("{{ url_for('settings.shutdown') }}", {
+                method: 'POST',
+                body: JSON.stringify({reboot: reboot})
+            });
+        }
+
+
+        function updateSliderValue(slider) {
+            const valueDisplay = document.getElementById(`${slider.id}-value`);
+            valueDisplay.textContent = parseFloat(slider.value).toFixed(2);
+        }
         document.addEventListener('DOMContentLoaded', populateIntervalFields);
     </script>
 </head>
@@ -64,6 +92,20 @@
         <div class="app-header">
             <img src="{{ url_for('static', filename='icons/settings.png') }}" alt="settings icon" class="app-icon">
             <h1 class="app-title">Settings</h1>
+
+            <div class="settings-shutdown-buttons">
+                <button type="button" onclick="handleShutdown(true)" title="Reboot" class="header-icon-button">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="header-button-svg">
+                        <path d="M463.5 224l8.5 0c13.3 0 24-10.7 24-24l0-128c0-9.7-5.8-18.5-14.8-22.2s-19.3-1.7-26.2 5.2L413.4 96.6c-87.6-86.5-228.7-86.2-315.8 1c-87.5 87.5-87.5 229.3 0 316.8s229.3 87.5 316.8 0c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0c-62.5 62.5-163.8 62.5-226.3 0s-62.5-163.8 0-226.3c62.2-62.2 162.7-62.5 225.3-1L327 183c-6.9 6.9-8.9 17.2-5.2 26.2s12.5 14.8 22.2 14.8l119.5 0z"></path>
+                    </svg>
+                </button>
+                <button type="button" onclick="handleShutdown(false)" title="Shutdown" class="header-icon-button">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="header-button-svg">
+                        <path d="M288 32c0-17.7-14.3-32-32-32s-32 14.3-32 32l0 224c0 17.7 14.3 32 32 32s32-14.3 32-32l0-224zM143.5 120.6c13.6-11.3 15.4-31.5 4.1-45.1s-31.5-15.4-45.1-4.1C49.7 115.4 16 181.8 16 256c0 132.5 107.5 240 240 240s240-107.5 240-240c0-74.2-33.8-140.6-86.6-184.6c-13.6-11.3-33.8-9.4-45.1 4.1s-9.4 33.8 4.1 45.1c38.9 32.3 63.5 81 63.5 135.4c0 97.2-78.8 176-176 176s-176-78.8-176-176c0-54.4 24.7-103.1 63.5-135.4z"></path>
+                    </svg>
+                </button>
+            </div>
+
         </div>
         <div class="separator"></div>
         <!-- Settings Content -->
@@ -122,6 +164,67 @@
                         <option value="minute">Minute</option>
                         <option value="hour">Hour</option>
                     </select>
+                </div>
+
+                <div class="collapsible">
+                    <button type="button" class="collapsible-header" onclick="toggleCollapsible(this)">
+                        Image Settings <span class="collapsible-icon">▼</span>
+                    </button>
+                    <div class="settings-container collapsible-content">
+                        <div class="form-group">
+                            <label for="saturation" class="form-label" style="min-width: 100px;">Saturation:</label>
+                            <span id="saturation-value">{{ device.saturation if device.saturation is not none else 1.0 }}</span>
+                            <input
+                                type="range"
+                                id="saturation"
+                                name="saturation"
+                                class="form-input"
+                                min="0" max="2" step="0.1"
+                                value="{{ device.saturation if device.saturation is not none else 1.0 }}"
+                                style="max-width: 400px;"
+                                oninput="updateSliderValue(this)"
+                            />
+                        </div>
+                        <div class="form-group">
+                            <label for="contrast" class="form-label" style="min-width: 100px;">Contrast:</label>
+                            <span id="contrast-value">{{ device.contrast if device.contrast is not none else 1.0 }}</span>
+                            <input
+                                type="range"
+                                id="contrast"
+                                name="contrast"
+                                class="form-input"
+                                min="0" max="2" step="0.1"
+                                value="{{ device.contrast if device.contrast is not none else 1.0 }}"
+                                style="max-width: 400px;"
+                                oninput="updateSliderValue(this)"
+                            />                        </div>
+                        <div class="form-group">
+                            <label for="sharpness" class="form-label" style="min-width: 100px;">Sharpness:</label>
+                            <span id="sharpness-value">{{ device.sharpness if device.sharpness is not none else 1.0 }}</span>
+                            <input
+                                type="range"
+                                id="sharpness"
+                                name="sharpness"
+                                class="form-input"
+                                min="0" max="2" step="0.1"
+                                value="{{ device.sharpness if device.sharpness is not none else 1.0 }}"
+                                style="max-width: 400px;"
+                                oninput="updateSliderValue(this)"
+                            />                        </div>
+                        <div class="form-group">
+                            <label for="brightness" class="form-label" style="min-width: 100px;">Brightness:</label>
+                            <span id="brightness-value">{{ device.brightness if device.brightness is not none else 1.0 }}</span>
+                            <input
+                                type="range"
+                                id="brightness"
+                                name="brightness"
+                                class="form-input"
+                                min="0" max="2" step="0.1"
+                                value="{{ device.brightness if device.brightness is not none else 1.0 }}"
+                                style="max-width: 400px;"
+                                oninput="updateSliderValue(this)"
+                            />                        </div>
+                    </div>
                 </div>
             </div>
         </form>
