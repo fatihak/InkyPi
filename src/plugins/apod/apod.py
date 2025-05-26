@@ -1,6 +1,7 @@
-"""APOD Plugin for InkyPi
+"""
+APOD Plugin for InkyPi
 This plugin fetches the Astronomy Picture of the Day (APOD) from NASA's API
-and displays it on the InkyPi device. It supports custom dates and handles image resizing and orientation.
+and displays it on the InkyPi device. It supports random dates.
 For the API key, set `NASA_SECRET={API_KEY}` in your .env file.
 """
 
@@ -9,19 +10,20 @@ from PIL import Image
 from io import BytesIO
 import requests
 import logging
+from random import randint
+from datetime import datetime, timedelta
 
 logger = logging.getLogger(__name__)
 
 class Apod(BasePlugin):
     def generate_settings_template(self):
-        # NASA_SECRET={API_KEY} in .env
         template_params = super().generate_settings_template()
         template_params['api_key'] = {
             "required": True,
             "service": "NASA",
             "expected_key": "NASA_SECRET"
         }
-        template_params['style_settings'] = True
+        template_params['style_settings'] = False
         return template_params
 
     def generate_image(self, settings, device_config):
@@ -31,10 +33,15 @@ class Apod(BasePlugin):
         if not api_key:
             raise RuntimeError("NASA API Key not configured.")
 
-        date = settings.get("customDate")
+        # Build API request params
         params = {"api_key": api_key}
-        if date:
-            params["date"] = date
+
+        if settings.get("randomizeApod") == "true":
+            start = datetime(2015, 1, 1)
+            end = datetime.today()
+            delta_days = (end - start).days
+            random_date = start + timedelta(days=randint(0, delta_days))
+            params["date"] = random_date.strftime("%Y-%m-%d")
 
         response = requests.get(
             "https://api.nasa.gov/planetary/apod",
@@ -58,26 +65,5 @@ class Apod(BasePlugin):
         except Exception as e:
             logger.error(f"Failed to load APOD image: {str(e)}")
             raise RuntimeError("Failed to load APOD image.")
-
-        # Resize and crop the image to fit the display
-        target_w, target_h = device_config.get_resolution()
-        if device_config.get_config("orientation") == "vertical":
-            target_w, target_h = target_h, target_w  # inverse
-
-        # Rotate the image if necessary
-        img_w, img_h = image.size
-        if (img_w > img_h and target_h > target_w) or (img_h > img_w and target_w > target_h):
-              image = image.rotate(-90, expand=True)
-
-        # Resize the image to fit the display while maintaining aspect ratio
-        img_w, img_h = image.size
-        scale = max(target_w / img_w, target_h / img_h)
-        resized_w, resized_h = int(img_w * scale), int(img_h * scale)
-        image = image.resize((resized_w, resized_h), Image.LANCZOS)
-
-        # Crop the image to fit the display
-        left = (resized_w - target_w) // 2
-        top = (resized_h - target_h) // 2
-        image = image.crop((left, top, left + target_w, top + target_h))
 
         return image
