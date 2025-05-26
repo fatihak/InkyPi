@@ -82,7 +82,7 @@
 
         function updateSliderValue(slider) {
             const valueDisplay = document.getElementById(`${slider.id}-value`);
-            valueDisplay.textContent = parseFloat(slider.value).toFixed(2);
+            valueDisplay.textContent = parseFloat(slider.value).toFixed(1);
         }
         document.addEventListener('DOMContentLoaded', populateIntervalFields);
     </script>
@@ -170,57 +170,60 @@
                     <div class="settings-container collapsible-content">
                         <div class="form-group">
                             <label for="saturation" class="form-label" style="min-width: 100px;">Saturation:</label>
-                            <span id="saturation-value">{{ device_settings.image_settings.saturation if device_settings.image_settings.saturation is not none else 1.0 }}</span>
+                            <span id="saturation-value">{{ device_settings.get('image_settings', {}).get('saturation', 1.0) }}</span>
                             <input
                                 type="range"
                                 id="saturation"
                                 name="saturation"
                                 class="form-input"
                                 min="0" max="2" step="0.1"
-                                value="{{ device_settings.image_settings.saturation if device_settings.image_settings.saturation is not none else 1.0 }}"
+                                value="{{ device_settings.get('image_settings', {}).get('saturation', 1.0) }}"
                                 style="max-width: 400px;"
                                 oninput="updateSliderValue(this)"
                             />
                         </div>
                         <div class="form-group">
                             <label for="contrast" class="form-label" style="min-width: 100px;">Contrast:</label>
-                            <span id="contrast-value">{{ device_settings.image_settings.contrast if device_settings.image_settings.contrast is not none else 1.0 }}</span>
+                            <span id="contrast-value">{{ device_settings.get('image_settings', {}).get('contrast', 1.0) }}</span>
                             <input
                                 type="range"
                                 id="contrast"
                                 name="contrast"
                                 class="form-input"
                                 min="0" max="2" step="0.1"
-                                value="{{ device_settings.image_settings.contrast if device_settings.image_settings.contrast is not none else 1.0 }}"
+                                value="{{ device_settings.get('image_settings', {}).get('contrast', 1.0) }}"
                                 style="max-width: 400px;"
                                 oninput="updateSliderValue(this)"
-                            />                        </div>
+                            />
+                         </div>
                         <div class="form-group">
                             <label for="sharpness" class="form-label" style="min-width: 100px;">Sharpness:</label>
-                            <span id="sharpness-value">{{ device_settings.image_settings.sharpness if device_settings.image_settings.sharpness is not none else 1.0 }}</span>
+                            <span id="sharpness-value">{{ device_settings.get('image_settings', {}).get('sharpness', 1.0) }}</span>
                             <input
                                 type="range"
                                 id="sharpness"
                                 name="sharpness"
                                 class="form-input"
                                 min="0" max="2" step="0.1"
-                                value="{{ device_settings.image_settings.sharpness if device_settings.image_settings.sharpness is not none else 1.0 }}"
+                                value="{{ device_settings.get('image_settings', {}).get('sharpness', 1.0) }}"
                                 style="max-width: 400px;"
                                 oninput="updateSliderValue(this)"
-                            />                        </div>
+                            />
+                        </div>
                         <div class="form-group">
                             <label for="brightness" class="form-label" style="min-width: 100px;">Brightness:</label>
-                            <span id="brightness-value">{{ device_settings.image_settings.brightness if device_settings.image_settings.brightness is not none else 1.0 }}</span>
+                            <span id="brightness-value">{{ device_settings.get('image_settings', {}).get('brightness', 1.0) }}</span>
                             <input
                                 type="range"
                                 id="brightness"
                                 name="brightness"
                                 class="form-input"
                                 min="0" max="2" step="0.1"
-                                value="{{ device_settings.image_settings.brightness if device_settings.image_settings.brightness is not none else 1.0 }}"
+                                value="{{ device_settings.get('image_settings', {}).get('brightness', 1.0) }}"
                                 style="max-width: 400px;"
                                 oninput="updateSliderValue(this)"
-                            />                        </div>
+                            />
+                        </div>
                     </div>
                 </div>
             </div>
