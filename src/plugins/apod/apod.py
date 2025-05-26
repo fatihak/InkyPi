@@ -35,7 +35,6 @@ class Apod(BasePlugin):
 
         params = {"api_key": api_key}
 
-        # Priorité : random > customDate
         if settings.get("randomizeApod") == "true":
             start = datetime(2015, 1, 1)
             end = datetime.today()
