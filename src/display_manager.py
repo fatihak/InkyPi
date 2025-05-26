@@ -29,5 +29,5 @@ class DisplayManager:
         image = apply_image_enhancement(image, self.device_config.get_config("image_settings"))
 
         # Display the image on the Inky display
-        self.inky_display.set_image(image, 0.25)
+        self.inky_display.set_image(image)
         self.inky_display.show()
