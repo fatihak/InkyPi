@@ -1,7 +1,7 @@
 """
 APOD Plugin for InkyPi
 This plugin fetches the Astronomy Picture of the Day (APOD) from NASA's API
-and displays it on the InkyPi device. It supports random dates.
+and displays it on the InkyPi device. It supports optional manual date selection or random dates.
 For the API key, set `NASA_SECRET={API_KEY}` in your .env file.
 """
 
@@ -33,20 +33,19 @@ class Apod(BasePlugin):
         if not api_key:
             raise RuntimeError("NASA API Key not configured.")
 
-        # Build API request params
         params = {"api_key": api_key}
 
+        # Priorité : random > customDate
         if settings.get("randomizeApod") == "true":
             start = datetime(2015, 1, 1)
             end = datetime.today()
             delta_days = (end - start).days
             random_date = start + timedelta(days=randint(0, delta_days))
             params["date"] = random_date.strftime("%Y-%m-%d")
+        elif settings.get("customDate"):
+            params["date"] = settings["customDate"]
 
-        response = requests.get(
-            "https://api.nasa.gov/planetary/apod",
-            params=params
-        )
+        response = requests.get("https://api.nasa.gov/planetary/apod", params=params)
 
         if response.status_code != 200:
             logger.error(f"NASA API error: {response.text}")
