@@ -2,7 +2,9 @@ from flask import Blueprint, request, jsonify, current_app, render_template
 from utils.time_utils import calculate_seconds
 import os
 import pytz
+import logging
 
+logger = logging.getLogger(__name__)
 settings_bp = Blueprint("settings", __name__)
 
 @settings_bp.route('/settings')
@@ -51,9 +53,11 @@ def save_settings():
 
 @settings_bp.route('/shutdown', methods=['POST'])
 def shutdown():
-    data = request.get_json(force=False, silent=True) or {}
+    data = request.get_json() or {}
     if data.get("reboot"):
+        logger.info("Reboot requested")
         os.system("sudo reboot")
     else:
+        logger.info("Shutdown requested")
         os.system("sudo shutdown -h now")
     return jsonify({"success": True})
