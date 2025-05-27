@@ -9,7 +9,12 @@
   <!-- Current Date -->
   <div class="header">
     <div class="location">{{ location }}</div>
-    <div class="current-date">{{ current_date }}</div>
+    <div class="current-date">
+      {{ current_date }}
+	  {% if plugin_settings.lastUpdate and plugin_settings.lastUpdate == "true" %}
+      <span class="last-update">(Last updated: {{ last_update }})</span>
+	  {% endif %}
+    </div>
   </div>
 
   <div class="today-container">
@@ -18,6 +23,9 @@
       <!-- Icon + Temperature -->
         <img class="current-icon" src="{{current_day_icon}}" alt="Current Weather Icon">
         <div class="current-weather">
+		{% if plugin_settings.currentMinMax and plugin_settings.currentMinMax == "true" %}
+          <div class="min-max">( {{ forecast[0].low }}{% if units != "standard" %}°{% endif %} / {{ forecast[0].high }}{% if units != "standard" %}°{% endif %} )</div>
+		{% endif %}
           <div class="current-temp">{{ current_temperature }}<span class="temperature-unit">{{temperature_unit}}</span></div>
           <div class="feels-like">Feels Like {{ feels_like }}{% if units != "standard" %}°{% endif %}</div>
         </div>
@@ -52,7 +60,7 @@
   <!-- Forecast Row -->
   {% if plugin_settings.displayForecast and plugin_settings.displayForecast == "true" %}
   <div class="forecast">
-    {% for day in forecast[:plugin_settings.forecastDays | int] %}
+    {% for day in forecast[1:(plugin_settings.forecastDays | int) + 1] %}
       <div class="forecast-day">
         <div class="forecast-day-name">{{ day.day }}</div>
         <img class="forecast-icon" src="{{day.icon}}" alt="{{ day.day }} Weather Icon">
