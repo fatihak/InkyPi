@@ -1,6 +1,6 @@
 import os
 from inky.auto import auto
-from utils.image_utils import resize_image, change_orientation
+from utils.image_utils import resize_image, change_orientation, apply_image_enhancement
 from plugins.plugin_registry import get_plugin_instance
 
 
@@ -26,6 +26,7 @@ class DisplayManager:
         # Resize and adjust orientation
         image = change_orientation(image, self.device_config.get_config("orientation"), self.device_config.get_config("inverted_image"))
         image = resize_image(image, self.device_config.get_resolution(), image_settings)
+        image = apply_image_enhancement(image, self.device_config.get_config("image_settings"))
 
         # Display the image on the Inky display
         self.inky_display.set_image(image)

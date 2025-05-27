@@ -1,7 +1,10 @@
 from flask import Blueprint, request, jsonify, current_app, render_template
 from utils.time_utils import calculate_seconds
+import os
 import pytz
+import logging
 
+logger = logging.getLogger(__name__)
 settings_bp = Blueprint("settings", __name__)
 
 @settings_bp.route('/settings')
@@ -33,7 +36,13 @@ def save_settings():
             "orientation": form_data.get("orientation"),
             "inverted_image": form_data.get("invertImage"),
             "timezone": form_data.get("timezoneName"),
-            "plugin_cycle_interval_seconds": plugin_cycle_interval_seconds
+            "plugin_cycle_interval_seconds": plugin_cycle_interval_seconds,
+            "image_settings": {
+                "saturation": float(form_data.get("saturation", "1.0")),
+                "brightness": float(form_data.get("brightness", "1.0")),
+                "sharpness": float(form_data.get("sharpness", "1.0")),
+                "contrast": float(form_data.get("contrast", "1.0"))
+            }
         }
         device_config.update_config(settings)
     except RuntimeError as e:
@@ -41,3 +50,14 @@ def save_settings():
     except Exception as e:
         return jsonify({"error": f"An error occurred: {str(e)}"}), 500
     return jsonify({"success": True, "message": "Saved settings."})
+
+@settings_bp.route('/shutdown', methods=['POST'])
+def shutdown():
+    data = request.get_json() or {}
+    if data.get("reboot"):
+        logger.info("Reboot requested")
+        os.system("sudo reboot")
+    else:
+        logger.info("Shutdown requested")
+        os.system("sudo shutdown -h now")
+    return jsonify({"success": True})

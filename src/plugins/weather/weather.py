@@ -6,6 +6,7 @@ import logging
 from datetime import datetime, timezone
 import pytz
 from io import BytesIO
+import math
 
 logger = logging.getLogger(__name__)
 
@@ -55,9 +56,13 @@ class Weather(BasePlugin):
         if not units or units not in ['metric', 'imperial', 'standard']:
             raise RuntimeError("Units are required.")
 
-        weather_data = self.get_weather_data(api_key, units, lat, long)
-        aqi_data = self.get_air_quality(api_key, lat, long)
-        location_data = self.get_location(api_key, lat, long)
+        try:
+            weather_data = self.get_weather_data(api_key, units, lat, long)
+            aqi_data = self.get_air_quality(api_key, lat, long)
+            location_data = self.get_location(api_key, lat, long)
+        except Exception as e:
+            logger.error(f"Failed to make OpenWeatherMap request: {str(e)}")
+            raise RuntimeError("OpenWeatherMap request failure, please check logs.")
 
         dimensions = device_config.get_resolution()
         if device_config.get_config("orientation") == "vertical":
@@ -100,17 +105,66 @@ class Weather(BasePlugin):
         return data
 
     def parse_forecast(self, daily_forecast, tz):
+        """
+        - daily_forecast: list of daily entries from One‑Call v3 (each has 'dt', 'weather', 'temp', 'moon_phase')
+        - tz: your target tzinfo (e.g. from zoneinfo or pytz)
+        """
+        PHASES = [
+            (0.0, "newmoon"),
+            (0.25, "firstquarter"),
+            (0.5, "fullmoon"),
+            (0.75, "lastquarter"),
+            (1.0, "newmoon"),  # API treats 1.0 same as 0.0
+        ]
+
+        def choose_phase_name(phase: float) -> str:
+            # exact matches
+            for target, name in PHASES:
+                if math.isclose(phase, target, abs_tol=1e-3):
+                    return name
+
+            # intermediate phases
+            if 0.0 < phase < 0.25:
+                return "waxingcrescent"
+            elif 0.25 < phase < 0.5:
+                return "waxinggibbous"
+            elif 0.5 < phase < 0.75:
+                return "waninggibbous"
+            else:  # 0.75 < phase < 1.0
+                return "waningcrescent"
+
         forecast = []
+        # skip today (i=0)
         for day in daily_forecast[1:]:
-            icon = day.get("weather")[0].get("icon")
-            dt = datetime.fromtimestamp(day.get('dt'), tz=timezone.utc).astimezone(tz)
-            day_forecast = {
-                "day": dt.strftime("%a"),
-                "high": int(day.get("temp", {}).get("max")),
-                "low": int(day.get("temp", {}).get("min")),
-                "icon": self.get_plugin_dir(f"icons/{icon.replace('n', 'd')}.png")
-            }
-            forecast.append(day_forecast)
+            # --- weather icon ---
+            weather_icon = day["weather"][0]["icon"]  # e.g. "10d", "01n"
+            # always show day‑style icon
+            weather_icon = weather_icon.replace("n", "d")
+            weather_icon_path = self.get_plugin_dir(f"icons/{weather_icon}.png")
+
+            # --- moon phase & icon ---
+            moon_phase = float(day["moon_phase"])  # [0.0–1.0]
+            phase_name = choose_phase_name(moon_phase)
+            moon_icon_path = self.get_plugin_dir(f"icons/{phase_name}.png")
+            # --- true illumination percent, no decimals ---
+            illum_fraction = (1 - math.cos(2 * math.pi * moon_phase)) / 2
+            moon_pct = f"{illum_fraction * 100:.0f}"
+
+            # --- date & temps ---
+            dt = datetime.fromtimestamp(day["dt"], tz=timezone.utc).astimezone(tz)
+            day_label = dt.strftime("%a")
+
+            forecast.append(
+                {
+                    "day": day_label,
+                    "high": int(day["temp"]["max"]),
+                    "low": int(day["temp"]["min"]),
+                    "icon": weather_icon_path,
+                    "moon_phase_pct": moon_pct,
+                    "moon_phase_icon": moon_icon_path,
+                }
+            )
+
         return forecast
 
     def parse_hourly(self, hourly_forecast, tz):
@@ -127,24 +181,30 @@ class Weather(BasePlugin):
 
     def parse_data_points(self, weather, air_quality, tz, units):
         data_points = []
-
         sunrise_epoch = weather.get('current', {}).get("sunrise")
-        sunrise_dt = datetime.fromtimestamp(sunrise_epoch, tz=timezone.utc).astimezone(tz)
-        data_points.append({
-            "label": "Sunrise",
-            "measurement": sunrise_dt.strftime('%I:%M').lstrip("0"),
-            "unit": sunrise_dt.strftime('%p'),
-            "icon": self.get_plugin_dir('icons/sunrise.png')
-        })
+
+        if sunrise_epoch:
+            sunrise_dt = datetime.fromtimestamp(sunrise_epoch, tz=timezone.utc).astimezone(tz)
+            data_points.append({
+                "label": "Sunrise",
+                "measurement": sunrise_dt.strftime('%I:%M').lstrip("0"),
+                "unit": sunrise_dt.strftime('%p'),
+                "icon": self.get_plugin_dir('icons/sunrise.png')
+            })
+        else:
+            logging.error(f"Sunrise not found in OpenWeatherMap response, this is expected for polar areas in midnight sun and polar night periods.")
 
         sunset_epoch = weather.get('current', {}).get("sunset")
-        sunset_dt = datetime.fromtimestamp(sunset_epoch, tz=timezone.utc).astimezone(tz)
-        data_points.append({
-            "label": "Sunset",
-            "measurement": sunset_dt.strftime('%I:%M').lstrip("0"),
-            "unit": sunset_dt.strftime('%p'),
-            "icon": self.get_plugin_dir('icons/sunset.png')
-        })
+        if sunset_epoch:
+            sunset_dt = datetime.fromtimestamp(sunset_epoch, tz=timezone.utc).astimezone(tz)
+            data_points.append({
+                "label": "Sunset",
+                "measurement": sunset_dt.strftime('%I:%M').lstrip("0"),
+                "unit": sunset_dt.strftime('%p'),
+                "icon": self.get_plugin_dir('icons/sunset.png')
+            })
+        else:
+            logging.error(f"Sunset not found in OpenWeatherMap response, this is expected for polar areas in midnight sun and polar night periods.")
 
         data_points.append({
             "label": "Wind",
@@ -221,4 +281,4 @@ class Weather(BasePlugin):
             raise RuntimeError("Failed to retrieve location.")
 
         return response.json()[0]
-
+  
