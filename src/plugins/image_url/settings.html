@@ -1,0 +1,17 @@
+<div class="form-group">
+    <label for="url" class="form-label">Image URL:</label>
+    <input type="text" id="url" name="url" placeholder="Type something..." required class="form-input">
+</div>
+
+<div class="form-group">
+    <span>Warning: Do not run this with untrusted URLs, as it may pose a security risk. This may also fail if the website takes too long to load. Primarily inteded for use with custom webpages or dashboards.</span>
+</div>
+
+<script>
+    // populate form values from plugin settings
+    document.addEventListener('DOMContentLoaded', () => {        
+        if (loadPluginSettings) {
+            document.getElementById('url').value = pluginSettings.url;
+        }
+    });
+</script>
