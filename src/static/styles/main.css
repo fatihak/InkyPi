@@ -678,7 +678,7 @@ body {
     gap: 10px;
 }
 
-.create-playlist-button {
+.header-button {
     background-color: #1abc9c;
     color: white;
     border: none;
@@ -689,7 +689,7 @@ body {
     transition: background 0.3s ease;
 }
 
-.create-playlist-button:hover {
+.header-button:hover {
     background-color: #16a085;
 }
 

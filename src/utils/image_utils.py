@@ -1,5 +1,5 @@
 import requests
-from PIL import Image
+from PIL import Image, ImageEnhance
 from io import BytesIO
 import os
 import logging
@@ -18,12 +18,16 @@ def get_image(image_url):
         logger.error(f"Received non-200 response from {image_url}: status_code: {response.status_code}")
     return img
 
-def change_orientation(image, orientation):
+def change_orientation(image, orientation, inverted=False):
     if orientation == 'horizontal':
-        image = image.rotate(0, expand=1)
+        angle = 0
     elif orientation == 'vertical':
-        image = image.rotate(90, expand=1)
-    return image
+        angle = 90
+
+    if inverted:
+        angle = (angle + 180) % 360
+
+    return image.rotate(angle, expand=1)
 
 def resize_image(image, desired_size, image_settings=[]):
     img_width, img_height = image.size
@@ -55,6 +59,22 @@ def resize_image(image, desired_size, image_settings=[]):
 
     # Step 3: Resize to the exact desired dimensions (if necessary)
     return cropped_image.resize((desired_width, desired_height), Image.LANCZOS)
+
+def apply_image_enhancement(img, image_settings={}):
+
+    # Apply Brightness
+    img = ImageEnhance.Brightness(img).enhance(image_settings.get("brigtness", 1.0))
+
+    # Apply Contrast
+    img = ImageEnhance.Contrast(img).enhance(image_settings.get("contrast", 1.0))
+
+    # Apply Saturation (Color)
+    img = ImageEnhance.Color(img).enhance(image_settings.get("saturation", 1.0))
+
+    # Apply Sharpness
+    img = ImageEnhance.Sharpness(img).enhance(image_settings.get("sharpness", 1.0))
+
+    return img
 
 def compute_image_hash(image):
     """Compute SHA-256 hash of an image."""

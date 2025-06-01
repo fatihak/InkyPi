@@ -1,0 +1,38 @@
+<div class="form-group">
+    <label for="customDate" class="form-label">Date (optional)</label>
+    <input type="date" id="customDate" name="customDate" class="form-input" />
+</div>
+
+<div class="form-group">
+    <label for="randomizeApod" class="form-label">Randomize date</label>
+    <div class="toggle-container">
+        <input type="checkbox" id="randomizeApod" name="randomizeApod" class="toggle-checkbox" value="false"
+            onclick="this.value = this.checked ? 'true' : 'false'; toggleDateField(this)">
+        <label for="randomizeApod" class="toggle-label"></label>
+    </div>
+</div>
+
+<script>
+    function toggleDateField(toggle) {
+        const $date = document.getElementById('customDate');
+        $date.disabled = toggle.checked;
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const $toggle = document.getElementById('randomizeApod');
+        const $date = document.getElementById('customDate');
+
+        const today = new Date().toISOString().split('T')[0];
+
+        if (loadPluginSettings) {
+            $toggle.checked = pluginSettings.randomizeApod === 'true';
+            $toggle.value = pluginSettings.randomizeApod;
+            $date.value = pluginSettings.customDate || today;
+            $date.disabled = $toggle.checked;
+        } else {
+            $toggle.checked = false;
+            $toggle.value = "false";
+            $date.value = today;
+        }
+    });
+</script>

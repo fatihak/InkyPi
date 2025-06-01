@@ -35,10 +35,10 @@ if [ "$EUID" -ne 0 ]; then
   exit 1
 fi
 
-apt-get update -y
+apt-get update -y > /dev/null &
 if [ -f "$APT_REQUIREMENTS_FILE" ]; then
-  echo "Installing system dependencies. "
-  xargs -a "$APT_REQUIREMENTS_FILE" sudo apt-get install -y > /dev/null &
+  echo "Installing system dependencies... "
+  xargs -a "$APT_REQUIREMENTS_FILE" sudo apt-get install -y > /dev/null && echo_success "Installed system dependencies."
 else
   echo_error "ERROR: System dependencies file $APT_REQUIREMENTS_FILE not found!"
   exit 1
@@ -53,10 +53,14 @@ fi
 # Activate the virtual environment
 source "$VENV_PATH/bin/activate"
 
+# Upgrade pip
+echo "Upgrading pip..."
+$VENV_PATH/bin/python -m pip install --upgrade pip setuptools wheel > /dev/null && echo_success "Pip upgraded successfully."
+
 # Install or update Python dependencies
 if [ -f "$PIP_REQUIREMENTS_FILE" ]; then
   echo "Updating Python dependencies..."
-  pip install --upgrade -r "$PIP_REQUIREMENTS_FILE" > /dev/null && echo_success "Dependencies updated successfully."
+  $VENV_PATH/bin/python -m pip install --upgrade -r "$PIP_REQUIREMENTS_FILE" > /dev/null && echo_success "Dependencies updated successfully."
 else
   echo_error "ERROR: Requirements file $PIP_REQUIREMENTS_FILE not found!"
   exit 1

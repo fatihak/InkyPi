@@ -2,7 +2,7 @@ import fnmatch
 import json
 import logging
 
-from utils.image_utils import resize_image, change_orientation
+from utils.image_utils import resize_image, change_orientation, apply_image_enhancement
 from display.inky_display import InkyDisplay
 from display.waveshare_display import WaveshareDisplay
 
@@ -65,6 +65,7 @@ class DisplayManager:
         # Resize and adjust orientation
         image = change_orientation(image, self.device_config.get_config("orientation"))
         image = resize_image(image, self.device_config.get_resolution(), image_settings)
+        image = apply_image_enhancement(image, self.device_config.get_config("image_settings"))
 
         # Pass to the concrete instance to render to the device.
         self.display.display_image(image, image_settings)
