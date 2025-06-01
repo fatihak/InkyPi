@@ -60,7 +60,7 @@ To install InkyPi, follow these steps:
     ``` 
      Option: 
     
-    * -W \<waveshare device model\> - specify this parameter **only** if installing for a Waveshare device.  After the -W option specify the Waveshare device model e.g. epd7in3f.
+    * -W \<waveshare device model\> - specify this parameter **ONLY** if installing for a Waveshare device.  After the -W option specify the Waveshare device model e.g. epd7in3f.
 
     e.g. for Inky device use:
     ```bash
@@ -111,21 +111,18 @@ The InkyPi project is constantly evolving, with many exciting features and impro
 - Modular layouts to mix and match plugins
 - Support for buttons with customizable action bindings
 - Improved Web UI on mobile devices
-- [Support for Waveshare devices(#waveshare-device-support)
 
 Check out the public [trello board](https://trello.com/b/SWJYWqe4/inkypi) to explore upcoming features and vote on what you'd like to see next!
 
 ## Waveshare Device Support 
 
-Waveshare have a range of screens, similar to the Inky screens.  They have slightly different requirements.
+Waveshare have a range of E-Paper screens, similar to the Inky screens from Pimoroni. They have slightly different requirements.
 
 Waveshare device support is now available, but unlike the Inky screens which are auto configuring they require specific [Waveshare EPD drivers](https://github.com/waveshareteam/e-Paper/tree/master/RaspberryPi_JetsonNano/python/lib/waveshare_epd).
 
-Currently only the epd7in3f 7.3inch 7 color display has been tested and its driver is included in the deployment in package `display.waveshare_epd`.  To add a specific screen copy the necessary epd_X_ in_Y_ .py file into the project `src\display\waveshare_epd` folder and specify that filename for the device model (without the _.py_ extension).
+When running the installation for waveshare displays, specify the driver for the device model (without the _.py_ extension) with the -W option, and the script will automatically fetch the appropriate driver.
 
-It is assumed that if the device is supported as part of Waveshares EPD package then it should work.  
-
-It is noted that some devices such as the 7in8 device is different, requires single CS on the SPI interfaces.  those devices are currenty definitely not supported out of the box.
+It is assumed that if the display is supported as part of Waveshares EPD package then it should work. However, note thate some displays—such as the 7.8" (7in8)—use a different SPI configuration (single CS) and are not currently supported out of the box.
 
 ## License
 

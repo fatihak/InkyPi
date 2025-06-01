@@ -73,6 +73,24 @@ check_permissions() {
   fi
 }
 
+fetch_waveshare_driver() {
+  echo "Fetching Waveshare driver for: $WS_TYPE"
+
+  DRIVER_DEST="$SRC_PATH/display/waveshare_epd"
+  DRIVER_FILE="$DRIVER_DEST/$WS_TYPE.py"
+  DRIVER_URL="https://raw.githubusercontent.com/waveshareteam/e-Paper/master/RaspberryPi_JetsonNano/python/lib/waveshare_epd/$WS_TYPE.py"
+
+  # Attempt to download the file
+  if curl --silent --fail -o "$DRIVER_FILE" "$DRIVER_URL"; then
+    echo_success "\tWaveshare driver '$WS_TYPE.py' successfully downloaded to $DRIVER_FILE"
+  else
+    echo_error "ERROR: Could not download Waveshare driver '$WS_TYPE.py'."
+    echo_error "Ensure the model name is correct and exists at:"
+    echo_error "$DRIVER_URL"
+    exit 1
+  fi
+}
+
 enable_interfaces(){
   echo "Enabling interfaces required for $APPNAME"
   #enable spi
@@ -301,6 +319,10 @@ ask_for_reboot() {
 parse_arguments "$@"
 check_permissions
 stop_service
+# fetch the WS display driver if defined.
+if [[ -n "$WS_TYPE" ]]; then
+  fetch_waveshare_driver
+fi
 enable_interfaces
 install_debian_dependencies
 copy_project

@@ -48,7 +48,6 @@ class WaveshareDisplay(AbstractDisplay):
             self.epd_display = epd_module.EPD()  
             
             self.epd_display.init()
-            self.epd_display.Clear()
 
         except ModuleNotFoundError:
             raise ValueError(f"Unsupported Waveshare display type: {display_type}")
