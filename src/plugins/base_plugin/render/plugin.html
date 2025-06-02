@@ -28,10 +28,25 @@
             background-position: center;
         {% endif %}
         color: {{ plugin_settings.textColor }};
-        {% if plugin_settings.margin %}
-            margin: {{ plugin_settings.margin }}px;
+        {% if plugin_settings.topMargin %}
+            margin-top: {{ plugin_settings.topMargin }}px;
         {% else %}
-            margin: 5px;
+            margin-top: 5px;
+        {% endif %}
+        {% if plugin_settings.bottomMargin %}
+            margin-bottom: {{ plugin_settings.bottomMargin }}px;
+        {% else %}
+            margin-bottom: 5px;
+        {% endif %}
+        {% if plugin_settings.leftMargin %}
+            margin-left: {{ plugin_settings.leftMargin }}px;
+        {% else %}
+            margin-left: 5px;
+        {% endif %}
+        {% if plugin_settings.rightMargin %}
+            margin-right: {{ plugin_settings.rightMargin }}px;
+        {% else %}
+            margin-right: 5px;
         {% endif %}
         --container-height: {{ height }}px;
         --container-width: {{ width }}px;

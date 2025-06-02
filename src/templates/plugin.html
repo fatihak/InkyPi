@@ -173,7 +173,10 @@
             }
             if (loadPluginSettings) {
                 if (pluginSettings.margin) {
-                    document.getElementById('margin').value = pluginSettings.margin;
+                    document.getElementById('topMargin').value = pluginSettings.topMargin;
+                    document.getElementById('bottomMargin').value = pluginSettings.bottomMargin;
+                    document.getElementById('leftMargin').value = pluginSettings.leftMargin;
+                    document.getElementById('rightMargin').value = pluginSettings.rightMargin;
                 }
                 // Populate background options (color or image)
                 if (pluginSettings.backgroundOption) {
@@ -277,8 +280,14 @@
                             </div>
 
                             <div class="form-group nowrap">
-                                <label for="margin" class="form-label">Margin:</label>
-                                <input type="number" class="form-input" id="margin" name="margin" min="0" max="40" step="5">px
+                                <label for="margin" class="form-label">Top Margin:</label>
+                                <input type="number" class="form-input" id="topMargin" name="topMargin" min="0" max="40" step="5">px
+                                <label for="margin" class="form-label">Bottom Margin:</label>
+                                <input type="number" class="form-input" id="bottomMargin" name="bottomMargin" min="0" max="40" step="5">px
+                                <label for="margin" class="form-label">Left Margin:</label>
+                                <input type="number" class="form-input" id="leftMargin" name="leftMargin" min="0" max="40" step="5">px
+                                <label for="margin" class="form-label">Right Margin:</label>
+                                <input type="number" class="form-input" id="bottomMargin" name="bottomMargin" min="0" max="40" step="5">px
                             </div>
                         </div>    
                         
