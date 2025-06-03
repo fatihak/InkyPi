@@ -199,8 +199,8 @@ class Weather(BasePlugin):
                 sunrise_unit = sunrise_dt.strftime('%p')
             data_points.append({
                 "label": "Sunrise",
-                "measurement": sunrise_dt.strftime('%I:%M').lstrip("0"),
-                "unit": sunrise_dt.strftime('%p'),
+                "measurement": sunrise_time,
+                "unit": sunrise_unit,
                 "icon": self.get_plugin_dir('icons/sunrise.png')
             })
         else:
@@ -217,8 +217,8 @@ class Weather(BasePlugin):
                 sunset_unit = sunset_dt.strftime('%p')
             data_points.append({
                 "label": "Sunset",
-                "measurement": sunset_dt.strftime('%I:%M').lstrip("0"),
-                "unit": sunset_dt.strftime('%p'),
+                "measurement": sunset_time,
+                "unit": sunset_unit,
                 "icon": self.get_plugin_dir('icons/sunset.png')
             })
         else:
