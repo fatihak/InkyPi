@@ -115,10 +115,22 @@ Verify SPI configuration using `ls /dev/sp*`.  There should be two entries for _
 
 If only the first is visible, check _/boot/firmware/config.txt_. The regular install of InkyPi adds `dtoverlay=spi0-0cs` to the this file.  If it is there, either delete it (for default behaviour) or specifically add `dtoverlay=spi0-2cs`.
 
-### My device is not supported/available in package display.waveshare_epd
+### ERROR: Failed to download Waveshare driver
 
-Only the epd7in3f driver is pacakged in the install as this has been physically tested.  It is assumed that other devices in the [Waveshare EPD drivers](https://github.com/waveshareteam/e-Paper/tree/master/RaspberryPi_JetsonNano/python/lib/waveshare_epd) repository will work.  Locate the correct _epd_ file for your screen and copy that to the installation directory _src/display/waveshare_epd_ folder and run the installation script again using the `-W <device>` parameter.
+The installation script attempts to fetch the EPD driver library based on the -W argument provided. Please double-check that:
+- You’ve entered the correct display model.
+- The corresponding driver file exists in the [waveshare e-Paper github repository](https://github.com/waveshareteam/e-Paper/tree/master/RaspberryPi_JetsonNano/python/lib/waveshare_epd).
 
+Note: Some displays, such as the epd4in0e, are not included in the main library path above. Instead, they may be located under the [E-paper_Seperate_Program](https://github.com/waveshareteam/e-Paper/tree/master/E-paper_Separate_Program) path. If your model is there, look under:
+```bash
+/RaspberryPi_JetsonNano/python/lib/waveshare_epd/
+```
+
+In this case, you’ll need to manually copy both the epdXinX.py and epdconfig.py files into:
+```bash
+InkyPi/src/display/waveshare_epd/
+```
+Once the files are in place, rerun the installation script. The script will detect the driver locally and skip the download step.
 
 ## Today's Newspaper not found
 

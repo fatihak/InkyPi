@@ -81,12 +81,25 @@ fetch_waveshare_driver() {
   DRIVER_URL="https://raw.githubusercontent.com/waveshareteam/e-Paper/master/RaspberryPi_JetsonNano/python/lib/waveshare_epd/$WS_TYPE.py"
 
   # Attempt to download the file
-  if curl --silent --fail -o "$DRIVER_FILE" "$DRIVER_URL"; then
+  if [ -f "$DRIVER_FILE" ]; then
+    echo_success "\tWaveshare driver '$WS_TYPE.py' already exists at $DRIVER_FILE"
+  elif curl --silent --fail -o "$DRIVER_FILE" "$DRIVER_URL"; then
     echo_success "\tWaveshare driver '$WS_TYPE.py' successfully downloaded to $DRIVER_FILE"
   else
-    echo_error "ERROR: Could not download Waveshare driver '$WS_TYPE.py'."
+    echo_error "ERROR: Failed to download Waveshare driver '$WS_TYPE.py'."
     echo_error "Ensure the model name is correct and exists at:"
-    echo_error "$DRIVER_URL"
+    echo_error "https://github.com/waveshareteam/e-Paper/tree/master/RaspberryPi_JetsonNano/python/lib/waveshare_epd"
+    exit 1
+  fi
+
+  EPD_CONFIG_FILE="$DRIVER_DEST/epdconfig.py"
+  EPD_CONFIG_URL="https://raw.githubusercontent.com/waveshareteam/e-Paper/refs/heads/master/RaspberryPi_JetsonNano/python/lib/waveshare_epd/epdconfig.py"
+  if [ -f "$EPD_CONFIG_FILE" ]; then
+    echo_success "\tWaveshare epdconfig file already exists at $EPD_CONFIG_FILE"
+  elif curl --silent --fail -o "$EPD_CONFIG_FILE" "$EPD_CONFIG_URL"; then
+    echo_success "\tWaveshare epdconfig file successfully downloaded to $EPD_CONFIG_FILE"
+  else
+    echo_error "ERROR: Failed to download Waveshare epdconfig file."
     exit 1
   fi
 }
