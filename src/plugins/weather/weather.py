@@ -71,7 +71,7 @@ class Weather(BasePlugin):
         timezone = device_config.get_config("timezone", default="America/New_York")
         time_format = device_config.get_config("time_format", default="12h")
         tz = pytz.timezone(timezone)
-        template_params = self.parse_weather_data(weather_data, aqi_data, location_data, tz, units, settings)
+        template_params = self.parse_weather_data(weather_data, aqi_data, location_data, tz, units, time_format)
         template_params["plugin_settings"] = settings
 
         # Add last refresh time
@@ -88,12 +88,11 @@ class Weather(BasePlugin):
             raise RuntimeError("Failed to take screenshot, please check logs.")
         return image
 
-    def parse_weather_data(self, weather_data, aqi_data, location_data, tz, units, settings):
+    def parse_weather_data(self, weather_data, aqi_data, location_data, tz, units, time_format):
         current = weather_data.get("current")
         dt = datetime.fromtimestamp(current.get('dt'), tz=timezone.utc).astimezone(tz)
         current_icon = current.get("weather")[0].get("icon").replace("n", "d")
         location_str = f"{location_data.get('name')}, {location_data.get('state', location_data.get('country'))}"
-        time_format = settings.get('timeFormat', '12h')
         data = {
             "current_date": dt.strftime("%A, %B %d"),
             "location": location_str,
