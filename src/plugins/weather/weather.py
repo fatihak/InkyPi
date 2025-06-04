@@ -69,13 +69,13 @@ class Weather(BasePlugin):
             dimensions = dimensions[::-1]
 
         timezone = device_config.get_config("timezone", default="America/New_York")
+        time_format = device_config.get_config("time_format", default="12h")
         tz = pytz.timezone(timezone)
         template_params = self.parse_weather_data(weather_data, aqi_data, location_data, tz, units, settings)
         template_params["plugin_settings"] = settings
 
         # Add last refresh time
         now = datetime.now(tz)
-        time_format = settings.get('timeFormat', '12h')
         if time_format == "24h":
             last_refresh_time = now.strftime("%Y-%m-%d %H:%M")
         else:
