@@ -30,12 +30,14 @@ And additional plugins coming soon! For documentation on building custom plugins
 - Raspberry Pi (4 | 3 | Zero 2 W)
     - Recommended to get 40 pin Pre Soldered Header
 - MicroSD Card (min 8 GB)
-- E-Ink Display: 
-    - Inky Impression from Pimoroni, available in 3 sizes (affiliate links)
+- E-Ink Display: (affiliate links)
+    - Inky Impression by Pimoroni
+        - **[13.3 Inch Display](https://collabs.shop/q2jmza)**
         - **[7.3 Inch Display](https://collabs.shop/q2jmza)**
         - **[5.7 Inch Display](https://collabs.shop/ns6m6m)**
         - **[4 Inch Display](https://collabs.shop/cpwtbh)**
-
+    - Inky wHAT by Pimoroni
+        - **[4.2 Inch Display](https://collabs.shop/jrzqmf)**
     - [Waveshare EPD devices](#waveshare-device-support)
         - **[7.3 inch 7 color display](https://www.waveshare.com/wiki/7.3inch_e-Paper_HAT_(E))**
         - as supported via the waveshare epd device drivers at **[Waveshare e-Paper](https://github.com/waveshareteam/e-Paper)**.  See later section on [Waveshare e-Paper](#waveshare-device-support) compatibilty for more infromation.

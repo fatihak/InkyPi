@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify, current_app, render_template
 from utils.time_utils import calculate_seconds
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 import os
 import logging
 from utils.app_utils import resolve_path, handle_request_files
@@ -186,7 +186,7 @@ def format_relative_time(iso_date_string):
         return f"{int(diff_minutes)} minutes ago"
     elif dt.date() == now.date():
         return "today at " + dt.strftime(time_format).lstrip("0")
-    elif dt.date() == (now.date().replace(day=now.day - 1)):
+    elif dt.date() == (now.date() - timedelta(days=1)):
         return "yesterday at " + dt.strftime(time_format).lstrip("0")
     else:
         return dt.strftime(month_day_format).replace(" 0", " ")  # Removes leading zero in day
