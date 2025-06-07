@@ -1,4 +1,15 @@
 <div class="form-group">
+    <label for="padImage" class="form-label">Fit the image to the frame:</label>
+    <div class="toggle-container">
+        <input type="checkbox" id="padImage" name="padImage" class="toggle-checkbox" value="false"
+            onclick="this.value = this.checked ? 'true' : 'false'">
+        <label for="padImage" class="toggle-label"></label>
+    </div>
+    <label for="backgroundColor" class="form-label">Background Color:</label>
+    <input type="color" id="backgroundColor" name="backgroundColor" value="#ffffff"/>
+</div>
+
+<div class="form-group">
     <label for="imageUpload" class="form-input file-upload-label">Choose Image</label>
     <input type="file" clear-on-submit id="imageUpload" name="imageFiles[]" accept="image/*" multiple class="file-upload-input" onchange="addFiles()">
 </div>
@@ -63,6 +74,9 @@
         const fileNamesDisplay = document.getElementById("fileNames");
         const hiddenFileInputs = document.getElementById("hiddenFileInputs");
         if (loadPluginSettings) {
+            document.getElementById('padImage').checked = pluginSettings.padImage;
+            document.getElementById('backgroundColor').value = pluginSettings.backgroundColor;
+
             const existingFiles = pluginSettings['imageFiles[]'] || []
 
             // Loop through the existing files and add them to the display and hidden inputs
