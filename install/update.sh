@@ -55,7 +55,7 @@ source "$VENV_PATH/bin/activate"
 
 # Upgrade pip
 echo "Upgrading pip..."
-$VENV_PATH/bin/python -m pip install --upgrade pip setuptools > /dev/null && echo_success "Pip upgraded successfully."
+$VENV_PATH/bin/python -m pip install --upgrade pip setuptools wheel > /dev/null && echo_success "Pip upgraded successfully."
 
 # Install or update Python dependencies
 if [ -f "$PIP_REQUIREMENTS_FILE" ]; then
