@@ -30,6 +30,9 @@ class Config:
         logger.debug(f"Reading device config from {self.config_file}")
         with open(self.config_file) as f:
             config = json.load(f)
+
+        logger.debug("Loaded config:\n%s", json.dumps(config, indent=3))
+
         return config
 
     def read_plugins_list(self):
@@ -59,6 +62,9 @@ class Config:
 
     def get_config(self, key=None, default={}):
         """Gets the value of a specific configuration key or returns the entire config if none provided."""
+
+        logger.debug(f"Getting key {key} from config.")
+
         if key is not None:
             return self.config.get(key, default)
         return self.config

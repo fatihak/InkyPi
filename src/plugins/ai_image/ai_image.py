@@ -72,7 +72,6 @@ class AIImage(BasePlugin):
             "model": model,
             "prompt": prompt,
             "size": "1024x1024",
-            "quality": "standard"
         }
         if model == "dall-e-3":
             args["size"] = "1792x1024" if orientation == "horizontal" else "1024x1792"
