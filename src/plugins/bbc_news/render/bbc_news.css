@@ -1,0 +1,158 @@
+.bbc-news-container {
+    width: 100vw;
+    height: 100vh;
+    padding: 1.5vw;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    font-size: 2.2vw; /* Base font size for good legibility after downscaling */
+    font-family: 'Merriweather', serif;
+}
+
+.header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between; /* Space out header items */
+    border-bottom: 0.2vw solid currentColor; /* Use the selected text color */
+    padding-bottom: 0.5vw;
+    margin-bottom: 1vw;
+    flex-shrink: 0;
+}
+
+.bbc-logo {
+    flex-shrink: 0; /* Prevent logo from shrinking */
+}
+
+.bbc-logo .block {
+    background-color: #000;
+    color: #fff;
+    display: inline-block;
+    width: 2.2em;
+    height: 2.2em;
+    line-height: 2.2em;
+    text-align: center;
+    font-family: 'Libre Franklin', sans-serif;
+    font-weight: 700;
+    font-size: 1.0em; /* Reduced logo size */
+    margin-right: 0.25em;
+}
+
+.feed-title {
+    flex-grow: 1; /* Allow title to take up space */
+    text-align: center;
+    font-family: 'Libre Franklin', sans-serif;
+    font-weight: 700;
+    font-size: 1.1em;
+    padding: 0 1em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.datetime {
+    flex-shrink: 0; /* Prevent date/time from shrinking */
+    text-align: right;
+}
+
+.time {
+    font-size: 1.2em;
+    font-family: 'Libre Franklin', sans-serif;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.date {
+    font-size: 0.9em;
+    line-height: 1;
+    opacity: 0.8;
+}
+
+.content-main {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+/* --- Primary Story --- */
+.primary-story {
+    display: flex;
+    gap: 1.5vw;
+    margin-bottom: 1vw;
+    flex-shrink: 0;
+}
+.primary-image {
+    flex-shrink: 0;
+    width: 25vw;
+    height: 14vw;
+    object-fit: cover;
+}
+.primary-text h2 {
+    font-size: 1.5em; margin: 0 0 0.3em 0; line-height: 1.15;
+}
+.primary-text p {
+    margin: 0; font-size: 0.85em; line-height: 1.3;
+}
+
+/* --- Secondary Stories --- */
+.secondary-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+    gap: 1vw 1.5vw;
+    border-top: 0.1vw solid currentColor;
+    border-bottom: 0.1vw solid currentColor;
+    /* Removed opacity: 0.5; to fix washed-out look */
+    padding: 1vw 0;
+    flex-shrink: 0;
+}
+.secondary-article {
+    display: flex;
+    gap: 1vw;
+    align-items: center;
+}
+.secondary-image {
+    width: 10vw;
+    height: 5.6vw;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+.secondary-article h2 {
+    font-size: 0.9em; margin: 0; line-height: 1.25; font-weight: 700;
+}
+
+/* --- Tertiary Stories (3x3 Grid with Bullets) --- */
+.tertiary-grid {
+    padding-top: 0.6vw;
+    flex-grow: 1;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    grid-auto-rows: 1fr;
+    gap: 0 2vw;
+    overflow: hidden;
+}
+.tertiary-article {
+    display: flex;
+    align-items: flex-start;
+    padding-top: 0.4vw;
+}
+.tertiary-article::before {
+    content: '■';
+    font-size: 0.7em;
+    margin-right: 0.6em;
+    line-height: 1.5;
+    opacity: 0.6; /* Use opacity to make bullet subtle but respect text color */
+}
+.tertiary-article h2 {
+    font-size: 0.8em;
+    margin: 0;
+    line-height: 1.3;
+    font-weight: normal;
+    opacity: 0.9;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+}

@@ -1,0 +1,23 @@
+<div class="form-group">
+    <label for="bbc_feed_url" class="form-label">RSS Feed:</label>
+    <select id="bbc_feed_url" name="bbc_feed_url" class="form-input">
+        {% for name, url in bbc_feeds.items() %}
+            <option value="{{ url }}">{{ name }}</option>
+        {% endfor %}
+    </select>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // Pre-populate form values if editing an existing plugin instance
+        if (loadPluginSettings) {
+            const bbcFeedSelect = document.getElementById('bbc_feed_url');
+            const savedBbcUrl = pluginSettings.bbc_feed_url;
+
+            // If a URL was saved, select it in the dropdown
+            if (savedBbcUrl) {
+                bbcFeedSelect.value = savedBbcUrl;
+            }
+        }
+    });
+</script>

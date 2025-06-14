@@ -7,3 +7,4 @@ pillow==11.0.0
 pytz==2025.2
 openai==1.58.1
 numpy==2.2.1
+feedparser==6.0.11

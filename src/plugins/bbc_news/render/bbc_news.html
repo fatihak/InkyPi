@@ -1,0 +1,51 @@
+{% extends "plugin.html" %}
+
+{% block content %}
+<div class="bbc-news-container">
+    <header class="header">
+        <div class="bbc-logo">
+            <div class="block">B</div><div class="block">B</div><div class="block">C</div>
+        </div>
+        <div class="feed-title">{{ feed_name }}</div>
+        <div class="datetime">
+            <div class="time">{{ current_time }}</div>
+            <div class="date">{{ current_date }}</div>
+        </div>
+    </header>
+    <main class="content-main">
+        {% if data.primary_story %}
+        <!-- Primary Story -->
+        <div class="primary-story">
+            <img src="{{ data.primary_story.thumbnail }}" alt="Primary story thumbnail" class="primary-image" onerror="this.onerror=null; this.src='https://placehold.co/200x112/eee/ccc?text=Error';">
+            <div class="primary-text">
+                <h2>{{ data.primary_story.title }}</h2>
+                <p>{{ data.primary_story.summary }}</p>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if data.secondary_articles %}
+        <!-- Secondary Stories -->
+        <div class="secondary-grid">
+            {% for article in data.secondary_articles %}
+            <div class="secondary-article">
+                <img src="{{ article.thumbnail }}" alt="Secondary story thumbnail" class="secondary-image" onerror="this.onerror=null; this.src='https://placehold.co/80x45/eee/ccc?text=Error';">
+                <h2>{{ article.title }}</h2>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% if data.tertiary_articles %}
+        <!-- Tertiary Stories -->
+        <div class="tertiary-grid">
+            {% for article in data.tertiary_articles %}
+            <div class="tertiary-article">
+                <h2>{{ article.title }}</h2>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </main>
+</div>
+{% endblock %}
