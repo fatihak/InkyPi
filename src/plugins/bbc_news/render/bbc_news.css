@@ -1,29 +1,34 @@
+/* --- BASE & COMMON STYLES --- */
+body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Merriweather', serif;
+}
+
+/* Overall container for the plugin */
 .bbc-news-container {
-    width: 100vw;
-    height: 100vh;
+    height: 100%;
+    width: 100%;
     padding: 1.5vw;
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    font-size: 2.2vw; /* Base font size for good legibility after downscaling */
-    font-family: 'Merriweather', serif;
+    font-size: clamp(12px, 2.5vw, 28px); /* Base responsive font size */
 }
 
+/* Header section */
 .header {
     display: flex;
     align-items: center;
-    justify-content: space-between; /* Space out header items */
-    border-bottom: 0.2vw solid currentColor; /* Use the selected text color */
+    justify-content: space-between;
+    border-bottom: 0.2vw solid currentColor;
     padding-bottom: 0.5vw;
     margin-bottom: 1vw;
     flex-shrink: 0;
 }
 
-.bbc-logo {
-    flex-shrink: 0; /* Prevent logo from shrinking */
-}
-
+/* BBC Logo styling */
 .bbc-logo .block {
     background-color: #000;
     color: #fff;
@@ -34,12 +39,13 @@
     text-align: center;
     font-family: 'Libre Franklin', sans-serif;
     font-weight: 700;
-    font-size: 1.0em; /* Reduced logo size */
+    font-size: 1.0em;
     margin-right: 0.25em;
 }
 
+/* Feed title in the header */
 .feed-title {
-    flex-grow: 1; /* Allow title to take up space */
+    flex-grow: 1;
     text-align: center;
     font-family: 'Libre Franklin', sans-serif;
     font-weight: 700;
@@ -50,11 +56,13 @@
     text-overflow: ellipsis;
 }
 
+/* Date and time in the header */
 .datetime {
-    flex-shrink: 0; /* Prevent date/time from shrinking */
+    flex-shrink: 0;
     text-align: right;
 }
 
+/* Time styling */
 .time {
     font-size: 1.2em;
     font-family: 'Libre Franklin', sans-serif;
@@ -62,6 +70,7 @@
     line-height: 1;
 }
 
+/* Date styling */
 .date {
     font-size: 0.9em;
     line-height: 1;
@@ -69,90 +78,305 @@
 }
 
 .content-main {
-    flex-grow: 1;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
+    flex-grow: 1; /* Takes up remaining vertical space */
+    display: grid;
+    /* Defines rows for primary, secondary (flexible), and tertiary content */
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    gap: 1.2vw; /* Gap between main sections */
+    overflow: hidden; /* Prevents content from breaking out */
 }
 
-/* --- Primary Story --- */
+/* --- PRIMARY STORY STYLES --- */
 .primary-story {
     display: flex;
-    gap: 1.5vw;
-    margin-bottom: 1vw;
-    flex-shrink: 0;
+    gap: 1.2vw;
+    align-items: flex-start; /* Align items to the top */
+    min-height: 0; /* Prevents flex items from overflowing in some cases */
 }
+
 .primary-image {
     flex-shrink: 0;
-    width: 25vw;
-    height: 14vw;
+    width: 25vw; /* Default width for landscape */
+    height: 14vw; /* Default height for landscape (approx 16:9 for 25vw width) */
     object-fit: cover;
 }
-.primary-text h2 {
-    font-size: 1.5em; margin: 0 0 0.3em 0; line-height: 1.15;
-}
-.primary-text p {
-    margin: 0; font-size: 0.85em; line-height: 1.3;
-}
 
-/* --- Secondary Stories --- */
-.secondary-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    grid-template-rows: 1fr 1fr;
-    gap: 1vw 1.5vw;
-    border-top: 0.1vw solid currentColor;
-    border-bottom: 0.1vw solid currentColor;
-    /* Removed opacity: 0.5; to fix washed-out look */
-    padding: 1vw 0;
-    flex-shrink: 0;
-}
-.secondary-article {
-    display: flex;
-    gap: 1vw;
-    align-items: center;
-}
-.secondary-image {
-    width: 10vw;
-    height: 5.6vw;
-    object-fit: cover;
-    flex-shrink: 0;
-}
-.secondary-article h2 {
-    font-size: 0.9em; margin: 0; line-height: 1.25; font-weight: 700;
-}
-
-/* --- Tertiary Stories (3x3 Grid with Bullets) --- */
-.tertiary-grid {
-    padding-top: 0.6vw;
+.primary-text {
+    container-type: size; /* Enable container queries for font scaling */
+    container-name: primaryTextContainer;
+    height: 14vw; /* Match image height in landscape for cqb calculations */
     flex-grow: 1;
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    grid-auto-rows: 1fr;
-    gap: 0 2vw;
     overflow: hidden;
-}
-.tertiary-article {
     display: flex;
-    align-items: flex-start;
-    padding-top: 0.4vw;
+    flex-direction: column;
+    justify-content: center; /* Try to center text vertically if space allows */
 }
-.tertiary-article::before {
-    content: '■';
-    font-size: 0.7em;
-    margin-right: 0.6em;
-    line-height: 1.5;
-    opacity: 0.6; /* Use opacity to make bullet subtle but respect text color */
+
+.primary-text h2 {
+    font-size: clamp(7px, 21cqb, 2.4em); /* Slightly reduced cqb for descender room */
+    margin: 0 0 0.3em 0;
+    line-height: 1.25;
+    /* Max 2 lines */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
 }
-.tertiary-article h2 {
-    font-size: 0.8em;
+
+.primary-text p {
+    font-size: clamp(7px, 15cqb, 1.5em); /* Target 3 lines in ~50% height */
     margin: 0;
-    line-height: 1.3;
-    font-weight: normal;
-    opacity: 0.9;
+    line-height: 1.25;
+    /* Max 3 lines */
     overflow: hidden;
     text-overflow: ellipsis;
     display: -webkit-box;
     -webkit-line-clamp: 3;
     -webkit-box-orient: vertical;
 }
+
+/* --- SECONDARY STORIES STYLES --- */
+.secondary-grid {
+    display: grid;
+    /* Columns defined by media queries */
+    gap: 1vw;
+    border-top: 0.1vw solid currentColor;
+    padding-top: 1vw;
+    min-height: 0; /* Important for grid item within flex/grid parent */
+    overflow: auto; /* Allows scrolling if content overflows available space */
+}
+
+.secondary-article {
+    display: flex;
+    gap: 1vw;
+    align-items: center;
+    container-type: size; /* Enable container queries for text scaling */
+    container-name: secondaryArticleContainer;
+    overflow: hidden;
+    min-height: 0; /* Ensure it can shrink */
+}
+
+.secondary-image {
+    /* Dimensions will be set by media queries or relative to container */
+    flex-shrink: 0;
+    object-fit: cover;
+    /* Default aspect ratio, can be overridden */
+    aspect-ratio: 16 / 9;
+    height: 100%; /* Fill the height allocated by the grid row */
+    max-width: 40%; /* Max width relative to article box */
+}
+
+.secondary-article h2 {
+    font-size: clamp(9px, 25cqb, 1em); /* Scales with container height */
+    margin: 0;
+    line-height: 1.25;
+    font-weight: 700;
+    /* Truncate to 3 lines */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+}
+
+/* --- TERTIARY STORIES STYLES --- */
+.tertiary-grid {
+    padding-top: 1vw;
+    border-top: 0.1vw solid currentColor;
+    display: grid;
+    /* Columns defined by media queries */
+    grid-auto-rows: min-content;
+    gap: 0.5vw 1.5vw;
+    overflow: auto; /* Allows scrolling if content overflows */
+}
+
+/* Hide tertiary grid if no tertiary articles (class set by Python) */
+.no-tertiary .tertiary-grid {
+    display: none;
+}
+
+.tertiary-article {
+    display: flex;
+    align-items: center; /* Vertically center bullet with text block */
+}
+
+.tertiary-article::before {
+    content: '■';
+    font-size: 0.7em; /* Smaller bullet */
+    margin-right: 0.6em;
+    line-height: 1;
+    opacity: 0.6;
+}
+
+.tertiary-article h2 {
+    font-size: clamp(10px, 1.6vh, 14px); /* Small, readable, slightly responsive */
+    margin: 0;
+    line-height: 1.4;
+    font-weight: normal;
+    opacity: 0.9;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2; /* Max 2 lines for tertiary titles */
+    -webkit-box-orient: vertical;
+}
+
+/* --- RESPONSIVE LAYOUTS --- */
+
+/* Default (Smallest Portrait - e.g., 300px width or less, like 300x400) */
+.secondary-grid {
+    grid-template-columns: 1fr; /* 4 articles in 4 rows */
+}
+
+/* --- Portrait Mode Overrides --- */
+@media (orientation: portrait) {
+    .bbc-news-container {
+        font-size: clamp(12px, 3.8vw, 32px); /* Adjusted min for portrait to match landscape */
+    }
+    .primary-story { flex-direction: column; }
+    .primary-image { width: 100%; height: 25vh; } /* Image full width, taller */
+    .primary-text {
+        container-type: normal; /* Disable cqb for portrait primary */
+        height: auto; width: 100%;
+        justify-content: flex-start;
+    }
+    /* General portrait primary text styling */
+    .primary-text h2 {
+        font-size: clamp(10px, 1.35em, 1.6em);
+    }
+    .primary-text p {
+        font-size: clamp(10px, 0.85em, 1.0em);
+    }
+
+    /* Smallest Portrait (width <= 300px, e.g. 300x400) - 4 Secondary (1 col) */
+    /* Tertiary is hidden by class if num_tertiary = 0 */
+    @media (max-width: 300px) {
+
+        .secondary-image { /* Specific for smallest portrait */
+            height: 100%; /* Fill height of .secondary-article */
+            aspect-ratio: 16 / 9;
+            max-width: 35%; /* Control horizontal spread */
+        }
+    }
+
+    /* Mid Portrait (300px < width <= 448px, e.g., 400x640, 448x600) */
+    /* Sec: 3 (1 col), Tert: 4 (2x2) */
+    @media (min-width: 301px) and (max-width: 448px) {
+        .secondary-grid { grid-template-columns: 1fr; } /* 3 articles in 3 rows */
+        .secondary-image { /* Specific for mid portrait */
+            height: 100%; /* Fill height of .secondary-article */
+            aspect-ratio: 16 / 9;
+            max-width: 40%; /* Control horizontal spread */
+        }
+        .tertiary-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    /* Standard Portrait (448px < width <= 480px, e.g. 480x800) */
+    /* Sec: 4 (2 cols), Tert: 6 (2x3) */
+    @media (min-width: 449px) and (max-width: 480px) {
+        /* For 800x480 portrait (width 480px), secondary is single column */
+        .secondary-grid { grid-template-columns: 1fr; }
+        .secondary-image { height: 100%; max-width: 100%; aspect-ratio: 16/9; } /* Image fills its part of flex */
+        .secondary-article h2 { -webkit-line-clamp: 3; } /* Reduce lines if needed for 2-col */
+        .tertiary-grid { grid-template-columns: repeat(2, 1fr); } /* 6 articles in 2x3 */
+    }
+
+    /* Large Portrait (width > 480px, e.g. 960x1280) */
+    /* Sec: 8 (2x4), Tert: 10 (2x5) */
+    @media (min-width: 481px) {
+        .primary-image { height: 30vh; }
+        .secondary-grid { grid-template-columns: repeat(2, 1fr); } /* 8 articles in 2x4 */
+        .secondary-image { height: 100%; max-width: 100%; aspect-ratio: 16/9; }
+        .secondary-article h2 { -webkit-line-clamp: 3; }
+        .tertiary-grid { grid-template-columns: repeat(2, 1fr); } /* 10 articles in 2x5 */
+    }
+}
+
+/* --- Landscape Mode Overrides --- */
+@media (orientation: landscape) {
+    /* Smallest Landscape (width <= 400px, e.g. 400x300) */
+    /* Sec: 4 (2x2), Tert: 0 */
+    /* .primary-text h2 uses the general landscape rule: clamp(7px, 22cqb, 2.4em) */
+    /* .primary-text p uses the general landscape rule: clamp(7px, 15cqb, 1.5em) */
+    @media (max-width: 400px) {
+        .primary-image { width: 30vw; height: 16.8vw; } /* Adjust primary image */
+        .primary-text { height: 16.8vw; }
+        /* .primary-text h2 uses the updated general .primary-text h2 rule: clamp(7px, 22cqb, 2.4em) */
+        /* .primary-text p uses the general .primary-text p rule */
+
+        .secondary-grid { grid-template-columns: 1fr; } /* 4 articles in 1 column */
+        .secondary-image { height: 100%; max-width: 100%; }
+        .secondary-article h2 { font-size: clamp(8px, 30cqb, 1.0em); -webkit-line-clamp: 2; }
+    }
+
+    /* Mid Landscape (400px < width <= 640px, e.g. 640x400, 600x448) */
+    /* Sec: 4 (2x2), Tert: 4 (2x2) */
+    @media (min-width: 401px) and (max-width: 640px) {
+        .primary-image { width: 28vw; height: 15.75vw; }
+        .primary-text { height: 15.75vw; }
+        .primary-text h2 { font-size: clamp(8px, 22cqb, 2.4em); } /* Smaller min for mid landscape */
+        .primary-text p { font-size: clamp(8px, 15cqb, 1.5em); }
+
+        .secondary-grid { grid-template-columns: repeat(2, 1fr); }
+        .secondary-image { height: 100%; max-width: 100%; }
+        .secondary-article h2 { font-size: clamp(9px, 25cqb, 0.9em); -webkit-line-clamp: 4; }
+        .tertiary-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    /* Specific for 600x448 Landscape */
+    @media (min-width: 600px) and (max-width: 600px) and (min-height: 448px) and (max-height: 448px) {
+        .secondary-image {
+            aspect-ratio: 600 / 448;
+        }
+    }
+    /* Standard Landscape (640px < width <= 800px, e.g. 800x480) */
+    /* Sec: 4 (2x2), Tert: 9 (3x3) */
+    @media (min-width: 641px) and (max-width: 800px) {
+        /* Primary text 'p' uses default landscape values, 'h2' is overridden below */
+
+        .secondary-grid { grid-template-columns: repeat(2, 1fr); }
+        .secondary-image { height: 100%; max-width: 100%; }
+        .secondary-article h2 { font-size: clamp(8px, 25cqb, 0.9em); } /* Slightly smaller min for secondary */
+
+        .tertiary-grid { grid-template-columns: repeat(3, 1fr); }
+        .tertiary-article h2 { font-size: clamp(11px, 1.7vh, 15px); } /* Slightly larger for tertiary */
+
+    }
+
+    /* Large Landscape (width > 800px, e.g. 1280x960) */
+    /* Sec: 12 (3x4), Tert: 9 (3x3) */
+    @media (min-width: 801px) {
+        .bbc-news-container { font-size: clamp(14px, 2vw, 32px); } /* Adjust base for very large */
+        .primary-image { width: 28vw; height: 15.75vw; } /* Slightly smaller proportion */
+        .primary-text { height: 15.75vw; } 
+        .primary-text h2 { font-size: clamp(8px, 22cqb, 2.4em); } /* Adjusted cqb for consistency */
+        .primary-text p { font-size: clamp(8px, 15cqb, 1.5em); }
+
+        .secondary-grid { grid-template-columns: repeat(2, 1fr); } /* 12 articles in 2x6 */
+        .secondary-image { height: 100%; max-width: 100%; }
+        .tertiary-grid { grid-template-columns: repeat(3, 1fr); } /* 9 articles in 3x3 */
+    }
+}
+
+/*
+  Notes on the refactor:
+  - .content-main uses grid to allocate space: primary (auto height), secondary (takes rest), tertiary (auto height).
+  - .secondary-grid and .tertiary-grid have their columns set by media queries.
+    Their rows will implicitly form based on the number of items and columns.
+  - .secondary-article uses container queries (cqb) for its h2 font size, scaling relative to its allocated space.
+    -webkit-line-clamp: 3 is used for secondary titles.
+  - .tertiary-article h2 has a small, clamped font size.
+  - Primary text scaling:
+    - Landscape: .primary-text height matches image, cqb units scale font.
+    - Portrait: .primary-text height is auto, em units scale font.
+  - Image handling in .secondary-article:
+    - .secondary-image aims to fill 100% height of its allocated space in the flex layout,
+      maintaining aspect ratio. Its max-width prevents it from becoming too wide.
+      The actual height of .secondary-article (and thus image) is driven by the .secondary-grid's row sizing.
+      Since .secondary-grid is 1fr, its rows will distribute that space.
+
+  Further fine-tuning of cqb values, clamp ranges, and image dimensions within media queries
+  might be needed based on testing with actual content lengths and screen DPIs.
+  The `overflow: auto` on secondary/tertiary grids is a safety net; ideally, content fits.
+*/

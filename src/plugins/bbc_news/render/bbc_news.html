@@ -1,7 +1,28 @@
-{% extends "plugin.html" %}
+<html>
+    <head>
+    <meta charset="UTF-8">
+    <style>
+        /* Embed all CSS content here */
+        {{ embedded_css | safe }}
 
-{% block content %}
-<div class="bbc-news-container">
+        /* Embed all font faces as Base64 data URIs */
+        {% for font in font_faces %}
+        @font-face {
+            font-family: "{{font.font_family}}";
+            font-weight: {{font.font_weight}};
+            font-style:  {{font.font_style}};
+            src: url({{font.base64_url}}) format("truetype");
+            font-display: block; /* Ensures text is hidden until font is ready */
+        }
+        {% endfor %}
+
+    </style>
+    </head>
+    <body>
+        {% set placeholder_image_data_url = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=" %}
+
+        <div class="bbc-news-container">
+    
     <header class="header">
         <div class="bbc-logo">
             <div class="block">B</div><div class="block">B</div><div class="block">C</div>
@@ -12,11 +33,11 @@
             <div class="date">{{ current_date }}</div>
         </div>
     </header>
-    <main class="content-main">
+    <main class="content-main {{ data.main_content_class }}">
         {% if data.primary_story %}
         <!-- Primary Story -->
         <div class="primary-story">
-            <img src="{{ data.primary_story.thumbnail }}" alt="Primary story thumbnail" class="primary-image" onerror="this.onerror=null; this.src='https://placehold.co/200x112/eee/ccc?text=Error';">
+            <img src="{{ data.primary_story.thumbnail }}" alt="Primary story thumbnail" class="primary-image" onerror="this.onerror=null; this.src='{{ placeholder_image_data_url }}';">
             <div class="primary-text">
                 <h2>{{ data.primary_story.title }}</h2>
                 <p>{{ data.primary_story.summary }}</p>
@@ -29,7 +50,7 @@
         <div class="secondary-grid">
             {% for article in data.secondary_articles %}
             <div class="secondary-article">
-                <img src="{{ article.thumbnail }}" alt="Secondary story thumbnail" class="secondary-image" onerror="this.onerror=null; this.src='https://placehold.co/80x45/eee/ccc?text=Error';">
+                <img src="{{ article.thumbnail }}" alt="Secondary story thumbnail" class="secondary-image" onerror="this.onerror=null; this.src='{{ placeholder_image_data_url }}';">
                 <h2>{{ article.title }}</h2>
             </div>
             {% endfor %}
@@ -48,4 +69,5 @@
         {% endif %}
     </main>
 </div>
-{% endblock %}
+    </body>
+</html>
