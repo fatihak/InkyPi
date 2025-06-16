@@ -5,7 +5,7 @@ body {
     font-family: 'Merriweather', serif;
 }
 
-/* Overall container for the plugin */
+/* Main plugin container */
 .bbc-news-container {
     height: 100%;
     width: 100%;
@@ -17,7 +17,7 @@ body {
     font-size: clamp(12px, 2.5vw, 28px); /* Base responsive font size */
 }
 
-/* Header section */
+/* Header */
 .header {
     display: flex;
     align-items: center;
@@ -28,7 +28,7 @@ body {
     flex-shrink: 0;
 }
 
-/* BBC Logo styling */
+/* BBC Logo */
 .bbc-logo .block {
     background-color: #000;
     color: #fff;
@@ -43,7 +43,7 @@ body {
     margin-right: 0.25em;
 }
 
-/* Feed title in the header */
+/* Feed Title */
 .feed-title {
     flex-grow: 1;
     text-align: center;
@@ -56,13 +56,13 @@ body {
     text-overflow: ellipsis;
 }
 
-/* Date and time in the header */
+/* Date & Time */
 .datetime {
     flex-shrink: 0;
     text-align: right;
 }
 
-/* Time styling */
+/* Time */
 .time {
     font-size: 1.2em;
     font-family: 'Libre Franklin', sans-serif;
@@ -70,13 +70,14 @@ body {
     line-height: 1;
 }
 
-/* Date styling */
+/* Date */
 .date {
     font-size: 0.9em;
     line-height: 1;
     opacity: 0.8;
 }
 
+/* Main content area below header */
 .content-main {
     flex-grow: 1; /* Takes up remaining vertical space */
     display: grid;
@@ -226,13 +227,13 @@ body {
 
 /* Default (Smallest Portrait - e.g., 300px width or less, like 300x400) */
 .secondary-grid {
-    grid-template-columns: 1fr; /* 4 articles in 4 rows */
+    grid-template-columns: 1fr; /* e.g., 4 articles in 4 rows */
 }
 
 /* --- Portrait Mode Overrides --- */
 @media (orientation: portrait) {
     .bbc-news-container {
-        font-size: clamp(12px, 3.8vw, 32px); /* Adjusted min for portrait to match landscape */
+        font-size: clamp(12px, 3.8vw, 32px); /* Adjusted responsive scaling for portrait */
     }
     .primary-story { flex-direction: column; }
     .primary-image { width: 100%; height: 25vh; } /* Image full width, taller */
@@ -249,8 +250,8 @@ body {
         font-size: clamp(10px, 0.85em, 1.0em);
     }
 
-    /* Smallest Portrait (width <= 300px, e.g. 300x400) - 4 Secondary (1 col) */
-    /* Tertiary is hidden by class if num_tertiary = 0 */
+    /* Smallest Portrait (e.g., <= 300px width, like 300x400) */
+    /* - Secondary: 1 col (e.g., 4 items); Tertiary: (default or hidden) */
     @media (max-width: 300px) {
 
         .secondary-image { /* Specific for smallest portrait */
@@ -260,30 +261,26 @@ body {
         }
     }
 
-    /* Mid Portrait (300px < width <= 448px, e.g., 400x640, 448x600) */
-    /* Sec: 3 (1 col), Tert: 4 (2x2) */
+    /* Mid Portrait (e.g., 301px-448px width, like 400x640) */
+    /* - Secondary: 1 col (e.g., 3 items); Tertiary: 2 cols (e.g., 2x2 items) */
     @media (min-width: 301px) and (max-width: 448px) {
-        .secondary-grid { grid-template-columns: 1fr; } /* 3 articles in 3 rows */
-        .secondary-image { /* Specific for mid portrait */
-            height: 100%; /* Fill height of .secondary-article */
-            aspect-ratio: 16 / 9;
-            max-width: 40%; /* Control horizontal spread */
-        }
+        .secondary-grid { grid-template-columns: 1fr; } /* e.g., 3 articles in 3 rows */
+        /* .secondary-image uses base styles here (height: 100%, aspect-ratio: 16/9, max-width: 40%) */
         .tertiary-grid { grid-template-columns: repeat(2, 1fr); }
     }
 
-    /* Standard Portrait (448px < width <= 480px, e.g. 480x800) */
-    /* Sec: 4 (2 cols), Tert: 6 (2x3) */
+    /* Standard Portrait (e.g., 449px-480px width, like 480x800) */
+    /* - Secondary: 1 col (e.g., 4 items); Tertiary: 2 cols (e.g., 2x3 items) */
     @media (min-width: 449px) and (max-width: 480px) {
         /* For 800x480 portrait (width 480px), secondary is single column */
         .secondary-grid { grid-template-columns: 1fr; }
         .secondary-image { height: 100%; max-width: 100%; aspect-ratio: 16/9; } /* Image fills its part of flex */
-        .secondary-article h2 { -webkit-line-clamp: 3; } /* Reduce lines if needed for 2-col */
-        .tertiary-grid { grid-template-columns: repeat(2, 1fr); } /* 6 articles in 2x3 */
+        .secondary-article h2 { -webkit-line-clamp: 3; }
+        .tertiary-grid { grid-template-columns: repeat(2, 1fr); } /* e.g., 6 articles in 2x3 */
     }
 
-    /* Large Portrait (width > 480px, e.g. 960x1280) */
-    /* Sec: 8 (2x4), Tert: 10 (2x5) */
+    /* Large Portrait (e.g., > 480px width, like 960x1280) */
+    /* - Secondary: 2 cols (e.g., 2x4 items); Tertiary: 2 cols (e.g., 2x5 items) */
     @media (min-width: 481px) {
         .primary-image { height: 30vh; }
         .secondary-grid { grid-template-columns: repeat(2, 1fr); } /* 8 articles in 2x4 */
@@ -295,48 +292,48 @@ body {
 
 /* --- Landscape Mode Overrides --- */
 @media (orientation: landscape) {
-    /* Smallest Landscape (width <= 400px, e.g. 400x300) */
-    /* Sec: 4 (2x2), Tert: 0 */
-    /* .primary-text h2 uses the general landscape rule: clamp(7px, 22cqb, 2.4em) */
-    /* .primary-text p uses the general landscape rule: clamp(7px, 15cqb, 1.5em) */
+    .secondary-image {
+        max-width: 100%; /* Secondary images can generally take full width of their flex item in landscape */
+    }
+
+    /* Smallest Landscape (e.g., <= 400px width, like 400x300) */
+    /* - Secondary: 1 col (e.g., 4 items); Tertiary: (default or hidden) */
     @media (max-width: 400px) {
         .primary-image { width: 30vw; height: 16.8vw; } /* Adjust primary image */
         .primary-text { height: 16.8vw; }
-        /* .primary-text h2 uses the updated general .primary-text h2 rule: clamp(7px, 22cqb, 2.4em) */
-        /* .primary-text p uses the general .primary-text p rule */
+        /* Primary text h2/p font sizes inherit from base or general landscape overrides if any */
 
-        .secondary-grid { grid-template-columns: 1fr; } /* 4 articles in 1 column */
-        .secondary-image { height: 100%; max-width: 100%; }
+        .secondary-grid { grid-template-columns: 1fr; } /* e.g., 4 articles in 1 column */
+        /* .secondary-image inherits height: 100% from base and max-width: 100% from general landscape */
         .secondary-article h2 { font-size: clamp(8px, 30cqb, 1.0em); -webkit-line-clamp: 2; }
     }
 
-    /* Mid Landscape (400px < width <= 640px, e.g. 640x400, 600x448) */
-    /* Sec: 4 (2x2), Tert: 4 (2x2) */
+    /* Mid Landscape (e.g., 401px-640px width, like 640x400) */
+    /* - Secondary: 2 cols (e.g., 2x2 items); Tertiary: 2 cols (e.g., 2x2 items) */
     @media (min-width: 401px) and (max-width: 640px) {
         .primary-image { width: 28vw; height: 15.75vw; }
         .primary-text { height: 15.75vw; }
         .primary-text h2 { font-size: clamp(8px, 22cqb, 2.4em); } /* Smaller min for mid landscape */
         .primary-text p { font-size: clamp(8px, 15cqb, 1.5em); }
 
-        .secondary-grid { grid-template-columns: repeat(2, 1fr); }
-        .secondary-image { height: 100%; max-width: 100%; }
+        .secondary-grid { grid-template-columns: repeat(2, 1fr); } /* e.g., 4 articles in 2x2 */
+        /* .secondary-image inherits height: 100% from base and max-width: 100% from general landscape */
         .secondary-article h2 { font-size: clamp(9px, 25cqb, 0.9em); -webkit-line-clamp: 4; }
         .tertiary-grid { grid-template-columns: repeat(2, 1fr); }
     }
 
     /* Specific for 600x448 Landscape */
-    @media (min-width: 600px) and (max-width: 600px) and (min-height: 448px) and (max-height: 448px) {
+    @media (width: 600px) and (height: 448px) {
         .secondary-image {
-            aspect-ratio: 600 / 448;
+            aspect-ratio: 600 / 448; /* Override default 16/9 for this specific dimension */
         }
     }
-    /* Standard Landscape (640px < width <= 800px, e.g. 800x480) */
-    /* Sec: 4 (2x2), Tert: 9 (3x3) */
+    /* Standard Landscape (e.g., 641px-800px width, like 800x480) */
+    /* - Secondary: 2 cols (e.g., 2x2 items); Tertiary: 3 cols (e.g., 3x3 items) */
     @media (min-width: 641px) and (max-width: 800px) {
-        /* Primary text 'p' uses default landscape values, 'h2' is overridden below */
-
-        .secondary-grid { grid-template-columns: repeat(2, 1fr); }
-        .secondary-image { height: 100%; max-width: 100%; }
+        /* Primary text font sizes inherit from base or general landscape overrides if any */
+        .secondary-grid { grid-template-columns: repeat(2, 1fr); } /* e.g., 4 articles in 2x2 */
+        /* .secondary-image inherits height: 100% from base and max-width: 100% from general landscape */
         .secondary-article h2 { font-size: clamp(8px, 25cqb, 0.9em); } /* Slightly smaller min for secondary */
 
         .tertiary-grid { grid-template-columns: repeat(3, 1fr); }
@@ -344,39 +341,17 @@ body {
 
     }
 
-    /* Large Landscape (width > 800px, e.g. 1280x960) */
-    /* Sec: 12 (3x4), Tert: 9 (3x3) */
+    /* Large Landscape (e.g., > 800px width, like 1280x960) */
+    /* - Secondary: 2 cols (e.g., 2x6 items); Tertiary: 3 cols (e.g., 3x3 items) */
     @media (min-width: 801px) {
         .bbc-news-container { font-size: clamp(14px, 2vw, 32px); } /* Adjust base for very large */
         .primary-image { width: 28vw; height: 15.75vw; } /* Slightly smaller proportion */
-        .primary-text { height: 15.75vw; } 
+        .primary-text { height: 15.75vw; }
         .primary-text h2 { font-size: clamp(8px, 22cqb, 2.4em); } /* Adjusted cqb for consistency */
         .primary-text p { font-size: clamp(8px, 15cqb, 1.5em); }
 
-        .secondary-grid { grid-template-columns: repeat(2, 1fr); } /* 12 articles in 2x6 */
-        .secondary-image { height: 100%; max-width: 100%; }
+        .secondary-grid { grid-template-columns: repeat(2, 1fr); } /* e.g., 12 articles in 2x6 */
+        /* .secondary-image inherits height: 100% from base and max-width: 100% from general landscape */
         .tertiary-grid { grid-template-columns: repeat(3, 1fr); } /* 9 articles in 3x3 */
     }
 }
-
-/*
-  Notes on the refactor:
-  - .content-main uses grid to allocate space: primary (auto height), secondary (takes rest), tertiary (auto height).
-  - .secondary-grid and .tertiary-grid have their columns set by media queries.
-    Their rows will implicitly form based on the number of items and columns.
-  - .secondary-article uses container queries (cqb) for its h2 font size, scaling relative to its allocated space.
-    -webkit-line-clamp: 3 is used for secondary titles.
-  - .tertiary-article h2 has a small, clamped font size.
-  - Primary text scaling:
-    - Landscape: .primary-text height matches image, cqb units scale font.
-    - Portrait: .primary-text height is auto, em units scale font.
-  - Image handling in .secondary-article:
-    - .secondary-image aims to fill 100% height of its allocated space in the flex layout,
-      maintaining aspect ratio. Its max-width prevents it from becoming too wide.
-      The actual height of .secondary-article (and thus image) is driven by the .secondary-grid's row sizing.
-      Since .secondary-grid is 1fr, its rows will distribute that space.
-
-  Further fine-tuning of cqb values, clamp ranges, and image dimensions within media queries
-  might be needed based on testing with actual content lengths and screen DPIs.
-  The `overflow: auto` on secondary/tertiary grids is a safety net; ideally, content fits.
-*/

@@ -13,10 +13,6 @@ from utils.image_utils import take_screenshot_html
 
 logger = logging.getLogger(__name__)
 
-# NOTE: The 'feedparser' library is a dependency for this plugin.
-# Ensure it is added to the main install/requirements.txt file.
-# You can add the line: feedparser==6.0.10
-
 BBC_FEEDS = {
     "Top Stories": "http://feeds.bbci.co.uk/news/rss.xml",
     "World": "http://feeds.bbci.co.uk/news/world/rss.xml",
@@ -66,40 +62,51 @@ class BbcNews(BasePlugin):
         """
         Determines the optimal number of secondary and tertiary articles
         based on screen resolution and orientation.
-        Returns: A tuple of (num_secondary, num_tertiary).
+        'width' and 'height' are logical dimensions for the current orientation.
+        Returns: A tuple (num_secondary, num_tertiary).
         """
-        # Smallest screens (e.g., 4.2" 400x300)
-        if not is_portrait and width <= 400:
+        # Note: 'width' parameter is the logical width for the current orientation.
+
+        # Smallest screens:
+        # - Landscape: up to 400px width (e.g., 400x300)
+        # - Portrait: up to 300px width (e.g., 300x400)
+        if not is_portrait and width <= 400: # Covers landscape up to 400px width
             return (4, 0)
-        if is_portrait and width <= 300:
+        if is_portrait and width <= 300:     # Covers portrait up to 300px width
             return (4, 0)
 
-        # Mid-size screens (e.g., 4" 640x400, 5.7" 600x448)
-        # Order is important: more specific conditions first.
-        # Handles 600x448 landscape (width 401-600px)
-        if not is_portrait and width <= 600:
-            return (4, 6) # 6 tertiary articles for 600x448 landscape
-        # Handles 640x400 landscape (width 601-640px)
-        if not is_portrait and width <= 640:
-            return (4, 4) # 4 tertiary articles for 640x400 landscape
-        if is_portrait and width <= 448:
+        # Mid-size screens:
+        # Order of landscape checks is important due to sequential evaluation.
+        # - Landscape: 401px to 600px width
+        if not is_portrait and width <= 600: # Catches 401-600px landscape
+            return (4, 6) # Optimized for ~600px width landscape (e.g. 600x448)
+        # - Landscape: 601px to 640px width
+        if not is_portrait and width <= 640: # Catches 601-640px landscape
+            return (4, 4) # Optimized for ~640px width landscape (e.g. 640x400)
+        # - Portrait: 301px to 448px width
+        if is_portrait and width <= 448:     # Catches 301-448px portrait
             return (3, 4)
-        
-        
 
-        # Standard screens (e.g., 7.3" 800x480)
-        if not is_portrait and width <= 800:
+        # Standard screens:
+        # - Landscape: 641px to 800px width
+        if not is_portrait and width <= 800: # Catches 641-800px landscape
             return (4, 9)
-        if is_portrait and width <= 480:
+        # - Portrait: 449px to 480px width
+        if is_portrait and width <= 480:     # Catches 449-480px portrait
             return (4, 6)
 
-        # Large screens
-        if not is_portrait and width > 800:
-            return (8, 12) # 8 Secondary, 12 Tertiary for large landscape
-        if is_portrait and width > 480:
+        # Large screens:
+        # - Landscape: over 800px width
+        if not is_portrait and width > 800:  # Catches >800px landscape
+            return (8, 12)
+        # - Portrait: over 480px width
+        if is_portrait and width > 480:      # Catches >480px portrait
             return (8, 10)
 
-        # A sensible fallback for any unknown resolutions
+        # Fallback for any resolutions not explicitly handled above.
+        logger.warning(
+            f"Article count fallback for: w={width}, h={height}, portrait={is_portrait}. Using default."
+        )
         return (4, 6)
 
     def generate_settings_template(self):
@@ -181,12 +188,8 @@ class BbcNews(BasePlugin):
 
         num_secondary, num_tertiary = self._get_article_counts(logic_width, logic_height, is_portrait)
 
-        # Determine the final dimensions for rendering
-        if is_portrait:
-            render_dimensions = (dimensions[1], dimensions[0])
-        else:
-            render_dimensions = dimensions
-
+        # The dimensions for rendering are the logical width and height
+        render_dimensions = (logic_width, logic_height)
         template_data = {
             "primary_story": None,
             "secondary_articles": [],
