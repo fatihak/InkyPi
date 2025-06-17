@@ -60,7 +60,7 @@ $VENV_PATH/bin/python -m pip install --upgrade pip setuptools wheel > /dev/null 
 # Install or update Python dependencies
 if [ -f "$PIP_REQUIREMENTS_FILE" ]; then
   echo "Updating Python dependencies..."
-  $VENV_PATH/bin/python -m pip install --upgrade -r "$PIP_REQUIREMENTS_FILE" > /dev/null && echo_success "Dependencies updated successfully."
+  $VENV_PATH/bin/python -m pip install --upgrade -r "$PIP_REQUIREMENTS_FILE" -qq > /dev/null && echo_success "Dependencies updated successfully."
 else
   echo_error "ERROR: Requirements file $PIP_REQUIREMENTS_FILE not found!"
   exit 1

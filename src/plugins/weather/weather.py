@@ -69,10 +69,18 @@ class Weather(BasePlugin):
             dimensions = dimensions[::-1]
 
         timezone = device_config.get_config("timezone", default="America/New_York")
+        time_format = device_config.get_config("time_format", default="12h")
         tz = pytz.timezone(timezone)
-        template_params = self.parse_weather_data(weather_data, aqi_data, location_data, tz, units)
-
+        template_params = self.parse_weather_data(weather_data, aqi_data, location_data, tz, units, time_format)
         template_params["plugin_settings"] = settings
+
+        # Add last refresh time
+        now = datetime.now(tz)
+        if time_format == "24h":
+            last_refresh_time = now.strftime("%Y-%m-%d %H:%M")
+        else:
+            last_refresh_time = now.strftime("%Y-%m-%d %I:%M %p")
+        template_params["last_refresh_time"] = last_refresh_time
 
         image = self.render_image(dimensions, "weather.html", "weather.css", template_params)
 
@@ -80,7 +88,7 @@ class Weather(BasePlugin):
             raise RuntimeError("Failed to take screenshot, please check logs.")
         return image
 
-    def parse_weather_data(self, weather_data, aqi_data, location_data, tz, units):
+    def parse_weather_data(self, weather_data, aqi_data, location_data, tz, units, time_format):
         current = weather_data.get("current")
         dt = datetime.fromtimestamp(current.get('dt'), tz=timezone.utc).astimezone(tz)
         current_icon = current.get("weather")[0].get("icon").replace("n", "d")
@@ -92,12 +100,13 @@ class Weather(BasePlugin):
             "current_temperature": str(round(current.get("temp"))),
             "feels_like": str(round(current.get("feels_like"))),
             "temperature_unit": UNITS[units]["temperature"],
-            "units": units
+            "units": units,
+            "time_format": time_format
         }
         data['forecast'] = self.parse_forecast(weather_data.get('daily'), tz)
-        data['data_points'] = self.parse_data_points(weather_data, aqi_data, tz, units)
+        data['data_points'] = self.parse_data_points(weather_data, aqi_data, tz, units, time_format)
 
-        data['hourly_forecast'] = self.parse_hourly(weather_data.get('hourly'), tz)
+        data['hourly_forecast'] = self.parse_hourly(weather_data.get('hourly'), tz, time_format)
         return data
 
     def parse_forecast(self, daily_forecast, tz):
@@ -163,28 +172,34 @@ class Weather(BasePlugin):
 
         return forecast
 
-    def parse_hourly(self, hourly_forecast, tz):
+    def parse_hourly(self, hourly_forecast, tz, time_format):
         hourly = []
         for hour in hourly_forecast[:24]:
             dt = datetime.fromtimestamp(hour.get('dt'), tz=timezone.utc).astimezone(tz)
             hour_forecast = {
-                "time": dt.strftime("%-I %p"),
+                "time": self.format_time(dt, time_format),
                 "temperature": int(hour.get("temp")),
                 "precipitiation": hour.get("pop")
             }
             hourly.append(hour_forecast)
         return hourly
 
-    def parse_data_points(self, weather, air_quality, tz, units):
+    def parse_data_points(self, weather, air_quality, tz, units, time_format):
         data_points = []
         sunrise_epoch = weather.get('current', {}).get("sunrise")
 
         if sunrise_epoch:
             sunrise_dt = datetime.fromtimestamp(sunrise_epoch, tz=timezone.utc).astimezone(tz)
+            if time_format == "24h":
+                sunrise_time = sunrise_dt.strftime('%H:%M')
+                sunrise_unit = ""
+            else:
+                sunrise_time = sunrise_dt.strftime('%I:%M').lstrip("0")
+                sunrise_unit = sunrise_dt.strftime('%p')
             data_points.append({
                 "label": "Sunrise",
-                "measurement": sunrise_dt.strftime('%I:%M').lstrip("0"),
-                "unit": sunrise_dt.strftime('%p'),
+                "measurement": sunrise_time,
+                "unit": sunrise_unit,
                 "icon": self.get_plugin_dir('icons/sunrise.png')
             })
         else:
@@ -193,10 +208,16 @@ class Weather(BasePlugin):
         sunset_epoch = weather.get('current', {}).get("sunset")
         if sunset_epoch:
             sunset_dt = datetime.fromtimestamp(sunset_epoch, tz=timezone.utc).astimezone(tz)
+            if time_format == "24h":
+                sunset_time = sunset_dt.strftime('%H:%M')
+                sunset_unit = ""
+            else:
+                sunset_time = sunset_dt.strftime('%I:%M').lstrip("0")
+                sunset_unit = sunset_dt.strftime('%p')
             data_points.append({
                 "label": "Sunset",
-                "measurement": sunset_dt.strftime('%I:%M').lstrip("0"),
-                "unit": sunset_dt.strftime('%p'),
+                "measurement": sunset_time,
+                "unit": sunset_unit,
                 "icon": self.get_plugin_dir('icons/sunset.png')
             })
         else:
@@ -277,3 +298,13 @@ class Weather(BasePlugin):
             raise RuntimeError("Failed to retrieve location.")
 
         return response.json()[0]
+
+    def format_time(self, dt, time_format, include_am_pm=True):
+        """Format datetime based on 12h or 24h preference"""
+        if time_format == "24h":
+            return dt.strftime("%H:%M")
+        else:  # 12h format
+            if include_am_pm:
+                return dt.strftime("%-I:%M %p")
+            else:
+                return dt.strftime("%-I:%M")

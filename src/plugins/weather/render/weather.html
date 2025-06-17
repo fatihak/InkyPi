@@ -1,7 +1,11 @@
 {% extends "plugin.html" %}
 
 {% block content %}
+
 <div class="weather-dashboard">
+  {% if plugin_settings.displayRefreshTime == "true" %}
+  <div class="last-refresh">Last refresh: {{ last_refresh_time }}</div>
+  {% endif %}
   <!-- Current Date -->
   <div class="header">
     <div class="location">{{ location }}</div>
@@ -53,7 +57,7 @@
         <div class="forecast-day-name">{{ day.day }}</div>
         <img class="forecast-icon" src="{{day.icon}}" alt="{{ day.day }} Weather Icon">
         <div class="forecast-temps">
-          <span class="high">{{ day.high }}{% if units != "standard" %}°{% endif %}</span> / 
+          <span class="high">{{ day.high }}{% if units != "standard" %}°{% endif %}</span> /
           <span class="low">{{ day.low }}{% if units != "standard" %}°{% endif %}</span>
         </div>
         {% if plugin_settings.moonPhase and plugin_settings.moonPhase == "true" %}
@@ -85,7 +89,7 @@
     // Find min and max temperatures
     const minTemp = Math.min(...temperatures);
     var maxTemp = Math.max(...temperatures);
-  
+
     const chart = new Chart(ctx, {
       type: 'line',
       data: {

@@ -25,6 +25,20 @@
   container-type: size;
 }
 
+.last-refresh {
+  position: absolute;
+  top: 0.5dvh;
+  right: 0.5dvw;
+  font-size: min(2dvh, 2vw);
+  text-align: right;
+  font-weight: bold;
+  padding: 0.3dvh 0.5dvw;
+}
+
+.weather-dashboard {
+  position: relative;
+}
+
 .location {
   font-size: min(50cqh, 8cqi);
   text-align: center;
@@ -54,7 +68,8 @@
 /* Current Weather Row */
 .current-temperature {
   display: flex;
-  flex-direction: row; /* Column on small screens */
+  flex-direction: row;
+  /* Column on small screens */
   align-items: center;
   justify-content: center;
   width: 50%;
@@ -146,7 +161,7 @@
   align-content: center;
   height: 70%;
   font-weight: bold;
-  line-height:105%;
+  line-height: 105%;
 }
 
 .data-point-unit {
@@ -161,7 +176,7 @@
   flex-direction: row;
   flex-wrap: nowrap;
   justify-content: space-evenly;
-  align-items:center;
+  align-items: center;
   width: 100%;
   gap: 1.5dvw;
   overflow: hidden;
@@ -302,6 +317,6 @@
 
 @media (max-width: 250px) {
   .weather-dashboard {
-      font-family: "Dogica";
+    font-family: "Dogica";
   }
 }

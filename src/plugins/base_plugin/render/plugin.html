@@ -28,11 +28,12 @@
             background-position: center;
         {% endif %}
         color: {{ plugin_settings.textColor }};
-        {% if plugin_settings.margin %}
-            margin: {{ plugin_settings.margin }}px;
-        {% else %}
-            margin: 5px;
-        {% endif %}
+
+        margin-top: {{ plugin_settings.topMargin or plugin_settings.margin or 5 }}px;
+        margin-bottom: {{ plugin_settings.bottomMargin or plugin_settings.margin or 5 }}px;
+        margin-left: {{ plugin_settings.leftMargin or plugin_settings.margin or 5 }}px;
+        margin-right: {{ plugin_settings.rightMargin or plugin_settings.margin or 5 }}px;
+
         --container-height: {{ height }}px;
         --container-width: {{ width }}px;
     ">

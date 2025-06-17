@@ -25,6 +25,12 @@
 
 <div class="form-group">
     <label for="displayMetrics" class="form-label">Display: </label>
+
+    <div class="form-group">
+      <input type="checkbox" id="displayRefreshTime" name="displayRefreshTime" onclick="this.value=this.checked ? 'true' : 'false';">
+      <span>Refresh Time</span>
+    </div>
+
     <div class="form-group">
         <input type="checkbox" id="displayMetrics" name="displayMetrics" onclick="this.value=this.checked ? 'true' : 'false';">
         <span>Metrics</span>
@@ -73,13 +79,13 @@
         const $openMap = document.querySelector('#openMap');
         const $mapModal = document.querySelector('#mapModal');
         const $closeMap = document.querySelector('#closeMap');
-        
+
         let latitude = +$latitude.value;
         let longitude = +$longitude.value;
         let zoom = latitude && longitude ? 4.5 : 2.5;
-        
+
         let map, marker;
-        
+
         $openMap.addEventListener('click', () => {
             openModal('mapModal')
             setTimeout(() => {
@@ -87,14 +93,14 @@
                     map = L.map('map').setView([latitude, longitude], zoom);
                     L.tileLayer(OSM_TILE_URL).addTo(map);
                     marker = L.marker([latitude, longitude], { draggable: true }).addTo(map);
-                    
+
                     map.on('click', event => {
                         marker.setLatLng(event.latlng);
                     });
                 }
             }, 100);
         });
-        
+
         $closeMap.addEventListener('click', () => {
             const position = marker.getLatLng().wrap();
             $latitude.value = position.lat;
@@ -107,6 +113,9 @@
             document.getElementById('longitude').value = pluginSettings.longitude;
 
             document.getElementById('units').value = pluginSettings.units;
+
+            document.getElementById('displayRefreshTime').checked = pluginSettings.displayRefreshTime;
+            document.getElementById('displayRefreshTime').value = pluginSettings.displayRefreshTime;
 
             document.getElementById('displayMetrics').checked = pluginSettings.displayMetrics;
             document.getElementById('displayMetrics').value = pluginSettings.displayMetrics;
@@ -122,7 +131,8 @@
         } else {
             // set default values
             document.getElementById('units').value = "imperial";
-
+            document.getElementById('displayRefreshTime').checked = true;
+            document.getElementById('displayRefreshTime').value = "true";
             document.getElementById('displayMetrics').checked = true;
             document.getElementById('displayMetrics').value = "true";
             document.getElementById('displayGraph').checked = true;

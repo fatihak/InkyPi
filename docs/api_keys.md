@@ -44,3 +44,16 @@ Required for the Weather Plugin
     ```
     OPEN_WEATHER_MAP_SECRET=your-key
     ```
+
+## NASA Astronomy Picture Of the Day key
+
+Required for the APOD Plugin
+
+- Request an API key on [NASA APIs](https://api.nasa.gov/)
+   - Fill your First name, Last name, and e-mail address
+- The APOD plugin uses the [NASA APIs](https://api.nasa.gov/)
+   - Free for up to 1,000 requests per hour
+- Store your api key in the .env file with the key NASA_SECRET
+    ```
+    NASA_SECRET=your-key
+    ```
