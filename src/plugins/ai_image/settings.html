@@ -59,7 +59,9 @@
             document.getElementById('imageModel').value = pluginSettings.imageModel;
 
             // Populate quality
-            document.getElementById('quality').value = pluginSettings.quality;
+            const qualityDropdown = document.getElementById("quality");
+            qualityDropdown.value = pluginSettings.quality || "standard";
+            qualityDropdown.disabled = pluginSettings.imageModel == 'dall-e-2'
         }
     });
 </script>
