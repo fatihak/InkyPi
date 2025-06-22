@@ -28,13 +28,13 @@
             background-position: center;
         {% endif %}
         color: {{ plugin_settings.textColor }};
-    ">
-        <div class="container" style="
+
         margin-top: {{ plugin_settings.topMargin or plugin_settings.margin or 5 }}px;
         margin-bottom: {{ plugin_settings.bottomMargin or plugin_settings.margin or 5 }}px;
         margin-left: {{ plugin_settings.leftMargin or plugin_settings.margin or 5 }}px;
         margin-right: {{ plugin_settings.rightMargin or plugin_settings.margin or 5 }}px;
-        ">
+    ">
+        <div class="container">
             {% block content %}
             {% endblock %}
         </div>
