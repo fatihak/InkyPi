@@ -1,7 +1,7 @@
 import os
 from utils.app_utils import resolve_path, get_font
 from plugins.base_plugin.base_plugin import BasePlugin
-from plugins.calendar.constants import LOCALE_MAP
+from plugins.calendar.constants import LOCALE_MAP, FONT_SIZES
 from PIL import Image, ImageColor, ImageDraw, ImageFont
 import icalendar
 import recurring_ical_events
@@ -59,7 +59,8 @@ class Calendar(BasePlugin):
             "current_dt": current_dt.replace(minute=0, second=0, microsecond=0).isoformat(),
             "timezone": timezone,
             "plugin_settings": settings,
-            "time_format": time_format
+            "time_format": time_format,
+            "font_scale": FONT_SIZES.get(settings.get("fontSize", "normal"))
         }
 
         image = self.render_image(dimensions, "calendar.html", "calendar.css", template_params)

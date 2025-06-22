@@ -58,3 +58,12 @@ th {
   border-right-color: transparent !important;
   border-left-color: transparent !important;
 }
+
+
+.fc .fc-toolbar-title {
+  font-size: var(--fc-title-font-size) !important;
+}
+
+.fc table {
+  font-size: var(--fc-table-font-size) !important;
+}

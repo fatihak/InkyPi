@@ -75,6 +75,19 @@
         -
         <input type="number" id="endTimeInterval" name="endTimeInterval" class="form-input" min="0" max="24" placeholder="24">
     </div>
+
+    <div class="form-group nowrap">
+        <label for="fontSize" class="form-label">Font Size:</label>
+        <select id="fontSize" name="fontSize" class="form-input">
+            <option value="x-small">Extra Small</option>
+            <option value="smaller">Smaller</option>
+            <option value="small">Small</option>
+            <option value="normal">Normal</option>
+            <option value="large">Large</option>
+            <option value="larger">Larger</option>
+            <option value="x-large">Extra Larger</option>
+        </select>
+    </div>
 </div>
 
 <script>
@@ -153,10 +166,12 @@
         let viewMode = "dayGridMonth";
         let language = "en";
         let calendars = [{ url: '', color: '#007BFF' }];
+        let fontSize = "normal";
 
         if (loadPluginSettings) {
-            viewMode = pluginSettings.viewMode
-            language = pluginSettings.language
+            viewMode = pluginSettings.viewMode;
+            language = pluginSettings.language;
+            fontSize = pluginSettings.fontSize;
 
             document.getElementById('displayTitle').checked = pluginSettings.displayTitle;
             document.getElementById('displayTitle').value = pluginSettings.displayTitle;
@@ -199,6 +214,7 @@
 
         // populate language dropdown
         document.getElementById('language').value = language;
+        document.getElementById('fontSize').value = fontSize;
 
         // populate calendars
         calendars.forEach(({ url, color }) => {
