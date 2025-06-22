@@ -9,7 +9,6 @@ log = logging.getLogger(__name__)
 
 class ImageFolder(BasePlugin):
     def generate_image(self, settings, device_config):
-        x = BasePlugin()
         folder_path = settings.get('path')
         orientation = device_config.get_config("orientation")
         folder_path = folder_path + "/" + orientation
