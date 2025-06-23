@@ -119,7 +119,7 @@
                            required 
                            class="form-input">
                 </div>
-                <div class="form-group">
+                <div class="form-group nowrap">
                     <!-- Orientation Dropdown -->
                     <div class="form-group">
                         <label for="orientation" class="form-label">Orientation:</label>
@@ -127,14 +127,17 @@
                             <option value="horizontal" {% if device_settings.orientation == "horizontal" %}selected{% endif %}>Horizontal</option>
                             <option value="vertical" {% if device_settings.orientation == "vertical" %}selected{% endif %}>Vertical</option>
                         </select>
+                    </div>
+                    <div class="form-group nowrap">
                         <!-- Invert Image Checkbox -->
                         <label class="form-label" for="invertImage">Invert Image</label>
                         <input type="checkbox" id="invertImage" name="invertImage" {% if device_settings.inverted_image %}checked{% endif %}>
                         </label>
+                    </div>
                 </div>
-                    
+                <div class="form-group">
                     <!-- Timezone Dropdown -->
-                    <div class="form-group">
+                    <div class="form-group nowrap">
                         <label for="timezone" class="form-label">Time Zone:</label>
                         <input
                             type="text"
@@ -153,7 +156,7 @@
                     </div>
 
                     <!-- Time Format Dropdown -->
-                    <div class="form-group">
+                    <div class="form-group nowrap">
                         <label for="timeFormat" class="form-label">Time Format:</label>
                         <select id="timeFormat" name="timeFormat" class="form-input">
                             <option value="12h" {% if device_settings.time_format == "12h" %}selected{% endif %}>12 Hour (AM/PM)</option>
