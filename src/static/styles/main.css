@@ -591,6 +591,7 @@ body {
 /* Plugin Item */
 .plugin-item {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     padding: 10px 25px 10px 40px;
     border-top: 2px solid #e0e0e0;
@@ -600,6 +601,13 @@ body {
 .plugin-info {
     display: flex;
     align-items: center;
+    gap: 8px;
+    flex-grow: 1;
+}
+
+.plugin-actions {
+    display: flex;
+    justify-content: flex-end;
     gap: 8px;
     flex-grow: 1;
 }

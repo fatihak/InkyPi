@@ -251,23 +251,24 @@
                                 <div id="loadingIndicator" class="loading-indicator small left-align"></div>
 
                             </div>
+                            <div class="plugin-actions">
+                                {% if plugin_instance.latest_refresh_time %}
+                                    {% set refresh_time = plugin_instance.latest_refresh_time | format_relative_time %}
+                                    <span class="latest-refresh" title="{{plugin_instance.latest_refresh_time}}">
+                                        Refreshed {{ refresh_time }}
+                                    </span>
+                                {% endif %}
 
-                            {% if plugin_instance.latest_refresh_time %}
-                                {% set refresh_time = plugin_instance.latest_refresh_time | format_relative_time %}
-                                <span class="latest-refresh" title="{{plugin_instance.latest_refresh_time}}">
-                                    Refreshed {{ refresh_time }}
-                                </span>
-                            {% endif %}
-
-                            <a href="{{ url_for('plugin.plugin_page', plugin_id=plugin_instance.plugin_id) }}?instance={{ plugin_instance.name }}" class="edit-button">
-                                <img src="{{ url_for('static', filename='icons/edit.png') }}" alt="edit plugin" class="action-icon">
-                            </a>
-                            <button class="edit-button" title="Display Now" onclick="displayPluginInstance('{{ playlist.name }}', '{{ plugin_instance.plugin_id }}','{{ plugin_instance.name }}')">
-                                <img src="{{ url_for('static', filename='icons/display.png') }}" alt="display now" class="action-icon">
-                            </button>
-                            <button class="delete-button" title="Delete Plugin Instance" onclick="deletePluginInstance('{{ playlist.name }}', '{{ plugin_instance.plugin_id }}','{{ plugin_instance.name }}')">
-                                <img src="{{ url_for('static', filename='icons/remove.png') }}" alt="delete plugin" class="action-icon">
-                            </button>
+                                <a href="{{ url_for('plugin.plugin_page', plugin_id=plugin_instance.plugin_id) }}?instance={{ plugin_instance.name }}" class="edit-button">
+                                    <img src="{{ url_for('static', filename='icons/edit.png') }}" alt="edit plugin" class="action-icon">
+                                </a>
+                                <button class="edit-button" title="Display Now" onclick="displayPluginInstance('{{ playlist.name }}', '{{ plugin_instance.plugin_id }}','{{ plugin_instance.name }}')">
+                                    <img src="{{ url_for('static', filename='icons/display.png') }}" alt="display now" class="action-icon">
+                                </button>
+                                <button class="delete-button" title="Delete Plugin Instance" onclick="deletePluginInstance('{{ playlist.name }}', '{{ plugin_instance.plugin_id }}','{{ plugin_instance.name }}')">
+                                    <img src="{{ url_for('static', filename='icons/remove.png') }}" alt="delete plugin" class="action-icon">
+                                </button>
+                            </div>
                         </div>
                         {% endfor %}
                     </div>
