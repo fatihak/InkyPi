@@ -1,0 +1,52 @@
+<div class="form-group">
+    <label for="customDate" class="form-label">Date (optional)</label>
+    <input type="date" id="customDate" name="customDate" class="form-input" />
+</div>
+
+<div class="form-group">
+    <label for="randomizeWpotd" class="form-label">Randomize date</label>
+    <div class="toggle-container">
+        <input type="checkbox" id="randomizeWpotd" name="randomizeWpotd" class="toggle-checkbox" value="false"
+            onclick="this.value = this.checked ? 'true' : 'false'; toggleDateField(this)">
+        <label for="randomizeWpotd" class="toggle-label"></label>
+    </div>
+</div>
+
+<div class="form-group">
+    <label for="shrinktofitWpotd" class="form-label">Shrink the Image to fit the display</label>
+    <div class="toggle-container">
+        <input type="checkbox" id="shrinktofitWpotd" name="shrinktofitWpotd" class="toggle-checkbox" value="false"
+            onclick="this.value = this.checked ? 'true' : 'false'; toggleDateField(this)">
+        <label for="shrinktofitWpotd" class="toggle-label"></label>
+    </div>
+</div>
+
+<script>
+    function toggleDateField(toggle) {
+        const $date = document.getElementById('customDate');
+        $date.disabled = toggle.checked;
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const $toggle = document.getElementById('randomizeWpotd');
+        const $date = document.getElementById('customDate');
+        const $toggleShrink = document.getElementById('shrinktofitWpotd');
+
+        const today = new Date().toISOString().split('T')[0];
+
+        if (loadPluginSettings) {
+            $toggle.checked = pluginSettings.randomizeWpotd === 'true';
+            $toggle.value = pluginSettings.randomizeWpotd;
+            $date.value = pluginSettings.customDate || today;
+            $date.disabled = $toggle.checked;
+            $toggleShrink.checked = pluginSettings.shrinktofitWpotd === 'true';
+            $toggleShrink.value = pluginSettings.shrinktofitWpotd;
+
+        } else {
+            $toggle.checked = false;
+            $toggle.value = "false";
+            $date.value = today;
+            $toggleShrink.checked = true;
+            $toggleShrink.value = "true";}
+    });
+</script>
