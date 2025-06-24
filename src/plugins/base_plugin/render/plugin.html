@@ -33,9 +33,6 @@
         margin-bottom: {{ plugin_settings.bottomMargin or plugin_settings.margin or 5 }}px;
         margin-left: {{ plugin_settings.leftMargin or plugin_settings.margin or 5 }}px;
         margin-right: {{ plugin_settings.rightMargin or plugin_settings.margin or 5 }}px;
-
-        --container-height: {{ height }}px;
-        --container-width: {{ width }}px;
     ">
         <div class="container">
             {% block content %}

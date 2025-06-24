@@ -4,7 +4,7 @@ import json
 from datetime import datetime, timedelta
 import os
 import logging
-from utils.app_utils import resolve_path, handle_request_files
+from utils.app_utils import resolve_path, handle_request_files, parse_form
 
 
 logger = logging.getLogger(__name__)
@@ -17,7 +17,7 @@ def add_plugin():
     playlist_manager = device_config.get_playlist_manager()
 
     try:
-        plugin_settings = request.form.to_dict()
+        plugin_settings = parse_form(request.form)
         refresh_settings = json.loads(plugin_settings.pop("refresh_settings"))
         plugin_id = plugin_settings.pop("plugin_id")
 
