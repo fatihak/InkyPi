@@ -56,7 +56,7 @@ class Wpotd(BasePlugin):
         if image is None:
             logger.error("Failed to download WPOTD image.")
             raise RuntimeError("Failed to download WPOTD image.")
-        if settings.get("shrinktofitWpotd") == "true":
+        if settings.get("shrinkToFitWpotd") == "true":
             max_width, max_height = device_config.get_resolution()
             image = self._shrink_to_fit(image, max_width, max_height)
             logger.info(f"Image resized to fit device dimensions: {max_width},{max_height}")
