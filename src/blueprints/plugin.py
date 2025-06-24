@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify, current_app, render_template, send_from_directory
 from plugins.plugin_registry import get_plugin_instance
-from utils.app_utils import resolve_path, handle_request_files
+from utils.app_utils import resolve_path, handle_request_files, parse_form
 from refresh_task import ManualRefresh, PlaylistRefresh
 import json
 import os
@@ -80,7 +80,7 @@ def update_plugin_instance(instance_name):
     playlist_manager = device_config.get_playlist_manager()
 
     try:
-        form_data = request.form.to_dict()
+        form_data = parse_form(request.form)
 
         if not instance_name:
             raise RuntimeError("Instance name is required")
@@ -90,7 +90,7 @@ def update_plugin_instance(instance_name):
         plugin_id = plugin_settings.pop("plugin_id")
         plugin_instance = playlist_manager.find_plugin(plugin_id, instance_name)
         if not plugin_instance:
-            return jsonify({"error": f"Plugin instance: {plugin_instance_name} does not exist"}), 500
+            return jsonify({"error": f"Plugin instance: {instance_name} does not exist"}), 500
 
         plugin_instance.settings = plugin_settings
         device_config.write_config()
@@ -118,7 +118,7 @@ def display_plugin_instance():
         if not plugin_instance:
             return jsonify({"success": False, "message": f"Plugin instance '{plugin_instance_name}' not found"}), 400
 
-        refresh_task.manual_update(PlaylistRefresh(playlist, plugin_instance))
+        refresh_task.manual_update(PlaylistRefresh(playlist, plugin_instance, force=True))
     except Exception as e:
         return jsonify({"error": f"An error occurred: {str(e)}"}), 500
 
@@ -130,7 +130,7 @@ def update_now():
     refresh_task = current_app.config['REFRESH_TASK']
 
     try:
-        plugin_settings = request.form.to_dict()  # Get all form data
+        plugin_settings = parse_form(request.form)
         plugin_settings.update(handle_request_files(request.files))
         plugin_id = plugin_settings.pop("plugin_id")
 

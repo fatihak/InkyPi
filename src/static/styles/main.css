@@ -562,7 +562,7 @@ body {
     border-radius: 6px;
 }
 
-.remove-file-btn {
+.remove-btn {
     background-color: transparent;
     border: none;
     color: #e74c3c; /* Using a red color similar to the project style */
@@ -573,11 +573,11 @@ body {
     transition: color 0.3s ease; /* Smooth transition on hover */
 }
 
-.remove-file-btn:hover {
+.remove-btn:hover {
     color: #c0392b; /* Slightly darker red for hover state */
 }
 
-.remove-file-btn:focus {
+.remove-btn:focus {
     outline: none;
     box-shadow: 0 0 3px rgba(26, 188, 156, 0.5); /* Adding a focus effect similar to inputs */
 }
@@ -778,4 +778,44 @@ body {
     .frame {
       width: 95%;
     }
+}
+
+.button-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0; /* Remove spacing between buttons */
+}
+
+.button-group button {
+  padding: 0.5rem 1rem;
+  border: 1px solid #ccc;
+  background-color: #f4f4f4;
+  cursor: pointer;
+  font-size: 14px;
+  border-radius: 0; /* Reset default radius */
+  margin-left: -1px; /* Collapse left borders */
+  position: relative;
+  z-index: 1;
+}
+
+.button-group button:first-child {
+  border-top-left-radius: 4px;
+  border-bottom-left-radius: 4px;
+  margin-left: 0; /* Reset for first button */
+}
+
+.button-group button:last-child {
+  border-top-right-radius: 4px;
+  border-bottom-right-radius: 4px;
+}
+
+.button-group button.active {
+  background-color: #007BFF;
+  color: white;
+  border-color: #007BFF;
+  z-index: 2; /* Ensure active button is above others */
+}
+
+.font-weight-normal {
+  font-weight: normal; /* or 400 */
 }
