@@ -1,3 +1,5 @@
+import os
+
 from plugins.base_plugin.base_plugin import BasePlugin
 from os import listdir
 from os.path import isfile, join
@@ -11,6 +13,8 @@ class ImageFolder(BasePlugin):
     def generate_image(self, settings, device_config):
         folder_path = settings.get('path')
         orientation = device_config.get_config("orientation")
+        shutdown = settings.get('shutdown') == "true"
+        shutdown_delay = settings.get("delay")
         folder_path = folder_path + "/" + orientation
         
         if not folder_path:
@@ -34,6 +38,9 @@ class ImageFolder(BasePlugin):
         
         if not img:
             raise RuntimeError("Failed to load image, please check logs.")
+
+        if shutdown:
+            os.system(f"sudo shutdown +{shutdown_delay}")
             
         return img
 

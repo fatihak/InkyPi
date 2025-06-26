@@ -2,3 +2,13 @@
     <label for="path" class="form-label">Path:</label>
     <input type="text" id="path" name="path" placeholder="Path" required class="form-input">
 </div>
+
+<div class="form-group">
+    <input type="checkbox" id="shutdown" name="shutdown" onclick="this.value=this.checked ? 'true' : 'false';">
+    <span>Shutdown after display</span>
+</div>
+
+<div class="form-group">
+    <span>Delay before reboot</span>
+    <input type="number" id="delay" name="delay" min="5" value="5">
+</div>
