@@ -40,6 +40,7 @@ class ImageFolder(BasePlugin):
             raise RuntimeError("Failed to load image, please check logs.")
 
         if shutdown:
+            log.info(f"Shutting down in {shutdown_delay} minutes.")
             os.system(f"sudo shutdown +{shutdown_delay}")
             
         return img
