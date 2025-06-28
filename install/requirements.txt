@@ -8,3 +8,5 @@ pillow==11.0.0
 pytz==2025.2
 openai==1.58.1
 numpy==2.2.1
+icalendar==6.3.1
+recurring-ical-events==3.7.0

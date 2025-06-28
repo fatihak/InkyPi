@@ -119,6 +119,13 @@ def generate_startup_image(dimensions=(800,480)):
 
     return image
 
+def parse_form(request_form):
+    request_dict = request_form.to_dict()
+    for key in request_form.keys():
+        if key.endswith('[]'):
+            request_dict[key] = request_form.getlist(key)
+    return request_dict
+
 def handle_request_files(request_files, form_data={}):
     allowed_file_extensions = {'pdf', 'png', 'jpg', 'jpeg', 'gif'}
     file_location_map = {}

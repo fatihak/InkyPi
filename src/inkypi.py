@@ -50,6 +50,9 @@ app.config['DEVICE_CONFIG'] = device_config
 app.config['DISPLAY_MANAGER'] = display_manager
 app.config['REFRESH_TASK'] = refresh_task
 
+# Set additional parameters
+app.config['MAX_FORM_PARTS'] = 10_000
+
 # Register Blueprints
 app.register_blueprint(main_bp)
 app.register_blueprint(settings_bp)
