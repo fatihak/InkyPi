@@ -18,6 +18,7 @@
         const pluginInstanceName ='{{ plugin_instance }}';
         const loadPluginSettings = pluginInstanceName != '';
         const styleSettings = {{ style_settings | default(false) | tojson }};
+        const pluginRefresh = {{ plugin_refresh | tojson if plugin_refresh else {} }};
 
         let uploadedFiles = {};
 
@@ -55,6 +56,29 @@
                 url = "{{ url_for('plugin.update_plugin_instance', instance_name='') }}" + pluginInstanceName,
                 method = 'PUT'
                 clearFormOnSubmit = false
+                
+                // Add refresh settings if they exist
+                const refreshType = document.querySelector('input[name="refreshType"]:checked');
+                if (refreshType) {
+                    const refreshSettings = {};
+                    if (refreshType.value === 'interval') {
+                        const interval = document.getElementById('interval').value;
+                        const unit = document.getElementById('unit').value;
+                        if (interval) {
+                            let seconds = parseInt(interval);
+                            if (unit === 'minute') seconds *= 60;
+                            else if (unit === 'hour') seconds *= 3600;
+                            else if (unit === 'day') seconds *= 86400;
+                            refreshSettings.interval = seconds;
+                        }
+                    } else if (refreshType.value === 'scheduled') {
+                        const time = document.getElementById('scheduled').value;
+                        if (time) {
+                            refreshSettings.scheduled = time;
+                        }
+                    }
+                    formData.append("refresh_settings", JSON.stringify(refreshSettings));
+                }
             }
 
             // Send data to the server
@@ -168,6 +192,32 @@
 
         // populate form values from plugin settings
         document.addEventListener('DOMContentLoaded', () => {
+            // Populate refresh settings for existing instances
+            if (loadPluginSettings && pluginRefresh) {
+                if (pluginRefresh.interval) {
+                    document.getElementById('refreshInterval').checked = true;
+                    let interval = pluginRefresh.interval;
+                    let unit = 'minute';
+                    
+                    if (interval >= 86400 && interval % 86400 === 0) {
+                        interval = interval / 86400;
+                        unit = 'day';
+                    } else if (interval >= 3600 && interval % 3600 === 0) {
+                        interval = interval / 3600;
+                        unit = 'hour';
+                    } else if (interval >= 60 && interval % 60 === 0) {
+                        interval = interval / 60;
+                        unit = 'minute';
+                    }
+                    
+                    document.getElementById('interval').value = interval;
+                    document.getElementById('unit').value = unit;
+                } else if (pluginRefresh.scheduled) {
+                    document.getElementById('refreshScheduled').checked = true;
+                    document.getElementById('scheduled').value = pluginRefresh.scheduled;
+                }
+            }
+            
             if (!styleSettings){
                 return;
             }
@@ -345,6 +395,29 @@
 
             <!-- Hidden input to pass plugin id -->
             <input type="hidden" name="plugin_id" value="{{ plugin.id }}">
+            
+            <!-- Refresh Settings for Existing Instances -->
+            {% if plugin_instance %}
+            <div class="form-group">
+                <label>Refresh Settings</label>
+                <span title="Determines how often the data and image should be refreshed.">ⓘ</span>
+            </div>
+            <div class="form-group nowrap">
+                <input type="radio" id="refreshInterval" name="refreshType" value="interval" {% if plugin_refresh and 'interval' in plugin_refresh %}checked{% endif %}>
+                <label for="refreshInterval">Every</label>
+                <input type="number" id="interval" name="interval" class="form-input" min="1" placeholder="Enter a number">
+                <select id="unit" name="unit" class="form-input">
+                    <option value="minute">Minute</option>
+                    <option value="hour">Hour</option>
+                    <option value="day">Day</option>
+                </select>
+            </div>
+            <div class="form-group nowrap">
+                <input type="radio" id="refreshScheduled" name="refreshType" value="scheduled" {% if plugin_refresh and 'scheduled' in plugin_refresh %}checked{% endif %}>
+                <label for="refreshScheduled">Daily at </label>
+                <input id="scheduled" class="time-input" type="time" name="refreshTime" step="900">
+            </div>
+            {% endif %}
 
             <div class="buttons-container">
                 {% if plugin_instance %}

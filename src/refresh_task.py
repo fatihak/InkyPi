@@ -74,6 +74,18 @@ class RefreshTask:
             try:
                 with self.condition:
                     sleep_time = self.device_config.get_config("plugin_cycle_interval_seconds", default=60*60)
+                    
+                    # Find the minimum refresh interval among active plugins
+                    playlist_manager = self.device_config.get_playlist_manager()
+                    current_dt = self._get_current_datetime()
+                    active_playlist = playlist_manager.determine_active_playlist(current_dt)
+                    
+                    if active_playlist and active_playlist.plugins:
+                        min_interval = sleep_time
+                        for plugin in active_playlist.plugins:
+                            if "interval" in plugin.refresh and plugin.refresh["interval"]:
+                                min_interval = min(min_interval, plugin.refresh["interval"])
+                        sleep_time = min_interval
 
                     # Wait for sleep_time or until notified
                     self.condition.wait(timeout=sleep_time)
@@ -175,17 +187,32 @@ class RefreshTask:
 
         latest_refresh_dt = latest_refresh_info.get_refresh_datetime()
         plugin_cycle_interval = self.device_config.get_config("plugin_cycle_interval_seconds", default=3600)
-        should_refresh = PlaylistManager.should_refresh(latest_refresh_dt, plugin_cycle_interval, current_dt)
-
-        if not should_refresh:
+        
+        # Check if enough time has passed based on global interval
+        global_should_refresh = PlaylistManager.should_refresh(latest_refresh_dt, plugin_cycle_interval, current_dt)
+        
+        # Look for a plugin that needs refreshing
+        plugin_to_refresh = None
+        checked_count = 0
+        
+        # Check each plugin in order to find one that needs refreshing
+        while checked_count < len(playlist.plugins):
+            plugin = playlist.get_next_plugin()
+            
+            # Check if this specific plugin should refresh based on its own settings
+            if plugin.should_refresh(current_dt) or global_should_refresh:
+                plugin_to_refresh = plugin
+                break
+                
+            checked_count += 1
+        
+        if plugin_to_refresh:
+            logger.info(f"Determined next plugin. | active_playlist: {playlist.name} | plugin_instance: {plugin_to_refresh.name}")
+            return playlist, plugin_to_refresh
+        else:
             latest_refresh_str = latest_refresh_dt.strftime('%Y-%m-%d %H:%M:%S') if latest_refresh_dt else "None"
-            logger.info(f"Not time to update display. | latest_update: {latest_refresh_str} | plugin_cycle_interval: {plugin_cycle_interval}")
+            logger.info(f"No plugins need refresh. | latest_update: {latest_refresh_str}")
             return None, None
-
-        plugin = playlist.get_next_plugin()
-        logger.info(f"Determined next plugin. | active_playlist: {playlist.name} | plugin_instance: {plugin.name}")
-
-        return playlist, plugin
     
     def log_system_stats(self):
         metrics = {
@@ -231,7 +258,9 @@ class ManualRefresh(RefreshAction):
 
     def execute(self, plugin, device_config, current_dt: datetime):
         """Performs a manual refresh using the stored plugin ID and settings."""
-        return plugin.generate_image(self.plugin_settings, device_config)
+        image = plugin.generate_image(self.plugin_settings, device_config)
+        # Note: Manual refresh doesn't persist settings changes as it uses temporary settings
+        return image
 
     def get_refresh_info(self):
         """Return refresh metadata as a dictionary."""
@@ -279,6 +308,8 @@ class PlaylistRefresh(RefreshAction):
             image = plugin.generate_image(self.plugin_instance.settings, device_config)
             image.save(plugin_image_path)
             self.plugin_instance.latest_refresh_time = current_dt.isoformat()
+            # Save the config to persist any changes made by the plugin (like image_index updates)
+            device_config.write_config()
         else:
             logger.info(f"Not time to refresh plugin instance, using latest image. | plugin_instance: {self.plugin_instance.name}.")
             # Load the existing image from disk
