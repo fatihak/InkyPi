@@ -19,10 +19,114 @@
     <div id="fileNames" class="file-name-list"></div>
 </div>
 
+<!-- Image Preview Gallery -->
+<div class="form-group" style="margin-top: 20px;">
+    <label class="form-label">Image Preview Gallery:</label>
+</div>
+<div id="imageGallery" class="image-gallery"></div>
+
 <!-- Hidden input fields to store existing file data -->
 <div id="hiddenFileInputs"></div>
 
+<style>
+    .image-gallery {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 15px;
+        margin: 10px 0;
+        padding: 15px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        background-color: #f9f9f9;
+        width: 100%;
+        box-sizing: border-box;
+    }
+    
+    .image-preview {
+        position: relative;
+        width: 100%;
+        padding-bottom: 100%;
+        overflow: hidden;
+        border-radius: 5px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .image-preview img {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        cursor: pointer;
+        transition: transform 0.2s;
+    }
+    
+    .image-preview img:hover {
+        transform: scale(1.05);
+    }
+    
+    .image-preview .image-name {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: rgba(0, 0, 0, 0.7);
+        color: white;
+        padding: 2px 5px;
+        font-size: 10px;
+        text-align: center;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+</style>
+
 <script>
+    function updateImageGallery() {
+        const gallery = document.getElementById('imageGallery');
+        gallery.innerHTML = '';
+        
+        // Get all existing files from hidden inputs
+        const existingFiles = [];
+        document.querySelectorAll('#hiddenFileInputs input[name="imageFiles[]"]').forEach(input => {
+            existingFiles.push(input.value);
+        });
+        
+        // Get all newly added files
+        const newFiles = uploadedFiles["imageFiles[]"] || [];
+        
+        // Display existing files
+        existingFiles.forEach(filePath => {
+            const fileName = filePath.split('/').pop();
+            const imageUrl = `/static/images/saved/${fileName}`;
+            createImagePreview(imageUrl, fileName);
+        });
+        
+        // Display newly added files (using FileReader for preview)
+        newFiles.forEach(file => {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                createImagePreview(e.target.result, file.name);
+            };
+            reader.readAsDataURL(file);
+        });
+        
+        // Show/hide gallery based on content
+        gallery.style.display = (existingFiles.length + newFiles.length > 0) ? 'grid' : 'none';
+    }
+    
+    function createImagePreview(src, name) {
+        const gallery = document.getElementById('imageGallery');
+        const preview = document.createElement('div');
+        preview.className = 'image-preview';
+        preview.innerHTML = `
+            <img src="${src}" alt="${name}" onclick="window.open('${src}', '_blank')">
+            <div class="image-name" title="${name}">${name}</div>
+        `;
+        gallery.appendChild(preview);
+    }
+    
     function addFiles() {
         const fileInput = document.getElementById("imageUpload");
         const fileNamesDisplay = document.getElementById("fileNames");
@@ -33,11 +137,24 @@
             uploadedFiles["imageFiles[]"] = [];
         }
 
+        // Get all existing filenames
+        const existingFileNames = [];
+        document.querySelectorAll('#hiddenFileInputs input[name="imageFiles[]"]').forEach(input => {
+            existingFileNames.push(input.value.split('/').pop());
+        });
+
+        const duplicates = [];
+
         files.forEach(file => {
             const fileName = file.name;
 
-            // Prevent duplicate files
-            if (!uploadedFiles["imageFiles[]"].some(f => f.name === fileName)) {
+            // Check for duplicates against both uploaded files and existing files
+            const isDuplicateUpload = uploadedFiles["imageFiles[]"].some(f => f.name === fileName);
+            const isDuplicateExisting = existingFileNames.includes(fileName);
+            
+            if (isDuplicateUpload || isDuplicateExisting) {
+                duplicates.push(fileName);
+            } else {
                 uploadedFiles["imageFiles[]"].push(file);
 
                 const fileElement = document.createElement("div");
@@ -52,8 +169,16 @@
             }
         });
 
+        // Show alert for duplicates
+        if (duplicates.length > 0) {
+            alert(`The following files were not added because they already exist for this instance:\n\n${duplicates.join('\n')}`);
+        }
+
         // Clear the input to allow adding the same file again if needed
         fileInput.value = "";
+        
+        // Update the image gallery
+        updateImageGallery();
     }
 
     function removeAddedFile(fileName) {
@@ -62,11 +187,17 @@
         
         // Remove the displayed filename
         document.getElementById(`added-${fileName}`).remove();
+        
+        // Update the image gallery
+        updateImageGallery();
     }
 
     function removeExistingFile(fileName) {
         document.getElementById(`existing-${fileName}`).remove(); // Remove from display
         document.getElementById(`hidden-${fileName}`).remove(); // Remove hidden input
+        
+        // Update the image gallery
+        updateImageGallery();
     }
 
     // populate form values from plugin settings
@@ -102,6 +233,9 @@
                 hiddenInput.setAttribute('delete-on-submit', '');
                 hiddenFileInputs.appendChild(hiddenInput);
             });
+            
+            // Update the image gallery after loading existing files
+            updateImageGallery();
         }
     });
 </script>
