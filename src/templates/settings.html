@@ -99,8 +99,9 @@
                     <h1 class="app-title">Settings</h1>
                 </div>
                 <div>
-                    <button class="header-button" onclick="handleShutdown(true)">Reboot</button>
-                    <button class="header-button" onclick="handleShutdown(false)">Shutdown</button>
+                    <a class="header-button" style="text-decoration: none; background-color: #2c66b1; color: #fff;" href="{{ url_for('settings.download_logs', hours=24) }}" download>Download Logs</a>
+                    <button class="header-button" style="background-color: #FFD600; color: #333;" onclick="handleShutdown(true)">Reboot</button>
+                    <button class="header-button" style="background-color: #E53935; color: #fff;" onclick="handleShutdown(false)">Shutdown</button>
                 </div>
             </div>
         </div>
