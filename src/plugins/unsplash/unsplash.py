@@ -25,14 +25,31 @@ class Unsplash(BasePlugin):
             raise RuntimeError("Unsplash API key not found.")
 
         search_query = settings.get('search_query')
+        collections = settings.get('collections')
+        content_filter = settings.get('content_filter', 'low')
+        color = settings.get('color')
+        orientation = settings.get('orientation')
         
+        params = {
+            'client_id': api_key,
+            'content_filter': content_filter,
+        }
+
         if search_query:
-            url = f"https://api.unsplash.com/search/photos?query={search_query}&client_id={api_key}"
+            url = f"https://api.unsplash.com/search/photos"
+            params['query'] = search_query
         else:
-            url = f"https://api.unsplash.com/photos/random?client_id={api_key}"
+            url = f"https://api.unsplash.com/photos/random"
+
+        if collections:
+            params['collections'] = collections
+        if color:
+            params['color'] = color
+        if orientation:
+            params['orientation'] = orientation
 
         try:
-            response = requests.get(url)
+            response = requests.get(url, params=params)
             response.raise_for_status()
             data = response.json()
             if search_query:
