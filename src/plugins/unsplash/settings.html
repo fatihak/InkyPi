@@ -1,0 +1,13 @@
+<div class="form-group">
+    <label for="search_query" class="form-label">Search Query:</label>
+    <input type="text" id="search_query" name="search_query" placeholder="Type something..." required class="form-input">
+</div>
+
+<script>
+    // populate form values from plugin settings
+    document.addEventListener('DOMContentLoaded', () => {        
+        if (loadPluginSettings) {
+            document.getElementById('search_query').value = pluginSettings.search_query;
+        }
+    });
+</script>
