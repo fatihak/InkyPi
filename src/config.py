@@ -62,9 +62,6 @@ class Config:
 
     def get_config(self, key=None, default={}):
         """Gets the value of a specific configuration key or returns the entire config if none provided."""
-
-        logger.debug(f"Getting key {key} from config.")
-
         if key is not None:
             return self.config.get(key, default)
         return self.config

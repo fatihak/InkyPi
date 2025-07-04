@@ -99,8 +99,9 @@
                     <h1 class="app-title">Settings</h1>
                 </div>
                 <div>
-                    <button class="header-button" onclick="handleShutdown(true)">Reboot</button>
-                    <button class="header-button" onclick="handleShutdown(false)">Shutdown</button>
+                    <a class="header-button" style="text-decoration: none; background-color: #2c66b1; color: #fff;" href="{{ url_for('settings.download_logs', hours=24) }}" download>Download Logs</a>
+                    <button class="header-button" style="background-color: #FFD600; color: #333;" onclick="handleShutdown(true)">Reboot</button>
+                    <button class="header-button" style="background-color: #E53935; color: #fff;" onclick="handleShutdown(false)">Shutdown</button>
                 </div>
             </div>
         </div>
@@ -165,14 +166,22 @@
                     </div>
                 </div>
                 <div class="form-group">
-                    <label for="interval">Plugin Cycle Interval:</label>
-                    <span title="Determines how often the display switches to a new plugin.">ⓘ</span>
-                    <span>Every</span>
-                    <input type="number" id="interval" name="interval" class="form-input" required min="1">
-                    <select id="unit" name="unit" class="form-input" required>
-                        <option value="minute">Minute</option>
-                        <option value="hour">Hour</option>
-                    </select>
+                    <div class="form-group">
+                        <label for="interval">Plugin Cycle Interval:</label>
+                        <span title="Determines how often the display switches to a new plugin.">ⓘ</span>
+                        <span>Every</span>
+                        <input type="number" id="interval" name="interval" class="form-input" required min="1">
+                        <select id="unit" name="unit" class="form-input" required>
+                            <option value="minute">Minute</option>
+                            <option value="hour">Hour</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group nowrap">
+                        <label class="form-label" for="logSystemStats">Log System Stats</label>
+                            <input type="checkbox" id="logSystemStats" name="logSystemStats" {% if device_settings.log_system_stats %}checked{% endif %}>
+                        </label>
+                    </div>
                 </div>
 
                 <div class="collapsible">

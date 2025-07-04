@@ -2,6 +2,7 @@ import threading
 import time
 import os
 import logging
+import psutil
 import pytz
 from datetime import datetime, timezone
 from plugins.plugin_registry import get_plugin_instance
@@ -48,8 +49,8 @@ class RefreshTask:
     def _run(self):
         """Background task that manages the periodic refresh of the display.
 
-        This function runs in a loop, sleeping for a configured duration (`scheduler_sleep_time`) or until manually 
-        triggered via `manual_update()`. Detrmines the next plugin to refresh based on active playlists and 
+        This function runs in a loop, sleeping for a configured duration (`plugin_cycle_interval_seconds`) or until
+        manually triggered via `manual_update()`. Detrmines the next plugin to refresh based on active playlists and 
         updates the display accordingly.
 
         Workflow:
@@ -72,7 +73,7 @@ class RefreshTask:
         while True:
             try:
                 with self.condition:
-                    sleep_time = self.device_config.get_config("scheduler_sleep_time")
+                    sleep_time = self.device_config.get_config("plugin_cycle_interval_seconds", default=60*60)
 
                     # Wait for sleep_time or until notified
                     self.condition.wait(timeout=sleep_time)
@@ -81,7 +82,7 @@ class RefreshTask:
 
                     # Exit if `stop()` is called
                     if not self.running:
-                        break 
+                        break
 
                     playlist_manager = self.device_config.get_playlist_manager()
                     latest_refresh = self.device_config.get_refresh_info()
@@ -94,6 +95,10 @@ class RefreshTask:
                         refresh_action = self.manual_update_request
                         self.manual_update_request = ()
                     else:
+
+                        if self.device_config.get_config("log_system_stats"):
+                            self.log_system_stats()
+
                         # handle refresh based on playlists
                         logger.info(f"Running interval refresh check. | current_time: {current_dt.strftime('%Y-%m-%d %H:%M:%S')}")
                         playlist, plugin_instance = self._determine_next_plugin(playlist_manager, latest_refresh, current_dt)
@@ -123,7 +128,7 @@ class RefreshTask:
                         self.device_config.write_config()
 
             except Exception as e:
-                logging.exception('Exception during refresh')
+                logger.exception('Exception during refresh')
                 self.refresh_result["exception"] = e  # Capture exception
             finally:
                 self.refresh_event.set()
@@ -143,6 +148,12 @@ class RefreshTask:
                 raise self.refresh_result.get("exception")
         else:
             logger.warn("Background refresh task is not running, unable to do a manual update")
+
+    def signal_config_change(self):
+        """Notify the background thread that config has changed (e.g., interval updated)."""
+        if self.running:
+            with self.condition:
+                self.condition.notify_all()
 
     def _get_current_datetime(self):
         """Retrieves the current datetime based on the device's configured timezone."""
@@ -175,6 +186,21 @@ class RefreshTask:
         logger.info(f"Determined next plugin. | active_playlist: {playlist.name} | plugin_instance: {plugin.name}")
 
         return playlist, plugin
+    
+    def log_system_stats(self):
+        metrics = {
+            'cpu_percent': psutil.cpu_percent(interval=1),
+            'memory_percent': psutil.virtual_memory().percent,
+            'disk_percent': psutil.disk_usage('/').percent,
+            'load_avg_1_5_15': os.getloadavg(),
+            'swap_percent': psutil.swap_memory().percent,
+            'net_io': {
+                'bytes_sent': psutil.net_io_counters().bytes_sent,
+                'bytes_recv': psutil.net_io_counters().bytes_recv
+            }
+        }
+
+        logger.info(f"System Stats: {metrics}")
 
 class RefreshAction:
     """Base class for a refresh action. Subclasses should override the methods below."""

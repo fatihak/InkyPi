@@ -63,7 +63,7 @@ def resize_image(image, desired_size, image_settings=[]):
 def apply_image_enhancement(img, image_settings={}):
 
     # Apply Brightness
-    img = ImageEnhance.Brightness(img).enhance(image_settings.get("brigtness", 1.0))
+    img = ImageEnhance.Brightness(img).enhance(image_settings.get("brightness", 1.0))
 
     # Apply Contrast
     img = ImageEnhance.Contrast(img).enhance(image_settings.get("contrast", 1.0))
