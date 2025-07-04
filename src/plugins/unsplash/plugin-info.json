@@ -1,0 +1,5 @@
+{
+  "name": "Unsplash",
+  "description": "Displays images from Unsplash based on a search query.",
+  "settings_path": "plugins/unsplash/settings.html"
+}
