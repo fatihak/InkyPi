@@ -1,7 +1,7 @@
 import json
-from src.plugins.plugin_registry import load_plugins, get_plugin_instance
-from src.utils.image_utils import resize_image, change_orientation
-from unittest.mock import patch, MagicMock
+from inkypi.plugins.plugin_registry import load_plugins, get_plugin_instance
+from inkypi.utils.image_utils import resize_image, change_orientation
+from unittest.mock import MagicMock
 from PIL import Image
 
 PLUGIN_CONFIG_FILE = "install/config_base/plugins.json"
