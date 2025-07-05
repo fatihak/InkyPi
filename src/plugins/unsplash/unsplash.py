@@ -3,6 +3,7 @@ from PIL import Image
 from io import BytesIO
 import requests
 import logging
+import random
 
 logger = logging.getLogger(__name__)
 
@@ -33,6 +34,7 @@ class Unsplash(BasePlugin):
         params = {
             'client_id': api_key,
             'content_filter': content_filter,
+            'per_page': 100,
         }
 
         if search_query:
@@ -53,9 +55,12 @@ class Unsplash(BasePlugin):
             response.raise_for_status()
             data = response.json()
             if search_query:
-                image_url = data["results"][0]["urls"]["raw"]
+                results = data.get("results")
+                if not results:
+                    raise RuntimeError("No images found for the given search query.")
+                image_url = random.choice(results)["urls"]["full"]
             else:
-                image_url = data["urls"]["raw"]
+                image_url = data["urls"]["full"]
         except requests.exceptions.RequestException as e:
             logger.error(f"Error fetching image from Unsplash API: {e}")
             raise RuntimeError("Failed to fetch image from Unsplash API, please check logs.")
