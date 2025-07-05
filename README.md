@@ -1,9 +1,9 @@
-# InkyPi 
+# InkyPi
 
 <img src="./docs/images/inky_clock.jpg" />
 
 
-## About InkyPi 
+## About InkyPi
 InkyPi is an open-source, customizable E-Ink display powered by a Raspberry Pi. Designed for simplicity and flexibility, it allows you to effortlessly display the content you care about, with a simple web interface that makes setup and configuration effortless.
 
 **Features**:
@@ -19,14 +19,14 @@ InkyPi is an open-source, customizable E-Ink display powered by a Raspberry Pi. 
 - Image Upload: Upload and display any image from your browser
 - Newspaper: Show daily front pages of major newspapers from around the world
 - Clock: Customizable clock faces for displaying time
-- AI Image: Generate images from text prompts using OpenAI's DALL·E 
+- AI Image: Generate images from text prompts using OpenAI's DALL·E
 - AI Text: Display dynamic text content using OpenAI's GPT-4o text models
 - Weather: Display current weather conditions and multi-day forecasts with a customizable layout
 - Calendar: Visualize your calendar from Google, Outlook, or Apple Calendar with customizable layouts
 
 And additional plugins coming soon! For documentation on building custom plugins, see [Building InkyPi Plugins](./docs/building_plugins.md).
 
-## Hardware 
+## Hardware
 - Raspberry Pi (4 | 3 | Zero 2 W)
     - Recommended to get 40 pin Pre Soldered Header
 - MicroSD Card (min 8 GB) like [this one](https://amzn.to/3G3Tq9W)
@@ -61,9 +61,9 @@ To install InkyPi, follow these steps:
 3. Run the installation script with sudo:
     ```bash
     sudo bash install/install.sh [-W <waveshare device model>]
-    ``` 
-     Option: 
-    
+    ```
+     Option:
+
     * -W \<waveshare device model\> - specify this parameter **ONLY** if installing for a Waveshare display.  After the -W option specify the Waveshare device model e.g. epd7in3f.
 
     e.g. for Inky displays use:
@@ -79,7 +79,7 @@ To install InkyPi, follow these steps:
 
 After the installation is complete, the script will prompt you to reboot your Raspberry Pi. Once rebooted, the display will update to show the InkyPi splash screen.
 
-Note: 
+Note:
 - The installation script requires sudo privileges to install and run the service. We recommend starting with a fresh installation of Raspberry Pi OS to avoid potential conflicts with existing software or configurations.
 - The installation process will automatically enable the required SPI and I2C interfaces on your Raspberry Pi.
 

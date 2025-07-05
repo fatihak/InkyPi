@@ -1,0 +1,821 @@
+/* Base styling */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Poppins', sans-serif;
+    background-color: #f4f4f9;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+}
+
+/* Subtle frame container */
+.frame {
+    background-color: #ffffff;
+    border: 2px solid #e0e0e0; /* Subtle boundary frame */
+    border-radius: 16px;
+    padding: 20px;
+    width: 90%;
+    min-height: 90vh; /* Take up 90% of the viewport height */
+    max-width: 900px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1); /* Slight shadow for depth */
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+}
+
+/* Header styling */
+.header {
+    text-align: left;
+    margin-bottom: 20px;
+}
+
+.header h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #333333;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 0;
+    display: inline-block;
+    padding-bottom: 8px;
+}
+
+/* Current image styling */
+.image-container {
+    position: relative;
+    width: 300px;
+    margin: 0 auto;
+}
+
+.image-container img {
+    height: auto;
+    display: block;
+    margin: auto;
+    border-radius: 6px;
+    max-width: 20rem;
+    max-height: 15rem;
+}
+
+/* Separator styling */
+.separator {
+    width: 100%;
+    height: 1px;
+    background-color: #dddddd;
+    margin: 10px 0 10px 0; /* Bottom margin reduced for spacing */
+}
+
+.plugins-title {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #555555;
+    margin-bottom: 10px;
+    text-align: left; /* Aligns the title to the left */
+    margin-left: 5px
+}
+
+/* Button grid container styling */
+.button-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); /* auto adjust buttons per row */
+    gap: 15px; /* Smaller space between buttons */
+    overflow-y: auto; /* Allows scrolling if content exceeds the frame */
+    padding: 10px 5px;
+}
+
+/* Individual button styling */
+.icon-button {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 70px; /* Reduce button height */
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.icon-button:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2);
+}
+
+/* Icon image styling */
+.icon-image {
+    width: 32px; /* Adjust icon size */
+    height: 32px; /* Keep a proportional height */
+    margin-bottom: 8px;
+}
+
+/* App header container */
+.app-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+/* App icon styling */
+.app-icon {
+    width: 30px;
+    height: 30px;
+    border-radius: 5px;
+    object-fit: contain;
+}
+
+/* App title styling */
+.app-title {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #333;
+}
+
+/* Ensure form and settings container expand */
+.settings-form {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    margin: 0px 0px 10px 0px;
+    flex-grow: 1;
+}
+
+.settings-container {
+    display: flex;
+    justify-content: center;
+    flex-direction: column;
+    padding: 0px 10px;
+}
+
+/* Style the form inputs and labels */
+.form-group {
+    display: flex;
+    align-items: center;
+    gap: 0.2rem 1rem;
+    margin: 5px 0 5px 0; /* Bottom margin reduced for spacing */
+    flex-wrap: wrap;
+    flex: auto;
+}
+
+.form-group .nowrap{
+    flex-wrap: nowrap;
+}
+
+.nowrap{
+    flex-wrap: nowrap;
+}
+
+.form-group label {
+    white-space: nowrap; /* Prevent label wrapping */
+    font-weight: 600;
+    color: #333;
+}
+
+.form-group input[type="text"] {
+    flex-grow: 1; /* Expand the input field to fill the available space */
+    padding: 0.5rem;
+    font-size: 1rem;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    box-sizing: border-box;
+    min-width: 50px;
+}
+
+.form-group input[type="number"] {
+    min-width: 50px;
+}
+
+.form-group input[type="text"]:focus {
+    outline: none;
+    border-color: #1abc9c;
+    box-shadow: 0 0 3px rgba(26, 188, 156, 0.5);
+}
+
+/* Buttons container */
+.buttons-container {
+    display: flex;
+    gap: 10px;
+    margin-top: auto;
+}
+
+/* Back button */
+.back-button {
+    background-color: #f4f4f9;
+    color: #333;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    padding: 10px 20px;
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: pointer;
+    margin-bottom: 20px;
+    text-align: left;
+    width: fit-content; /* Button takes up only the width of the text */
+}
+.back-button:hover {
+    background-color: #e0e0e0;
+}
+
+/* Action buttons styling */
+.action-button {
+    flex: 1; /* Take up equal width for both buttons */
+    background-color: #1abc9c;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    padding: 15px;
+    font-size: 1.1rem;
+    font-weight: bold;
+    cursor: pointer;
+    text-align: center;
+    width:100%;
+}
+
+.action-button.warn {
+    background-color: #c4515b;
+}
+
+.action-button.warn:hover {
+    background-color: #a93943;
+}
+
+.action-button:hover {
+    background-color: #16a085;
+}
+
+.action-button.compact {
+    font-size: 0.9rem;
+    padding: 10px;
+    width: auto;
+}
+
+/* Form styling for inline layout */
+.form-inline {
+    display: flex;
+    align-items: center;
+    gap: 10px; /* Space between the label and input */
+    width: 100%;
+}
+
+/* Label styling */
+.form-label {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #333;
+    white-space: nowrap; /* Prevent the label from wrapping */
+}
+
+/* Input field styling */
+.form-input {
+    flex: auto;
+    padding: 0.4rem;
+    font-size: 1rem;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    box-sizing: border-box;
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: #1abc9c;
+    box-shadow: 0 0 0 2px rgba(26, 188, 156, 0.3);
+}
+
+/* Toggle Container */
+.toggle-container {
+    display: inline-block;
+    position: relative;
+    width: 50px;
+    height: 24px;
+}
+
+/* Hide Checkbox */
+.toggle-checkbox {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+/* Toggle Background */
+.toggle-label {
+    position: absolute;
+    cursor: pointer;
+    background-color: #ccc;
+    border-radius: 15px;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    transition: 0.3s;
+}
+
+/* Toggle Knob */
+.toggle-label::before {
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    background-color: white;
+    border-radius: 50%;
+    top: 3px;
+    left: 3px;
+    transition: 0.3s;
+}
+
+/* When Checked */
+.toggle-checkbox:checked + .toggle-label {
+    background-color: #1abc9c;
+}
+
+.toggle-checkbox:checked + .toggle-label::before {
+    transform: translateX(26px);
+}
+
+/* Style the custom file upload button */
+.file-upload-label {
+    display: inline-block;
+    background-color: #f9fafb; /* Matching background color */
+    color: #333; /* Text color matching the input */
+    padding: 10px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1rem;
+    text-align: center;
+    border: 1px solid #ddd; /* Matching border style */
+}
+
+.file-upload-label:hover {
+    background-color: #e5e7eb; /* Slightly darker hover state */
+}
+
+.file-upload-label:active {
+    background-color: #d1d5db; /* Active state */
+}
+
+/* Hide the default file input */
+.file-upload-input {
+    display: none;
+}
+
+/* File name display styling */
+.file-name {
+    font-size: 1rem;
+    color: #333;
+    word-wrap: break-word;
+}
+
+.image-grid {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+    flex-wrap: wrap;
+}
+
+.image-option {
+    text-align: center;
+    border: 2px solid transparent;
+    padding: 5px;
+    cursor: pointer;
+    border-radius: 5px;
+    transition: border-color 0.3s ease;
+}
+
+.image-option img {
+    width: auto;
+    height: auto; /* Ensures aspect ratio is maintained */
+    max-width: 100px; /* Optional: Limits the max width of images */
+}
+
+.image-option.selected {
+    border-color: #007bff; /* Highlight for selected option */
+}
+
+/* Settings button styling */
+.settings-button {
+    font-size: 1rem;
+    color: #555555;
+    text-decoration: none;
+    padding: 10px 15px;
+    border-radius: 8px;
+    float: right; /* Align the button to the right of the header */
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.settings-button img {
+    margin-bottom: 0px;
+}
+
+.settings-button:hover {
+    background-color: #e0e0e0;
+    box-shadow: 0px 5px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Modal Styling */
+.modal {
+    display: none; /* Hidden by default */
+    position: fixed;
+    z-index: 1000; /* On top of other elements */
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto; /* Enable scroll if needed */
+    background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent background */
+}
+
+.modal-content {
+    background-color: #ffffff;
+    margin: 15% auto; /* Center the modal */
+    padding: 20px;
+    border-radius: 10px;
+    width: 90%;
+    max-width: 400px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+    animation: fadeIn 0.3s ease-out;
+}
+
+.modal-content h2 {
+    font-size: 1.2rem;
+    margin-bottom: 15px;
+    color: #333;
+    text-align: center;
+}
+
+.close-button {
+    color: #aaa;
+    float: right;
+    font-size: 1.5rem;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.close-button:hover,
+.close-button:focus {
+    color: #333;
+    text-decoration: none;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+/* Success/Failure Modal Styles */
+.success-failure-modal {
+    display: none;
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1000;
+    max-width: 400px;
+    border-radius: 8px;
+    background-color: #1abc9c; /* Default color for success */
+    padding: 10px 16px 10px 24px; /* Added left padding for spacing */
+    color: white;
+    font-family: Arial, sans-serif;
+    font-size: 16px;
+    text-align: center;
+}
+
+.success-failure-modal .response-modal-content {
+    border-radius: 8px;
+    background: inherit;
+    padding-right: 24px; /* Space between text and close button */
+}
+
+.success-failure-modal .close-button {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    right: 12px;
+    font-size: 20px;
+    cursor: pointer;
+    color: white;
+}
+
+.success-failure-modal.success {
+    background-color: #1abc9c; /* Success color */
+}
+
+.success-failure-modal.failure {
+    background-color: #c4515b; /* Failure color */
+}
+
+/* Loading Indicator Styles */
+.loading-indicator {
+    display: none; /* Hidden by default */
+    width: 40px;
+    height: 40px;
+    border: 4px solid transparent;
+    border-top: 4px solid #0c7586; /* Blue color for the spinner */
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+
+    margin-left: auto;
+}
+
+.loading-indicator.small {
+    width: 25px;
+    height: 25px;
+}
+
+.loading-indicator.left-align {
+    margin-right: auto;
+    margin-left: 0;
+}
+
+/* Spinner animation */
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.color-picker {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    width: 30px;
+    height: 30px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    background-color: #fff;
+    cursor: pointer;
+    font-size: 1rem;
+}
+
+.color-picker::-webkit-color-swatch-wrapper {
+    padding: 0;
+}
+
+.color-picker::-webkit-color-swatch {
+    border-radius: 6px;
+}
+
+.remove-btn {
+    background-color: transparent;
+    border: none;
+    color: #e74c3c; /* Using a red color similar to the project style */
+    font-weight: 600; /* Matching the font-weight of other buttons */
+    cursor: pointer;
+    margin-left: 10px;
+    font-size: 1rem; /* Consistent font size */
+    transition: color 0.3s ease; /* Smooth transition on hover */
+}
+
+.remove-btn:hover {
+    color: #c0392b; /* Slightly darker red for hover state */
+}
+
+.remove-btn:focus {
+    outline: none;
+    box-shadow: 0 0 3px rgba(26, 188, 156, 0.5); /* Adding a focus effect similar to inputs */
+}
+
+/* Plugin List */
+.plugin-list {
+    display: flex;
+    flex-direction: column;
+}
+
+/* Plugin Item */
+.plugin-item {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    padding: 10px 25px 10px 40px;
+    border-top: 2px solid #e0e0e0;
+    gap: 10px;
+}
+
+.plugin-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-grow: 1;
+}
+
+.plugin-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    flex-grow: 1;
+}
+
+/* Plugin Icon */
+.plugin-icon {
+    width: 30px;
+    height: 30px;
+}
+
+.plugin-instance {
+    color: #333;
+}
+
+/* Edit & Delete Buttons */
+.edit-button, .delete-button {
+    background: none;
+    border: none;
+    cursor: pointer;
+}
+
+/* Playlist List */
+.playlist-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    overflow-y: auto;
+}
+
+.playlist-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    padding: 20px 25px 10px 25px;
+}
+
+/* Playlist Item */
+.playlist-item {
+    display: flex;
+    padding: 0px 0px 5px 0px;
+    transition: all 0.3s ease;
+    border: 2px solid #e0e0e0;
+    border-radius: 10px;
+    flex-direction: column;
+    width: 100%
+}
+
+/* Active Playlist Item */
+.playlist-item.active {
+    border-color: #16a085; /* Green border */
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.playlist-title {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #333;
+}
+
+.action-icon {
+    width: 20px;
+    height: 20px;
+}
+
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}
+
+.title-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.header-button {
+    background-color: #1abc9c;
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 8px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+
+.header-button:hover {
+    background-color: #16a085;
+}
+
+.hidden {
+    display: none;
+}
+
+.displayed-now {
+    background-color: #16a085;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 3px;
+    font-size: 0.8rem;
+}
+
+/* Time input styling */
+.time-input {
+    flex: 1;
+    padding: 0.4rem;
+    font-size: 1rem;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    box-sizing: border-box;
+    text-align: center;
+}
+
+.time-input:focus {
+    outline: none;
+    border-color: #1abc9c;
+    box-shadow: 0 0 3px rgba(26, 188, 156, 0.5);
+}
+
+.latest-refresh {
+    background-color: lightslategray;
+    color: white;
+    font-style: italic;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.8em;
+}
+
+.api-key-label {
+    background-color: lightslategray;
+    color: white;
+    font-style: italic;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.8em;
+    text-align: center;
+}
+
+.collapsible {
+    width: 100%;
+}
+
+.collapsible-header {
+    background-color:#edebeb;
+    border: none;
+    cursor: pointer;
+    padding: 10px;
+    width: 100%;
+    text-align: left;
+    font-size: 1rem;
+    margin: 10px 0px 5px 0px;
+}
+
+.collapsible-icon {
+    float: right;
+    opacity: 50%;
+}
+
+.collapsible-content {
+    display: none;
+    padding: 0px 0px;
+}
+
+@media (max-aspect-ratio: 3/4) {
+    .frame {
+      width: 95%;
+    }
+}
+
+.button-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0; /* Remove spacing between buttons */
+}
+
+.button-group button {
+  padding: 0.5rem 1rem;
+  border: 1px solid #ccc;
+  background-color: #f4f4f4;
+  cursor: pointer;
+  font-size: 14px;
+  border-radius: 0; /* Reset default radius */
+  margin-left: -1px; /* Collapse left borders */
+  position: relative;
+  z-index: 1;
+}
+
+.button-group button:first-child {
+  border-top-left-radius: 4px;
+  border-bottom-left-radius: 4px;
+  margin-left: 0; /* Reset for first button */
+}
+
+.button-group button:last-child {
+  border-top-right-radius: 4px;
+  border-bottom-right-radius: 4px;
+}
+
+.button-group button.active {
+  background-color: #007BFF;
+  color: white;
+  border-color: #007BFF;
+  z-index: 2; /* Ensure active button is above others */
+}
+
+.font-weight-normal {
+  font-weight: normal; /* or 400 */
+}

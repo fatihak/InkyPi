@@ -6,7 +6,7 @@
 #              the InkyPI service.
 #
 # Usage: ./install.sh [-W <waveshare_device>]
-#        -W <waveshare_device> (optional) Install for a Waveshare device, 
+#        -W <waveshare_device> (optional) Install for a Waveshare device,
 #                               specifying the device model type, e.g. epd7in3e.
 #
 #                               If not specified then the Pimoroni Inky display
@@ -40,7 +40,7 @@ SERVICE_FILE_TARGET="/etc/systemd/system/$SERVICE_FILE"
 APT_REQUIREMENTS_FILE="$SCRIPT_DIR/debian-requirements.txt"
 PIP_REQUIREMENTS_FILE="$SCRIPT_DIR/requirements.txt"
 
-# 
+#
 # Additional requirements for Waveshare support.
 #
 # empty means no WS support required, otherwise we expect the type of display
@@ -129,7 +129,7 @@ enable_interfaces(){
         echo "dtoverlay for spi0-2cs already specified"
     fi
   else
-    # TODO - check if really need the dtparam set for INKY as this seems to be 
+    # TODO - check if really need the dtparam set for INKY as this seems to be
     # only for the older screens (as per INKY docs)
     echo "Enabling single CS line for SPI interface in config.txt"
     if ! grep -E -q '^[[:space:]]*dtoverlay=spi0-0cs' /boot/firmware/config.txt; then
@@ -137,7 +137,7 @@ enable_interfaces(){
     else
         echo "dtoverlay for spi0-0cs already specified"
     fi
-  fi 
+  fi
 }
 
 show_loader() {
@@ -247,7 +247,7 @@ update_config() {
       if grep -q '"display_type":' "$DEVICE_JSON"; then
           # Update existing display_type value
           sed -i "s/\"display_type\": \".*\"/\"display_type\": \"$WS_TYPE\"/" "$DEVICE_JSON"
-          echo "Updated display_type to: $WS_TYPE" 
+          echo "Updated display_type to: $WS_TYPE"
       else
           # Append display_type safely, ensuring proper comma placement
           if grep -q '}$' "$DEVICE_JSON"; then
@@ -268,7 +268,7 @@ stop_service() {
     then
       /usr/bin/systemctl stop $SERVICE_FILE > /dev/null &
       show_loader "Stopping $APPNAME service"
-    else  
+    else
       echo_success "\t$SERVICE_FILE not running"
     fi
 }

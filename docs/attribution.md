@@ -6,7 +6,7 @@ This project uses various fonts and icons, each with specific licensing terms. B
 |---------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------|
 [Jost by Owen Earl](https://fonts.google.com/specimen/Jost) | [SIL OFL v1.1](https://fonts.google.com/specimen/Jost/license) |
 [Dogica Pixel by Roberto Mocci ](https://www.dafont.com/dogica.font) | [SIL OFL v1.1](http://scripts.sil.org/OFL)|
-[DS-Digital by Dusit Supasawat ](https://www.dafont.com/ds-digital.font) | [Shareware](../src/static/fonts/DS-DIGI/DIGITAL.txt)|
+[DS-Digital by Dusit Supasawat ](https://www.dafont.com/ds-digital.font) | [Shareware](../src/inkypi/static/fonts/DS-DIGI/DIGITAL.txt)|
 [Napoli by Vladimir Nikolic ](https://www.dafont.com/napoli.font) | Free for personal use |
 
 
