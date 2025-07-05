@@ -90,8 +90,7 @@ class RaspberryPi:
         #     return self.CS_PIN.value
         if pin == self.PWR_PIN:
             return self.GPIO_PWR_PIN.value
-        else:
-            raise ValueError(f"Unknown pin: {pin}")
+        raise ValueError(f"Unknown pin: {pin}")
 
     def delay_ms(self, delaytime):
         time.sleep(delaytime / 1000.0)
