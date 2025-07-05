@@ -5,7 +5,7 @@ FONT_SIZES = {
     "normal": 1,
     "large": 1.1,
     "larger": 1.2,
-    "x-large": 1.3
+    "x-large": 1.3,
 }
 
 LOCALE_MAP = {
@@ -88,5 +88,5 @@ LOCALE_MAP = {
     "uz": "Uzbek (Latin)",
     "vi": "Vietnamese",
     "zh-cn": "Chinese (Simplified)",
-    "zh-tw": "Chinese (Traditional)"
+    "zh-tw": "Chinese (Traditional)",
 }

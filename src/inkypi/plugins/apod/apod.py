@@ -1,29 +1,31 @@
-"""
-APOD Plugin for InkyPi
+"""APOD Plugin for InkyPi
 This plugin fetches the Astronomy Picture of the Day (APOD) from NASA's API
 and displays it on the InkyPi device. It supports optional manual date selection or random dates.
 For the API key, set `NASA_SECRET={API_KEY}` in your .env file.
 """
 
-from inkypi.plugins.base_plugin.base_plugin import BasePlugin
-from PIL import Image
-from io import BytesIO
-import requests
 import logging
-from random import randint
 from datetime import datetime, timedelta
+from io import BytesIO
+from random import randint
+
+import requests
+from PIL import Image
+
+from inkypi.plugins.base_plugin.base_plugin import BasePlugin
 
 logger = logging.getLogger(__name__)
+
 
 class Apod(BasePlugin):
     def generate_settings_template(self):
         template_params = super().generate_settings_template()
-        template_params['api_key'] = {
+        template_params["api_key"] = {
             "required": True,
             "service": "NASA",
-            "expected_key": "NASA_SECRET"
+            "expected_key": "NASA_SECRET",
         }
-        template_params['style_settings'] = False
+        template_params["style_settings"] = False
         return template_params
 
     def generate_image(self, settings, device_config):
@@ -61,7 +63,7 @@ class Apod(BasePlugin):
             img_data = requests.get(image_url)
             image = Image.open(BytesIO(img_data.content))
         except Exception as e:
-            logger.error(f"Failed to load APOD image: {str(e)}")
+            logger.error(f"Failed to load APOD image: {e!s}")
             raise RuntimeError("Failed to load APOD image.")
 
         return image

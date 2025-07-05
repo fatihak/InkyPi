@@ -60,7 +60,7 @@ img {
     border-top: 0.7vw solid;
     border-left: 0.7vw solid;
   }
-  
+
   .corner-frame:after {
     display: block;
     content: "";

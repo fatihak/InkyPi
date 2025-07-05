@@ -20,7 +20,7 @@
                         plugin_instance: pluginInstance
                     })
                 });
-                
+
                 const result = await response.json();
                 if (response.ok) {
                     sessionStorage.setItem("storedMessage", JSON.stringify({ type: "success", text: `Success! ${result.message}` }));
@@ -49,7 +49,7 @@
                         plugin_instance: pluginInstance
                     })
                 });
-                
+
                 const result = await response.json();
                 if (response.ok) {
                     sessionStorage.setItem("storedMessage", JSON.stringify({ type: "success", text: `Success! ${result.message}` }));
@@ -73,7 +73,7 @@
             document.getElementById("editingPlaylistName").value = ""; // Empty value means it's new
             document.getElementById("start_time").value = "00:00";
             document.getElementById("end_time").value = "24:00";
-            
+
             document.getElementById("saveButton").setAttribute("onclick", "createPlaylist()");
             document.getElementById("deleteButton").classList.add("hidden"); // Hide delete button
 
@@ -98,7 +98,7 @@
             const modal = document.getElementById('playlistModal');
             modal.style.display = 'block';
         }
-    
+
         function closeModal() {
             const modal = document.getElementById('playlistModal');
             modal.style.display = 'none';
@@ -227,7 +227,7 @@
             </div>
         </div>
         <div class="separator"></div>
-        
+
         <!-- Playlists Container -->
         <div class="playlist-list">
             {% for playlist in playlist_config.playlists %}

@@ -1,41 +1,34 @@
-from inkypi.plugins.base_plugin.base_plugin import BasePlugin
-import requests
 import logging
-from datetime import datetime, timezone
-import pytz
 import math
+from datetime import datetime, timezone
+
+import pytz
+import requests
+
+from inkypi.plugins.base_plugin.base_plugin import BasePlugin
 
 logger = logging.getLogger(__name__)
 
 UNITS = {
-    "standard": {
-        "temperature": "K",
-        "speed": "m/s"
-    },
-    "metric": {
-        "temperature": "°C",
-        "speed": "m/s"
-
-    },
-    "imperial": {
-        "temperature": "°F",
-        "speed": "mph"
-    }
+    "standard": {"temperature": "K", "speed": "m/s"},
+    "metric": {"temperature": "°C", "speed": "m/s"},
+    "imperial": {"temperature": "°F", "speed": "mph"},
 }
 
 WEATHER_URL = "https://api.openweathermap.org/data/3.0/onecall?lat={lat}&lon={long}&units={units}&exclude=minutely&appid={api_key}"
 AIR_QUALITY_URL = "http://api.openweathermap.org/data/2.5/air_pollution?lat={lat}&lon={long}&appid={api_key}"
 GEOCODING_URL = "http://api.openweathermap.org/geo/1.0/reverse?lat={lat}&lon={long}&limit=1&appid={api_key}"
 
+
 class Weather(BasePlugin):
     def generate_settings_template(self):
         template_params = super().generate_settings_template()
-        template_params['api_key'] = {
+        template_params["api_key"] = {
             "required": True,
             "service": "OpenWeatherMap",
-            "expected_key": "OPEN_WEATHER_MAP_SECRET"
+            "expected_key": "OPEN_WEATHER_MAP_SECRET",
         }
-        template_params['style_settings'] = True
+        template_params["style_settings"] = True
 
         return template_params
 
@@ -44,13 +37,13 @@ class Weather(BasePlugin):
         if not api_key:
             raise RuntimeError("Open Weather Map API Key not configured.")
 
-        lat = settings.get('latitude')
-        long = settings.get('longitude')
+        lat = settings.get("latitude")
+        long = settings.get("longitude")
         if not lat or not long:
             raise RuntimeError("Latitude and Longitude are required.")
 
-        units = settings.get('units')
-        if not units or units not in ['metric', 'imperial', 'standard']:
+        units = settings.get("units")
+        if not units or units not in ["metric", "imperial", "standard"]:
             raise RuntimeError("Units are required.")
 
         try:
@@ -58,7 +51,7 @@ class Weather(BasePlugin):
             aqi_data = self.get_air_quality(api_key, lat, long)
             location_data = self.get_location(api_key, lat, long)
         except Exception as e:
-            logger.error(f"Failed to make OpenWeatherMap request: {str(e)}")
+            logger.error(f"Failed to make OpenWeatherMap request: {e!s}")
             raise RuntimeError("OpenWeatherMap request failure, please check logs.")
 
         dimensions = device_config.get_resolution()
@@ -68,7 +61,9 @@ class Weather(BasePlugin):
         timezone = device_config.get_config("timezone", default="America/New_York")
         time_format = device_config.get_config("time_format", default="12h")
         tz = pytz.timezone(timezone)
-        template_params = self.parse_weather_data(weather_data, aqi_data, location_data, tz, units, time_format)
+        template_params = self.parse_weather_data(
+            weather_data, aqi_data, location_data, tz, units, time_format
+        )
         template_params["plugin_settings"] = settings
 
         # Add last refresh time
@@ -79,36 +74,43 @@ class Weather(BasePlugin):
             last_refresh_time = now.strftime("%Y-%m-%d %I:%M %p")
         template_params["last_refresh_time"] = last_refresh_time
 
-        image = self.render_image(dimensions, "weather.html", "weather.css", template_params)
+        image = self.render_image(
+            dimensions, "weather.html", "weather.css", template_params
+        )
 
         if not image:
             raise RuntimeError("Failed to take screenshot, please check logs.")
         return image
 
-    def parse_weather_data(self, weather_data, aqi_data, location_data, tz, units, time_format):
+    def parse_weather_data(
+        self, weather_data, aqi_data, location_data, tz, units, time_format
+    ):
         current = weather_data.get("current")
-        dt = datetime.fromtimestamp(current.get('dt'), tz=timezone.utc).astimezone(tz)
+        dt = datetime.fromtimestamp(current.get("dt"), tz=timezone.utc).astimezone(tz)
         current_icon = current.get("weather")[0].get("icon").replace("n", "d")
         location_str = f"{location_data.get('name')}, {location_data.get('state', location_data.get('country'))}"
         data = {
             "current_date": dt.strftime("%A, %B %d"),
             "location": location_str,
-            "current_day_icon": self.get_plugin_dir(f'icons/{current_icon}.png'),
+            "current_day_icon": self.get_plugin_dir(f"icons/{current_icon}.png"),
             "current_temperature": str(round(current.get("temp"))),
             "feels_like": str(round(current.get("feels_like"))),
             "temperature_unit": UNITS[units]["temperature"],
             "units": units,
-            "time_format": time_format
+            "time_format": time_format,
         }
-        data['forecast'] = self.parse_forecast(weather_data.get('daily'), tz)
-        data['data_points'] = self.parse_data_points(weather_data, aqi_data, tz, units, time_format)
+        data["forecast"] = self.parse_forecast(weather_data.get("daily"), tz)
+        data["data_points"] = self.parse_data_points(
+            weather_data, aqi_data, tz, units, time_format
+        )
 
-        data['hourly_forecast'] = self.parse_hourly(weather_data.get('hourly'), tz, time_format)
+        data["hourly_forecast"] = self.parse_hourly(
+            weather_data.get("hourly"), tz, time_format
+        )
         return data
 
     def parse_forecast(self, daily_forecast, tz):
-        """
-        - daily_forecast: list of daily entries from One‑Call v3 (each has 'dt', 'weather', 'temp', 'moon_phase')
+        """- daily_forecast: list of daily entries from One‑Call v3 (each has 'dt', 'weather', 'temp', 'moon_phase')
         - tz: your target tzinfo (e.g. from zoneinfo or pytz)
         """
         PHASES = [
@@ -128,12 +130,12 @@ class Weather(BasePlugin):
             # intermediate phases
             if 0.0 < phase < 0.25:
                 return "waxingcrescent"
-            elif 0.25 < phase < 0.5:
+            if 0.25 < phase < 0.5:
                 return "waxinggibbous"
-            elif 0.5 < phase < 0.75:
+            if 0.5 < phase < 0.75:
                 return "waninggibbous"
-            else:  # 0.75 < phase < 1.0
-                return "waningcrescent"
+            # 0.75 < phase < 1.0
+            return "waningcrescent"
 
         forecast = []
         # skip today (i=0)
@@ -172,98 +174,122 @@ class Weather(BasePlugin):
     def parse_hourly(self, hourly_forecast, tz, time_format):
         hourly = []
         for hour in hourly_forecast[:24]:
-            dt = datetime.fromtimestamp(hour.get('dt'), tz=timezone.utc).astimezone(tz)
+            dt = datetime.fromtimestamp(hour.get("dt"), tz=timezone.utc).astimezone(tz)
             hour_forecast = {
                 "time": self.format_time(dt, time_format),
                 "temperature": int(hour.get("temp")),
-                "precipitiation": hour.get("pop")
+                "precipitiation": hour.get("pop"),
             }
             hourly.append(hour_forecast)
         return hourly
 
     def parse_data_points(self, weather, air_quality, tz, units, time_format):
         data_points = []
-        sunrise_epoch = weather.get('current', {}).get("sunrise")
+        sunrise_epoch = weather.get("current", {}).get("sunrise")
 
         if sunrise_epoch:
-            sunrise_dt = datetime.fromtimestamp(sunrise_epoch, tz=timezone.utc).astimezone(tz)
+            sunrise_dt = datetime.fromtimestamp(
+                sunrise_epoch, tz=timezone.utc
+            ).astimezone(tz)
             if time_format == "24h":
-                sunrise_time = sunrise_dt.strftime('%H:%M')
+                sunrise_time = sunrise_dt.strftime("%H:%M")
                 sunrise_unit = ""
             else:
-                sunrise_time = sunrise_dt.strftime('%I:%M').lstrip("0")
-                sunrise_unit = sunrise_dt.strftime('%p')
-            data_points.append({
-                "label": "Sunrise",
-                "measurement": sunrise_time,
-                "unit": sunrise_unit,
-                "icon": self.get_plugin_dir('icons/sunrise.png')
-            })
+                sunrise_time = sunrise_dt.strftime("%I:%M").lstrip("0")
+                sunrise_unit = sunrise_dt.strftime("%p")
+            data_points.append(
+                {
+                    "label": "Sunrise",
+                    "measurement": sunrise_time,
+                    "unit": sunrise_unit,
+                    "icon": self.get_plugin_dir("icons/sunrise.png"),
+                }
+            )
         else:
-            logging.error(f"Sunrise not found in OpenWeatherMap response, this is expected for polar areas in midnight sun and polar night periods.")
+            logging.error(
+                "Sunrise not found in OpenWeatherMap response, this is expected for polar areas in midnight sun and polar night periods."
+            )
 
-        sunset_epoch = weather.get('current', {}).get("sunset")
+        sunset_epoch = weather.get("current", {}).get("sunset")
         if sunset_epoch:
-            sunset_dt = datetime.fromtimestamp(sunset_epoch, tz=timezone.utc).astimezone(tz)
+            sunset_dt = datetime.fromtimestamp(
+                sunset_epoch, tz=timezone.utc
+            ).astimezone(tz)
             if time_format == "24h":
-                sunset_time = sunset_dt.strftime('%H:%M')
+                sunset_time = sunset_dt.strftime("%H:%M")
                 sunset_unit = ""
             else:
-                sunset_time = sunset_dt.strftime('%I:%M').lstrip("0")
-                sunset_unit = sunset_dt.strftime('%p')
-            data_points.append({
-                "label": "Sunset",
-                "measurement": sunset_time,
-                "unit": sunset_unit,
-                "icon": self.get_plugin_dir('icons/sunset.png')
-            })
+                sunset_time = sunset_dt.strftime("%I:%M").lstrip("0")
+                sunset_unit = sunset_dt.strftime("%p")
+            data_points.append(
+                {
+                    "label": "Sunset",
+                    "measurement": sunset_time,
+                    "unit": sunset_unit,
+                    "icon": self.get_plugin_dir("icons/sunset.png"),
+                }
+            )
         else:
-            logging.error(f"Sunset not found in OpenWeatherMap response, this is expected for polar areas in midnight sun and polar night periods.")
+            logging.error(
+                "Sunset not found in OpenWeatherMap response, this is expected for polar areas in midnight sun and polar night periods."
+            )
 
-        data_points.append({
-            "label": "Wind",
-            "measurement": weather.get('current', {}).get("wind_speed"),
-            "unit": UNITS[units]["speed"],
-            "icon": self.get_plugin_dir('icons/wind.png')
-        })
+        data_points.append(
+            {
+                "label": "Wind",
+                "measurement": weather.get("current", {}).get("wind_speed"),
+                "unit": UNITS[units]["speed"],
+                "icon": self.get_plugin_dir("icons/wind.png"),
+            }
+        )
 
-        data_points.append({
-            "label": "Humidity",
-            "measurement": weather.get('current', {}).get("humidity"),
-            "unit": '%',
-            "icon": self.get_plugin_dir('icons/humidity.png')
-        })
+        data_points.append(
+            {
+                "label": "Humidity",
+                "measurement": weather.get("current", {}).get("humidity"),
+                "unit": "%",
+                "icon": self.get_plugin_dir("icons/humidity.png"),
+            }
+        )
 
-        data_points.append({
-            "label": "Pressure",
-            "measurement": weather.get('current', {}).get("pressure"),
-            "unit": 'hPa',
-            "icon": self.get_plugin_dir('icons/pressure.png')
-        })
+        data_points.append(
+            {
+                "label": "Pressure",
+                "measurement": weather.get("current", {}).get("pressure"),
+                "unit": "hPa",
+                "icon": self.get_plugin_dir("icons/pressure.png"),
+            }
+        )
 
-        data_points.append({
-            "label": "UV Index",
-            "measurement": weather.get('current', {}).get("uvi"),
-            "unit": '',
-            "icon": self.get_plugin_dir('icons/uvi.png')
-        })
+        data_points.append(
+            {
+                "label": "UV Index",
+                "measurement": weather.get("current", {}).get("uvi"),
+                "unit": "",
+                "icon": self.get_plugin_dir("icons/uvi.png"),
+            }
+        )
 
-        visibility = weather.get('current', {}).get("visibility")/1000
+        visibility = weather.get("current", {}).get("visibility") / 1000
         visibility_str = f">{visibility}" if visibility >= 10 else visibility
-        data_points.append({
-            "label": "Visibility",
-            "measurement": visibility_str,
-            "unit": 'km',
-            "icon": self.get_plugin_dir('icons/visibility.png')
-        })
+        data_points.append(
+            {
+                "label": "Visibility",
+                "measurement": visibility_str,
+                "unit": "km",
+                "icon": self.get_plugin_dir("icons/visibility.png"),
+            }
+        )
 
-        aqi = air_quality.get('list', [])[0].get("main", {}).get("aqi")
-        data_points.append({
-            "label": "Air Quality",
-            "measurement": aqi,
-            "unit": ["Good", "Fair", "Moderate", "Poor", "Very Poor"][int(aqi)-1],
-            "icon": self.get_plugin_dir('icons/aqi.png')
-        })
+        aqi = air_quality.get("list", [])[0].get("main", {}).get("aqi")
+        data_points.append(
+            {
+                "label": "Air Quality",
+                "measurement": aqi,
+                "unit": ["Good", "Fair", "Moderate", "Poor", "Very Poor"][int(aqi) - 1],
+                "icon": self.get_plugin_dir("icons/aqi.png"),
+            }
+        )
 
         return data_points
 
@@ -300,8 +326,7 @@ class Weather(BasePlugin):
         """Format datetime based on 12h or 24h preference"""
         if time_format == "24h":
             return dt.strftime("%H:%M")
-        else:  # 12h format
-            if include_am_pm:
-                return dt.strftime("%-I:%M %p")
-            else:
-                return dt.strftime("%-I:%M")
+        # 12h format
+        if include_am_pm:
+            return dt.strftime("%-I:%M %p")
+        return dt.strftime("%-I:%M")

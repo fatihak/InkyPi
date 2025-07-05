@@ -158,7 +158,7 @@
     }
 
     // populate form values from plugin settings
-    document.addEventListener('DOMContentLoaded', () => {        
+    document.addEventListener('DOMContentLoaded', () => {
         const viewModeInput = document.getElementById('viewMode');
         const viewButtons = document.querySelectorAll('#viewSelector button');
 
@@ -193,7 +193,7 @@
 
             document.getElementById("startTimeInterval").value = pluginSettings.startTimeInterval;
             document.getElementById("endTimeInterval").value = pluginSettings.endTimeInterval;
-            
+
             if (pluginSettings["calendarURLs[]"]) {
                 calendars = pluginSettings["calendarURLs[]"].map((url, i) => ({
                     url: url || '',
@@ -201,7 +201,7 @@
                 }));
             }
         }
-        
+
         // populate view mode
         viewModeInput.value = viewMode
         viewButtons.forEach(btn => {

@@ -16,7 +16,7 @@
                     method: 'POST',
                     body: formData,
                 });
-                
+
                 const result = await response.json();
                 if (response.ok) {
                     showResponseModal('success', `Success! ${result.message}`);
@@ -31,7 +31,7 @@
         }
 
         let pluginCycleIntervalSeconds = {{ device_settings.plugin_cycle_interval_seconds | default(3600) | tojson }};
-    
+
         // Function to populate the fields
         function populateIntervalFields() {
             const intervalInput = document.getElementById('interval');
@@ -112,12 +112,12 @@
                 <!-- Device Name -->
                 <div class="form-group">
                     <label for="deviceName" class="form-label">Device Name:</label>
-                    <input type="text" 
-                           id="deviceName" 
-                           name="deviceName" 
-                           placeholder="Type something..." 
-                           value="{{ device_settings.name }}" 
-                           required 
+                    <input type="text"
+                           id="deviceName"
+                           name="deviceName"
+                           placeholder="Type something..."
+                           value="{{ device_settings.name }}"
+                           required
                            class="form-input">
                 </div>
                 <div class="form-group nowrap">
@@ -249,7 +249,7 @@
                 </div>
             </div>
         </form>
- 
+
         <!-- Buttons -->
         <div class="buttons-container">
             <button type="button" onclick="handleAction()" class="action-button">Save</button>

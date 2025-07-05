@@ -1,8 +1,11 @@
-from inkypi.plugins.base_plugin.base_plugin import BasePlugin
-from PIL import Image, ImageOps, ImageColor
 import logging
 
+from PIL import Image, ImageColor, ImageOps
+
+from inkypi.plugins.base_plugin.base_plugin import BasePlugin
+
 logger = logging.getLogger(__name__)
+
 
 class ImageUpload(BasePlugin):
     def generate_image(self, settings, device_config):
@@ -19,19 +22,28 @@ class ImageUpload(BasePlugin):
         try:
             image = Image.open(image_locations[img_index])
         except Exception as e:
-            logger.error(f"Failed to read image file: {str(e)}")
+            logger.error(f"Failed to read image file: {e!s}")
             raise RuntimeError("Failed to read image file.")
 
-        settings['image_index'] = (img_index + 1) % len(image_locations)
+        settings["image_index"] = (img_index + 1) % len(image_locations)
         ###
-        if settings.get('padImage') == "true":
+        if settings.get("padImage") == "true":
             dimensions = device_config.get_resolution()
             if device_config.get_config("orientation") == "vertical":
                 dimensions = dimensions[::-1]
             frame_ratio = dimensions[0] / dimensions[1]
             img_width, img_height = image.size
-            padded_img_size = (int(img_height * frame_ratio) if img_width >= img_height else img_width,
-                              img_height if img_width >= img_height else int(img_width / frame_ratio))
-            background_color = ImageColor.getcolor(settings.get('backgroundColor') or (255, 255, 255), "RGB")
-            return ImageOps.pad(image, padded_img_size, color=background_color, method=Image.Resampling.LANCZOS)
+            padded_img_size = (
+                int(img_height * frame_ratio) if img_width >= img_height else img_width,
+                img_height if img_width >= img_height else int(img_width / frame_ratio),
+            )
+            background_color = ImageColor.getcolor(
+                settings.get("backgroundColor") or (255, 255, 255), "RGB"
+            )
+            return ImageOps.pad(
+                image,
+                padded_img_size,
+                color=background_color,
+                method=Image.Resampling.LANCZOS,
+            )
         return image

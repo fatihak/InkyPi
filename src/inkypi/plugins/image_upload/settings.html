@@ -26,7 +26,7 @@
     function addFiles() {
         const fileInput = document.getElementById("imageUpload");
         const fileNamesDisplay = document.getElementById("fileNames");
-        
+
         const files = Array.from(fileInput.files);
 
         if (!uploadedFiles["imageFiles[]"]) {
@@ -59,7 +59,7 @@
     function removeAddedFile(fileName) {
         // Remove the file from uploadedFiles
         uploadedFiles["imageFiles[]"] = uploadedFiles["imageFiles[]"].filter(f => f.name !== fileName);
-        
+
         // Remove the displayed filename
         document.getElementById(`added-${fileName}`).remove();
     }
@@ -70,7 +70,7 @@
     }
 
     // populate form values from plugin settings
-    document.addEventListener('DOMContentLoaded', () => {    
+    document.addEventListener('DOMContentLoaded', () => {
         const fileNamesDisplay = document.getElementById("fileNames");
         const hiddenFileInputs = document.getElementById("hiddenFileInputs");
         if (loadPluginSettings) {

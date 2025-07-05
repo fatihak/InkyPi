@@ -2,8 +2,9 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 def calculate_seconds(interval, unit):
-    seconds = 5 * 60 # default to five minutes
+    seconds = 5 * 60  # default to five minutes
     if unit == "minute":
         seconds = interval * 60
     elif unit == "hour":

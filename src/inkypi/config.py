@@ -1,10 +1,12 @@
-import os
 import json
 import logging
+import os
+
 from dotenv import load_dotenv
 from model import PlaylistManager, RefreshInfo
 
 logger = logging.getLogger(__name__)
+
 
 class Config:
     # Base path for the project directory
@@ -57,7 +59,7 @@ class Config:
         logger.debug(f"Writing device config to {self.config_file}")
         self.update_value("playlist_config", self.playlist_manager.to_dict())
         self.update_value("refresh_info", self.refresh_info.to_dict())
-        with open(self.config_file, 'w') as outfile:
+        with open(self.config_file, "w") as outfile:
             json.dump(self.config, outfile, indent=4)
 
     def get_config(self, key=None, default={}):
@@ -72,7 +74,9 @@ class Config:
 
     def get_plugin(self, plugin_id):
         """Finds and returns a plugin config by its ID."""
-        return next((plugin for plugin in self.plugins_list if plugin['id'] == plugin_id), None)
+        return next(
+            (plugin for plugin in self.plugins_list if plugin["id"] == plugin_id), None
+        )
 
     def get_resolution(self):
         """Returns the display resolution as a tuple (width, height) from the configuration."""

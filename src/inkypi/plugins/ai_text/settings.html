@@ -22,12 +22,12 @@
 <script>
 
     // populate form values from plugin settings
-    document.addEventListener('DOMContentLoaded', () => {        
+    document.addEventListener('DOMContentLoaded', () => {
         if (loadPluginSettings) {
             // Populate text inputs
             document.getElementById('title').value = pluginSettings.title || '';
             document.getElementById('textPrompt').value = pluginSettings.textPrompt || '';
-            
+
             // Populate text model
             document.getElementById('textModel').value = pluginSettings.textModel;
         }

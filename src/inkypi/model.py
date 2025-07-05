@@ -1,9 +1,8 @@
-import os
-import json
 import logging
 from datetime import datetime, timedelta
 
 logger = logging.getLogger(__name__)
+
 
 class RefreshInfo:
     """Keeps track of refresh metadata.
@@ -17,7 +16,15 @@ class RefreshInfo:
         plugin_instance (str): Plugin instance name if refresh_type is 'Playlist'.
     """
 
-    def __init__(self, refresh_type, plugin_id, refresh_time, image_hash, playlist=None, plugin_instance=None):
+    def __init__(
+        self,
+        refresh_type,
+        plugin_id,
+        refresh_time,
+        image_hash,
+        playlist=None,
+        plugin_instance=None,
+    ):
         """Initialize RefreshInfo instance."""
         self.refresh_time = refresh_time
         self.image_hash = image_hash
@@ -54,8 +61,9 @@ class RefreshInfo:
             refresh_type=data.get("refresh_type"),
             plugin_id=data.get("plugin_id"),
             playlist=data.get("playlist"),
-            plugin_instance=data.get("plugin_instance")
+            plugin_instance=data.get("plugin_instance"),
         )
+
 
 class PlaylistManager:
     """A class managing multiple time-based playlists.
@@ -64,6 +72,7 @@ class PlaylistManager:
         playlists (list): A list of Playlist instances managed by the manager.
         active_playlist (str): Name of the currently active playlist.
     """
+
     DEFAULT_PLAYLIST_START = "00:00"
     DEFAULT_PLAYLIST_END = "24:00"
 
@@ -79,7 +88,13 @@ class PlaylistManager:
     def add_default_playlist(self):
         """Add a default playlist to the manager, called when no playlists exist."""
         return self.playlists.append(
-            Playlist("Default", PlaylistManager.DEFAULT_PLAYLIST_START, PlaylistManager.DEFAULT_PLAYLIST_END, []))
+            Playlist(
+                "Default",
+                PlaylistManager.DEFAULT_PLAYLIST_START,
+                PlaylistManager.DEFAULT_PLAYLIST_END,
+                [],
+            )
+        )
 
     def find_plugin(self, plugin_id, instance):
         """Searches playlists to find a plugin with the given ID and instance."""
@@ -91,7 +106,9 @@ class PlaylistManager:
 
     def determine_active_playlist(self, current_datetime):
         """Determine the active playlist based on the current time."""
-        current_time = current_datetime.strftime("%H:%M")  # Get current time in "HH:MM" format
+        current_time = current_datetime.strftime(
+            "%H:%M"
+        )  # Get current time in "HH:MM" format
 
         # get active playlists that have plugins
         active_playlists = [p for p in self.playlists if p.is_active(current_time)]
@@ -110,7 +127,8 @@ class PlaylistManager:
 
     def add_plugin_to_playlist(self, playlist_name, plugin_data):
         """Adds a plugin to a playlist by the specified name. Returns true if successfully added,
-        False if playlist doesn't exist"""
+        False if playlist doesn't exist
+        """
         playlist = self.get_playlist(playlist_name)
         if playlist:
             if playlist.add_plugin(plugin_data):
@@ -146,14 +164,14 @@ class PlaylistManager:
     def to_dict(self):
         return {
             "playlists": [p.to_dict() for p in self.playlists],
-            "active_playlist": self.active_playlist
+            "active_playlist": self.active_playlist,
         }
 
     @classmethod
     def from_dict(cls, data):
         return cls(
             playlists=[Playlist.from_dict(p) for p in data.get("playlists", [])],
-            active_playlist=data.get("active_playlist")
+            active_playlist=data.get("active_playlist"),
         )
 
     @staticmethod
@@ -163,6 +181,7 @@ class PlaylistManager:
             return True  # No previous refresh, so it's time to refresh
 
         return (current_time - latest_refresh) >= timedelta(seconds=interval_seconds)
+
 
 class Playlist:
     """Represents a playlist with a time interval.
@@ -175,7 +194,9 @@ class Playlist:
         current_plugin_index (int): Index of the currently active plugin in the playlist.
     """
 
-    def __init__(self, name, start_time, end_time, plugins=None, current_plugin_index=None):
+    def __init__(
+        self, name, start_time, end_time, plugins=None, current_plugin_index=None
+    ):
         self.name = name
         self.start_time = start_time
         self.end_time = end_time
@@ -189,7 +210,9 @@ class Playlist:
     def add_plugin(self, plugin_data):
         """Add a new plugin instance to the playlist."""
         if self.find_plugin(plugin_data["plugin_id"], plugin_data["name"]):
-            logger.warning(f"Plugin '{plugin_data['plugin_id']}' with instance '{plugin_data['name']}' already exists.")
+            logger.warning(
+                f"Plugin '{plugin_data['plugin_id']}' with instance '{plugin_data['name']}' already exists."
+            )
             return False
         self.plugins.append(PluginInstance.from_dict(plugin_data))
         return True
@@ -206,8 +229,10 @@ class Playlist:
     def delete_plugin(self, plugin_id, name):
         """Remove a specific plugin instance from the playlist."""
         initial_count = len(self.plugins)
-        self.plugins = [p for p in self.plugins if not (p.plugin_id == plugin_id and p.name == name)]
-        
+        self.plugins = [
+            p for p in self.plugins if not (p.plugin_id == plugin_id and p.name == name)
+        ]
+
         if len(self.plugins) == initial_count:
             logger.warning(f"Plugin '{plugin_id}' with instance '{name}' not found.")
             return False
@@ -215,15 +240,20 @@ class Playlist:
 
     def find_plugin(self, plugin_id, name):
         """Find a plugin instance by its plugin_id and name."""
-        return next((p for p in self.plugins if p.plugin_id == plugin_id and p.name == name), None)
+        return next(
+            (p for p in self.plugins if p.plugin_id == plugin_id and p.name == name),
+            None,
+        )
 
     def get_next_plugin(self):
         """Returns the next plugin instance in the playlist and update the current_plugin_index."""
         if self.current_plugin_index is None:
             self.current_plugin_index = 0
         else:
-            self.current_plugin_index = (self.current_plugin_index + 1) % len(self.plugins)
-        
+            self.current_plugin_index = (self.current_plugin_index + 1) % len(
+                self.plugins
+            )
+
         return self.plugins[self.current_plugin_index]
 
     def get_priority(self):
@@ -248,7 +278,7 @@ class Playlist:
             "start_time": self.start_time,
             "end_time": self.end_time,
             "plugins": [p.to_dict() for p in self.plugins],
-            "current_plugin_index": self.current_plugin_index
+            "current_plugin_index": self.current_plugin_index,
         }
 
     @classmethod
@@ -258,8 +288,9 @@ class Playlist:
             start_time=data["start_time"],
             end_time=data["end_time"],
             plugins=data["plugins"],
-            current_plugin_index=data.get("current_plugin_index", None)
+            current_plugin_index=data.get("current_plugin_index", None),
         )
+
 
 class PluginInstance:
     """Represents an individual plugin instance within a playlist.
@@ -293,7 +324,9 @@ class PluginInstance:
         # Check for interval-based refresh
         if "interval" in self.refresh:
             interval = self.refresh.get("interval")
-            if interval and (current_time - latest_refresh_dt) >= timedelta(seconds=interval):
+            if interval and (current_time - latest_refresh_dt) >= timedelta(
+                seconds=interval
+            ):
                 return True
 
         # Check for scheduled refresh (HH:MM format)
@@ -304,17 +337,22 @@ class PluginInstance:
             # If the latest refresh is before the scheduled time today
             if latest_refresh_str < scheduled_time_str:
                 return True
-        
+
         if "scheduled" in self.refresh:
             scheduled_time_str = self.refresh.get("scheduled")
             scheduled_time = datetime.strptime(scheduled_time_str, "%H:%M").time()
-            
+
             latest_refresh_date = latest_refresh_dt.date()
             current_date = current_time.date()
 
             # Determine if a refresh is needed based on scheduled time and last refresh
-            if (latest_refresh_date < current_date and current_time.time() >= scheduled_time) or \
-            (latest_refresh_date == current_date and latest_refresh_dt.time() < scheduled_time <= current_time.time()):
+            if (
+                latest_refresh_date < current_date
+                and current_time.time() >= scheduled_time
+            ) or (
+                latest_refresh_date == current_date
+                and latest_refresh_dt.time() < scheduled_time <= current_time.time()
+            ):
                 return True
 
         return False
@@ -329,7 +367,7 @@ class PluginInstance:
         if self.latest_refresh_time:
             latest_refresh = datetime.fromisoformat(self.latest_refresh_time)
         return latest_refresh
-    
+
     def to_dict(self):
         return {
             "plugin_id": self.plugin_id,

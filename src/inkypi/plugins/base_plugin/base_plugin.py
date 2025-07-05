@@ -1,37 +1,29 @@
+import base64
 import logging
 import os
-from inkypi.utils.app_utils import resolve_path, get_fonts
-from inkypi.utils.image_utils import take_screenshot_html
-from jinja2 import Environment, FileSystemLoader, select_autoescape
 from pathlib import Path
-import base64
+
+from jinja2 import Environment, FileSystemLoader, select_autoescape
+
+from inkypi.utils.app_utils import get_fonts, resolve_path
+from inkypi.utils.image_utils import take_screenshot_html
 
 logger = logging.getLogger(__name__)
 
 PLUGINS_DIR = resolve_path("plugins")
-BASE_PLUGIN_DIR =  os.path.join(PLUGINS_DIR, "base_plugin")
+BASE_PLUGIN_DIR = os.path.join(PLUGINS_DIR, "base_plugin")
 
 FRAME_STYLES = [
-    {
-        "name": "None",
-        "icon": "frames/blank.png"
-    },
-    {
-        "name": "Corner",
-        "icon": "frames/corner.png"
-    },
-    {
-        "name": "Top and Bottom",
-        "icon": "frames/top_and_bottom.png"
-    },
-    {
-        "name": "Rectangle",
-        "icon": "frames/rectangle.png"
-    }
+    {"name": "None", "icon": "frames/blank.png"},
+    {"name": "Corner", "icon": "frames/corner.png"},
+    {"name": "Top and Bottom", "icon": "frames/top_and_bottom.png"},
+    {"name": "Rectangle", "icon": "frames/rectangle.png"},
 ]
+
 
 class BasePlugin:
     """Base class for all plugins."""
+
     def __init__(self, config, **dependencies):
         self.config = config
 
@@ -52,23 +44,22 @@ class BasePlugin:
 
         settings_path = self.get_plugin_dir("settings.html")
         if Path(settings_path).is_file():
-            template_params["settings_template"] = f"{self.get_plugin_id()}/settings.html"
-        
-        template_params['frame_styles'] = FRAME_STYLES
+            template_params["settings_template"] = (
+                f"{self.get_plugin_id()}/settings.html"
+            )
+
+        template_params["frame_styles"] = FRAME_STYLES
         return template_params
 
     def read_file(self, file):
-        return base64.b64encode(open(file, "rb").read()).decode('utf-8')
+        return base64.b64encode(open(file, "rb").read()).decode("utf-8")
 
     def render_image(self, dimensions, html_file, css_file=None, template_params={}):
         # instantiate jinja2 env with base plugin and current plugin render directories
         base_render_dir = os.path.join(BASE_PLUGIN_DIR, "render")
         plugin_render_dir = self.get_plugin_dir("render")
         loader = FileSystemLoader([plugin_render_dir, base_render_dir])
-        env = Environment(
-            loader=loader,
-            autoescape=select_autoescape(['html', 'xml'])
-        )
+        env = Environment(loader=loader, autoescape=select_autoescape(["html", "xml"]))
 
         # load the base plugin and current plugin css files
         css_files = [os.path.join(base_render_dir, "plugin.css")]

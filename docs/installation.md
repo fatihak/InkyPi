@@ -1,6 +1,6 @@
 # InkyPi Detailed Installation
 
-## Flashing Raspberry Pi OS 
+## Flashing Raspberry Pi OS
 
 1. Install the Raspberry Pi Imager from the [official download page](https://www.raspberrypi.com/software/)
 2. Insert the target SD Card into your computer and launch the Raspberry Pi Imager software
@@ -26,7 +26,7 @@
 
 <p float="left">
   <img src="./images/raspberry_pi_imager_general.png" width="250" />
-  <img src="./images/raspberry_pi_imager_options.png" width="250" /> 
+  <img src="./images/raspberry_pi_imager_options.png" width="250" />
   <img src="./images/raspberry_pi_imager_services.png" width="250" />
 </p>
 
