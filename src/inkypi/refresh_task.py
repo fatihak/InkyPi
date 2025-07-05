@@ -5,9 +5,9 @@ from datetime import datetime
 
 import psutil
 import pytz
-from model import PlaylistManager, RefreshInfo
 from PIL import Image
 
+from inkypi.model import PlaylistManager, RefreshInfo
 from inkypi.plugins.plugin_registry import get_plugin_instance
 from inkypi.utils.image_utils import compute_image_hash
 
@@ -170,9 +170,9 @@ class RefreshTask:
 
             self.refresh_event.wait()
             if self.refresh_result.get("exception"):
-                raise self.refresh_result.get("exception")
+                raise self.refresh_result.get("exception")  # type: ignore
         else:
-            logger.warn(
+            logger.warning(
                 "Background refresh task is not running, unable to do a manual update"
             )
 

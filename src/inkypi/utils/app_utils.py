@@ -1,9 +1,12 @@
 import logging
 import os
 import socket
+import subprocess
 from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFont, ImageOps
+from werkzeug.datastructures import ImmutableMultiDict
+from werkzeug.datastructures.file_storage import FileStorage
 
 logger = logging.getLogger(__name__)
 
@@ -30,10 +33,11 @@ FONTS = {
 }
 
 
-def resolve_path(file_path):
-    src_path = Path(os.getenv("SRC_DIR"))
-
-    return str(src_path / file_path)
+def resolve_path(file_path: str | Path):
+    src_dir = os.getenv("SRC_DIR", None)
+    if not src_dir:
+        raise OSError("SRC_DIR is not defined!")
+    return str(Path(src_dir) / file_path)
 
 
 def get_ip_address():
@@ -148,7 +152,11 @@ def parse_form(request_form):
     return request_dict
 
 
-def handle_request_files(request_files, form_data={}):
+def handle_request_files(
+    request_files: ImmutableMultiDict[str, FileStorage],
+    form_data: ImmutableMultiDict[str, str] | None = None,
+):
+    form_data = form_data or ImmutableMultiDict()
     allowed_file_extensions = {"pdf", "png", "jpg", "jpeg", "gif"}
     file_location_map = {}
     # handle existing file locations being provided as part of the form data
@@ -161,7 +169,7 @@ def handle_request_files(request_files, form_data={}):
     # add new files in the request
     for key, file in request_files.items(multi=True):
         is_list = key.endswith("[]")
-        file_name = file.filename
+        file_name = file.filename  # type: ignore
         if not file_name:
             continue
 
@@ -177,11 +185,15 @@ def handle_request_files(request_files, form_data={}):
         # Open the image and apply EXIF transformation before saving
         if extension in {"jpg", "jpeg"}:
             try:
-                with Image.open(file) as img:
+                with Image.open(file) as img:  # type: ignore
+                    if img is None:
+                        raise ValueError(f"Failed to convert file: {file_name}")
                     img = ImageOps.exif_transpose(img)
+                    if img is None:
+                        raise TypeError("Transposing image failed!")
                     img.save(file_path)
             except Exception as e:
-                logger.warn(f"EXIF processing error for {file_name}: {e}")
+                logger.warning(f"EXIF processing error for {file_name}: {e}")
                 file.save(file_path)
         else:
             # Directly save non-JPEG files

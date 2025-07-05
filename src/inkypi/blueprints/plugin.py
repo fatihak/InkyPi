@@ -68,6 +68,8 @@ def delete_plugin_instance():
     playlist_manager = device_config.get_playlist_manager()
 
     data = request.json
+    if data is None:
+        raise TypeError("Failed to retrieve data!")
     playlist_name = data.get("playlist_name")
     plugin_id = data.get("plugin_id")
     plugin_instance = data.get("plugin_instance")
@@ -129,6 +131,8 @@ def display_plugin_instance():
     playlist_manager = device_config.get_playlist_manager()
 
     data = request.json
+    if data is None:
+        raise TypeError("Failed to retrieve data!")
     playlist_name = data.get("playlist_name")
     plugin_id = data.get("plugin_id")
     plugin_instance_name = data.get("plugin_instance")

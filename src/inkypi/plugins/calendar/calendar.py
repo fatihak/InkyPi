@@ -1,5 +1,6 @@
 import logging
 from datetime import datetime, timedelta
+from typing import Literal
 
 import icalendar
 import pytz
@@ -97,7 +98,12 @@ class Calendar(BasePlugin):
 
         return parsed_events
 
-    def get_view_range(self, view, current_dt, settings):
+    def get_view_range(
+        self,
+        view: Literal["timeGridDay", "timeGridWeek", "dayGridMonth", "listMonth"],
+        current_dt,
+        settings,
+    ):
         start = datetime(current_dt.year, current_dt.month, current_dt.day)
         if view == "timeGridDay":
             end = start + timedelta(days=1)
@@ -111,6 +117,8 @@ class Calendar(BasePlugin):
             end = datetime(current_dt.year, current_dt.month, 1) + timedelta(weeks=6)
         elif view == "listMonth":
             end = start + timedelta(weeks=5)
+        else:
+            raise ValueError(f"Unsupported value for view: {view}")
         return start, end
 
     def parse_data_points(self, event, tz):
@@ -146,7 +154,7 @@ class Calendar(BasePlugin):
         """Returns '#000000' (black) or '#ffffff' (white) depending on the contrast
         against the given color.
         """
-        r, g, b = ImageColor.getrgb(color)
+        r, g, b = ImageColor.getrgb(color)  # type: ignore
         # YIQ formula to estimate brightness
         yiq = (r * 299 + g * 587 + b * 114) / 1000
 

@@ -29,6 +29,7 @@ from typing import Any
 import requests
 from PIL import Image, UnidentifiedImageError
 
+from inkypi.config import Config
 from inkypi.plugins.base_plugin.base_plugin import BasePlugin
 
 logger = logging.getLogger(__name__)
@@ -45,7 +46,7 @@ class Wpotd(BasePlugin):
         return template_params
 
     def generate_image(
-        self, settings: dict[str, Any], device_config: dict[str, Any]
+        self, settings: dict[str, Any], device_config: Config
     ) -> Image.Image:
         logger.info(f"WPOTD plugin settings: {settings}")
         datetofetch = self._determine_date(settings)
@@ -172,7 +173,7 @@ class Wpotd(BasePlugin):
             else:
                 new_width, new_height = orig_width, orig_height
             # Resize using high-quality resampling
-            image = image.resize((new_width, new_height), Image.LANCZOS)
+            image = image.resize((new_width, new_height), Image.Resampling.LANCZOS)
             # Create a new image with white background and paste the resized image in the center
             new_image = Image.new("RGB", (max_width, max_height), (255, 255, 255))
             new_image.paste(

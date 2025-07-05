@@ -2,6 +2,7 @@ import base64
 import logging
 import os
 from pathlib import Path
+from typing import Any
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
@@ -24,7 +25,7 @@ FRAME_STYLES = [
 class BasePlugin:
     """Base class for all plugins."""
 
-    def __init__(self, config, **dependencies):
+    def __init__(self, config, **dependencies: Any):
         self.config = config
 
     def generate_image(self, settings, device_config):
@@ -39,8 +40,10 @@ class BasePlugin:
             plugin_dir = os.path.join(plugin_dir, path)
         return plugin_dir
 
-    def generate_settings_template(self):
-        template_params = {"settings_template": "base_plugin/settings.html"}
+    def generate_settings_template(self) -> dict[str, Any]:
+        template_params: dict[str, Any] = {
+            "settings_template": "base_plugin/settings.html"
+        }
 
         settings_path = self.get_plugin_dir("settings.html")
         if Path(settings_path).is_file():

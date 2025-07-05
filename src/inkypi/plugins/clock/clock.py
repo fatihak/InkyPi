@@ -480,6 +480,8 @@ class Clock(BasePlugin):
 
         # center point
         center = (w / 2, h / 2)
+        if width is None:
+            raise ValueError("width cannot be None!")
         draw.circle(
             center, center_radius, fill=fill_color, outline=outline_color, width=width
         )

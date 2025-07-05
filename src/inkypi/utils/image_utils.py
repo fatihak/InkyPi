@@ -4,6 +4,7 @@ import os
 import subprocess
 import tempfile
 from io import BytesIO
+from pathlib import Path
 
 import requests
 from PIL import Image, ImageEnhance
@@ -28,6 +29,8 @@ def change_orientation(image, orientation, inverted=False):
         angle = 0
     elif orientation == "vertical":
         angle = 90
+    else:
+        raise ValueError(f"Unsupported orientation: {orientation}")
 
     if inverted:
         angle = (angle + 180) % 360
@@ -66,7 +69,9 @@ def resize_image(image, desired_size, image_settings=[]):
     )
 
     # Step 3: Resize to the exact desired dimensions (if necessary)
-    return cropped_image.resize((desired_width, desired_height), Image.LANCZOS)
+    return cropped_image.resize(
+        (desired_width, desired_height), Image.Resampling.LANCZOS
+    )
 
 
 def apply_image_enhancement(img, image_settings={}):
@@ -132,7 +137,9 @@ def take_screenshot(target, dimensions, timeout_ms=None):
         ]
         if timeout_ms:
             command.append(f"--timeout={timeout_ms}")
-        result = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False)
+        result = subprocess.run(
+            command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False
+        )
 
         # Check if the process failed or the output file is missing
         if result.returncode != 0 or not os.path.exists(img_file_path):
@@ -144,7 +151,7 @@ def take_screenshot(target, dimensions, timeout_ms=None):
         image = Image.open(img_file_path)
 
         # Remove image files
-        os.remove(img_file_path)
+        Path(img_file_path).unlink()
 
     except Exception as e:
         logger.error(f"Failed to take screenshot: {e!s}")

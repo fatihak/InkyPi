@@ -17,16 +17,17 @@ import logging
 import os
 import random
 
-from config import Config
 from flask import Flask
 from jinja2 import ChoiceLoader, FileSystemLoader
-from refresh_task import RefreshTask
 
-from inkypi.blueprints import main_bp, settings_bp
+from inkypi.blueprints.main import main_bp
 from inkypi.blueprints.playlist import playlist_bp
 from inkypi.blueprints.plugin import plugin_bp
+from inkypi.blueprints.settings import settings_bp
+from inkypi.config import Config
 from inkypi.display.display_manager import DisplayManager
 from inkypi.plugins.plugin_registry import load_plugins
+from inkypi.refresh_task import RefreshTask
 from inkypi.utils.app_utils import generate_startup_image
 
 logger = logging.getLogger(__name__)
@@ -37,7 +38,7 @@ template_dirs = [
     os.path.join(os.path.dirname(__file__), "templates"),  # Default template folder
     os.path.join(os.path.dirname(__file__), "plugins"),  # Plugin templates
 ]
-app.jinja_loader = ChoiceLoader(
+app.jinja_loader = ChoiceLoader(  # type: ignore
     [FileSystemLoader(directory) for directory in template_dirs]
 )
 

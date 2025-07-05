@@ -100,6 +100,8 @@ def create_playlist():
     playlist_manager = device_config.get_playlist_manager()
 
     data = request.json
+    if data is None:
+        raise TypeError("Failed to retrieve data.")
     playlist_name = data.get("playlist_name")
     start_time = data.get("start_time")
     end_time = data.get("end_time")

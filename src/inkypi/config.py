@@ -3,7 +3,8 @@ import logging
 import os
 
 from dotenv import load_dotenv
-from model import PlaylistManager, RefreshInfo
+
+from inkypi.model import PlaylistManager, RefreshInfo
 
 logger = logging.getLogger(__name__)
 

@@ -32,7 +32,6 @@ import os
 import subprocess
 import sys
 import time
-from ctypes import *
 
 logger = logging.getLogger(__name__)
 
@@ -48,7 +47,7 @@ class RaspberryPi:
     SCLK_PIN = 11
 
     def __init__(self):
-        import gpiozero
+        import gpiozero  # type: ignore
         import spidev
 
         self.SPI = spidev.SpiDev()
@@ -80,17 +79,19 @@ class RaspberryPi:
             else:
                 self.GPIO_PWR_PIN.off()
 
-    def digital_read(self, pin):
+    def digital_read(self, pin) -> int:
         if pin == self.BUSY_PIN:
             return self.GPIO_BUSY_PIN.value
         if pin == self.RST_PIN:
-            return self.RST_PIN.value
+            return self.GPIO_RST_PIN.value
         if pin == self.DC_PIN:
-            return self.DC_PIN.value
+            return self.GPIO_DC_PIN.value
         # elif pin == self.CS_PIN:
         #     return self.CS_PIN.value
         if pin == self.PWR_PIN:
-            return self.PWR_PIN.value
+            return self.GPIO_PWR_PIN.value
+        else:
+            raise ValueError(f"Unknown pin: {pin}")
 
     def delay_ms(self, delaytime):
         time.sleep(delaytime / 1000.0)
@@ -119,7 +120,6 @@ class RaspberryPi:
                 "/usr/local/lib",
                 "/usr/lib",
             ]
-            self.DEV_SPI = None
             for find_dir in find_dirs:
                 val = int(os.popen("getconf LONG_BIT").read())
                 logging.debug("System is %d bit" % val)
@@ -128,9 +128,9 @@ class RaspberryPi:
                 else:
                     so_filename = os.path.join(find_dir, "DEV_Config_32.so")
                 if os.path.exists(so_filename):
-                    self.DEV_SPI = CDLL(so_filename)
+                    self.DEV_SPI = CDLL(so_filename)  # type: ignore
                     break
-            if self.DEV_SPI is None:
+            else:
                 RuntimeError("Cannot find DEV_Config.so")
 
             self.DEV_SPI.DEV_Module_Init()
@@ -175,16 +175,15 @@ class JetsonNano:
             "/usr/local/lib",
             "/usr/lib",
         ]
-        self.SPI = None
         for find_dir in find_dirs:
             so_filename = os.path.join(find_dir, "sysfs_software_spi.so")
             if os.path.exists(so_filename):
                 self.SPI = ctypes.cdll.LoadLibrary(so_filename)
                 break
-        if self.SPI is None:
+        else:
             raise RuntimeError("Cannot find sysfs_software_spi.so")
 
-        import Jetson.GPIO
+        import Jetson.GPIO  # type: ignore
 
         self.GPIO = Jetson.GPIO
 
@@ -242,7 +241,7 @@ class SunriseX3:
     Flag = 0
 
     def __init__(self):
-        import Hobot.GPIO
+        import Hobot.GPIO  # type: ignore
         import spidev
 
         self.GPIO = Hobot.GPIO

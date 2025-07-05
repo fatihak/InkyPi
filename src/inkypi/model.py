@@ -256,12 +256,19 @@ class Playlist:
 
         return self.plugins[self.current_plugin_index]
 
-    def get_priority(self):
+    def get_priority(self) -> int:
         """Determine priority of a playlist, based on the time range"""
         return self.get_time_range_minutes()
 
-    def get_time_range_minutes(self):
-        """Calculate the time difference in minutes between start_time and end_time."""
+    def get_time_range_minutes(self) -> int:
+        """Calculate the time difference in minutes between start_time and end_time.
+
+        Returns
+        -------
+        int
+            Time between start and end in minutes.
+
+        """
         start = datetime.strptime(self.start_time, "%H:%M")
         # Handle '24:00' by converting it to '00:00' of the next day
         if self.end_time != "24:00":
