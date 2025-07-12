@@ -158,3 +158,34 @@ Check out these similar projects:
 - [InkyCal](https://github.com/aceinnolab/Inkycal) - has modular plugins for building custom dashboards
 - [PiInk](https://github.com/tlstommy/PiInk) - inspiration behind InkyPi's flask web ui
 - [rpi_weather_display](https://github.com/sjnims/rpi_weather_display) - alternative eink weather dashboard with advanced power effiency
+
+
+
+## Curl call
+
+If you need to make a curl call update the display to a specific plugin instance, here is an example:
+
+```
+curl "http://10.0.0.181/display_plugin_get?playlist_name={playlist_name}&plugin_id={plugin_id}&plugin_instance={plugin_instance}" ^
+  -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:140.0) Gecko/20100101 Firefox/140.0" ^
+  -H "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8" ^
+  -H "Accept-Language: en-US,en;q=0.5" ^
+  -H "Accept-Encoding: gzip, deflate" ^
+  -H "Referer: http://10.0.0.181/" ^
+  -H "Connection: keep-alive" ^
+  -H "Upgrade-Insecure-Requests: 1" ^
+  -H "Priority: u=0, i" -v
+
+Example:
+curl "http://10.0.0.181/display_plugin_get?playlist_name=Default&plugin_id=calendar&plugin_instance=cal" ^
+  -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:140.0) Gecko/20100101 Firefox/140.0" ^
+  -H "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8" ^
+  -H "Accept-Language: en-US,en;q=0.5" ^
+  -H "Accept-Encoding: gzip, deflate" ^
+  -H "Referer: http://10.0.0.181/" ^
+  -H "Connection: keep-alive" ^
+  -H "Upgrade-Insecure-Requests: 1" ^
+  -H "Priority: u=0, i" -v
+```
+
+Replace `{playlist_name}`, `{plugin_id}`, and `{plugin_instance}` with the actual values for your setup.
