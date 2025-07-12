@@ -100,11 +100,13 @@ def update_plugin_instance(instance_name):
 
 @plugin_bp.route('/display_plugin_instance', methods=['POST'])
 def display_plugin_instance():
+    logger.info(f"Received request: Method={request.method}, Content-Type={request.headers.get('Content-Type')}, Data={request.get_data(as_text=True)}")
     device_config = current_app.config['DEVICE_CONFIG']
     refresh_task = current_app.config['REFRESH_TASK']
     playlist_manager = device_config.get_playlist_manager()
 
     data = request.json
+    logger.info(f"Parsed JSON data: {data}")
     playlist_name = data.get("playlist_name")
     plugin_id = data.get("plugin_id")
     plugin_instance_name = data.get("plugin_instance")
@@ -135,6 +137,35 @@ def update_now():
         plugin_id = plugin_settings.pop("plugin_id")
 
         refresh_task.manual_update(ManualRefresh(plugin_id, plugin_settings))
+    except Exception as e:
+        return jsonify({"error": f"An error occurred: {str(e)}"}), 500
+
+    return jsonify({"success": True, "message": "Display updated"}), 200
+
+@plugin_bp.route('/display_plugin_get')
+def display_plugin_get():
+    device_config = current_app.config['DEVICE_CONFIG']
+    refresh_task = current_app.config['REFRESH_TASK']
+    playlist_manager = device_config.get_playlist_manager()
+
+    # Get parameters from URL query string
+    playlist_name = request.args.get('playlist_name')
+    plugin_id = request.args.get('plugin_id')
+    plugin_instance_name = request.args.get('plugin_instance')
+
+    if not all([playlist_name, plugin_id, plugin_instance_name]):
+        return jsonify({"error": "Missing required parameters. Need playlist_name, plugin_id, and plugin_instance"}), 400
+
+    try:
+        playlist = playlist_manager.get_playlist(playlist_name)
+        if not playlist:
+            return jsonify({"success": False, "message": f"Playlist {playlist_name} not found"}), 400
+
+        plugin_instance = playlist.find_plugin(plugin_id, plugin_instance_name)
+        if not plugin_instance:
+            return jsonify({"success": False, "message": f"Plugin instance '{plugin_instance_name}' not found"}), 400
+
+        refresh_task.manual_update(PlaylistRefresh(playlist, plugin_instance, force=True))
     except Exception as e:
         return jsonify({"error": f"An error occurred: {str(e)}"}), 500
 
