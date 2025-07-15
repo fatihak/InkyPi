@@ -8,3 +8,4 @@ libopenjp2-7
 chromium-headless-shell
 libfreetype6-dev
 zram-tools
+fonts-noto-color-emoji
