@@ -32,6 +32,7 @@ from plugins.plugin_registry import load_plugins
 logger = logging.getLogger(__name__)
 
 logger.info("Starting web server")
+logging.getLogger('werkzeug').setLevel(logging.ERROR)
 app = Flask(__name__)
 template_dirs = [
    os.path.join(os.path.dirname(__file__), "templates"),    # Default template folder
