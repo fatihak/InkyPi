@@ -9,11 +9,12 @@ RuntimeDirectory=inkypi
 WorkingDirectory=/run/inkypi
 ExecStart=/usr/local/bin/inkypi -d
 Restart=on-failure
-RestartSec=15
+RestartSec=60
 KillSignal=SIGINT
 StandardOutput=journal
 StandardError=journal
-Environment="PROJECT_DIR=/path/to/project"
+CPUQuota=40%
+MemoryMax=200M
 
 [Install]
 WantedBy=multi-user.target

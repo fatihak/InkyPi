@@ -66,6 +66,9 @@ else
   exit 1
 fi
 
+echo "Starting zramswap service."
+sudo systemctl enable --now zramswap
+
 echo "Restarting $APPNAME service."
 sudo systemctl restart $APPNAME.service
 

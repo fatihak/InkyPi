@@ -211,6 +211,9 @@ install_app_service() {
     cp "$SERVICE_FILE_SOURCE" "$SERVICE_FILE_TARGET"
     sudo systemctl daemon-reload
     sudo systemctl enable $SERVICE_FILE
+
+    echo "Enabling and starting zramswap service."
+    sudo systemctl enable --now zramswap
   else
     echo_error "ERROR: Service file $SERVICE_FILE_SOURCE not found!"
     exit 1

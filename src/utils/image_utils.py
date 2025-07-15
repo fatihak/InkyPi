@@ -108,10 +108,22 @@ def take_screenshot(target, dimensions, timeout_ms=None):
             img_file_path = img_file.name
 
         command = [
-            "chromium-headless-shell", target, "--headless",
-            f"--screenshot={img_file_path}", f'--window-size={dimensions[0]},{dimensions[1]}',
-            "--no-sandbox", "--disable-gpu", "--disable-software-rasterizer",
-            "--disable-dev-shm-usage", "--hide-scrollbars"
+            "chromium-headless-shell",
+            target,
+            "--headless",
+            f"--screenshot={img_file_path}",
+            f'--window-size={dimensions[0]},{dimensions[1]}',
+            "--no-sandbox",
+            "--disable-gpu",
+            "--disable-software-rasterizer",
+            "--disable-background-networking"
+            "--disable-dev-shm-usage",
+            "--hide-scrollbars",
+            "--single-process",
+            "--disable-extensions",
+            "--disable-plugins",
+            "--mute-audio",
+            "--js-flags=--max_old_space_size=128"
         ]
         if timeout_ms:
             command.append(f"--timeout={timeout_ms}")
