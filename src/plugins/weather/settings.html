@@ -15,6 +15,14 @@
 </div>
 
 <div class="form-group">
+    <label for="weatherProvider" class="form-label">Weather Provider:</label>
+    <select id="weatherProvider" name="weatherProvider" class="form-input">
+        <option value="OpenWeatherMap">OpenWeatherMap</option>
+        <option value="OpenMeteo">Open-Meteo</option>
+    </select>
+</div>
+
+<div class="form-group">
     <label for="units" class="form-label">Units:</label>
     <select id="units" name="units" class="form-input">
         <option value="imperial">Imperial (°F)</option>
@@ -58,7 +66,6 @@
     </div>
 </div>
 
-<!-- Modal -->
 <div id="mapModal" class="modal">
     <div class="modal-content">
         <span class="close-button" onclick="closeModal('mapModal')">×</span>
@@ -112,6 +119,7 @@
             document.getElementById('latitude').value = pluginSettings.latitude;
             document.getElementById('longitude').value = pluginSettings.longitude;
 
+            document.getElementById('weatherProvider').value = pluginSettings.weatherProvider || 'OpenWeatherMap';
             document.getElementById('units').value = pluginSettings.units;
 
             document.getElementById('displayRefreshTime').checked = pluginSettings.displayRefreshTime;
@@ -130,6 +138,7 @@
             document.getElementById('moonPhase').checked = pluginSettings.moonPhase;
         } else {
             // set default values
+            document.getElementById('weatherProvider').value = "OpenWeatherMap";
             document.getElementById('units').value = "imperial";
             document.getElementById('displayRefreshTime').checked = true;
             document.getElementById('displayRefreshTime').value = "true";
@@ -139,7 +148,7 @@
             document.getElementById('displayGraph').value = "true";
             document.getElementById('displayForecast').checked = true;
             document.getElementById('displayForecast').value = "true";
-            
+
             document.getElementById('forecastDays').value = 7
             document.getElementById('moonPhase').checked = false;
         }
