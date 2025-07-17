@@ -214,6 +214,9 @@ install_app_service() {
 
     echo "Enabling and starting zramswap service."
     sudo systemctl enable --now zramswap
+
+    echo "Enabling and starting zramswap service."
+    sudo systemctl enable --now earlyoom
   else
     echo_error "ERROR: Service file $SERVICE_FILE_SOURCE not found!"
     exit 1

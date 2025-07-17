@@ -68,8 +68,11 @@ fi
 
 echo "Starting zramswap service."
 sudo systemctl enable --now zramswap
+echo "Starting earlyoom service."
+sudo systemctl enable --now earlyoom
 
 echo "Restarting $APPNAME service."
+sudo systemctl daemon-reload
 sudo systemctl restart $APPNAME.service
 
 echo_success "Update completed."
