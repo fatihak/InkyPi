@@ -10,11 +10,11 @@
         "DISPLAY": "${localEnv:DISPLAY}"
     },
     
-    // You might have to enable window redirect on your host `xhost +`
+    // You might have to enable window redirect on your host using the command: `xhost +`
     
-    // "mounts": [
-    //     "source=/tmp/.X11-unix,target=/tmp/.X11-unix,type=bind"
-    // ],
+    "mounts": [
+        "source=/tmp/.X11-unix,target=/tmp/.X11-unix,type=bind"
+    ],
     
     // add vscode settings
     "customizations": {
