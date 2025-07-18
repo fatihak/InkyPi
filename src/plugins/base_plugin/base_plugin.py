@@ -38,7 +38,7 @@ class BasePlugin:
         self.config = config
 
         self.render_dir = self.get_plugin_dir("render")
-        if os.path.exists(render_dir):
+        if os.path.exists(self.render_dir):
             # instantiate jinja2 env with base plugin and current plugin render directories
             loader = FileSystemLoader([self.render_dir, BASE_PLUGIN_RENDER_DIR])
             self.env = Environment(
