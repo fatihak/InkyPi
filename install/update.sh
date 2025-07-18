@@ -44,6 +44,12 @@ else
   exit 1
 fi
 
+echo "Starting zramswap service."
+echo -e "ALGO=zstd\nPERCENT=60" | sudo tee /etc/default/zramswap > /dev/null
+sudo systemctl enable --now zramswap
+echo "Starting earlyoom service."
+sudo systemctl enable --now earlyoom
+
 # Check if virtual environment exists
 if [ ! -d "$VENV_PATH" ]; then
   echo_error "ERROR: Virtual environment not found at $VENV_PATH. Run the installation script first."
@@ -67,6 +73,7 @@ else
 fi
 
 echo "Restarting $APPNAME service."
+sudo systemctl daemon-reload
 sudo systemctl restart $APPNAME.service
 
 echo_success "Update completed."

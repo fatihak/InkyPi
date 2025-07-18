@@ -45,7 +45,7 @@ class Config:
                 # Check if the plugin-info.json file exists
                 plugin_info_file = os.path.join(plugin_path, "plugin-info.json")
                 if os.path.isfile(plugin_info_file):
-                    logger.info(f"Reading plugin info from {plugin_info_file}")
+                    logger.debug(f"Reading plugin info from {plugin_info_file}")
                     with open(plugin_info_file) as f:
                         plugin_info = json.load(f)
                     plugins_list.append(plugin_info)

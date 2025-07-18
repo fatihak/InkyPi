@@ -189,6 +189,15 @@ install_debian_dependencies() {
   fi
 }
 
+setup_memory_management() {
+  echo "Enabling and starting zramswap service."
+  echo -e "ALGO=zstd\nPERCENT=60" | sudo tee /etc/default/zramswap > /dev/null
+  sudo systemctl enable --now zramswap
+
+  echo "Enabling and starting earlyoom service."
+  sudo systemctl enable --now earlyoom
+}
+
 create_venv(){
   echo "Creating python virtual environment. "
   python3 -m venv "$VENV_PATH"
@@ -339,6 +348,7 @@ if [[ -n "$WS_TYPE" ]]; then
 fi
 enable_interfaces
 install_debian_dependencies
+setup_memory_management
 copy_project
 create_venv
 install_executable
