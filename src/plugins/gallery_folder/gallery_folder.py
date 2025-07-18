@@ -10,8 +10,24 @@ from utils.app_utils import resolve_path
 import random
 
 logger = logging.getLogger(__name__)
+GALLERY_FOLDER = resolve_path(os.path.join("static", "images", "gallery"))
+THUMBNAIL_FOLDER = resolve_path(os.path.join(GALLERY_FOLDER, "thumbnails"))
 
 class Gallery(BasePlugin):
+
+    def __init__(self, device_config):
+        super().__init__(device_config)
+        # Initialize the folders
+        if not os.path.exists(GALLERY_FOLDER):
+            os.makedirs(GALLERY_FOLDER)
+        if not os.path.exists(THUMBNAIL_FOLDER):
+            os.makedirs(THUMBNAIL_FOLDER)
+        # create gitignore file if it doesn't exist
+        gitignore_path = os.path.join(GALLERY_FOLDER, ".gitignore")
+        if not os.path.exists(gitignore_path):
+            with open(gitignore_path, 'w') as f:
+                f.write("*\n!.gitignore\n")
+
     def generate_image(self, settings, device_config):
         img_index = settings.get("image_index", 0)
 
@@ -53,8 +69,7 @@ class Gallery(BasePlugin):
 
 def generate_thumbnail(image_path, size=(300, 300)):
     # Generate a thumbnail for the given image path and store it in the thumbnail folder
-    thumbnail_folder = resolve_path(os.path.join("static", "images", "gallery", "thumbnails"))
-    thumbnail_path = os.path.join(thumbnail_folder, os.path.basename(image_path))
+    thumbnail_path = os.path.join(THUMBNAIL_FOLDER, os.path.basename(image_path))
     if not os.path.isfile(thumbnail_path):
         try:
             with Image.open(image_path) as img:
@@ -69,24 +84,17 @@ gallery_bp = Blueprint('gallery_folder', __name__)
 
 @gallery_bp.route('/gallery/image', methods=['GET'])
 def list_images():
-    folder = resolve_path(os.path.join("static", "images", "gallery"))
-    if not folder or not os.path.isdir(folder):
-        return jsonify({"error": "Configured folder not found"}), 400
 
     supported_exts = {'.png', '.jpg', '.jpeg', '.bmp', '.gif'}
     images = [
-        f for f in os.listdir(folder)
+        f for f in os.listdir(GALLERY_FOLDER)
         if os.path.splitext(f)[1].lower() in supported_exts
     ]
     return jsonify({"images": images})
 
 @gallery_bp.route('/gallery/image/<filename>', methods=['GET'])
 def get_image(filename):
-    folder = resolve_path(os.path.join("static", "images", "gallery"))
-    if not folder or not os.path.isdir(folder):
-        return jsonify({"error": "Configured folder not found"}), 400
-
-    file_path = os.path.join(folder, filename)
+    file_path = os.path.join(GALLERY_FOLDER, filename)
     if not os.path.isfile(file_path):
         return jsonify({"error": "Image not found"}), 404
 
@@ -107,11 +115,7 @@ def upload_image():
     if image_file.filename == '':
         return jsonify({"error": "No selected file"}), 400
 
-    folder = resolve_path(os.path.join("static", "images", "gallery"))
-    if not os.path.exists(folder):
-        os.makedirs(folder)
-
-    file_path = os.path.join(folder, image_file.filename)
+    file_path = os.path.join(GALLERY_FOLDER, image_file.filename)
     try:
         image_file.save(file_path)
         return jsonify({"message": "Image uploaded successfully", "filename": image_file.filename}), 201
@@ -121,18 +125,14 @@ def upload_image():
     
 @gallery_bp.route('/gallery/image/<filename>', methods=['DELETE'])
 def delete_image(filename):
-    folder = resolve_path(os.path.join("static", "images", "gallery"))
-    if not folder or not os.path.isdir(folder):
-        return jsonify({"error": "Configured folder not found"}), 400
-
-    file_path = os.path.join(folder, filename)
+    file_path = os.path.join(GALLERY_FOLDER, filename)
     if not os.path.isfile(file_path):
         return jsonify({"error": "Image not found"}), 404
 
     try:
         os.remove(file_path)
         # Delete the thumbnail if it exists
-        thumbnail_path = os.path.join(folder, "thumbnails", filename)
+        thumbnail_path = os.path.join(THUMBNAIL_FOLDER, filename)
         if os.path.isfile(thumbnail_path):
             os.remove(thumbnail_path)
         return jsonify({"message": "Image deleted successfully"}), 200
@@ -142,11 +142,7 @@ def delete_image(filename):
     
 @gallery_bp.route('/gallery/thumbnail/<filename>', methods=['GET'])
 def get_thumbnail(filename):
-    folder = resolve_path(os.path.join("static", "images", "gallery"))
-    if not folder or not os.path.isdir(folder):
-        return jsonify({"error": "Configured folder not found"}), 400
-
-    image_path = os.path.join(folder, filename)
+    image_path = os.path.join(GALLERY_FOLDER, filename)
     if not os.path.isfile(image_path):
         return jsonify({"error": "Image not found"}), 404
     thumbnail_path = generate_thumbnail(image_path)
