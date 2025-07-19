@@ -186,3 +186,35 @@ Restart the inkypi service to apply the changes:
 ```bash
 sudo systemctl restart inkypi.service
 ```
+
+### Screenshot functionality not working on Pi Zero W
+
+You may find that the Inky Pi display does not display any images at all. This is because the Chromium web rendering engine is not supported on the Pi 0W and will throw a segmentation fault everytime you try and invoke it.
+A workaround is to use a different web rendering engine, QtWebKit.
+To use this find the latest release here https://wkhtmltopdf.org/downloads.html and then build it with
+
+```
+sudo apt update
+sudo apt install libssl1.1 xfonts-75dpi xfonts-base
+sudo dpkg -i wkhtmltox_0.12.6.1-2.raspberrypi.bullseye_armhf.deb 
+```
+
+Then modify the images_util.py file with the following:
+```
+        command = [
+            "wkhtmltoimage", 
+            "--width", f"{dimensions[0]}", 
+            "--height", f"{dimensions[1]}", 
+            "--images",  
+            "--enable-javascript",  
+            "--javascript-delay", "1000",  
+            "--enable-local-file-access", 
+            f"{target}",  
+            f"{img_file_path}"
+        ]
+```
+
+
+
+
+
