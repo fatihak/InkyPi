@@ -57,3 +57,13 @@ Required for the APOD Plugin
     ```
     NASA_SECRET=your-key
     ```
+
+## Unsplash
+
+Required for the Unsplash Plugin
+ 
+- Register an account from https://unsplash.com/developers 
+- Go to https://unsplash.com/oauth/applications 
+- Create an app and open it
+- Your KEY is listed as `Access Key`
+- Save your access key in `/.env` file as `UNSPLASH_ACCESS_KEY=`

@@ -21,9 +21,9 @@ def grab_image(image_url, dimensions, timeout_ms=40000):
 
 class Unsplash(BasePlugin):
     def generate_image(self, settings, device_config):
-        api_key = device_config.load_env_key("UNSPLASH_SECRET")
-        if not api_key:
-            raise RuntimeError("Unsplash API key not found.")
+        access_key = device_config.load_env_key("UNSPLASH_ACCESS_KEY")
+        if not access_key:
+            raise RuntimeError("'Unsplash Access Key' not found.")
 
         search_query = settings.get('search_query')
         collections = settings.get('collections')
@@ -32,7 +32,7 @@ class Unsplash(BasePlugin):
         orientation = settings.get('orientation')
         
         params = {
-            'client_id': api_key,
+            'client_id': access_key,
             'content_filter': content_filter,
             'per_page': 100,
         }
