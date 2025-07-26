@@ -39,7 +39,7 @@
   position: relative;
 }
 
-.location {
+.title {
   font-size: min(50cqh, 8cqi);
   text-align: center;
   align-content: end;
@@ -94,7 +94,7 @@
   text-align: center;
   align-content: end;
   position: relative;
-  height: 55%;
+  height: 45%;
 }
 
 .temperature-unit {
@@ -107,7 +107,7 @@
   font-size: 10cqmin;
   text-align: center;
   position: relative;
-  line-height: 110%;
+  line-height: 130%;
 }
 
 /* Data Points Grid */
@@ -273,6 +273,13 @@
   gap: 10px;
   justify-content: center;
   align-items: center;
+}
+
+.min-max {
+  font-size: 15cqmin;
+  text-align: center;
+  position: relative;
+  line-height: 150%;
 }
 
 @media (max-aspect-ratio: 1) {

@@ -43,13 +43,8 @@ class Weather(BasePlugin):
         template_params = super().generate_settings_template()
         template_params['api_key'] = {
             "required": True,
-            "service": "OpenWeatherMap",
-            "expected_key": "OPEN_WEATHER_MAP_SECRET"
-        }
-        template_params['open_meteo_api_key'] = {
-            "required": False,
-            "service": "Open-Meteo",
-            "expected_key": "OPEN_METEO_SECRET"
+            "service": "OpenWeatherMap || Open-Meteo",
+            "expected_key": "OPEN_WEATHER_MAP_SECRET || OPEN_METEO_SECRET"
         }
         template_params['style_settings'] = True
         return template_params
@@ -65,6 +60,7 @@ class Weather(BasePlugin):
             raise RuntimeError("Units are required.")
 
         weather_provider = settings.get('weatherProvider', 'OpenWeatherMap')
+        title = settings.get('customTitle', '')
 
         timezone = device_config.get_config("timezone", default="America/New_York")
         time_format = device_config.get_config("time_format", default="12h")
@@ -77,20 +73,18 @@ class Weather(BasePlugin):
                     raise RuntimeError("Open Weather Map API Key not configured.")
                 weather_data = self.get_weather_data(api_key, units, lat, long)
                 aqi_data = self.get_air_quality(api_key, lat, long)
-                location_data = self.get_location(api_key, lat, long)
-                template_params = self.parse_weather_data(weather_data, aqi_data, location_data, tz, units, time_format)
+                if settings.get('titleSelection', 'location') == 'location':
+                    title = self.get_location(api_key, lat, long)
+                template_params = self.parse_weather_data(weather_data, aqi_data, tz, units, time_format)
             elif weather_provider == "OpenMeteo":
                 forecast_days = 7
                 weather_data = self.get_open_meteo_data(lat, long, units, forecast_days + 1)
                 aqi_data = self.get_open_meteo_air_quality(lat, long)
-                try:
-                    api_key = device_config.load_env_key("OPEN_WEATHER_MAP_SECRET")
-                    location_data = self.get_location(api_key, lat, long) if api_key else {"name": "Selected Location", "country": ""}
-                except:
-                    location_data = {"name": "Selected Location", "country": ""}
-                template_params = self.parse_open_meteo_data(weather_data, aqi_data, location_data, tz, units, time_format)
+                template_params = self.parse_open_meteo_data(weather_data, aqi_data, tz, units, time_format)
             else:
                 raise RuntimeError(f"Unknown weather provider: {weather_provider}")
+
+            template_params['title'] = title
         except Exception as e:
             logger.error(f"{weather_provider} request failed: {str(e)}")
             raise RuntimeError(f"{weather_provider} request failure, please check logs.")
@@ -115,14 +109,12 @@ class Weather(BasePlugin):
             raise RuntimeError("Failed to take screenshot, please check logs.")
         return image
 
-    def parse_weather_data(self, weather_data, aqi_data, location_data, tz, units, time_format):
+    def parse_weather_data(self, weather_data, aqi_data, tz, units, time_format):
         current = weather_data.get("current")
         dt = datetime.fromtimestamp(current.get('dt'), tz=timezone.utc).astimezone(tz)
         current_icon = current.get("weather")[0].get("icon").replace("n", "d")
-        location_str = f"{location_data.get('name')}, {location_data.get('state', location_data.get('country'))}"
         data = {
             "current_date": dt.strftime("%A, %B %d"),
-            "location": location_str,
             "current_day_icon": self.get_plugin_dir(f'icons/{current_icon}.png'),
             "current_temperature": str(round(current.get("temp"))),
             "feels_like": str(round(current.get("feels_like"))),
@@ -136,16 +128,14 @@ class Weather(BasePlugin):
         data['hourly_forecast'] = self.parse_hourly(weather_data.get('hourly'), tz, time_format)
         return data
 
-    def parse_open_meteo_data(self, weather_data, aqi_data, location_data, tz, units, time_format):
+    def parse_open_meteo_data(self, weather_data, aqi_data, tz, units, time_format):
         current = weather_data.get("current_weather", {})
         dt = datetime.fromisoformat(current.get('time')).astimezone(tz) if current.get('time') else datetime.now(tz)
         weather_code = current.get("weathercode", 0)
         current_icon = self.map_weather_code_to_icon(weather_code, dt.hour)
-        location_str = f"{location_data.get('name')}, {location_data.get('country', '')}"
 
         data = {
             "current_date": dt.strftime("%A, %B %d"),
-            "location": location_str,
             "current_day_icon": self.get_plugin_dir(f'icons/{current_icon}.png'),
             "current_temperature": str(round(current.get("temperature", 0))),
             "feels_like": str(round(current.get("apparent_temperature", current.get("temperature", 0)))),
@@ -224,8 +214,7 @@ class Weather(BasePlugin):
                 return "waningcrescent"
 
         forecast = []
-        # skip today (i=0)
-        for day in daily_forecast[1:]:
+        for day in daily_forecast:
             # --- weather icon ---
             weather_icon = day["weather"][0]["icon"]  # e.g. "10d", "01n"
             # always show day‑style icon
@@ -308,7 +297,7 @@ class Weather(BasePlugin):
         for hour in hourly_forecast[:24]:
             dt = datetime.fromtimestamp(hour.get('dt'), tz=timezone.utc).astimezone(tz)
             hour_forecast = {
-                "time": self.format_time(dt, time_format),
+                "time": self.format_time(dt, time_format, hour_only=True),
                 "temperature": int(hour.get("temp")),
                 "precipitiation": hour.get("pop")
             }
@@ -348,7 +337,7 @@ class Weather(BasePlugin):
         for i in range(min(24, len(sliced_times))):
             dt = datetime.fromisoformat(sliced_times[i]).astimezone(tz)
             hour_forecast = {
-                "time": self.format_time(dt, time_format),
+                "time": self.format_time(dt, time_format, True),
                 "temperature": int(sliced_temperatures[i]) if i < len(sliced_temperatures) else 0,
                 "precipitiation": (sliced_precipitation_probabilities[i] / 100) if i < len(sliced_precipitation_probabilities) else 0,
                 "humidity": int(sliced_relative_humidity_2m[i]) if i < len(sliced_relative_humidity_2m) else 0,
@@ -364,16 +353,10 @@ class Weather(BasePlugin):
 
         if sunrise_epoch:
             sunrise_dt = datetime.fromtimestamp(sunrise_epoch, tz=timezone.utc).astimezone(tz)
-            if time_format == "24h":
-                sunrise_time = sunrise_dt.strftime('%H:%M')
-                sunrise_unit = ""
-            else:
-                sunrise_time = sunrise_dt.strftime('%I:%M').lstrip("0")
-                sunrise_unit = sunrise_dt.strftime('%p')
             data_points.append({
                 "label": "Sunrise",
-                "measurement": sunrise_time,
-                "unit": sunrise_unit,
+                "measurement": self.format_time(sunrise_dt, time_format, include_am_pm=False),
+                "unit": "" if time_format == "24h" else sunrise_dt.strftime('%p'),
                 "icon": self.get_plugin_dir('icons/sunrise.png')
             })
         else:
@@ -382,16 +365,10 @@ class Weather(BasePlugin):
         sunset_epoch = weather.get('current', {}).get("sunset")
         if sunset_epoch:
             sunset_dt = datetime.fromtimestamp(sunset_epoch, tz=timezone.utc).astimezone(tz)
-            if time_format == "24h":
-                sunset_time = sunset_dt.strftime('%H:%M')
-                sunset_unit = ""
-            else:
-                sunset_time = sunset_dt.strftime('%I:%M').lstrip("0")
-                sunset_unit = sunset_dt.strftime('%p')
             data_points.append({
                 "label": "Sunset",
-                "measurement": sunset_time,
-                "unit": sunset_unit,
+                "measurement": self.format_time(sunrise_dt, time_format, include_am_pm=False),
+                "unit": "" if time_format == "24h" else sunset_dt.strftime('%p'),
                 "icon": self.get_plugin_dir('icons/sunset.png')
             })
         else:
@@ -457,10 +434,10 @@ class Weather(BasePlugin):
         sunrise_times = daily_data.get('sunrise', [])
         if sunrise_times:
             sunrise_dt = datetime.fromisoformat(sunrise_times[0]).astimezone(tz)
-            sunrise_time = sunrise_dt.strftime('%H:%M') if time_format == "24h" else sunrise_dt.strftime('%I:%M').lstrip("0")
-            sunrise_unit = "" if time_format == "24h" else sunrise_dt.strftime('%p')
             data_points.append({
-                "label": "Sunrise", "measurement": sunrise_time, "unit": sunrise_unit,
+                "label": "Sunrise",
+                "measurement": self.format_time(sunrise_dt, time_format, include_am_pm=False),
+                "unit": "" if time_format == "24h" else sunrise_dt.strftime('%p'),
                 "icon": self.get_plugin_dir('icons/sunrise.png')
             })
         else:
@@ -470,10 +447,10 @@ class Weather(BasePlugin):
         sunset_times = daily_data.get('sunset', [])
         if sunset_times:
             sunset_dt = datetime.fromisoformat(sunset_times[0]).astimezone(tz)
-            sunset_time = sunset_dt.strftime('%H:%M') if time_format == "24h" else sunset_dt.strftime('%I:%M').lstrip("0")
-            sunset_unit = "" if time_format == "24h" else sunset_dt.strftime('%p')
             data_points.append({
-                "label": "Sunset", "measurement": sunset_time, "unit": sunset_unit,
+                "label": "Sunset",
+                "measurement": self.format_time(sunset_dt, time_format, include_am_pm=False),
+                "unit": "" if time_format == "24h" else sunset_dt.strftime('%p'),
                 "icon": self.get_plugin_dir('icons/sunset.png')
             })
         else:
@@ -613,7 +590,10 @@ class Weather(BasePlugin):
             logging.error(f"Failed to get location: {response.content}")
             raise RuntimeError("Failed to retrieve location.")
 
-        return response.json()[0]
+        location_data = response.json()[0]
+        location_str = f"{location_data.get('name')}, {location_data.get('country', '')}"
+
+        return location_str
 
     def get_open_meteo_data(self, lat, long, units, forecast_days):
         unit_params = OPEN_METEO_UNIT_PARAMS[units]
@@ -634,13 +614,15 @@ class Weather(BasePlugin):
             raise RuntimeError("Failed to retrieve Open-Meteo air quality data.")
         
         return response.json()
-
-    def format_time(self, dt, time_format, include_am_pm=True):
+    
+    def format_time(self, dt, time_format, hour_only=False, include_am_pm=True):
         """Format datetime based on 12h or 24h preference"""
         if time_format == "24h":
-            return dt.strftime("%H:%M")
-        else:  # 12h format
-            if include_am_pm:
-                return dt.strftime("%-I:%M %p")
-            else:
-                return dt.strftime("%-I:%M")
+            return dt.strftime("%H:00" if hour_only else "%H:%M")
+        
+        if include_am_pm:
+            fmt = "%-I %p" if hour_only else "%-I:%M %p"
+        else:
+            fmt = "%-I" if hour_only else "%-I:%M"
+
+        return dt.strftime(fmt).lstrip("0")
