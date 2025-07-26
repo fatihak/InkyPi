@@ -1,0 +1,9 @@
+libtiff-dev
+python3
+python3-venv
+python3-pip
+avahi-daemon
+libopenblas-dev
+libopenjp2-7
+libfreetype6-dev
+libsystemd-dev
