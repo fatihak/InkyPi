@@ -103,12 +103,6 @@
   top: 0.6em;
 }
 
-.feels-like {
-  font-size: 10cqmin;
-  text-align: center;
-  position: relative;
-  line-height: 130%;
-}
 
 /* Data Points Grid */
 .data-points {
@@ -276,11 +270,19 @@
 }
 
 .min-max {
-  font-size: 15cqmin;
+  font-size: 14cqmin;
   text-align: center;
   position: relative;
-  line-height: 150%;
+  line-height: 140%;
 }
+
+.feels-like {
+  font-size: 10cqmin;
+  text-align: center;
+  position: relative;
+  line-height: 140%;
+}
+
 
 @media (max-aspect-ratio: 1) {
   .today-container {

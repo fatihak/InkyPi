@@ -43,8 +43,8 @@ class Weather(BasePlugin):
         template_params = super().generate_settings_template()
         template_params['api_key'] = {
             "required": True,
-            "service": "OpenWeatherMap || Open-Meteo",
-            "expected_key": "OPEN_WEATHER_MAP_SECRET || OPEN_METEO_SECRET"
+            "service": "OpenWeatherMap",
+            "expected_key": "OPEN_WEATHER_MAP_SECRET"
         }
         template_params['style_settings'] = True
         return template_params
@@ -257,7 +257,7 @@ class Weather(BasePlugin):
 
         forecast = []
 
-        for i in range(1, len(times)): 
+        for i in range(0, len(times)): 
             dt = datetime.fromisoformat(times[i]).replace(tzinfo=timezone.utc).astimezone(tz)
             day_label = dt.strftime("%a")
 
@@ -367,7 +367,7 @@ class Weather(BasePlugin):
             sunset_dt = datetime.fromtimestamp(sunset_epoch, tz=timezone.utc).astimezone(tz)
             data_points.append({
                 "label": "Sunset",
-                "measurement": self.format_time(sunrise_dt, time_format, include_am_pm=False),
+                "measurement": self.format_time(sunset_dt, time_format, include_am_pm=False),
                 "unit": "" if time_format == "24h" else sunset_dt.strftime('%p'),
                 "icon": self.get_plugin_dir('icons/sunset.png')
             })
@@ -591,7 +591,7 @@ class Weather(BasePlugin):
             raise RuntimeError("Failed to retrieve location.")
 
         location_data = response.json()[0]
-        location_str = f"{location_data.get('name')}, {location_data.get('country', '')}"
+        location_str = f"{location_data.get('name')}, {location_data.get('state', location_data.get('country'))}""
 
         return location_str
 
