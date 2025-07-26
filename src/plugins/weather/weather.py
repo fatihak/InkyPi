@@ -309,9 +309,6 @@ class Weather(BasePlugin):
         times = hourly_data.get('time', [])
         temperatures = hourly_data.get('temperature_2m', [])
         precipitation_probabilities = hourly_data.get('precipitation_probability', [])
-        relative_humidity_2m = hourly_data.get('relative_humidity_2m', [])
-        surface_pressure = hourly_data.get('surface_pressure', [])
-        visibility_data = hourly_data.get('visibility', [])
 
         current_time_in_tz = datetime.now(tz)
         start_index = 0
@@ -330,19 +327,13 @@ class Weather(BasePlugin):
         sliced_times = times[start_index:]
         sliced_temperatures = temperatures[start_index:]
         sliced_precipitation_probabilities = precipitation_probabilities[start_index:]
-        sliced_relative_humidity_2m = relative_humidity_2m[start_index:]
-        sliced_surface_pressure = surface_pressure[start_index:]
-        sliced_visibility_data = visibility_data[start_index:]
 
         for i in range(min(24, len(sliced_times))):
             dt = datetime.fromisoformat(sliced_times[i]).astimezone(tz)
             hour_forecast = {
                 "time": self.format_time(dt, time_format, True),
                 "temperature": int(sliced_temperatures[i]) if i < len(sliced_temperatures) else 0,
-                "precipitiation": (sliced_precipitation_probabilities[i] / 100) if i < len(sliced_precipitation_probabilities) else 0,
-                "humidity": int(sliced_relative_humidity_2m[i]) if i < len(sliced_relative_humidity_2m) else 0,
-                "pressure": int(sliced_surface_pressure[i]) if i < len(sliced_surface_pressure) else 0,
-                "visibility": int(sliced_visibility_data[i]) if i < len(sliced_visibility_data) else 0
+                "precipitiation": (sliced_precipitation_probabilities[i] / 100) if i < len(sliced_precipitation_probabilities) else 0
             }
             hourly.append(hour_forecast)
         return hourly
@@ -591,7 +582,7 @@ class Weather(BasePlugin):
             raise RuntimeError("Failed to retrieve location.")
 
         location_data = response.json()[0]
-        location_str = f"{location_data.get('name')}, {location_data.get('state', location_data.get('country'))}""
+        location_str = f"{location_data.get('name')}, {location_data.get('state', location_data.get('country'))}"
 
         return location_str
 
