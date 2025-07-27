@@ -1,0 +1,44 @@
+// For format details, see https://aka.ms/devcontainer.json. For config options, see the
+// README at: https://github.com/devcontainers/templates/tree/main/src/python
+{
+    "name": "Linux Host - Python 3",
+    "build": { "dockerfile": "../Dockerfile" },
+    "postCreateCommand": "sh .devcontainer/post-create.sh",
+    
+    "containerEnv": {
+        "SRC_DIR": "/workspaces/InkyPi/src",
+        "DISPLAY": "${localEnv:DISPLAY}"
+    },
+    
+    // You might have to enable window redirect on your host using the command: `xhost +`
+    
+    "mounts": [
+        "source=/tmp/.X11-unix,target=/tmp/.X11-unix,type=bind"
+    ],
+    
+    // add vscode settings
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "ms-python.python",
+                "ms-python.vscode-pylance",
+                "ms-python.autopep8"
+            ],
+            "settings": {
+                "python.testing.promptToConfigure": false
+            }
+        }
+    },
+    
+    // Features to add to the dev container. More info: https://containers.dev/features.
+    // "features": {},
+    
+    // Use 'forwardPorts' to make a list of ports inside the container available locally.
+    // "forwardPorts": [],
+    
+    // Configure tool-specific properties.
+    // "customizations": {},
+    
+    // Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
+    // "remoteUser": "root"
+}
