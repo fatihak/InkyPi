@@ -5,7 +5,7 @@
             onclick="this.value = this.checked ? 'true' : 'false'">
         <label for="padImage" class="toggle-label"></label>
     </div>
-    <label for="randomize" class="form-label">Randomize:</label>
+    <label for="randomize" class="form-label">Randomize Order:</label>
     <div class="toggle-container">
         <input type="checkbox" id="randomize" name="randomize" class="toggle-checkbox" value="false"
             onclick="this.value = this.checked ? 'true' : 'false'">
@@ -18,7 +18,9 @@
 <div class="form-group">
     <label for="imageUpload" class="form-input file-upload-label">Choose Image</label>
     <input type="file" clear-on-submit id="imageUpload" name="imageFiles[]" accept="image/*" multiple class="file-upload-input" onchange="addFiles()">
+    <button onclick="sortFiles()">Sort</button>
 </div>
+
 
 <!-- Display uploaded & existing file names -->
 <div class="form-group">
@@ -62,6 +64,12 @@
         fileInput.value = "";
     }
 
+    function sortFiles() {
+        console.log("here")
+        console.log(pluginSettings["imageFiles[]"].sort())
+        pluginSettings["imageFiles[]"] = pluginSettings["imageFiles[]"].sort()
+    }
+
     function removeAddedFile(fileName) {
         // Remove the file from uploadedFiles
         uploadedFiles["imageFiles[]"] = uploadedFiles["imageFiles[]"].filter(f => f.name !== fileName);
@@ -70,6 +78,11 @@
         document.getElementById(`added-${fileName}`).remove();
     }
 
+    function removeAllFiles() {
+        console.log("here")
+        console.log(pluginSettings["imageFiles[]"].sort())
+        pluginSettings["imageFiles[]"] = pluginSettings["imageFiles[]"].sort()
+    }
     function removeExistingFile(fileName) {
         document.getElementById(`existing-${fileName}`).remove(); // Remove from display
         document.getElementById(`hidden-${fileName}`).remove(); // Remove hidden input
