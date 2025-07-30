@@ -2,6 +2,7 @@ from plugins.base_plugin.base_plugin import BasePlugin
 from PIL import Image, ImageOps, ImageColor
 from io import BytesIO
 import logging
+import random
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +24,11 @@ class ImageUpload(BasePlugin):
             logger.error(f"Failed to read image file: {str(e)}")
             raise RuntimeError("Failed to read image file.")
 
-        settings['image_index'] = (img_index + 1) % len(image_locations)
+
+        if settings.get('randomize') == "true":
+            settings['image_index'] = random.randint(0, len(image_locations))
+        else:
+            settings['image_index'] = (img_index + 1) % len(image_locations)
         ###
         if settings.get('padImage') == "true":
             dimensions = device_config.get_resolution()
