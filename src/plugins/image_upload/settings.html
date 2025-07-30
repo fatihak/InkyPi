@@ -5,6 +5,12 @@
             onclick="this.value = this.checked ? 'true' : 'false'">
         <label for="padImage" class="toggle-label"></label>
     </div>
+    <label for="randomize" class="form-label">Randomize Order:</label>
+    <div class="toggle-container">
+        <input type="checkbox" id="randomize" name="randomize" class="toggle-checkbox" value="false"
+            onclick="this.value = this.checked ? 'true' : 'false'">
+        <label for="randomize" class="toggle-label"></label>
+    </div>
     <label for="backgroundColor" class="form-label">Background Color:</label>
     <input type="color" id="backgroundColor" name="backgroundColor" value="#ffffff"/>
 </div>
@@ -75,6 +81,7 @@
         const hiddenFileInputs = document.getElementById("hiddenFileInputs");
         if (loadPluginSettings) {
             document.getElementById('padImage').checked = pluginSettings.padImage;
+            document.getElementById('randomize').checked = pluginSettings.randomize;
             document.getElementById('backgroundColor').value = pluginSettings.backgroundColor;
 
             const existingFiles = pluginSettings['imageFiles[]'] || []
