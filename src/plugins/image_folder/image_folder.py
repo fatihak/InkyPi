@@ -4,7 +4,7 @@ from plugins.base_plugin.base_plugin import BasePlugin
 from os import listdir
 from os.path import isfile, join
 import random
-from PIL import Image, ImageOps
+from PIL import Image, ImageOps, ImageFilter
 import logging
 
 log = logging.getLogger(__name__)
@@ -34,7 +34,7 @@ class ImageFolder(BasePlugin):
         chosen_pics.add(file)
         settings["chosen_pics"] = list(chosen_pics)
         
-        img = ImageFolder.resize_with_padding(file, dimensions)
+        img = ImageFolder.resize_with_blur(file, dimensions)
         
         if not img:
             raise RuntimeError("Failed to load image, please check logs.")
@@ -44,6 +44,19 @@ class ImageFolder(BasePlugin):
             os.system(f"sudo shutdown +{shutdown_delay}")
             
         return img
+
+    @staticmethod
+    def resize_with_blur(path:str, size: tuple) -> Image:
+        log.info(f"Loading picture: {path}")
+
+        with Image.open(path) as img:
+            bkg = ImageOps.fit(img, size)
+            bkg = bkg.filter(ImageFilter.BoxBlur(8))
+            img = ImageOps.contain(img, size)
+
+            img_size = img.size
+            bkg.paste(img, ((size[0] - img_size[0]) // 2, (size[1] - img_size[1]) // 2))
+            return bkg
 
     @staticmethod
     def resize_with_padding(path:str, size: tuple) -> Image:
