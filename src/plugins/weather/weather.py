@@ -75,7 +75,13 @@ class Weather(BasePlugin):
                 aqi_data = self.get_air_quality(api_key, lat, long)
                 if settings.get('titleSelection', 'location') == 'location':
                     title = self.get_location(api_key, lat, long)
-                template_params = self.parse_weather_data(weather_data, aqi_data, tz, units, time_format)
+                if settings.get('weatherTimeZone', 'locationTimeZone') == 'locationTimeZone':
+                    logger.info("Using location timezone for OpenWeatherMap data.")
+                    wtz = self.parse_timezone(weather_data)
+                    template_params = self.parse_weather_data(weather_data, aqi_data, wtz, units, time_format)
+                else:
+                    logger.info("Using configured timezone for OpenWeatherMap data.")
+                    template_params = self.parse_weather_data(weather_data, aqi_data, tz, units, time_format)
             elif weather_provider == "OpenMeteo":
                 forecast_days = 7
                 weather_data = self.get_open_meteo_data(lat, long, units, forecast_days + 1)
@@ -617,3 +623,12 @@ class Weather(BasePlugin):
             fmt = "%-I" if hour_only else "%-I:%M"
 
         return dt.strftime(fmt).lstrip("0")
+    
+    def parse_timezone(self, weatherdata):
+        """Parse timezone from weather data"""
+        if 'timezone' in weatherdata:
+            logger.info(f"Using timezone from weather data: {weatherdata['timezone']}")
+            return pytz.timezone(weatherdata['timezone'])
+        else:
+            logger.error("Failed to retrieve Timezone from weather data")
+            raise RuntimeError("Timezone not found in weather data.")
