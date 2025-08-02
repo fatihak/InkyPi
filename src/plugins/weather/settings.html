@@ -174,7 +174,9 @@
             document.getElementById('displayForecast').value = pluginSettings.displayForecast;
 
             document.getElementById('forecastDays').value = pluginSettings.forecastDays;
+
             document.getElementById('moonPhase').checked = pluginSettings.moonPhase;
+            document.getElementById('moonPhase').value = pluginSettings.moonPhase;
             
             selectedTitle = pluginSettings.titleSelection || 'location';
             weatherProvider = pluginSettings.weatherProvider || 'OpenWeatherMap';
