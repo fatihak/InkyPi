@@ -1,0 +1,139 @@
+
+<!-- Display files in the gallery folder using the /gallery/image endpoint to get the list of images and /gallery/image/filename to get the file -->
+<div class="gallery-container">
+    <div id="galleryImages" class="gallery-images"></div>
+</div>
+
+<!-- Drag-and-Drop Area -->
+<div id="dragDropArea" class="drag-drop-area">
+    <p>Drag and drop images here, or click to select files</p>
+</div>
+<div class="form-group">
+    <input type="file" clear-on-submit id="imageUpload" name="imageFiles[]" accept="image/*" multiple class="file-upload-input" onchange="addFiles()">
+</div>
+
+<!-- Hidden input fields to store existing file data -->
+<div id="hiddenFileInputs"></div>
+
+<script>
+    const dragDropArea = document.getElementById("dragDropArea");
+    const fileInput = document.getElementById("imageUpload");
+    const fileNamesDisplay = document.getElementById("fileNames");
+    
+    // Handle drag-and-drop events
+    dragDropArea.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        dragDropArea.classList.add("drag-over");
+    });
+    
+    dragDropArea.addEventListener("dragleave", () => {
+        dragDropArea.classList.remove("drag-over");
+    });
+    
+    dragDropArea.addEventListener("drop", (e) => {
+        e.preventDefault();
+        dragDropArea.classList.remove("drag-over");
+        const files = Array.from(e.dataTransfer.files);
+        handleFiles(files);
+    });
+    
+    dragDropArea.addEventListener("click", () => {
+        fileInput.click();
+    });
+    
+    fileInput.addEventListener("change", () => {
+        const files = Array.from(fileInput.files);
+        handleFiles(files);
+    });
+    
+    function handleFiles(files) {
+        if (!files || files.length === 0) return;
+        
+        files.forEach(file => {
+            const formData = new FormData();
+            formData.append('image', file);
+
+            fetch('/gallery/image', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                if (!response.ok) throw new Error('Upload failed');
+                return response.json();
+            })
+            .then(data => {
+                // Optionally refresh gallery after upload
+                document.dispatchEvent(new Event('DOMContentLoaded'));
+            })
+            .catch(error => {
+                console.error('Error uploading file:', error);
+            });
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        fetch('/gallery/image')
+        .then(response => response.json())
+        .then(data => {
+            const galleryImages = document.getElementById('galleryImages');
+            galleryImages.innerHTML = ''; // Clear existing images
+            
+            // Create a grid container
+            const grid = document.createElement('div');
+            grid.style.display = 'grid';
+            grid.style.gridTemplateColumns = 'repeat(4, 1fr)';
+            grid.style.gap = '16px';
+            data.images.forEach(image => {
+                const imgElement = document.createElement('img');
+                imgElement.src = `/gallery/thumbnail/${image}`;
+                imgElement.alt = image;
+                imgElement.classList.add('gallery-image');
+                imgElement.style.width = '100%';
+                imgElement.style.height = 'auto';
+
+                imgElement.addEventListener('click', () => {
+                    if (confirm(`Delete image "${image}"? This cannot be undone.`)) {
+                        fetch(`/gallery/image/${image}`, {
+                            method: 'DELETE'
+                        })
+                        .then(response => {
+                            if (!response.ok) throw new Error('Delete failed');
+                            // Refresh gallery after delete
+                            document.dispatchEvent(new Event('DOMContentLoaded'));
+                        })
+                        .catch(error => {
+                            alert('Error deleting image.');
+                            console.error('Error deleting image:', error);
+                        });
+                    }
+                });
+
+                grid.appendChild(imgElement);
+            });
+            galleryImages.appendChild(grid);
+        })
+        .catch(error => console.error('Error loading gallery images:', error));
+    });
+    
+</script>
+
+<style>
+    .gallery-container {
+        margin-bottom: 20px;
+    }
+
+    .drag-drop-area {
+        border: 2px dashed #ccc;
+        border-radius: 6px;
+        padding: 20px;
+        text-align: center;
+        cursor: pointer;
+        margin-bottom: 20px;
+        transition: border-color 0.3s ease;
+    }
+    
+    .drag-drop-area.drag-over {
+        border-color: #007bff;
+        background-color: #f0f8ff;
+    }
+</style>
