@@ -399,14 +399,30 @@ class Weather(BasePlugin):
             "icon": self.get_plugin_dir('icons/uvi.png')
         })
 
-        visibility = weather.get('current', {}).get("visibility")/1000
-        visibility_str = f">{visibility}" if visibility >= 10 else visibility
-        data_points.append({
-            "label": "Visibility",
-            "measurement": visibility_str,
-            "unit": 'km',
-            "icon": self.get_plugin_dir('icons/visibility.png')
-        })
+        # --- Updated Visibility (OpenWeatherMap) ---
+        visibility_m = weather.get('current', {}).get("visibility")
+        if visibility_m is not None:
+            if units == "imperial":
+                visibility = visibility_m / 1609.344
+                visibility_str = ">6.0" if visibility_m >= 10000 else f"{visibility:.1f}"
+                unit = "mi"
+            else:
+                visibility = visibility_m / 1000
+                visibility_str = ">10.0" if visibility_m >= 10000 else f"{visibility:.1f}"
+                unit = "km"
+            data_points.append({
+                "label": "Visibility",
+                "measurement": visibility_str,
+                "unit": unit,
+                "icon": self.get_plugin_dir('icons/visibility.png')
+            })
+        else:
+            data_points.append({
+                "label": "Visibility",
+                "measurement": "N/A",
+                "unit": "",
+                "icon": self.get_plugin_dir('icons/visibility.png')
+            })
 
         aqi = air_quality.get('list', [])[0].get("main", {}).get("aqi")
         data_points.append({
@@ -512,32 +528,31 @@ class Weather(BasePlugin):
             "icon": self.get_plugin_dir('icons/uvi.png')
         })
 
-        # Visibility
+        # --- Updated Visibility (Open-Meteo: hourly, meters) ---
+        hourly_visibility = hourly_data.get("visibility")
+        unit_label = "km" if units != "imperial" else "mi"
         current_visibility = "N/A"
-        visibility_hourly_times = hourly_data.get('time', [])
-        visibility_values = hourly_data.get('visibility', [])
-        for i, time_str in enumerate(visibility_hourly_times):
-            try:
-                if datetime.fromisoformat(time_str).astimezone(tz).hour == current_time.hour:
-                    visibility = visibility_values[i]
-                    if units == "imperial":
-                        current_visibility = int(round(visibility, 0))
-                        unit_label = "ft"
-                    else:
-                        current_visibility = round(visibility / 1000, 1)
-                        unit_label = "km"
-                    break
-            except ValueError:
-                logger.warning(f"Could not parse time string {time_str} for visibility.")
-                continue
-
-        visibility_str = f">{current_visibility}" if isinstance(current_visibility, (int, float)) and (
-            (units == "imperial" and current_visibility >= 32808) or 
-            (units != "imperial" and current_visibility >= 10)
-        ) else current_visibility
-
+        if hourly_visibility:
+            visibility_hourly_times = hourly_data.get('time', [])
+            for i, time_str in enumerate(visibility_hourly_times):
+                try:
+                    if datetime.fromisoformat(time_str).astimezone(tz).hour == current_time.hour:
+                        visibility_m = hourly_visibility[i]
+                        if units == "imperial":
+                            visibility = visibility_m / 1609.344
+                            visibility_str = ">6.0" if visibility_m >= 10000 else f"{visibility:.1f}"
+                        else:
+                            visibility = visibility_m / 1000
+                            visibility_str = ">10.0" if visibility_m >= 10000 else f"{visibility:.1f}"
+                        current_visibility = visibility_str
+                        break
+                except ValueError:
+                    logger.warning(f"Could not parse time string {time_str} for visibility.")
+                    continue
         data_points.append({
-            "label": "Visibility", "measurement": visibility_str, "unit": unit_label,
+            "label": "Visibility",
+            "measurement": current_visibility,
+            "unit": unit_label if current_visibility != "N/A" else "",
             "icon": self.get_plugin_dir('icons/visibility.png')
         })
 
