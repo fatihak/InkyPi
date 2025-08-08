@@ -37,6 +37,12 @@ class ImageFolder(BasePlugin):
         folder_path = settings.get('folder_path')
         if not folder_path:
             raise RuntimeError("Folder path is required.")
+        
+        if not os.path.exists(folder_path):
+            raise RuntimeError(f"Folder does not exist: {folder_path}")
+        
+        if not os.path.isdir(folder_path):
+            raise RuntimeError(f"Path is not a directory: {folder_path}")
 
         dimensions = device_config.get_resolution()
         if device_config.get_config("orientation") == "vertical":
