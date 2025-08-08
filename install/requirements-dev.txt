@@ -10,3 +10,4 @@ numpy==2.2.1
 icalendar==6.3.1
 recurring-ical-events==3.7.0
 psutil==7.0.0
+feedparser==6.0.11
