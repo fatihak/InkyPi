@@ -1,17 +1,17 @@
 from plugins.base_plugin.base_plugin import BasePlugin
-from PIL import Image, ImageOps, ImageColor
-from io import BytesIO
+from PIL import Image
 import feedparser
 import re
-
-logger = logging.getLogger(__name__)
+import requests
 
 COMICS = [
     "XKCD",
+    "Cyanide & Happiness",
     "Saturday Morning Breakfast Cereal",
-    "The Oatmeal",
     "The Perry Bible Fellowship",
-    "Questionable Content"
+    "Questionable Content",
+    "Poorly Drawn Lines",
+    "Dinosaur Comics"
 ]
 
 class Comic(BasePlugin):
@@ -46,23 +46,24 @@ class Comic(BasePlugin):
     def get_image_url(self, comic):
         if comic == "XKCD":
             feed = feedparser.parse("https://xkcd.com/atom.xml")
-            summary = feed.entries[0].summary
-            src = re.search(r'<img[^>]+src="([^"]+)"', summary).group(1)
+            element = feed.entries[0].summary
         elif comic == "Saturday Morning Breakfast Cereal":
             feed = feedparser.parse("http://www.smbc-comics.com/comic/rss")
-            desc = feed.entries[0].description
-            src = re.search(r'<img[^>]+src="([^"]+)"', desc).group(1)
-        elif comic == "The Oatmeal":
-            feed = feedparser.parse("http://theoatmeal.com/feed/rss")
-            desc = feed.entries[0].description
-            src = re.search(r'<img[^>]+src="([^"]+)"', desc).group(1)
+            element = feed.entries[0].description
         elif comic == "Questionable Content":
             feed = feedparser.parse("http://www.questionablecontent.net/QCRSS.xml")
-            desc = feed.entries[0].description
-            src = re.search(r'<img[^>]+src="([^"]+)"', desc)
+            element = feed.entries[0].description
         elif comic == "The Perry Bible Fellowship":
-            url = "https://pbfcomics.com/feed/"
-            feed = feedparser.parse(url)
-            desc = feed.entries[0].description
-            src = re.search(r"<img[^>]+src=['\"]([^'\"]+)['\"]", desc).group(1)
+            feed = feedparser.parse("https://pbfcomics.com/feed/")
+            element = feed.entries[0].description
+        elif comic == "Poorly Drawn Lines":
+            feed = feedparser.parse("https://poorlydrawnlines.com/feed/")
+            element = feed.entries[0].get('content', [{}])[0].get('value', '')
+        elif comic == "Dinosaur Comics":
+            feed = feedparser.parse("https://www.qwantz.com/rssfeed.php")
+            element = feed.entries[0].summary
+        elif comic == "Cyanide & Happiness":
+            feed = feedparser.parse("https://explosm-1311.appspot.com/")
+            element = feed.entries[0].summary
+        src = re.search(r'<img[^>]+src=["\']([^"\']+)["\']', element).group(1)
         return src
