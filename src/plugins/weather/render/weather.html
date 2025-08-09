@@ -8,7 +8,7 @@
   {% endif %}
   <!-- Current Date -->
   <div class="header">
-    <div class="location">{{ location }}</div>
+    <div class="title">{{ title }}</div>
     <div class="current-date">{{ current_date }}</div>
   </div>
 
@@ -20,6 +20,7 @@
         <div class="current-weather">
           <div class="current-temp">{{ current_temperature }}<span class="temperature-unit">{{temperature_unit}}</span></div>
           <div class="feels-like">Feels Like {{ feels_like }}{% if units != "standard" %}°{% endif %}</div>
+          <div class="min-max">{{ forecast[0].high }}{% if units != "standard" %}°{% endif %} / {{ forecast[0].low }}{% if units != "standard" %}°{% endif %}</div>
         </div>
     </div>
 
@@ -52,7 +53,7 @@
   <!-- Forecast Row -->
   {% if plugin_settings.displayForecast and plugin_settings.displayForecast == "true" %}
   <div class="forecast">
-    {% for day in forecast[:plugin_settings.forecastDays | int] %}
+    {% for day in forecast[1:(plugin_settings.forecastDays | int) + 1] %}
       <div class="forecast-day">
         <div class="forecast-day-name">{{ day.day }}</div>
         <img class="forecast-icon" src="{{day.icon}}" alt="{{ day.day }} Weather Icon">

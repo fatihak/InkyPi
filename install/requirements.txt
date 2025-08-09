@@ -1,8 +1,8 @@
 flask==3.1.1
 python-dotenv==1.0.1
 inky==2.1.0
-requests==2.32.3
-urllib3==2.3.0
+requests==2.32.4
+urllib3==2.5.0
 werkzeug==3.1.3
 pillow==11.0.0
 pytz==2025.2
@@ -12,3 +12,5 @@ icalendar==6.3.1
 recurring-ical-events==3.7.0
 psutil==7.0.0
 cysystemd==2.0.1
+waitress==3.0.2
+feedparser==6.0.11

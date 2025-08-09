@@ -1,0 +1,24 @@
+<div class="form-group">
+    <label for="url" class="form-label">Folder path:</label>
+    <input type="text" id="folder_path" name="folder_path" placeholder="Type something..." required class="form-input">
+</div>
+
+<div class="form-group">
+    <label for="padImage" class="form-label">Fit the image to the frame:</label>
+    <div class="toggle-container">
+        <input type="checkbox" id="padImage" name="padImage" class="toggle-checkbox" value="false"
+            onclick="this.value = this.checked ? 'true' : 'false'">
+        <label for="padImage" class="toggle-label"></label>
+    </div>
+</div>
+
+
+<script>
+    // populate form values from plugin settings
+    document.addEventListener('DOMContentLoaded', () => {
+        if (loadPluginSettings) {
+            document.getElementById('folder_path').value = pluginSettings.folder_path;
+            document.getElementById('padImage').checked = pluginSettings.padImage;
+        }
+    });
+</script>

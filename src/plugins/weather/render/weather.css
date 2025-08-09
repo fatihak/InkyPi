@@ -39,7 +39,7 @@
   position: relative;
 }
 
-.location {
+.title {
   font-size: min(50cqh, 8cqi);
   text-align: center;
   align-content: end;
@@ -94,7 +94,7 @@
   text-align: center;
   align-content: end;
   position: relative;
-  height: 55%;
+  height: 50%;
 }
 
 .temperature-unit {
@@ -103,12 +103,6 @@
   top: 0.6em;
 }
 
-.feels-like {
-  font-size: 10cqmin;
-  text-align: center;
-  position: relative;
-  line-height: 110%;
-}
 
 /* Data Points Grid */
 .data-points {
@@ -274,6 +268,21 @@
   justify-content: center;
   align-items: center;
 }
+
+.min-max {
+  font-size: 12cqmin;
+  text-align: center;
+  position: relative;
+  line-height: 140%;
+}
+
+.feels-like {
+  font-size: 10cqmin;
+  text-align: center;
+  position: relative;
+  line-height: 140%;
+}
+
 
 @media (max-aspect-ratio: 1) {
   .today-container {

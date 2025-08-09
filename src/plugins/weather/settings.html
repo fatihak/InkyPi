@@ -15,12 +15,31 @@
 </div>
 
 <div class="form-group">
+    <label for="weatherProvider" class="form-label">Weather Provider:</label>
+    <select id="weatherProvider" name="weatherProvider" class="form-input" onchange="updateTitleOptions(this.value)">
+        <option value="OpenWeatherMap">OpenWeatherMap</option>
+        <option value="OpenMeteo">Open-Meteo</option>
+    </select>
+
     <label for="units" class="form-label">Units:</label>
     <select id="units" name="units" class="form-input">
         <option value="imperial">Imperial (°F)</option>
         <option value="metric">Metric (°C)</option>
         <option value="standard">Standard (K)</option>
     </select>
+</div>
+
+<div class="form-group" id="titleOptionWrapper">
+    <label class="form-label">Title:</label>
+
+    <div class="form-group">
+        <input type="radio" id="title-location" name="titleSelection" value="location">
+        <label for="title-location">Location</label>
+
+        <input type="radio" id="title-custom" name="titleSelection" value="custom">
+        <label for="title-custom">Custom</label>
+        <input type="text" id="customTitle" name="customTitle" class="form-input" placeholder="Type something..." />
+    </div>
 </div>
 
 <div class="form-group">
@@ -56,9 +75,17 @@
         </select>
         days
     </div>
+
+    <div class="form-group">
+        <label for="weatherTimeZone" class="form-label">Time Zone:</label>
+        <select id="weatherTimeZone" name="weatherTimeZone" class="form-input">
+            <option value="locationTimeZone">Use Location Time Zone</option>
+            <option value="localTimeZone">Use Local Time Zone</option>
+        </select>
+    </div>
+
 </div>
 
-<!-- Modal -->
 <div id="mapModal" class="modal">
     <div class="modal-content">
         <span class="close-button" onclick="closeModal('mapModal')">×</span>
@@ -70,6 +97,42 @@
 </div>
 
 <script>
+
+    function updateTitleOptions(provider) {
+        const titleLocationRadio = document.getElementById('title-location');
+        const titleLocationLabel = document.querySelector('label[for="title-location"]');
+        const titleCustomRadio = document.getElementById('title-custom');
+        const customTitleInput = document.getElementById('customTitle');
+        const titleTimeZone = document.getElementById('weatherTimeZone');
+        const titleTimeZoneLabel = document.querySelector('label[for="weatherTimeZone"]');
+
+        if (provider === 'OpenMeteo') {
+            // Hide or disable "Location" radio option
+            titleLocationRadio.style.display = 'none';
+            titleLocationLabel.style.display = 'none';
+            titleLocationRadio.disabled = true;
+            titleTimeZone.style.display = 'none';
+            titleTimeZoneLabel.style.display = 'none';
+            titleTimeZone.disabled = true;
+
+            // Select and enable "Custom"
+            titleCustomRadio.checked = true;
+            titleCustomRadio.disabled = false;
+            customTitleInput.disabled = false;
+        } else {
+            // Show and enable both options
+            titleLocationRadio.style.display = '';
+            titleLocationLabel.style.display = '';
+            titleLocationRadio.disabled = false;
+
+            titleCustomRadio.disabled = false;
+            customTitleInput.disabled = false;
+
+            titleTimeZone.style.display = '';
+            titleTimeZoneLabel.style.display = '';
+            titleTimeZone.disabled = false;
+        }
+    }
 
     document.addEventListener('DOMContentLoaded', () => {
 
@@ -83,6 +146,8 @@
         let latitude = +$latitude.value;
         let longitude = +$longitude.value;
         let zoom = latitude && longitude ? 4.5 : 2.5;
+        let selectedTitle = 'location';
+        let weatherProvider = 'OpenWeatherMap';
 
         let map, marker;
 
@@ -127,7 +192,16 @@
             document.getElementById('displayForecast').value = pluginSettings.displayForecast;
 
             document.getElementById('forecastDays').value = pluginSettings.forecastDays;
+
             document.getElementById('moonPhase').checked = pluginSettings.moonPhase;
+            document.getElementById('moonPhase').value = pluginSettings.moonPhase;
+
+            document.getElementById('weatherTimeZone').value = pluginSettings.weatherTimeZone;
+            
+            selectedTitle = pluginSettings.titleSelection || 'location';
+            weatherProvider = pluginSettings.weatherProvider || 'OpenWeatherMap';
+
+            document.getElementById('customTitle').value = pluginSettings.customTitle || '';
         } else {
             // set default values
             document.getElementById('units').value = "imperial";
@@ -139,9 +213,13 @@
             document.getElementById('displayGraph').value = "true";
             document.getElementById('displayForecast').checked = true;
             document.getElementById('displayForecast').value = "true";
-            
-            document.getElementById('forecastDays').value = 7
+            document.getElementById('forecastDays').value = 7;
             document.getElementById('moonPhase').checked = false;
+            document.getElementById('weatherTimeZone').value = "locationTimeZone";
         }
+
+        document.getElementById('weatherProvider').value = weatherProvider;
+        document.querySelector(`input[name="titleSelection"][value="${selectedTitle}"]`).checked = true;
+        updateTitleOptions(weatherProvider)
     });
 </script>
