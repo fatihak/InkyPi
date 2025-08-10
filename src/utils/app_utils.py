@@ -1,6 +1,7 @@
 import logging
 import os
 import socket
+import subprocess
 
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont, ImageOps

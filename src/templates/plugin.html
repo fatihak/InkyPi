@@ -398,24 +398,26 @@
             
             <!-- Refresh Settings for Existing Instances -->
             {% if plugin_instance %}
-            <div class="form-group">
-                <label>Refresh Settings</label>
-                <span title="Determines how often the data and image should be refreshed.">ⓘ</span>
-            </div>
-            <div class="form-group nowrap">
-                <input type="radio" id="refreshInterval" name="refreshType" value="interval" {% if plugin_refresh and 'interval' in plugin_refresh %}checked{% endif %}>
-                <label for="refreshInterval">Every</label>
-                <input type="number" id="interval" name="interval" class="form-input" min="1" placeholder="Enter a number">
-                <select id="unit" name="unit" class="form-input">
-                    <option value="minute">Minute</option>
-                    <option value="hour">Hour</option>
-                    <option value="day">Day</option>
-                </select>
-            </div>
-            <div class="form-group nowrap">
-                <input type="radio" id="refreshScheduled" name="refreshType" value="scheduled" {% if plugin_refresh and 'scheduled' in plugin_refresh %}checked{% endif %}>
-                <label for="refreshScheduled">Daily at </label>
-                <input id="scheduled" class="time-input" type="time" name="refreshTime" step="900">
+            <div class="refresh-settings-section">
+                <div class="form-group">
+                    <label>Refresh Settings</label>
+                    <span title="Determines how often the data and image should be refreshed.">ⓘ</span>
+                </div>
+                <div class="form-group nowrap">
+                    <input type="radio" id="refreshInterval" name="refreshType" value="interval" {% if plugin_refresh and 'interval' in plugin_refresh %}checked{% endif %}>
+                    <label for="refreshInterval">Every</label>
+                    <input type="number" id="interval" name="interval" class="form-input" min="1" placeholder="Enter a number">
+                    <select id="unit" name="unit" class="form-input">
+                        <option value="minute">Minute</option>
+                        <option value="hour">Hour</option>
+                        <option value="day">Day</option>
+                    </select>
+                </div>
+                <div class="form-group nowrap">
+                    <input type="radio" id="refreshScheduled" name="refreshType" value="scheduled" {% if plugin_refresh and 'scheduled' in plugin_refresh %}checked{% endif %}>
+                    <label for="refreshScheduled">Daily at </label>
+                    <input id="scheduled" class="time-input" type="time" name="refreshTime" step="900">
+                </div>
             </div>
             {% endif %}
 
