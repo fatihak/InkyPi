@@ -46,25 +46,29 @@ class WaveshareDisplay(AbstractDisplay):
         # Construct module path dynamically - e.g. "display.waveshare_epd.epd7in3e"
         module_name = f"display.waveshare_epd.{display_type}" 
 
-        try:
-            # Workaround for some Waveshare drivers using 'import epdconfig' causing import errors
-            epd_dir = Path(__file__).parent / "waveshare_epd"
-            if str(epd_dir) not in sys.path:
-                sys.path.insert(0, str(epd_dir))
+        # Workaround for some Waveshare drivers using 'import epdconfig' causing import errors
+        epd_dir = Path(__file__).parent / "waveshare_epd"
+        if str(epd_dir) not in sys.path:
+            sys.path.insert(0, str(epd_dir))
 
+        try:
             # Dynamically load module
             epd_module = importlib.import_module(module_name)  
-            self.epd_display = epd_module.EPD()  
-            
-            self.epd_display.init()
+            self.epd_display = epd_module.EPD()
+            # Workaround for init functions with inconsistent casing
+            self.epd_display_init = getattr(self.epd_display, "Init", getattr(self.epd_display, "init", None))
+
+            if not callable(self.epd_display_init):
+                raise AttributeError("No Init/init method found")
+
+            self.epd_display_init()
 
             display_args_spec = inspect.getfullargspec(self.epd_display.display)
             display_args = display_args_spec.args
-
         except ModuleNotFoundError:
             raise ValueError(f"Unsupported Waveshare display type: {display_type}")
         except AttributeError:
-            raise ValueError(f"Display does not support 'EPD.Display()': {display_type}")
+            raise ValueError(f"Display does not support required methods: {display_type}")
 
         self.bi_color_display = len(display_args_spec.args) > 2
 
@@ -99,7 +103,7 @@ class WaveshareDisplay(AbstractDisplay):
             raise ValueError(f"No image provided.")
 
         # Assume device was in sleep mode.
-        self.epd_display.init()
+        self.epd_display_init()
 
         # Clear residual pixels before updating the image.
         self.epd_display.Clear()
@@ -117,5 +121,3 @@ class WaveshareDisplay(AbstractDisplay):
         # Put device into low power mode (EPD displays maintain image when powered off)
         logger.info("Putting Waveshare display into sleep mode for power saving.")
         self.epd_display.sleep()
-
-        
