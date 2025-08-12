@@ -1,0 +1,27 @@
+<div class="form-group">
+    <label for="padImage" class="form-label">Fit the image to the frame:</label>
+    <div class="toggle-container">
+        <input type="checkbox" id="padImage" name="padImage" class="toggle-checkbox" value="false"
+            onclick="this.value = this.checked ? 'true' : 'false'">
+        <label for="padImage" class="toggle-label"></label>
+    </div>
+    <label for="backgroundColor" class="form-label">Background Color:</label>
+    <input type="color" id="backgroundColor" name="backgroundColor" value="#ffffff"/>
+</div>
+
+<div class="form-group">
+    <label for="title-custom">Local Folder Path:</label>
+    <input type="text" id="folderPath" name="folderPath" class="form-input" placeholder="Path to Folder" />
+</div>
+
+<script>
+    // populate form values from plugin settings
+    document.addEventListener('DOMContentLoaded', () => {
+
+        if (loadPluginSettings) {
+            document.getElementById('folderPath').value = pluginSettings.folderPath || '';
+            document.getElementById('padImage').checked = pluginSettings.padImage;
+            document.getElementById('backgroundColor').value = pluginSettings.backgroundColor;
+        }
+    });
+</script>
