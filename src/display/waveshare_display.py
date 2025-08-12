@@ -1,9 +1,11 @@
 import inspect
 import importlib
 import logging
+import sys
 
 from display.abstract_display import AbstractDisplay
 from PIL import Image
+from pathlib import Path
 from plugins.plugin_registry import get_plugin_instance
 
 logger = logging.getLogger(__name__)
@@ -45,6 +47,11 @@ class WaveshareDisplay(AbstractDisplay):
         module_name = f"display.waveshare_epd.{display_type}" 
 
         try:
+            # Workaround for some Waveshare drivers using 'import epdconfig' causing import errors
+            epd_dir = Path(__file__).parent / "waveshare_epd"
+            if str(epd_dir) not in sys.path:
+                sys.path.insert(0, str(epd_dir))
+
             # Dynamically load module
             epd_module = importlib.import_module(module_name)  
             self.epd_display = epd_module.EPD()  
@@ -63,9 +70,11 @@ class WaveshareDisplay(AbstractDisplay):
 
         # update the resolution directly from the loaded device context
         if not self.device_config.get_config("resolution"):
+            w, h = int(self.epd_display.width), int(self.epd_display.height)
+            resolution = [w, h] if w >= h else [h, w]
             self.device_config.update_value(
                 "resolution",
-                [int(self.epd_display.width), int(self.epd_display.height)],
+                resolution,
                 write=True)
 
 
