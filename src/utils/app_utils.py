@@ -7,6 +7,8 @@ from PIL import Image, ImageDraw, ImageFont, ImageOps
 
 logger = logging.getLogger(__name__)
 
+ALLOWED_FILE_EXTENSIONS = {'pdf', 'png', 'jpg', 'jpeg', 'gif', 'webp'}
+
 FONT_FAMILIES = {
     "Dogica": [{
         "font-weight": "normal",
@@ -127,7 +129,6 @@ def parse_form(request_form):
     return request_dict
 
 def handle_request_files(request_files, form_data={}):
-    allowed_file_extensions = {'pdf', 'png', 'jpg', 'jpeg', 'gif'}
     file_location_map = {}
     # handle existing file locations being provided as part of the form data
     for key in set(request_files.keys()):
@@ -142,7 +143,7 @@ def handle_request_files(request_files, form_data={}):
             continue
 
         extension = os.path.splitext(file_name)[1].replace('.', '')
-        if not extension or extension.lower() not in allowed_file_extensions:
+        if not extension or extension.lower() not in ALLOWED_FILE_EXTENSIONS:
             continue
 
         file_name = os.path.basename(file_name)

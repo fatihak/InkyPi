@@ -5,6 +5,8 @@ import random
 import glob
 import os
 
+from utils.app_utils import ALLOWED_FILE_EXTENSIONS
+
 logger = logging.getLogger(__name__)
 
 
@@ -37,8 +39,15 @@ class ImageFolder(BasePlugin):
         if not os.path.isdir(directory_to_search):
             raise RuntimeError(f"Provided folder path {directory_to_search} is not a folder")
 
-        # Get a list of files in the folder
-        images_in_folder = glob.glob(f"{directory_to_search}/**/*", recursive=True)
+        images_in_folder = []
+
+        # Get a list of allowed image files in the folder and subfolders
+        for img_ext in ALLOWED_FILE_EXTENSIONS:
+            found_images = glob.glob(f"{directory_to_search}/**/*.{img_ext}", recursive=True)
+            images_in_folder.extend(found_images)
+
+        if not images_in_folder:
+            raise RuntimeError(f"No Support Images found in the provided folder path {directory_to_search}")
 
         img_index = random.randrange(0, len(images_in_folder))
         image = self.open_image(img_index, images_in_folder)
