@@ -130,6 +130,14 @@ In this case, you’ll need to manually copy both the epdXinX.py and epdconfig.p
 ```bash
 InkyPi/src/display/waveshare_epd/
 ```
+
+For example, to copy the driver and epdconfig files for epd13in3E (Waveshare Spectra 6 (E6) Full Color 13.3 inch display):
+```bash
+cd InkyPi/src/display/waveshare_epd/
+curl -L -O https://raw.githubusercontent.com/waveshareteam/e-Paper/refs/heads/master/E-paper_Separate_Program/13.3inch_e-Paper_E/RaspberryPi/python/lib/epd13in3E.py
+curl -L -O https://raw.githubusercontent.com/waveshareteam/e-Paper/refs/heads/master/E-paper_Separate_Program/13.3inch_e-Paper_E/RaspberryPi/python/lib/epdconfig.py
+```
+
 Once the files are in place, rerun the installation script. The script will detect the driver locally and skip the download step.
 
 ## Today's Newspaper not found

@@ -1,0 +1,15 @@
+<div class="form-group nowrap">
+    <label for="comic" class="form-label">Comic:</label>
+    <select id="comic" name="comic" class="form-input">
+        {% for comic in comics %}
+        <option value="{{comic}}">{{comic}}</option>
+        {% endfor %}
+    </select>
+</div>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {        
+        if (loadPluginSettings) {
+            document.getElementById('comic').value = pluginSettings.comic;
+        }
+    });
+</script>
