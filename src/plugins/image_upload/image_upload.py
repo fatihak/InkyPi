@@ -31,7 +31,7 @@ class ImageUpload(BasePlugin):
             img_index = 0
 
         if settings.get('randomize') == "true":
-            img_index = random.randint(0, len(image_locations))
+            img_index = random.randrange(0, len(image_locations))
             image = self.open_image(img_index, image_locations)
         else:
             image = self.open_image(img_index, image_locations)
