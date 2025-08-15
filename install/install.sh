@@ -181,6 +181,9 @@ echo_blue() {
 
 install_debian_dependencies() {
   if [ -f "$APT_REQUIREMENTS_FILE" ]; then
+    sudo apt-get update > /dev/null &
+    show_loader "Fetch available system dependencies updates. " 
+
     xargs -a "$APT_REQUIREMENTS_FILE" sudo apt-get install -y > /dev/null &
     show_loader "Installing system dependencies. "
   else
