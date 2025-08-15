@@ -16,7 +16,7 @@ InkyPi is an open-source, customizable E-Ink display powered by a Raspberry Pi. 
 
 **Plugins**:
 
-- Image Upload/Local Folder: Upload and display any image from your browser or mount a local Folder
+- Image Upload/Folder: Upload and display any image from your browser or mount a local Folder
 - Daily Newspaper/Comic: Show daily comics and front pages of major newspapers from around the world
 - Clock: Customizable clock faces for displaying time
 - AI Image/Text: Generate images and dynamic text from prompts using OpenAI's models
