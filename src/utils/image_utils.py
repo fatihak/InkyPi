@@ -113,17 +113,18 @@ def take_screenshot(target, dimensions, timeout_ms=None):
             "--headless",
             f"--screenshot={img_file_path}",
             f"--window-size={dimensions[0]},{dimensions[1]}",
-            "--no-sandbox",
-            "--disable-gpu",
-            "--disable-software-rasterizer",
-            "--disable-background-networking",
             "--disable-dev-shm-usage",
+            "--disable-gpu",
+            "--use-gl=swiftshader",
             "--hide-scrollbars",
-            "--single-process",
+            "--in-process-gpu",
+            "--js-flags=--jitless",
+            "--disable-zero-copy",
+            "--disable-gpu-memory-buffer-compositor-resources",
             "--disable-extensions",
             "--disable-plugins",
             "--mute-audio",
-            "--js-flags=--max_old_space_size=128"
+            "--no-sandbox"
         ]
         if timeout_ms:
             command.append(f"--timeout={timeout_ms}")
@@ -144,5 +145,5 @@ def take_screenshot(target, dimensions, timeout_ms=None):
 
     except Exception as e:
         logger.error(f"Failed to take screenshot: {str(e)}")
-    
+
     return image
