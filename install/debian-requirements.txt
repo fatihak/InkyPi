@@ -5,8 +5,7 @@ python3-pip
 avahi-daemon
 libopenblas-dev
 libopenjp2-7
-chromium-common=138.0.7204.183-1~deb12u1 --allow-downgrades
-chromium-headless-shell=138.0.7204.183-1~deb12u1 --allow-downgrades
+chromium-headless-shell
 libfreetype6-dev
 fonts-noto-color-emoji
 zram-tools
