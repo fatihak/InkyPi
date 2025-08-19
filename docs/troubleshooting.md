@@ -136,6 +136,12 @@ For example, to copy the driver and epdconfig files for epd13in3E (Waveshare Spe
 cd InkyPi/src/display/waveshare_epd/
 curl -L -O https://raw.githubusercontent.com/waveshareteam/e-Paper/refs/heads/master/E-paper_Separate_Program/13.3inch_e-Paper_E/RaspberryPi/python/lib/epd13in3E.py
 curl -L -O https://raw.githubusercontent.com/waveshareteam/e-Paper/refs/heads/master/E-paper_Separate_Program/13.3inch_e-Paper_E/RaspberryPi/python/lib/epdconfig.py
+```
+
+Additionally, we need the DEV_config-file
+
+for Pi Zero 2 W the file is:
+```bash
 curl -L -O https://raw.githubusercontent.com/waveshareteam/e-Paper/refs/heads/master/E-paper_Separate_Program/13.3inch_e-Paper_E/RaspberryPi/python/lib/DEV_Config_64_b.so
 ```
 
