@@ -136,6 +136,7 @@ For example, to copy the driver and epdconfig files for epd13in3E (Waveshare Spe
 cd InkyPi/src/display/waveshare_epd/
 curl -L -O https://raw.githubusercontent.com/waveshareteam/e-Paper/refs/heads/master/E-paper_Separate_Program/13.3inch_e-Paper_E/RaspberryPi/python/lib/epd13in3E.py
 curl -L -O https://raw.githubusercontent.com/waveshareteam/e-Paper/refs/heads/master/E-paper_Separate_Program/13.3inch_e-Paper_E/RaspberryPi/python/lib/epdconfig.py
+curl -L -O https://raw.githubusercontent.com/waveshareteam/e-Paper/refs/heads/master/E-paper_Separate_Program/13.3inch_e-Paper_E/RaspberryPi/python/lib/DEV_Config_64_b.so
 ```
 
 Once the files are in place, rerun the installation script. The script will detect the driver locally and skip the download step.
