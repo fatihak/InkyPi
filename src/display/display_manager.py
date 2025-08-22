@@ -3,8 +3,24 @@ import json
 import logging
 
 from utils.image_utils import resize_image, change_orientation, apply_image_enhancement
-from display.inky_display import InkyDisplay
-from display.waveshare_display import WaveshareDisplay
+from display.mock_display import MockDisplay
+
+# Try to import hardware displays, but don't fail if they're not available
+try:
+    from display.inky_display import InkyDisplay
+    INKY_AVAILABLE = True
+except ImportError:
+    INKY_AVAILABLE = False
+    logger = logging.getLogger(__name__)
+    logger.info("Inky display not available, hardware support disabled")
+
+try:
+    from display.waveshare_display import WaveshareDisplay
+    WAVESHARE_AVAILABLE = True
+except ImportError:
+    WAVESHARE_AVAILABLE = False
+    logger = logging.getLogger(__name__)
+    logger.info("Waveshare display not available, hardware support disabled")
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +45,9 @@ class DisplayManager:
      
         display_type = device_config.get_config("display_type", default="inky")
 
-        if display_type == "inky":
+        if display_type == "mock":
+            self.display = MockDisplay(device_config)
+        elif display_type == "inky":
             self.display = InkyDisplay(device_config)
         elif fnmatch.fnmatch(display_type, "epd*in*"):  
             # derived from waveshare epd - we assume here that will be consistent
