@@ -20,64 +20,351 @@
     <input type="file" clear-on-submit id="imageUpload" name="imageFiles[]" accept="image/*" multiple class="file-upload-input" onchange="addFiles()">
 </div>
 
-<!-- Display uploaded & existing file names -->
-<div class="form-group">
-    <div id="fileNames" class="file-name-list"></div>
+<!-- Image Gallery with Selection Controls -->
+<div class="form-group" style="margin-top: 20px;">
+    <div class="gallery-header">
+        <label class="form-label">Image Gallery</label>
+        <div class="selection-controls">
+            <span id="selectionCount" class="selection-count">0 selected</span>
+            <button type="button" class="control-btn" onclick="selectAllImages()">Select All</button>
+            <button type="button" class="control-btn" onclick="selectNoneImages()">Select None</button>
+            <button type="button" class="control-btn delete-btn" onclick="deleteSelectedImages()" disabled>Delete Selected</button>
+        </div>
+    </div>
 </div>
+<div id="imageGallery" class="image-gallery"></div>
 
 <!-- Hidden input fields to store existing file data -->
 <div id="hiddenFileInputs"></div>
 
+<style>
+    .gallery-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+    
+    .selection-controls {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+    
+    .selection-count {
+        font-size: 14px;
+        color: #666;
+        font-weight: 500;
+    }
+    
+    .control-btn {
+        padding: 5px 12px;
+        background-color: #f0f0f0;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 13px;
+        transition: all 0.2s;
+    }
+    
+    .control-btn:hover {
+        background-color: #e0e0e0;
+        border-color: #ccc;
+    }
+    
+    .control-btn.delete-btn {
+        background-color: #f44336;
+        color: white;
+        border-color: #d32f2f;
+    }
+    
+    .control-btn.delete-btn:hover:not(:disabled) {
+        background-color: #d32f2f;
+    }
+    
+    .control-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+    
+    .image-gallery {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 15px;
+        margin: 10px 0;
+        padding: 15px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        background-color: #f9f9f9;
+        width: 100%;
+        box-sizing: border-box;
+        min-height: 200px;
+    }
+    
+    .image-gallery:empty::after {
+        content: "No images uploaded yet";
+        display: block;
+        text-align: center;
+        color: #999;
+        font-style: italic;
+        grid-column: 1 / -1;
+        padding: 40px;
+    }
+    
+    .image-item {
+        position: relative;
+        width: 100%;
+        padding-bottom: 100%;
+        overflow: hidden;
+        border-radius: 5px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        transition: all 0.2s;
+        cursor: pointer;
+    }
+    
+    .image-item.selected {
+        box-shadow: 0 0 0 3px #2196F3;
+        transform: scale(0.95);
+    }
+    
+    .image-item img {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform 0.2s;
+    }
+    
+    .image-item:hover img {
+        transform: scale(1.05);
+    }
+    
+    .image-item .image-name {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: rgba(0, 0, 0, 0.7);
+        color: white;
+        padding: 4px 8px;
+        font-size: 11px;
+        text-align: center;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    
+    .image-checkbox {
+        position: absolute;
+        top: 8px;
+        left: 8px;
+        width: 20px;
+        height: 20px;
+        background: rgba(255, 255, 255, 0.9);
+        border: 2px solid #333;
+        border-radius: 3px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10;
+        transition: all 0.2s;
+    }
+    
+    .image-checkbox.checked {
+        background: #2196F3;
+        border-color: #2196F3;
+    }
+    
+    .image-checkbox.checked::after {
+        content: '✓';
+        color: white;
+        font-weight: bold;
+        font-size: 14px;
+    }
+    
+</style>
+
 <script>
+    let selectedImages = new Set();
+    
+    function updateImageGallery() {
+        const gallery = document.getElementById('imageGallery');
+        gallery.innerHTML = '';
+        selectedImages.clear();
+        
+        // Get all existing files from hidden inputs
+        const existingFiles = [];
+        document.querySelectorAll('#hiddenFileInputs input[name="imageFiles[]"]').forEach(input => {
+            existingFiles.push(input.value);
+        });
+        
+        // Get all newly added files
+        const newFiles = uploadedFiles["imageFiles[]"] || [];
+        
+        // Display existing files
+        existingFiles.forEach(filePath => {
+            const fileName = filePath.split('/').pop();
+            const imageUrl = `/static/images/saved/${fileName}`;
+            createImageItem(imageUrl, fileName, filePath, 'existing');
+        });
+        
+        // Display newly added files (using FileReader for preview)
+        newFiles.forEach((file, index) => {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                createImageItem(e.target.result, file.name, index, 'new');
+            };
+            reader.readAsDataURL(file);
+        });
+        
+        updateSelectionCount();
+    }
+    
+    function createImageItem(src, name, identifier, type) {
+        const gallery = document.getElementById('imageGallery');
+        const item = document.createElement('div');
+        item.className = 'image-item';
+        item.dataset.identifier = identifier;
+        item.dataset.type = type;
+        item.dataset.name = name;
+        
+        item.innerHTML = `
+            <div class="image-checkbox"></div>
+            <img src="${src}" alt="${name}">
+            <div class="image-name" title="${name}">${name}</div>
+        `;
+        
+        // Add click handler to the entire item
+        item.onclick = function(event) {
+            toggleImageSelection(event, identifier, type);
+        };
+        
+        gallery.appendChild(item);
+    }
+    
+    function toggleImageSelection(event, identifier, type) {
+        event.stopPropagation();
+        const key = `${type}-${identifier}`;
+        const item = event.currentTarget.classList.contains('image-item') 
+            ? event.currentTarget 
+            : event.currentTarget.closest('.image-item');
+        const checkbox = item.querySelector('.image-checkbox');
+        
+        if (selectedImages.has(key)) {
+            selectedImages.delete(key);
+            item.classList.remove('selected');
+            checkbox.classList.remove('checked');
+        } else {
+            selectedImages.add(key);
+            item.classList.add('selected');
+            checkbox.classList.add('checked');
+        }
+        
+        updateSelectionCount();
+    }
+    
+    function selectAllImages() {
+        document.querySelectorAll('.image-item').forEach(item => {
+            const key = `${item.dataset.type}-${item.dataset.identifier}`;
+            selectedImages.add(key);
+            item.classList.add('selected');
+            item.querySelector('.image-checkbox').classList.add('checked');
+        });
+        updateSelectionCount();
+    }
+    
+    function selectNoneImages() {
+        selectedImages.clear();
+        document.querySelectorAll('.image-item').forEach(item => {
+            item.classList.remove('selected');
+            item.querySelector('.image-checkbox').classList.remove('checked');
+        });
+        updateSelectionCount();
+    }
+    
+    function updateSelectionCount() {
+        const count = selectedImages.size;
+        document.getElementById('selectionCount').textContent = `${count} selected`;
+        document.querySelector('.delete-btn').disabled = count === 0;
+    }
+    
+    function deleteSelectedImages() {
+        if (selectedImages.size === 0) return;
+        
+        if (!confirm(`Are you sure you want to delete ${selectedImages.size} selected image(s)?`)) {
+            return;
+        }
+        
+        selectedImages.forEach(key => {
+            const [type, identifier] = key.split('-', 2);
+            
+            if (type === 'existing') {
+                // Remove from hidden inputs
+                const fileName = identifier.split('/').pop();
+                const hiddenInput = document.getElementById(`hidden-${fileName}`);
+                if (hiddenInput) hiddenInput.remove();
+            } else if (type === 'new') {
+                // Remove from uploadedFiles
+                const index = parseInt(identifier);
+                if (uploadedFiles["imageFiles[]"] && uploadedFiles["imageFiles[]"][index]) {
+                    uploadedFiles["imageFiles[]"].splice(index, 1);
+                }
+            }
+        });
+        
+        // Refresh the gallery
+        updateImageGallery();
+    }
+    
     function addFiles() {
         const fileInput = document.getElementById("imageUpload");
-        const fileNamesDisplay = document.getElementById("fileNames");
-        
         const files = Array.from(fileInput.files);
 
         if (!uploadedFiles["imageFiles[]"]) {
             uploadedFiles["imageFiles[]"] = [];
         }
 
+        // Get all existing filenames
+        const existingFileNames = [];
+        document.querySelectorAll('#hiddenFileInputs input[name="imageFiles[]"]').forEach(input => {
+            existingFileNames.push(input.value.split('/').pop());
+        });
+
+        const duplicates = [];
+
         files.forEach(file => {
             const fileName = file.name;
 
-            // Prevent duplicate files
-            if (!uploadedFiles["imageFiles[]"].some(f => f.name === fileName)) {
+            // Check for duplicates against both uploaded files and existing files
+            const isDuplicateUpload = uploadedFiles["imageFiles[]"].some(f => f.name === fileName);
+            const isDuplicateExisting = existingFileNames.includes(fileName);
+            
+            if (isDuplicateUpload || isDuplicateExisting) {
+                duplicates.push(fileName);
+            } else {
                 uploadedFiles["imageFiles[]"].push(file);
-
-                const fileElement = document.createElement("div");
-                fileElement.innerHTML = `
-                    <span id="fileNameText">${fileName}</span>
-                    <button type="button" class="remove-btn" onclick="removeAddedFile('${fileName}')">X</button>
-                `;
-                fileElement.id = `added-${fileName}`;
-                fileElement.classList.add("file-name");
-                fileElement.setAttribute('delete-on-submit', '');
-                fileNamesDisplay.appendChild(fileElement);
             }
         });
 
+        // Show alert for duplicates
+        if (duplicates.length > 0) {
+            alert(`The following files were not added because they already exist:\n\n${duplicates.join('\n')}`);
+        }
+
         // Clear the input to allow adding the same file again if needed
         fileInput.value = "";
-    }
-
-    function removeAddedFile(fileName) {
-        // Remove the file from uploadedFiles
-        uploadedFiles["imageFiles[]"] = uploadedFiles["imageFiles[]"].filter(f => f.name !== fileName);
         
-        // Remove the displayed filename
-        document.getElementById(`added-${fileName}`).remove();
-    }
-
-    function removeExistingFile(fileName) {
-        document.getElementById(`existing-${fileName}`).remove(); // Remove from display
-        document.getElementById(`hidden-${fileName}`).remove(); // Remove hidden input
+        // Update the image gallery
+        updateImageGallery();
     }
 
     // populate form values from plugin settings
     document.addEventListener('DOMContentLoaded', () => {    
-        const fileNamesDisplay = document.getElementById("fileNames");
         const hiddenFileInputs = document.getElementById("hiddenFileInputs");
         if (loadPluginSettings) {
             document.getElementById('padImage').checked = pluginSettings.padImage;
@@ -86,20 +373,10 @@
 
             const existingFiles = pluginSettings['imageFiles[]'] || []
 
-            // Loop through the existing files and add them to the display and hidden inputs
+            // Loop through the existing files and add them to hidden inputs
             existingFiles.forEach(filePath => {
-                const fileName = filePath.split('/').pop()
-                // Create an element for the file name
-                const fileElement = document.createElement("div");
-                fileElement.innerHTML = `
-                    <span id="fileNameText">${fileName}</span>
-                    <button type="button" class="remove-btn" onclick="removeExistingFile('${fileName}')">X</button>
-                `;
-                fileElement.id = `existing-${fileName}`;
-                fileElement.classList.add("file-name");
-                fileElement.setAttribute('delete-on-submit', '');
-                fileNamesDisplay.appendChild(fileElement);
-
+                const fileName = filePath.split('/').pop();
+                
                 // Create a hidden input for the existing file
                 const hiddenInput = document.createElement("input");
                 hiddenInput.type = "hidden";
@@ -109,6 +386,9 @@
                 hiddenInput.setAttribute('delete-on-submit', '');
                 hiddenFileInputs.appendChild(hiddenInput);
             });
+            
+            // Update the image gallery after loading existing files
+            updateImageGallery();
         }
     });
 </script>
