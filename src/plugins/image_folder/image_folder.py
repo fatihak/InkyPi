@@ -1,9 +1,7 @@
 from plugins.base_plugin.base_plugin import BasePlugin
 from PIL import Image, ImageOps, ImageFilter
-from io import BytesIO
 import logging
 import os
-import requests
 import random
 
 logger = logging.getLogger(__name__)
@@ -43,6 +41,7 @@ class ImageFolder(BasePlugin):
     def generate_image(self, settings, device_config):
         folder_path = settings.get('folder_path')
         pad_image = settings.get('padImage', False)
+
         if not folder_path:
             raise RuntimeError("Folder path is required.")
         
@@ -62,7 +61,22 @@ class ImageFolder(BasePlugin):
         if not image_files:
             raise RuntimeError(f"No image files found in folder: {folder_path}")
 
+        random_repetition = settings.get("randomRepetition", False)
+        prev_images = settings.get("prev_images", [])
+
+        if not random_repetition:
+            if prev_images in image_files:
+                image_files.remove(prev_images)
+
+            if not image_files:
+                image_files = prev_images
+                prev_images.clear()
+
         image_url = random.choice(image_files)
+
+        if not random_repetition:
+            prev_images.append(image_url)
+            settings["prev_images"] = prev_images
 
         logger.info(f"Random image selected {image_url}")
 
@@ -70,5 +84,12 @@ class ImageFolder(BasePlugin):
 
         if not image:
             raise RuntimeError("Failed to load image, please check logs.")
+
+        shutdown = settings.get("shutdown", False)
+        shutdown_delay = settings.get("delay", 5)
+
+        if shutdown:
+            logger.info(f"Shutting down in {shutdown_delay} minutes.")
+            os.system(f"sudo shutdown +{shutdown_delay}")
 
         return image
