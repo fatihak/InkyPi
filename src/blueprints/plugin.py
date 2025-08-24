@@ -128,14 +128,29 @@ def display_plugin_instance():
 def update_now():
     device_config = current_app.config['DEVICE_CONFIG']
     refresh_task = current_app.config['REFRESH_TASK']
+    display_manager = current_app.config['DISPLAY_MANAGER']
 
     try:
         plugin_settings = parse_form(request.form)
         plugin_settings.update(handle_request_files(request.files))
         plugin_id = plugin_settings.pop("plugin_id")
 
-        refresh_task.manual_update(ManualRefresh(plugin_id, plugin_settings))
+        # Check if refresh task is running
+        if refresh_task.running:
+            refresh_task.manual_update(ManualRefresh(plugin_id, plugin_settings))
+        else:
+            # In development mode, directly update the display
+            logger.info("Refresh task not running, updating display directly")
+            plugin_config = device_config.get_plugin(plugin_id)
+            if not plugin_config:
+                return jsonify({"error": f"Plugin '{plugin_id}' not found"}), 404
+                
+            plugin = get_plugin_instance(plugin_config)
+            image = plugin.generate_image(plugin_settings, device_config)
+            display_manager.display_image(image, image_settings=plugin_config.get("image_settings", []))
+            
     except Exception as e:
+        logger.exception(f"Error in update_now: {str(e)}")
         return jsonify({"error": f"An error occurred: {str(e)}"}), 500
 
     return jsonify({"success": True, "message": "Display updated"}), 200
