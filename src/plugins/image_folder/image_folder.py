@@ -51,9 +51,14 @@ class ImageFolder(BasePlugin):
         if not os.path.isdir(folder_path):
             raise RuntimeError(f"Path is not a directory: {folder_path}")
 
+        orientation = device_config.get_config("orientation")
         dimensions = device_config.get_resolution()
-        if device_config.get_config("orientation") == "vertical":
-            dimensions = dimensions[::-1]
+
+        if os.path.exists(f"{folder_path}/horizontal") and os.path.exists(f"{folder_path}/vertical"):
+            folder_path = f"{folder_path}/{orientation}"
+        else:
+            if orientation == "vertical":
+                dimensions = dimensions[::-1]
 
         logger.info(f"Grabbing a random image from: {folder_path}")
 
