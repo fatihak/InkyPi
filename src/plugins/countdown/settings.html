@@ -1,0 +1,19 @@
+<div class="form-group">
+    <div class="form-group">
+        <label for="title" class="form-label">Title</label>
+        <input type="text" id="title" name="title" placeholder="Type something..." required class="form-input">
+    </div>
+    <div class="form-group">
+        <label for="date" class="form-label">Date</label>
+        <input type="date" id="date" name="date" class="form-input" />
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        if (loadPluginSettings) {
+            document.getElementById('title').value = pluginSettings.title || '';
+            document.getElementById('date').value = pluginSettings.date;
+        }
+    });
+</script>

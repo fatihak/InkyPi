@@ -1,0 +1,30 @@
+<div class="form-group">
+    <div class="form-group">
+        <label for="githubUsername" class="form-label">GitHub Username:</label>
+        <input type="text" id="githubUsername" name="githubUsername" placeholder="Type something..." required class="form-input">
+    </div>
+    <div class="form-group">
+        <label for="contributionColor[]" class="form-label">Grid Colors:</label>
+        <input type="color" name="contributionColor[]" class="color-picker">
+        <input type="color" name="contributionColor[]" class="color-picker">
+        <input type="color" name="contributionColor[]" class="color-picker">
+        <input type="color" name="contributionColor[]" class="color-picker">
+        <input type="color" name="contributionColor[]" class="color-picker">
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        var colors = ['#ebedf0', '#9be9a8', '#40c463', '#30a14e', '#216e39']
+        if (loadPluginSettings) {
+            document.getElementById('githubUsername').value = pluginSettings.githubUsername || '';
+            colors = pluginSettings['contributionColor[]'];
+        }
+
+        document.querySelectorAll('input[name="contributionColor[]"]').forEach((input, index) => {
+            if (colors[index]) {
+                input.value = colors[index];
+            }
+        });
+    });
+</script>
