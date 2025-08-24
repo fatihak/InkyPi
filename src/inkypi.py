@@ -92,16 +92,17 @@ if __name__ == '__main__':
         # Run the Flask app
         app.secret_key = str(random.randint(100000,999999))
         
-        # Get local IP address for display
-        import socket
-        try:
-            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            s.connect(("8.8.8.8", 80))
-            local_ip = s.getsockname()[0]
-            s.close()
-            logger.info(f"Serving on http://{local_ip}:{PORT}")
-        except:
-            pass  # Ignore if we can't get the IP
+        # Get local IP address for display (only in dev mode when running on non-Pi)
+        if DEV_MODE:
+            import socket
+            try:
+                s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                s.connect(("8.8.8.8", 80))
+                local_ip = s.getsockname()[0]
+                s.close()
+                logger.info(f"Serving on http://{local_ip}:{PORT}")
+            except:
+                pass  # Ignore if we can't get the IP
             
         serve(app, host="0.0.0.0", port=PORT, threads=1)
     finally:

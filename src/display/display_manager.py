@@ -5,24 +5,18 @@ import logging
 from utils.image_utils import resize_image, change_orientation, apply_image_enhancement
 from display.mock_display import MockDisplay
 
+logger = logging.getLogger(__name__)
+
 # Try to import hardware displays, but don't fail if they're not available
 try:
     from display.inky_display import InkyDisplay
-    INKY_AVAILABLE = True
 except ImportError:
-    INKY_AVAILABLE = False
-    logger = logging.getLogger(__name__)
     logger.info("Inky display not available, hardware support disabled")
 
 try:
     from display.waveshare_display import WaveshareDisplay
-    WAVESHARE_AVAILABLE = True
 except ImportError:
-    WAVESHARE_AVAILABLE = False
-    logger = logging.getLogger(__name__)
     logger.info("Waveshare display not available, hardware support disabled")
-
-logger = logging.getLogger(__name__)
 
 class DisplayManager:
 
