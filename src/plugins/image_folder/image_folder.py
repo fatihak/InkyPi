@@ -1,74 +1,66 @@
 from plugins.base_plugin.base_plugin import BasePlugin
-from PIL import Image, ImageOps, ImageFilter
-from io import BytesIO
+from PIL import Image, ImageOps, ImageColor
 import logging
-import os
-import requests
 import random
+import glob
+import os
+
+from utils.app_utils import ALLOWED_FILE_EXTENSIONS
 
 logger = logging.getLogger(__name__)
 
-def list_files_in_folder(folder_path):
-    """Return a list of image file paths in the given folder, excluding hidden files."""
-    image_extensions = ('.jpg', '.jpeg', '.png', '.gif', '.bmp', '.tiff', '.webp')
-    return [
-        os.path.join(folder_path, f)
-        for f in os.listdir(folder_path)
-        if (
-            os.path.isfile(os.path.join(folder_path, f))
-            and f.lower().endswith(image_extensions)
-            and not f.startswith('.')
-        )
-    ]
-
-def grab_image(image_path, dimensions, pad_image):
-    """Load an image from disk, auto-orient it, and resize to fit within the specified dimensions, preserving aspect ratio."""
-    try:
-        img = Image.open(image_path)
-        img = ImageOps.exif_transpose(img)  # Correct orientation using EXIF
-        img = ImageOps.contain(img, dimensions, Image.LANCZOS)
-
-        if pad_image:
-            bkg = ImageOps.fit(img, dimensions)
-            bkg = bkg.filter(ImageFilter.BoxBlur(8))
-            img_size = img.size
-            bkg.paste(img, ((dimensions[0] - img_size[0]) // 2, (dimensions[1] - img_size[1]) // 2))
-            img = bkg
-        return img
-    except Exception as e:
-        logger.error(f"Error loading image from {image_path}: {e}")
-        return None
 
 class ImageFolder(BasePlugin):
-    def generate_image(self, settings, device_config):
-        folder_path = settings.get('folder_path')
-        pad_image = settings.get('padImage', False)
-        if not folder_path:
-            raise RuntimeError("Folder path is required.")
+
+    def open_image(self, img_index: int, image_locations: list) -> Image:
+        if not image_locations:
+            raise RuntimeError("No images found in the folder provided.")
         
-        if not os.path.exists(folder_path):
-            raise RuntimeError(f"Folder does not exist: {folder_path}")
+        # Check that the image is under 50 MB to prevent out of memory issues
+        image_size_in_mb = os.path.getsize(image_locations[img_index]) / (1000 * 1000)
+        if image_size_in_mb > 50:
+            raise RuntimeError(f"image file {image_locations[img_index]} is required to be under 50 MB")
+            
+
+        # Open the image using Pillow
+        try:
+            image = Image.open(image_locations[img_index])
+        except Exception as e:
+            logger.error(f"Failed to read image file: {str(e)}")
+            raise RuntimeError("Failed to read image file.")
+        return image
         
-        if not os.path.isdir(folder_path):
-            raise RuntimeError(f"Path is not a directory: {folder_path}")
+    def generate_image(self, settings, device_config) -> Image:
 
-        dimensions = device_config.get_resolution()
-        if device_config.get_config("orientation") == "vertical":
-            dimensions = dimensions[::-1]
+        # Get the current index from the device json
+        directory_to_search = settings.get('folderPath', '')
 
-        logger.info(f"Grabbing a random image from: {folder_path}")
+        # Get all files in the directory
+        if not os.path.isdir(directory_to_search):
+            raise RuntimeError(f"Provided folder path {directory_to_search} is not a folder")
 
-        image_files = list_files_in_folder(folder_path)
-        if not image_files:
-            raise RuntimeError(f"No image files found in folder: {folder_path}")
+        images_in_folder = []
 
-        image_url = random.choice(image_files)
+        # Get a list of allowed image files in the folder and subfolders
+        for img_ext in ALLOWED_FILE_EXTENSIONS:
+            found_images = glob.glob(f"{directory_to_search}/**/*.{img_ext}", recursive=True)
+            images_in_folder.extend(found_images)
 
-        logger.info(f"Random image selected {image_url}")
+        if not images_in_folder:
+            raise RuntimeError(f"No Support Images found in the provided folder path {directory_to_search}")
 
-        image = grab_image(image_url, dimensions, pad_image)
+        img_index = random.randrange(0, len(images_in_folder))
+        image = self.open_image(img_index, images_in_folder)
 
-        if not image:
-            raise RuntimeError("Failed to load image, please check logs.")
-
+        # pad the image to the screen dimensions when enabled
+        if settings.get('padImage') == "true":
+            dimensions = device_config.get_resolution()
+            if device_config.get_config("orientation") == "vertical":
+                dimensions = dimensions[::-1]
+            frame_ratio = dimensions[0] / dimensions[1]
+            img_width, img_height = image.size
+            padded_img_size = (int(img_height * frame_ratio) if img_width >= img_height else img_width,
+                              img_height if img_width >= img_height else int(img_width / frame_ratio))
+            background_color = ImageColor.getcolor(settings.get('backgroundColor') or (255, 255, 255), "RGB")
+            return ImageOps.pad(image, padded_img_size, color=background_color, method=Image.Resampling.LANCZOS)
         return image
