@@ -1,5 +1,7 @@
 # InkyPi 
 
+> **Note:** This repository is a modified version of the original [InkyPi](https://github.com/rafaeltini/InkyPi) project, adapted to include new features and support for additional displays.
+
 <img src="./docs/images/inky_clock.jpg" />
 
 
