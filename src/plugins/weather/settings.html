@@ -61,6 +61,11 @@
     </div>
 
     <div class="form-group">
+        <input type="checkbox" id="displayRain" name="displayRain" onclick="this.value=this.checked ? 'true' : 'false';">
+        <span>Rain Amount</span>
+    </div>
+
+    <div class="form-group">
         <input type="checkbox" id="moonPhase" name="moonPhase" onclick="this.value=this.checked ? 'true' : 'false';">
         <span>Moon Phase</span>
     </div>
@@ -188,6 +193,9 @@
             document.getElementById('displayGraph').checked = pluginSettings.displayGraph;
             document.getElementById('displayGraph').value = pluginSettings.displayGraph;
 
+			document.getElementById('displayRain').checked = pluginSettings.displayRain;
+            document.getElementById('displayRain').value = pluginSettings.displayRain;
+			
             document.getElementById('displayForecast').checked = pluginSettings.displayForecast;
             document.getElementById('displayForecast').value = pluginSettings.displayForecast;
 
@@ -211,6 +219,8 @@
             document.getElementById('displayMetrics').value = "true";
             document.getElementById('displayGraph').checked = true;
             document.getElementById('displayGraph').value = "true";
+			document.getElementById('displayRain').checked = false;
+            document.getElementById('displayRain').value = "false";
             document.getElementById('displayForecast').checked = true;
             document.getElementById('displayForecast').value = "true";
             document.getElementById('forecastDays').value = 7;
