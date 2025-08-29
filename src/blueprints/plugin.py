@@ -9,7 +9,7 @@ import logging
 logger = logging.getLogger(__name__)
 plugin_bp = Blueprint("plugin", __name__)
 
-PLUGINS_DIR = resolve_path("plugins")
+# Removed module-level PLUGINS_DIR - will resolve dynamically in route handlers
 
 @plugin_bp.route('/plugin/<plugin_id>')
 def plugin_page(plugin_id):
@@ -44,7 +44,31 @@ def plugin_page(plugin_id):
 
 @plugin_bp.route('/images/<plugin_id>/<path:filename>')
 def image(plugin_id, filename):
-    return send_from_directory(PLUGINS_DIR, os.path.join(plugin_id, filename))
+    # Resolve plugins directory dynamically
+    plugins_dir = resolve_path("plugins")
+    
+    # Construct the full path to the plugin's file
+    plugin_dir = os.path.join(plugins_dir, plugin_id)
+    
+    # Security check to prevent directory traversal
+    safe_path = os.path.abspath(os.path.join(plugin_dir, filename))
+    if not safe_path.startswith(os.path.abspath(plugin_dir)):
+        return "Invalid path", 403
+    
+    # Convert to absolute path for send_from_directory
+    abs_plugin_dir = os.path.abspath(plugin_dir)
+    
+    # Check if the directory and file exist
+    if not os.path.isdir(abs_plugin_dir):
+        logger.error(f"Plugin directory not found: {abs_plugin_dir}")
+        return "Plugin directory not found", 404
+        
+    if not os.path.isfile(safe_path):
+        logger.error(f"File not found: {safe_path}")
+        return "File not found", 404
+    
+    # Serve the file from the plugin directory
+    return send_from_directory(abs_plugin_dir, filename)
 
 @plugin_bp.route('/delete_plugin_instance', methods=['POST'])
 def delete_plugin_instance():
