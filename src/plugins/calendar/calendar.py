@@ -101,7 +101,7 @@ class Calendar(BasePlugin):
             if settings.get("displayPreviousDays") == "true":
                 start = current_dt - timedelta(days=current_dt.weekday())
                 start = datetime(start.year, start.month, start.day)
-            end = start + timedelta(days=7)
+            end = start + timedelta(days=int(settings.get("numDays")))
         elif view == "dayGridMonth":
             start = datetime(current_dt.year, current_dt.month, 1) - timedelta(weeks=1)
             end = datetime(current_dt.year, current_dt.month, 1) + timedelta(weeks=6)
