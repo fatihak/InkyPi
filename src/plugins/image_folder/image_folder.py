@@ -67,11 +67,10 @@ class ImageFolder(BasePlugin):
             raise RuntimeError(f"No image files found in folder: {folder_path}")
 
         random_repetition = settings.get("randomRepetition", False)
-        prev_images = settings.get("prev_images", [])
+        prev_images:list = settings.get("prev_images", [])
 
         if not random_repetition:
-            if prev_images in image_files:
-                image_files.remove(prev_images)
+            image_files = [x for x in image_files if x not in prev_images]
 
             if not image_files:
                 image_files = prev_images
