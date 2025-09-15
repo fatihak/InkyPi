@@ -1,7 +1,7 @@
 <div class="form-group">
     <label for="padImage" class="form-label">Fit the image to the frame:</label>
     <div class="toggle-container">
-        <input type="checkbox" id="padImage" name="padImage" class="toggle-checkbox" value="false"
+        <input type="checkbox" id="padImage" name="padImage" class="toggle-checkbox" value="true" checked
             onclick="this.value = this.checked ? 'true' : 'false'">
         <label for="padImage" class="toggle-label"></label>
     </div>
@@ -11,8 +11,15 @@
             onclick="this.value = this.checked ? 'true' : 'false'">
         <label for="randomize" class="toggle-label"></label>
     </div>
+    <label for="blur" class="form-label">Blur Background:</label>
+    <div class="toggle-container">
+        <input type="checkbox" id="blur" name="blur" class="toggle-checkbox" value="true" checked
+            onclick="this.value = this.checked ? 'true' : 'false'">
+        <label for="blur" class="toggle-label"></label>
+    </div>
     <label for="backgroundColor" class="form-label">Background Color:</label>
     <input type="color" id="backgroundColor" name="backgroundColor" value="#ffffff"/>
+
 </div>
 
 <div class="form-group">
