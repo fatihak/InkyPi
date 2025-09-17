@@ -1,9 +1,7 @@
 from plugins.base_plugin.base_plugin import BasePlugin
-from PIL import Image, ImageOps, ImageFilter
-from io import BytesIO
+from PIL import Image, ImageOps
 import logging
 import os
-import requests
 import random
 
 from utils.image_utils import pad_image_blurry
@@ -28,7 +26,7 @@ def grab_image(image_path, dimensions, pad_image):
     try:
         img = Image.open(image_path)
         img = ImageOps.exif_transpose(img)  # Correct orientation using EXIF
-        img = ImageOps.contain(img, dimensions, Image.LANCZOS)
+        img = ImageOps.contain(img, dimensions, Image.Resampling.LANCZOS)
 
         if pad_image:
             img = pad_image_blurry(img, dimensions)
