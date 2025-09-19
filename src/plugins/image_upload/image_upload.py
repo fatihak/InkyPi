@@ -4,7 +4,7 @@ from io import BytesIO
 import logging
 import random
 
-from utils.image_utils import pad_image_blur
+from src.utils.image_utils import pad_image_blur
 
 logger = logging.getLogger(__name__)
 
