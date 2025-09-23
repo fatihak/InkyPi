@@ -35,7 +35,7 @@ COMICS = {
         "feed": "http://www.questionablecontent.net/QCRSS.xml",
         "element": lambda feed: feed.entries[0].description,
         "url": lambda element: re.search(r'<img[^>]+src=["\"]([^"\"]+)["\"]', element).group(1),
-        "title": lambda feed: "",
+        "title": lambda feed: feed.entries[0].title,
         "caption": lambda element: "",
     },
     "Poorly Drawn Lines": {
