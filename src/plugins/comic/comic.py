@@ -43,20 +43,24 @@ class Comic(BasePlugin):
                 if comic_panel["title"]:
                     lines, wrapped_text = self._wrap_text(comic_panel["title"], font, width)
                     draw.multiline_text((width // 2, 0), wrapped_text, font=font, fill="black", anchor="ma")
-                    top_padding = font.getbbox(wrapped_text)[3] * lines
+                    top_padding = font.getbbox(wrapped_text)[3] * lines + 1
 
                 if comic_panel["caption"]:
                     lines, wrapped_text = self._wrap_text(comic_panel["caption"], font, width)
                     draw.multiline_text((width // 2, height), wrapped_text, font=font, fill="black", anchor="md")
-                    bottom_padding = font.getbbox(wrapped_text)[3] * lines
+                    bottom_padding = font.getbbox(wrapped_text)[3] * lines + 1
 
             scale = min(width / img.width, (height - top_padding - bottom_padding) / img.height)
             new_size = (int(img.width * scale), int(img.height * scale))
             img = img.resize(new_size, Image.LANCZOS)
 
+            y_middle = (height - img.height) // 2
+            y_top_bound = top_padding
+            y_bottom_bound = height - img.height - bottom_padding
+            
             x = (width - img.width) // 2
-            y = (height - img.height) // 2 if top_padding + bottom_padding < (height - img.height) else \
-                top_padding
+            y = y = min(max(y_middle, y_top_bound), y_bottom_bound)
+            
             background.paste(img, (x, y))
 
             return background
