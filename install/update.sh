@@ -16,6 +16,7 @@ SCRIPT_DIR=$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )
 
 APPNAME="inkypi"
 INSTALL_PATH="/usr/local/$APPNAME"
+BINPATH="/usr/local/bin"
 VENV_PATH="$INSTALL_PATH/venv_$APPNAME"
 
 APT_REQUIREMENTS_FILE="$SCRIPT_DIR/debian-requirements.txt"
@@ -71,6 +72,10 @@ else
   echo_error "ERROR: Requirements file $PIP_REQUIREMENTS_FILE not found!"
   exit 1
 fi
+
+echo "Updating executable in ${BINPATH}/$APPNAME"
+cp $SCRIPT_DIR/inkypi $BINPATH/
+sudo chmod +x $BINPATH/$APPNAME
 
 echo "Restarting $APPNAME service."
 sudo systemctl daemon-reload

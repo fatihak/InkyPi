@@ -1,11 +1,25 @@
 from flask import Blueprint, request, jsonify, current_app, render_template, Response
-from cysystemd.reader import JournalReader, JournalOpenMode, Rule
 from utils.time_utils import calculate_seconds
 from datetime import datetime, timedelta
 import os
 import pytz
 import logging
 import io
+
+# Try to import cysystemd for journal reading (Linux only)
+try:
+    from cysystemd.reader import JournalReader, JournalOpenMode, Rule
+    JOURNAL_AVAILABLE = True
+except ImportError:
+    JOURNAL_AVAILABLE = False
+    # Define dummy classes for when cysystemd is not available
+    class JournalOpenMode:
+        SYSTEM = None
+    class Rule:
+        pass
+    class JournalReader:
+        def __init__(self, *args, **kwargs):
+            pass
 
 
 logger = logging.getLogger(__name__)
@@ -89,26 +103,32 @@ def download_logs():
             hours = 2
         since = datetime.now() - timedelta(hours=hours)
 
-        reader = JournalReader()
-        reader.open(JournalOpenMode.SYSTEM)
-        reader.add_filter(Rule("_SYSTEMD_UNIT", "inkypi.service"))
-        reader.seek_realtime_usec(int(since.timestamp() * 1_000_000))
+        if not JOURNAL_AVAILABLE:
+            # Return a message when running in development mode without systemd
+            buffer.write(f"Log download not available in development mode (cysystemd not installed).\n")
+            buffer.write(f"Logs would normally show InkyPi service logs from the last {hours} hours.\n")
+            buffer.write(f"\nTo see Flask development logs, check your terminal output.\n")
+        else:
+            reader = JournalReader()
+            reader.open(JournalOpenMode.SYSTEM)
+            reader.add_filter(Rule("_SYSTEMD_UNIT", "inkypi.service"))
+            reader.seek_realtime_usec(int(since.timestamp() * 1_000_000))
 
-        for record in reader:
-            try:
-                ts = datetime.fromtimestamp(record.get_realtime_usec() / 1_000_000)
-                formatted_ts = ts.strftime("%b %d %H:%M:%S")
-            except Exception:
-                formatted_ts = "??? ?? ??:??:??"
+            for record in reader:
+                try:
+                    ts = datetime.fromtimestamp(record.get_realtime_usec() / 1_000_000)
+                    formatted_ts = ts.strftime("%b %d %H:%M:%S")
+                except Exception:
+                    formatted_ts = "??? ?? ??:??:??"
 
-            data = record.data
-            hostname = data.get("_HOSTNAME", "unknown-host")
-            identifier = data.get("SYSLOG_IDENTIFIER") or data.get("_COMM", "?")
-            pid = data.get("_PID", "?")
-            msg = data.get("MESSAGE", "").rstrip()
+                data = record.data
+                hostname = data.get("_HOSTNAME", "unknown-host")
+                identifier = data.get("SYSLOG_IDENTIFIER") or data.get("_COMM", "?")
+                pid = data.get("_PID", "?")
+                msg = data.get("MESSAGE", "").rstrip()
 
-            # Format the log entry similar to the journalctl default output
-            buffer.write(f"{formatted_ts} {hostname} {identifier}[{pid}]: {msg}\n")
+                # Format the log entry similar to the journalctl default output
+                buffer.write(f"{formatted_ts} {hostname} {identifier}[{pid}]: {msg}\n")
 
         buffer.seek(0)
         # Add date and time to the filename

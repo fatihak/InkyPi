@@ -1,6 +1,8 @@
 {% extends "plugin.html" %}
 
 {% block content %}
+<div id="units-container" data-units="{{ units }}"></div>
+
 
 <div class="weather-dashboard">
   {% if plugin_settings.displayRefreshTime == "true" %}
@@ -86,11 +88,53 @@
     const labels = [{% for hour in hourly_forecast %}"{{ hour.time }}"{% if not loop.last %}, {% endif %}{% endfor %}];
     const temperatures = [{% for hour in hourly_forecast %}{{ hour.temperature }}{% if not loop.last %}, {% endif %}{% endfor %}];
     const precipitation = [{% for hour in hourly_forecast %}{{ hour.precipitation * 100}}{% if not loop.last %}, {% endif %}{% endfor %}]; // Convert to percentage
-
+    const rain = [{% for hour in hourly_forecast %}{{ hour.rain or 0 }}{% if not loop.last %}, {% endif %}{% endfor %}];
+	const units = document.getElementById('units-container').dataset.units;
+	const isImperial = units === "imperial";
+	const unit = isImperial ? "in" : "mm";
+	const threshold = isImperial ? 0.0035 : 0.09;
+	
     // Find min and max temperatures
     const minTemp = Math.min(...temperatures);
     var maxTemp = Math.max(...temperatures);
+	
+    Chart.register({
+      id: 'annotationRain',
+      afterDatasetsDraw(chart, args, pluginOptions) {
+        const { ctx } = chart;
+        const rainData = pluginOptions.precipitationData || [];
+        const meta = chart.getDatasetMeta(1);
 
+        ctx.save();
+        ctx.textAlign = 'center';
+
+        meta.data.forEach((bar, i) => {
+          const rainAmount = rainData[i];
+          if (rainAmount && rainAmount > threshold) {
+            const x = bar.x;
+            const y = bar.y;
+			const base = bar.base;
+			const height = base - y;
+			
+			let textY, unitY;
+			
+			if (height < 25) {
+			  textY = y - 10;
+			  unitY = y - 3;
+			} else {
+			  textY = y + 13;
+			  unitY = y + 20;
+			}
+            ctx.fillStyle = "{{ plugin_settings.textColor }}";
+            ctx.fillText(rainAmount.toFixed(2), x, textY);
+            ctx.fillText(unit, x, unitY); 
+          }
+        });
+
+        ctx.restore();
+      }
+    });
+	
     const chart = new Chart(ctx, {
       type: 'line',
       data: {
@@ -188,7 +232,12 @@
             max: 100,
           }
         },
-        plugins: { legend: { display: false}}, // Hide legend
+        plugins: {
+          legend: { display: false },
+		  {% if plugin_settings.displayRain == "true" %}
+			annotationRain: { precipitationData: rain }
+	      {% endif %}
+        },
         elements: {
           line: {
             borderJoinStyle: 'round' // Smoother line connection

@@ -6,10 +6,34 @@
         {% endfor %}
     </select>
 </div>
+
+<div class="form-group">
+    <div class="form-group">
+        <label for="titleCaption" class="form-label">Show Comic Title and Caption:</label>
+        <div class="toggle-container">
+            <input type="checkbox" id="titleCaption" name="titleCaption" class="toggle-checkbox" value="true" checked onclick="this.value=this.checked ? 'true' : 'false';">
+            <label for="titleCaption" class="toggle-label"></label>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label for="fontSize" class="form-label">Font Size:</label>
+        <select id="fontSize" name="fontSize" class="form-input"">
+            <option value="12">12</option>
+            <option value="14" selected="selected">14</option>
+            <option value="16">16</option>
+            <option value="18">18</option>
+            <option value="20">20</option>
+        </select>
+    </div>
+</div>
+
 <script>
-    document.addEventListener('DOMContentLoaded', () => {        
+    document.addEventListener('DOMContentLoaded', () => {
         if (loadPluginSettings) {
-            document.getElementById('comic').value = pluginSettings.comic;
+            document.getElementById('comic').value = pluginSettings.comic || 'xkcd';
+            document.getElementById('titleCaption').checked = pluginSettings.titleCaption || false;
+            document.getElementById('fontSize').value = pluginSettings.fontSize || '14';
         }
     });
 </script>
