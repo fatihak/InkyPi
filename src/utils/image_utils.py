@@ -1,5 +1,5 @@
 import requests
-from PIL import Image, ImageEnhance
+from PIL import Image, ImageEnhance, ImageOps, ImageFilter
 from io import BytesIO
 import os
 import logging
@@ -147,3 +147,12 @@ def take_screenshot(target, dimensions, timeout_ms=None):
         logger.error(f"Failed to take screenshot: {str(e)}")
 
     return image
+
+def pad_image_blur(img: Image, dimensions: tuple[int, int]) -> Image:
+    bkg = ImageOps.fit(img, dimensions)
+    bkg = bkg.filter(ImageFilter.BoxBlur(8))
+    img = ImageOps.contain(img, dimensions)
+
+    img_size = img.size
+    bkg.paste(img, ((dimensions[0] - img_size[0]) // 2, (dimensions[1] - img_size[1]) // 2))
+    return bkg
