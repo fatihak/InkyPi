@@ -1,6 +1,5 @@
 from plugins.base_plugin.base_plugin import BasePlugin
 from PIL import Image, ImageOps, ImageColor
-from io import BytesIO
 import logging
 import random
 
