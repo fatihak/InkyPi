@@ -3,7 +3,7 @@ from PIL import Image, ImageOps, ImageColor
 import logging
 import random
 
-from src.utils.image_utils import pad_image_blur
+from utils.image_utils import pad_image_blur
 
 logger = logging.getLogger(__name__)
 
@@ -39,16 +39,7 @@ class ImageUpload(BasePlugin):
 
         # Write the new index back ot the device json
         settings['image_index'] = img_index
-
         orientation = device_config.get_config("orientation")
-        w, h = image.size
-
-        if settings.get('rotate') == "true":
-            if orientation == "horizontal" and w < h:
-                image = image.rotate(90, expand=1)
-            elif orientation == "vertical" and h < w:
-                image = image.rotate(-90, expand=1)
-
 
         if settings.get('padImage') == "true":
             dimensions = device_config.get_resolution()
