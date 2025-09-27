@@ -1,5 +1,5 @@
 import logging
-from random import choice
+from random import choice, random
 
 import requests
 from PIL import Image
@@ -8,14 +8,16 @@ from plugins.base_plugin.base_plugin import BasePlugin
 
 logger = logging.getLogger(__name__)
 
-def get_album_id(base: str, album:str, key:str) -> str:
+
+def get_album_id(base: str, album: str, key: str) -> str:
     r = requests.get(f"{base}/albums", headers={"x-api-key": key})
     r.raise_for_status()
     albums = r.json()
     album = [a for a in albums if a["albumName"] == album][0]
     return album["id"]
 
-def get_asset_ids(base: str, album_id: str, key:str) -> list[str]:
+
+def get_asset_ids(base: str, album_id: str, key: str) -> list[str]:
     body = {
         "albumIds": [album_id],
         "size": 1000,
@@ -27,6 +29,7 @@ def get_asset_ids(base: str, album_id: str, key:str) -> list[str]:
 
     asset_items = assets_data.get("assets", [])["items"]
     return [asset["id"] for asset in asset_items]
+
 
 class ImmichAlbum(BasePlugin):
     def generate_settings_template(self):
@@ -53,14 +56,31 @@ class ImmichAlbum(BasePlugin):
             raise RuntimeError("Album is required.")
 
         try:
+            logger.info(f"Getting id for album {album}")
             album_id = get_album_id(url, album, key)
+            logger.info(f"Getting ids from album id {album_id}")
             asset_ids = get_asset_ids(url, album_id, key)
         except Exception as e:
             logger.error(f"Error grabbing image from {url}: {e}")
             return None
 
+        prev_images: list = settings.get("prev_images", [])
+        logger.info(f"Asset ids size {len(asset_ids)}")
+        asset_ids = [x for x in asset_ids if x not in prev_images]
+        logger.info(f"Asset ids size after {len(asset_ids)}")
+
+        if not asset_ids:
+            asset_ids = prev_images
+            prev_images = []
+            settings["prev_images"] = []
+
         asset_id = choice(asset_ids)
+        prev_images.append(asset_id)
         logger.info(f"Picked image {asset_id}")
+
+        settings["prev_images"] = prev_images
+
+        logger.info(f"Downloading image {asset_id}")
         r = requests.get(f"{url}/assets/{asset_id}/original", headers={"x-api-key": key})
         r.raise_for_status()
         img = Image.open(BytesIO(r.content))
