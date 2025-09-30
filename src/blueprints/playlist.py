@@ -63,6 +63,18 @@ def add_plugin():
             return jsonify({"error": "Failed to add to playlist"}), 500
 
         device_config.write_config()
+
+        # If adding to the currently active playlist
+        refresh_info = device_config.get_refresh_info()
+        if (
+            refresh_info.refresh_type == "Playlist"
+            and refresh_info.playlist == playlist
+        ):
+            # Log that plugin was added to active playlist
+            logger.info(
+                f"Plugin '{instance_name}' added to active playlist '{playlist}'"
+            )
+
     except Exception as e:
         return jsonify({"error": f"An error occurred: {str(e)}"}), 500
     return jsonify({"success": True, "message": "Scheduled refresh configured."})
@@ -119,6 +131,8 @@ def create_playlist():
 def update_playlist(playlist_name):
     device_config = current_app.config['DEVICE_CONFIG']
     playlist_manager = device_config.get_playlist_manager()
+    refresh_info = device_config.get_refresh_info()
+    refresh_task = current_app.config["REFRESH_TASK"]
 
     data = request.get_json()
 
@@ -134,10 +148,33 @@ def update_playlist(playlist_name):
     if not playlist:
         return jsonify({"error": f"Playlist '{playlist_name}' does not exist"}), 400
 
+    # Check if this is the currently active playlist
+    is_active_playlist = (
+        refresh_info.playlist == playlist_name
+        and refresh_info.refresh_type == "Playlist"
+    )
+
     result = playlist_manager.update_playlist(playlist_name, new_name, start_time, end_time)
     if not result:
-        return jsonify({"error": "Failed to delete playlist"}), 500
+        return jsonify({"error": "Failed to update playlist"}), 500
     device_config.write_config()
+
+    # If the updated playlist is currently active, trigger a refresh
+    if is_active_playlist:
+        from refresh_task import PlaylistRefresh
+
+        # Update refresh_info with new playlist name if it changed
+        if playlist_name != new_name:
+            refresh_info.playlist = new_name
+        # Get the currently displayed plugin instance
+        if playlist.plugins and refresh_info.plugin_instance:
+            plugin_instance = playlist.find_plugin(
+                refresh_info.plugin_id, refresh_info.plugin_instance
+            )
+            if plugin_instance:
+                refresh_task.manual_update(
+                    PlaylistRefresh(playlist, plugin_instance, force=True)
+                )
 
     return jsonify({"success": True, "message": f"Updated playlist '{playlist_name}'!"})
 
@@ -147,8 +184,8 @@ def delete_playlist(playlist_name):
     playlist_manager = device_config.get_playlist_manager()
 
     if not playlist_name:
-        return jsonify({"error": f"Playlist name is required"}), 400
-    
+        return jsonify({"error": "Playlist name is required"}), 400
+
     playlist = playlist_manager.get_playlist(playlist_name)
     if not playlist:
         return jsonify({"error": f"Playlist '{playlist_name}' does not exist"}), 400

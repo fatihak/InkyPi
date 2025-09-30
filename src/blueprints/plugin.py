@@ -33,6 +33,7 @@ def plugin_page(plugin_id):
                 # add plugin instance settings to the template to prepopulate
                 template_params["plugin_settings"] = plugin_instance.settings
                 template_params["plugin_instance"] = plugin_instance_name
+                template_params["plugin_refresh"] = plugin_instance.refresh
 
             template_params["playlists"] = playlist_manager.get_playlist_names()
         except Exception as e:
@@ -108,16 +109,64 @@ def update_plugin_instance(instance_name):
 
         if not instance_name:
             raise RuntimeError("Instance name is required")
+        
+        plugin_id = form_data.get("plugin_id")
+        
+        # Get existing plugin instance to check for duplicate filenames
+        plugin_instance = playlist_manager.find_plugin(plugin_id, instance_name)
+        if not plugin_instance:
+            return jsonify({"error": f"Plugin instance: {instance_name} does not exist"}), 500
+        
+        # For image_upload plugin, check for duplicate filenames
+        if plugin_id == "image_upload":
+            existing_files = plugin_instance.settings.get('imageFiles[]', [])
+            existing_filenames = [os.path.basename(f) for f in existing_files]
+            
+            # Check for duplicates in new uploads
+            duplicates = []
+            for key, file in request.files.items(multi=True):
+                if key == 'imageFiles[]' and file.filename:
+                    filename = os.path.basename(file.filename)
+                    if filename in existing_filenames:
+                        duplicates.append(filename)
+            
+            if duplicates:
+                return jsonify({"error": f"Duplicate files detected: {', '.join(duplicates)}. These files already exist for this instance."}), 400
+        
         plugin_settings = form_data
         plugin_settings.update(handle_request_files(request.files, request.form))
 
         plugin_id = plugin_settings.pop("plugin_id")
-        plugin_instance = playlist_manager.find_plugin(plugin_id, instance_name)
-        if not plugin_instance:
-            return jsonify({"error": f"Plugin instance: {instance_name} does not exist"}), 500
+        
+        # Handle refresh settings if provided
+        refresh_settings_json = plugin_settings.pop("refresh_settings", None)
+        refresh_settings = {}
+        if refresh_settings_json:
+            refresh_settings = json.loads(refresh_settings_json)
 
         plugin_instance.settings = plugin_settings
+        
+        # Update refresh settings if provided
+        if refresh_settings:
+            plugin_instance.refresh = refresh_settings
+            
         device_config.write_config()
+        
+        # Check if this plugin instance is currently active and trigger refresh
+        refresh_info = device_config.get_refresh_info()
+        if (refresh_info.refresh_type == "Playlist" and 
+            refresh_info.plugin_id == plugin_id and 
+            refresh_info.plugin_instance == instance_name):
+            
+            refresh_task = current_app.config['REFRESH_TASK']
+            from refresh_task import PlaylistRefresh
+            
+            # Find the playlist containing this plugin
+            for playlist in playlist_manager.playlists:
+                if playlist.find_plugin(plugin_id, instance_name):
+                    refresh_task.manual_update(PlaylistRefresh(playlist, plugin_instance, force=True))
+                    break
+                    
     except Exception as e:
         return jsonify({"error": f"An error occurred: {str(e)}"}), 500
     return jsonify({"success": True, "message": f"Updated plugin instance {instance_name}."})

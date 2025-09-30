@@ -819,3 +819,16 @@ body {
 .font-weight-normal {
   font-weight: normal; /* or 400 */
 }
+
+/* Refresh Settings Section */
+.refresh-settings-section {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    width: 100%;
+}
+
+.refresh-settings-section .form-group {
+    flex: none; /* Prevent vertical expansion */
+    margin: 5px 0;
+}
