@@ -256,7 +256,7 @@
 
                 if (pluginSettings.backgroundImageFile) {
                     const filePath = pluginSettings.backgroundImageFile
-                    const fileName = filePath.split('/').pop();
+                    const fileName = filePath.replace(/^.*[\\/]/, '');
 
                     // display the file name
                     fileNameText.textContent = fileName;

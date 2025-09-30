@@ -208,7 +208,7 @@
         
         // Display existing files
         existingFiles.forEach(filePath => {
-            const fileName = filePath.split('/').pop();
+            const fileName = filePath.replace(/^.*[\\/]/, '');
             const imageUrl = `/static/images/saved/${fileName}`;
             createImageItem(imageUrl, fileName, filePath, 'existing');
         });
@@ -301,11 +301,12 @@
         }
         
         selectedImages.forEach(key => {
-            const [type, identifier] = key.split('-', 2);
+            const idx = key.indexOf('-');
+            const [type, identifier] = [key.slice(0, idx), key.slice(idx + 1)];
             
             if (type === 'existing') {
                 // Remove from hidden inputs
-                const fileName = identifier.split('/').pop();
+                const fileName = identifier.replace(/^.*[\\/]/, '');
                 const hiddenInput = document.getElementById(`hidden-${fileName}`);
                 if (hiddenInput) hiddenInput.remove();
             } else if (type === 'new') {
@@ -332,7 +333,7 @@
         // Get all existing filenames
         const existingFileNames = [];
         document.querySelectorAll('#hiddenFileInputs input[name="imageFiles[]"]').forEach(input => {
-            existingFileNames.push(input.value.split('/').pop());
+            existingFileNames.push(input.value.replace(/^.*[\\/]/, ''));
         });
 
         const duplicates = [];
@@ -375,7 +376,7 @@
 
             // Loop through the existing files and add them to hidden inputs
             existingFiles.forEach(filePath => {
-                const fileName = filePath.split('/').pop();
+                const fileName = filePath.replace(/^.*[\\/]/, '');
                 
                 // Create a hidden input for the existing file
                 const hiddenInput = document.createElement("input");
