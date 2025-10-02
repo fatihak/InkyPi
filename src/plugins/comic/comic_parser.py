@@ -1,4 +1,5 @@
 import feedparser
+import html
 import re
 
 
@@ -71,6 +72,6 @@ def get_panel(comic_name):
 
     return {
         "image_url": COMICS[comic_name]["url"](element),
-        "title": COMICS[comic_name]["title"](feed),
-        "caption": COMICS[comic_name]["caption"](element),
+        "title": html.unescape(COMICS[comic_name]["title"](feed)),
+        "caption": html.unescape(COMICS[comic_name]["caption"](element)),
     }
