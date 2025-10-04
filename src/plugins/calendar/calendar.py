@@ -104,7 +104,7 @@ class Calendar(BasePlugin):
                 offset = (current_dt.weekday() - python_week_start) % 7
                 start = current_dt - timedelta(days=offset)
                 start = datetime(start.year, start.month, start.day)
-            end = start + timedelta(days=7)
+            end = start + timedelta(days=int(settings.get("numDays")))
         elif view == "dayGridMonth":
             start = datetime(current_dt.year, current_dt.month, 1) - timedelta(weeks=1)
             end = datetime(current_dt.year, current_dt.month, 1) + timedelta(weeks=6)
