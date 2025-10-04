@@ -2,22 +2,36 @@
     <label for="padImage" class="form-label">Fit the image to the frame:</label>
     <div class="toggle-container">
         <input type="checkbox" id="padImage" name="padImage" class="toggle-checkbox" value="false"
-            onclick="this.value = this.checked ? 'true' : 'false'">
+               onclick="this.value = this.checked ? 'true' : 'false'">
         <label for="padImage" class="toggle-label"></label>
     </div>
     <label for="randomize" class="form-label">Randomize Order:</label>
     <div class="toggle-container">
         <input type="checkbox" id="randomize" name="randomize" class="toggle-checkbox" value="false"
-            onclick="this.value = this.checked ? 'true' : 'false'">
+               onclick="this.value = this.checked ? 'true' : 'false'">
         <label for="randomize" class="toggle-label"></label>
+    </div>
+    <label for="blur" class="form-label">Blur Background:</label>
+    <div class="toggle-container">
+        <input type="checkbox" id="blur" name="blur" class="toggle-checkbox" value="false"
+               onclick="this.value = this.checked ? 'true' : 'false'">
+        <label for="blur" class="toggle-label"></label>
     </div>
     <label for="backgroundColor" class="form-label">Background Color:</label>
     <input type="color" id="backgroundColor" name="backgroundColor" value="#ffffff"/>
+
 </div>
+<style>
+        /* Hide the label when checkbox is checked */
+        #backgroundColor:checked ~ .form-group label {
+          display: none;
+        }
+    </style>
 
 <div class="form-group">
     <label for="imageUpload" class="form-input file-upload-label">Choose Image</label>
-    <input type="file" clear-on-submit id="imageUpload" name="imageFiles[]" accept="image/*" multiple class="file-upload-input" onchange="addFiles()">
+    <input type="file" clear-on-submit id="imageUpload" name="imageFiles[]" accept="image/*" multiple
+           class="file-upload-input" onchange="addFiles()">
 </div>
 
 <!-- Display uploaded & existing file names -->

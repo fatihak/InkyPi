@@ -1,10 +1,10 @@
 from plugins.base_plugin.base_plugin import BasePlugin
-from PIL import Image, ImageOps, ImageFilter
-from io import BytesIO
+from PIL import Image, ImageOps
 import logging
 import os
-import requests
 import random
+
+from utils.image_utils import pad_image_blur
 
 logger = logging.getLogger(__name__)
 
@@ -26,14 +26,10 @@ def grab_image(image_path, dimensions, pad_image):
     try:
         img = Image.open(image_path)
         img = ImageOps.exif_transpose(img)  # Correct orientation using EXIF
-        img = ImageOps.contain(img, dimensions, Image.LANCZOS)
+        img = ImageOps.contain(img, dimensions, Image.Resampling.LANCZOS)
 
         if pad_image:
-            bkg = ImageOps.fit(img, dimensions)
-            bkg = bkg.filter(ImageFilter.BoxBlur(8))
-            img_size = img.size
-            bkg.paste(img, ((dimensions[0] - img_size[0]) // 2, (dimensions[1] - img_size[1]) // 2))
-            img = bkg
+            img = pad_image_blurry(img, dimensions)
         return img
     except Exception as e:
         logger.error(f"Error loading image from {image_path}: {e}")
