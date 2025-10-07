@@ -99,7 +99,10 @@ class Calendar(BasePlugin):
             end = start + timedelta(days=1)
         elif view == "timeGridWeek":
             if settings.get("displayPreviousDays") == "true":
-                start = current_dt - timedelta(days=current_dt.weekday())
+                week_start_day = int(settings.get("weekStartDay", 1))
+                python_week_start = (week_start_day - 1) % 7
+                offset = (current_dt.weekday() - python_week_start) % 7
+                start = current_dt - timedelta(days=offset)
                 start = datetime(start.year, start.month, start.day)
             end = start + timedelta(days=7)
         elif view == "dayGridMonth":

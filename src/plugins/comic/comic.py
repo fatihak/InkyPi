@@ -1,23 +1,15 @@
 from plugins.base_plugin.base_plugin import BasePlugin
-from PIL import Image
-import feedparser
-import re
+from PIL import Image, ImageDraw, ImageFont
+
 import requests
 
-COMICS = [
-    "XKCD",
-    "Cyanide & Happiness",
-    "Saturday Morning Breakfast Cereal",
-    "The Perry Bible Fellowship",
-    "Questionable Content",
-    "Poorly Drawn Lines",
-    "Dinosaur Comics"
-]
+from .comic_parser import COMICS, get_panel
+
 
 class Comic(BasePlugin):
     def generate_settings_template(self):
         template_params = super().generate_settings_template()
-        template_params['comics'] = COMICS
+        template_params['comics'] = list(COMICS)
         return template_params
 
     def generate_image(self, settings, device_config):
@@ -25,45 +17,62 @@ class Comic(BasePlugin):
         if not comic or comic not in COMICS:
             raise RuntimeError("Invalid comic provided.")
 
-        image_url = self.get_image_url(comic)
-        if not image_url:
-            raise RuntimeError("Failed to retrieve latest comic url.")
-        
+        is_caption = settings.get("titleCaption") == "true"
+        caption_font_size = settings.get("fontSize")
+
+        comic_panel = get_panel(comic)
+
         dimensions = device_config.get_resolution()
         if device_config.get_config("orientation") == "vertical":
             dimensions = dimensions[::-1]
         width, height = dimensions
-        
-        response = requests.get(image_url, stream=True)
+
+        return self._compose_image(comic_panel, is_caption, caption_font_size, width, height)
+
+    def _compose_image(self, comic_panel, is_caption, caption_font_size, width, height):
+        response = requests.get(comic_panel["image_url"], stream=True)
         response.raise_for_status()
 
         with Image.open(response.raw) as img:
-            img.thumbnail((width, height), Image.LANCZOS)
             background = Image.new("RGB", (width, height), "white")
-            background.paste(img, ((width - img.width) // 2, (height - img.height) // 2))
+            font = ImageFont.truetype("DejaVuSans.ttf", size=int(caption_font_size))
+            draw = ImageDraw.Draw(background)
+            top_padding, bottom_padding = 0, 0
+
+            if is_caption:
+                if comic_panel["title"]:
+                    lines, wrapped_text = self._wrap_text(comic_panel["title"], font, width)
+                    draw.multiline_text((width // 2, 0), wrapped_text, font=font, fill="black", anchor="ma")
+                    top_padding = font.getbbox(wrapped_text)[3] * lines + 1
+
+                if comic_panel["caption"]:
+                    lines, wrapped_text = self._wrap_text(comic_panel["caption"], font, width)
+                    draw.multiline_text((width // 2, height), wrapped_text, font=font, fill="black", anchor="md")
+                    bottom_padding = font.getbbox(wrapped_text)[3] * lines + 1
+
+            scale = min(width / img.width, (height - top_padding - bottom_padding) / img.height)
+            new_size = (int(img.width * scale), int(img.height * scale))
+            img = img.resize(new_size, Image.LANCZOS)
+
+            y_middle = (height - img.height) // 2
+            y_top_bound = top_padding
+            y_bottom_bound = height - img.height - bottom_padding
+            
+            x = (width - img.width) // 2
+            y = y = min(max(y_middle, y_top_bound), y_bottom_bound)
+            
+            background.paste(img, (x, y))
+
             return background
 
-    def get_image_url(self, comic):
-        if comic == "XKCD":
-            feed = feedparser.parse("https://xkcd.com/atom.xml")
-            element = feed.entries[0].summary
-        elif comic == "Saturday Morning Breakfast Cereal":
-            feed = feedparser.parse("http://www.smbc-comics.com/comic/rss")
-            element = feed.entries[0].description
-        elif comic == "Questionable Content":
-            feed = feedparser.parse("http://www.questionablecontent.net/QCRSS.xml")
-            element = feed.entries[0].description
-        elif comic == "The Perry Bible Fellowship":
-            feed = feedparser.parse("https://pbfcomics.com/feed/")
-            element = feed.entries[0].description
-        elif comic == "Poorly Drawn Lines":
-            feed = feedparser.parse("https://poorlydrawnlines.com/feed/")
-            element = feed.entries[0].get('content', [{}])[0].get('value', '')
-        elif comic == "Dinosaur Comics":
-            feed = feedparser.parse("https://www.qwantz.com/rssfeed.php")
-            element = feed.entries[0].summary
-        elif comic == "Cyanide & Happiness":
-            feed = feedparser.parse("https://explosm-1311.appspot.com/")
-            element = feed.entries[0].summary
-        src = re.search(r'<img[^>]+src=["\']([^"\']+)["\']', element).group(1)
-        return src
+    def _wrap_text(self, text, font, width):
+        lines = []
+        words = text.split()[::-1]
+
+        while words:
+            line = words.pop()
+            while words and font.getbbox(line + ' ' + words[-1])[2] < width:
+                line += ' ' + words.pop()
+            lines.append(line)
+
+        return len(lines), '\n'.join(lines)
