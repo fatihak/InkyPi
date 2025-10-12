@@ -2,11 +2,13 @@ import logging
 from random import choice, random
 
 import requests
-from PIL import Image
+from PIL import Image, ImageColor, ImageOps
 from io import BytesIO
 
 from PIL.ImageFile import ImageFile
 from plugins.base_plugin.base_plugin import BasePlugin
+
+from src.utils.image_utils import pad_image_blur
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +33,7 @@ class ImmichProvider:
         asset_items = assets_data.get("assets", [])["items"]
         return [asset["id"] for asset in asset_items]
 
-    def get_image(self, url:str, key:str, album:str, settings) -> ImageFile | None:
+    def get_image(self, url:str, key:str, album:str, settings, repeat=True) -> ImageFile | None:
         try:
             logger.info(f"Getting id for album {album}")
             album_id = self.get_album_id(url, album, key)
@@ -42,20 +44,18 @@ class ImmichProvider:
             return None
 
         prev_images: list = settings.get("prev_images", [])
-        logger.info(f"Asset ids size {len(asset_ids)}")
         asset_ids = [x for x in asset_ids if x not in prev_images]
-        logger.info(f"Asset ids size after {len(asset_ids)}")
 
-        if not asset_ids:
+        if not repeat and not asset_ids:
             asset_ids = prev_images
             prev_images = []
             settings["prev_images"] = []
 
         asset_id = choice(asset_ids)
-        prev_images.append(asset_id)
-        logger.info(f"Picked image {asset_id}")
 
-        settings["prev_images"] = prev_images
+        if not repeat:
+            prev_images.append(asset_id)
+            settings["prev_images"] = prev_images
 
         logger.info(f"Downloading image {asset_id}")
         r = requests.get(f"{url}/assets/{asset_id}/original", headers={"x-api-key": key})
@@ -74,6 +74,9 @@ class ImageAlbum(BasePlugin):
         return template_params
 
     def generate_image(self, settings, device_config):
+        random = settings.get("randomize", False)
+        random_repetition = settings.get("randomRepetition", False)
+
         match settings.get("albumProvider"):
             case "Immich":
                 provider = ImmichProvider()
@@ -90,9 +93,20 @@ class ImageAlbum(BasePlugin):
                 if not album:
                     raise RuntimeError("Album is required.")
 
-                img = provider.get_image(url, key, album, settings)
+                img = provider.get_image(url, key, album, settings, random_repetition)
                 if not img:
                     raise RuntimeError("Failed to load image, please check logs.")
 
+        if settings.get("padImage", False):
+            dimensions = device_config.get_resolution()
+
+            if device_config.get_config("orientation") == "vertical":
+                dimensions = dimensions[::-1]
+
+            if settings.get('blur') == "true":
+                return pad_image_blur(img, dimensions)
+            else:
+                background_color = ImageColor.getcolor(settings.get('backgroundColor') or (255, 255, 255), "RGB")
+                return ImageOps.pad(img, dimensions, color=background_color, method=Image.Resampling.LANCZOS)
 
         return img
