@@ -51,6 +51,7 @@
             nowIndicator: {{ (plugin_settings.displayNowIndicator == "true") | tojson}},
             fixedWeekCount: false,
             {% if view == 'timeGrid' %}duration: {days : 7 },{% endif %}
+            {% if view == 'dayGrid' %}duration: {weeks : "{{ plugin_settings.displayWeeks or 4}}" },{% endif %}
             headerToolbar: {
                 left: '',
                 center: "{{ 'title' if plugin_settings.displayTitle == 'true' else '' }}",
