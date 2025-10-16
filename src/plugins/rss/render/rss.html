@@ -1,0 +1,43 @@
+{% extends "plugin.html" %}
+
+{% block content %}
+
+<div class="rss-container" style="--font-scale: {{ font_scale }};">
+    {% if title %}<div class="title">{{ title }}</div>{% endif %}
+    <div class="items-container">
+        {% for item in items %}
+        <div class="rss-item">
+            <div class="text-container">
+                <div class="item-title">{{ item.title }}</div>
+                <div class="item-description">{{ item.description }}</div>
+            </div>
+            {% if include_images and item.image %}
+            <div class="item-image">
+                <img src="{{ item.image }}" alt="Related image" />
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<script>
+  window.addEventListener("load", () => {
+    const container = document.querySelector(".items-container");
+    const containerHeight = container.clientHeight;
+
+    let accumulatedHeight = 0;
+    const items = container.querySelectorAll(".rss-item");
+
+    items.forEach(item => {
+      const itemHeight = item.clientHeight;
+
+      if (accumulatedHeight > 0 && accumulatedHeight + itemHeight > containerHeight) {
+        item.style.display = "none";
+      }
+      accumulatedHeight += itemHeight;
+    });
+  });
+</script>
+{% endblock %}
+

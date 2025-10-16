@@ -1,0 +1,45 @@
+<div class="form-group">
+    <div class="form-group">
+        <label for="title" class="form-label">Title:</label>
+        <input type="text" id="title" name="title" placeholder="Type something..." required class="form-input">
+    </div>
+    <div class="form-group">
+        <label for="includeImages" class="form-label">Include Images:</label>
+        <div class="toggle-container">
+            <input type="checkbox" id="includeImages" name="includeImages" class="toggle-checkbox" value="false"
+                onclick="this.value = this.checked ? 'true' : 'false'">
+            <label for="includeImages" class="toggle-label"></label>
+        </div>
+    </div>
+    <div class="form-group nowrap">
+        <label for="fontSize" class="form-label">Font Size:</label>
+        <select id="fontSize" name="fontSize" class="form-input">
+            <option value="x-small">Extra Small</option>
+            <option value="small">Small</option>
+            <option value="normal">Normal</option>
+            <option value="large">Large</option>
+            <option value="x-large">Extra Larger</option>
+        </select>
+    </div>
+</div>
+<div class="form-group">
+    <div class="form-group">
+        <label for="feedUrl" class="form-label">RSS Feed Url:</label>
+        <input type="text" id="feedUrl" name="feedUrl" placeholder="Type something..." required class="form-input">
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        let fontSize = "normal";
+        if (loadPluginSettings) {
+            document.getElementById('title').value = pluginSettings.title || '';
+            document.getElementById('includeImages').checked = pluginSettings.includeImages;
+            document.getElementById('feedUrl').value = pluginSettings.feedUrl || '';
+
+            fontSize = pluginSettings.fontSize;
+        }
+
+        document.getElementById('fontSize').value = fontSize;
+    });
+</script>

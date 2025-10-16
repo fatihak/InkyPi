@@ -19,7 +19,7 @@
   line-height: 1;
 }
 .subtitle {
-  margin: 0 0 6dvh;
+  margin: 0 0 4dvh;
   font-size: min(5dvw, 5dvh);
 }
 .day_count {

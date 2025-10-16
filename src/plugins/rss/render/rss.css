@@ -1,0 +1,65 @@
+
+.rss-container {
+    align-items: center; 
+    justify-content: center;
+    font-family: "Jost";
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+}
+
+.items-container {
+    overflow: hidden;
+    height: 100%;
+}
+
+
+.title {
+    text-align: center;
+    font-size: calc(min(6dvh, 5vw) * var(--font-scale));
+    font-weight: bold;
+    padding-bottom: 0.5dvh;
+}
+
+.rss-item {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 1dvw;
+    padding-bottom: 2dvh;
+    padding-top: 2dvh;
+    border-top: 1px solid ;
+    overflow: hidden;
+}
+
+.rss-item .item-title {
+    font-weight: bold;
+    padding-bottom: 1dvh;
+    font-size: calc(min(4dvh, 3vw) * var(--font-scale));
+}
+
+.rss-item .item-image {
+    flex-shrink: 0;
+    max-width: calc(15% * var(--font-scale));
+}
+
+.item-image img {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+.rss-item .item-description {
+    font-size: calc(min(3.5dvh, 3vw) * var(--font-scale));
+}
+
+.rss-item .text-container {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  line-height: 1.2;
+}
+
+.rss-item:nth-child(even) {
+  flex-direction: row-reverse;
+}
