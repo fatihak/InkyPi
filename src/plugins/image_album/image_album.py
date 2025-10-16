@@ -8,7 +8,7 @@ from io import BytesIO
 from PIL.ImageFile import ImageFile
 from plugins.base_plugin.base_plugin import BasePlugin
 
-from src.utils.image_utils import pad_image_blur
+from utils.image_utils import pad_image_blur
 
 logger = logging.getLogger(__name__)
 
