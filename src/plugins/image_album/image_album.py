@@ -70,14 +70,14 @@ class ImmichProvider:
             return None
 
         prev_images: list = settings.get("prev_images", [])
-        asset_ids = [x for x in asset_ids if x not in prev_images]
-        asset_ids = self.get_aligned_asset_ids(asset_ids)
+        asset_ids = list(set(asset_ids) - set(prev_images))
 
         if not repeat and not asset_ids:
             asset_ids = prev_images
             prev_images = []
             settings["prev_images"] = []
 
+        asset_ids = self.get_aligned_asset_ids(asset_ids)
         asset_id = choice(asset_ids)
 
         if not repeat:
