@@ -1,5 +1,4 @@
-# src/plugins/transit_monitor/transit_monitor.py
-from plugins.base_plugin.base_plugin import BasePlugin
+from ..base_plugin.base_plugin import BasePlugin
 from PIL import Image
 
 class TransitMonitor(BasePlugin):
