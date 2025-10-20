@@ -1,10 +1,11 @@
 import json
 from plugins.base_plugin.base_plugin import BasePlugin
 from openai import OpenAI
-from datetime import date 
+from datetime import date
 import logging
 
 logger = logging.getLogger(__name__)
+
 
 class WordOfTheDay(BasePlugin):
     def generate_settings_template(self):
@@ -68,20 +69,21 @@ class WordOfTheDay(BasePlugin):
         today = date.today().strftime("%Y-%m-%d")
 
         system_content = "You are an assistant that returns only valid JSON objects."
+
         user_content = f"""
         Today is {today}.
-        Give me a *unique* and *interesting* word of the day in {text_lang}.
-        The word must change naturally every day and should not repeat frequently.
+        Give me a unique and interesting 'Word of the Day' in {text_lang}.
+        Each day, the word should naturally change and avoid frequent repetition.
 
-        Return your answer strictly as a JSON object with the following fields:
-        - word: the word itself (in {text_lang}). 
-        - type: part of speech (noun, verb, adjective, etc.). 
-        - description: a concise definition in English. 
-        - example: one clear example sentence showing its correct usage (in {text_lang}). 
-        - lecture: Include lecture only if the word is not in the roman alphabet.
+        Respond strictly as a JSON object with these fields:
+        - word: the word itself (in {text_lang})
+        - type: part of speech (noun, verb, adjective, etc.)
+        - description: a concise definition in English
+        - example: one clear example sentence showing correct usage (in {text_lang})
+        - lecture: include ONLY if the word is not in the Roman alphabet
 
-        Do NOT include any text before or after the JSON object.
-            """
+        Do NOT include any extra text, explanation, or formatting. The JSON must be valid and parseable.
+        """
 
         # Make the API call
         response = ai_client.chat.completions.create(
@@ -91,7 +93,7 @@ class WordOfTheDay(BasePlugin):
                 {"role": "system", "content": system_content},
                 {"role": "user", "content": user_content},
             ],
-            temperature=1,
+            temperature=0.9,
         )
 
         prompt = response.choices[0].message.content
