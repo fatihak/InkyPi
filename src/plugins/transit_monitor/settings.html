@@ -1,6 +1,6 @@
 <div class="form-group">
   <label for="stop_codes" class="form-label">Stop IDs:</label>
-  <textarea id="stop_codes" name="stop_codes" rows="3"
+  <textarea id="stop_codes" name="stop_codes" rows="1"
             placeholder="14621, 17765, 12345" required
             class="form-input"></textarea>
   <small>Enter IDs separated by commas or new lines.</small>
@@ -8,7 +8,6 @@
 
 <div class="form-group">
   <label for="agency" class="form-label">Agency:</label>
-  <input type="text" id="agency" name="agency" value="SF" class="form-input">
 </div>
 
 <script>
@@ -16,7 +15,6 @@
   document.addEventListener('DOMContentLoaded', () => {
     if (window.loadPluginSettings && window.pluginSettings) {
       document.getElementById('stop_codes').value = pluginSettings.stop_codes || '';
-      document.getElementById('agency').value = pluginSettings.agency || 'SF';
     }
   });
 </script>
