@@ -29,7 +29,7 @@ def grab_image(image_path, dimensions, pad_image):
         img = ImageOps.contain(img, dimensions, Image.Resampling.LANCZOS)
 
         if pad_image:
-            img = pad_image_blurry(img, dimensions)
+            img = pad_image_blur(img, dimensions)
         return img
     except Exception as e:
         logger.error(f"Error loading image from {image_path}: {e}")
