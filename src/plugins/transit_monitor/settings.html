@@ -1,17 +1,22 @@
 <div class="form-group">
-    <label for="url" class="form-label">URL:</label>
-    <input type="text" id="url" name="url" placeholder="Type something..." required class="form-input">
+  <label for="stop_codes" class="form-label">Stop IDs:</label>
+  <textarea id="stop_codes" name="stop_codes" rows="3"
+            placeholder="14621, 17765, 12345" required
+            class="form-input"></textarea>
+  <small>Enter IDs separated by commas or new lines.</small>
 </div>
 
 <div class="form-group">
-    <span>Warning: Do not run this with untrusted URLs, as it may pose a security risk. This may also fail if the website takes too long to load. Primarily inteded for use with custom webpages or dashboards.</span>
+  <label for="agency" class="form-label">Agency:</label>
+  <input type="text" id="agency" name="agency" value="SF" class="form-input">
 </div>
 
 <script>
-    // populate form values from plugin settings
-    document.addEventListener('DOMContentLoaded', () => {        
-        if (loadPluginSettings) {
-            document.getElementById('url').value = pluginSettings.url;
-        }
-    });
+  // populate form values from plugin settings
+  document.addEventListener('DOMContentLoaded', () => {
+    if (window.loadPluginSettings && window.pluginSettings) {
+      document.getElementById('stop_codes').value = pluginSettings.stop_codes || '';
+      document.getElementById('agency').value = pluginSettings.agency || 'SF';
+    }
+  });
 </script>
