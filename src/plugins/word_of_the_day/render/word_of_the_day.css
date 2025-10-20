@@ -1,30 +1,86 @@
-
+/* Contenedor principal */
 .text-content {
+  position: relative;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-start;
   align-items: center;
   text-align: center;
-  height: 100%;
   width: 100%;
-  gap: 1dvh;
-  font-family: "Jost";
-  container-type: size;
+  max-width: 700px;
+  margin: auto;
+  gap: 1rem;
+  font-family: 'Jost', sans-serif;
+  background-color: #ffffff; /* Fondo blanco e-ink */
+  border-radius: 15px;
+  font-weight: 700;
+  color: #000000; /* Texto negro fuerte */
 }
 
+/* Header superior: copyright */
+.header-top {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+}
+
+.header-top .sign {
+  font-size: 1rem; /* Más legible */
+  color: #000000;
+  font-weight: 700;
+}
+
+/* Título principal */
 .title {
-  font-weight: bold;
-  font-size: 4rem;
-  max-width: 100%;
-  font-size: min(10cqh, 8cqi);
+  font-weight: 900; /* Muy grueso para e-ink */
+  font-size: min(8cqh, 6cqi);
+  color: #000000;
+  letter-spacing: 0.5px;
 }
 
-.content {
-  overflow-wrap: break-word;
-  max-width: 100%;
-  max-height: 80%;
-  font-weight: 200;
-  font-size: min(6cqh, 5cqi);
+/* Tipo de palabra */
+.content.type {
+  font-weight: 800; /* Más grueso que antes */
+  font-size: 3cqh;
+  color: #1a237e; /* Azul oscuro para contraste */
+  margin-bottom: 1rem;
+}
+
+/* Contenedores de descripción y ejemplo */
+.item-container {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  background-color: #ffffff;
+  border-left: 5px solid #1a237e; /* Azul fuerte, visible en e-ink */
+  padding: 1rem 1.5rem;
+  border-radius: 10px;
+  gap: 0.5rem;
+}
+
+/* Títulos dentro de los containers */
+.item-title {
+  font-weight: 800;
+  font-size: 3cqh;
+  color: #000000;
+  margin-bottom: 0.5rem;
+  text-align: left;
+}
+
+/* Contenido de descripción y ejemplo */
+.content.description,
+.content.example {
+  font-weight: 700;
+  font-size: min(4cqh, 3cqi);
+  color: #000000;
   white-space: pre-line;
-  overflow: hidden;
+  overflow-wrap: break-word;
+  line-height: 1.4; /* Mejor lectura en e-ink */
+}
+
+.content.lecture {
+  font-weight: 700;
+  font-size: min(3cqh, 2.5cqi); /* Pequeño pero legible */
+  color: #555555; /* Gris oscuro para no competir con título */
+  line-height: 1.2;
 }

@@ -1,17 +1,10 @@
+import json
 from plugins.base_plugin.base_plugin import BasePlugin
-from utils.app_utils import resolve_path
 from openai import OpenAI
-from PIL import Image, ImageDraw, ImageFont
-from utils.image_utils import resize_image
-from io import BytesIO
-from datetime import datetime
-import requests
+from datetime import date 
 import logging
-import textwrap
-import os
 
 logger = logging.getLogger(__name__)
-
 
 class WordOfTheDay(BasePlugin):
     def generate_settings_template(self):
@@ -40,6 +33,7 @@ class WordOfTheDay(BasePlugin):
         try:
             ai_client = OpenAI(api_key=api_key)
             prompt_response = self.fetch_text_prompt(ai_client, text_model, text_lang)
+
         except Exception as e:
             logger.error(f"Failed to make Open AI request: {str(e)}")
             raise RuntimeError("Open AI request failure, please check logs.")
@@ -48,31 +42,51 @@ class WordOfTheDay(BasePlugin):
         if device_config.get_config("orientation") == "vertical":
             dimensions = dimensions[::-1]
 
+        print(prompt_response)
         image_template_params = {
-            "content": prompt_response,
+            "word": prompt_response["word"].capitalize(),
+            "type": prompt_response["type"].capitalize(),
+            "description": prompt_response["description"].capitalize(),
+            "example": prompt_response["example"].capitalize(),
+            "lecture": prompt_response.get("lecture", ""),
             "plugin_settings": settings,
         }
 
         image = self.render_image(
-            dimensions, "ai_text.html", "ai_text.css", image_template_params
+            dimensions,
+            "word_of_the_day.html",
+            "word_of_the_day.css",
+            image_template_params,
         )
 
         return image
 
     @staticmethod
     def fetch_text_prompt(ai_client, model, text_lang):
-        logger.info(
-            f"Getting random text prompt from in {text_lang}, model: {model}"
-        )
+        logger.info(f"Getting random text prompt from in {text_lang}, model: {model}")
 
-        system_content = (
-            "You are an assistant that gives a word of the day in JSON format."
-        )
-        user_content = f"Give me the word of the day in {text_lang} with fields: word, type, description, and example."
+        today = date.today().strftime("%Y-%m-%d")
+
+        system_content = "You are an assistant that returns only valid JSON objects."
+        user_content = f"""
+        Today is {today}.
+        Give me a *unique* and *interesting* word of the day in {text_lang}.
+        The word must change naturally every day and should not repeat frequently.
+
+        Return your answer strictly as a JSON object with the following fields:
+        - word: the word itself (in {text_lang}). 
+        - type: part of speech (noun, verb, adjective, etc.). 
+        - description: a concise definition in English. 
+        - example: one clear example sentence showing its correct usage (in {text_lang}). 
+        - lecture: Include lecture only if the word is not in the roman alphabet.
+
+        Do NOT include any text before or after the JSON object.
+            """
 
         # Make the API call
         response = ai_client.chat.completions.create(
             model=model,
+            response_format={"type": "json_object"},
             messages=[
                 {"role": "system", "content": system_content},
                 {"role": "user", "content": user_content},
@@ -82,4 +96,10 @@ class WordOfTheDay(BasePlugin):
 
         prompt = response.choices[0].message.content
         logger.info(f"Generated random text prompt: {prompt}")
-        return prompt
+        try:
+            prompt_data = json.loads(prompt)
+            logger.info(f"Parsed JSON: {prompt_data}")
+            return prompt_data
+        except json.JSONDecodeError as e:
+            logger.error(f"Failed to parse JSON: {e}")
+            return None

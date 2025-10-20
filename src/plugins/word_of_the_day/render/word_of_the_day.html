@@ -2,7 +2,26 @@
 
 {% block content %}
 <div class="text-content">
-  <div class="title">{{ title }}</div>
-  <div class="content">{{ content }}</div>
+  <div class="header-top">
+    <span class="sign">Rashgaron</span>
+  </div>
+
+  {% if lecture %}
+  <div class="content lecture">{{ lecture }}</div>
+  {% endif %}
+
+  <div class="title">{{ word }}</div>
+  <div class="content type">{{ type }}</div>
+
+  <div class="item-container">
+    <p class="item-title">Description:</p>
+    <p class="content description">{{ description }}</p>
+  </div>
+
+  <div class="item-container">
+    <p class="item-title">Example:</p>
+    <p class="content example">{{ example }}</p>
+  </div>
 </div>
+
 {% endblock %}
