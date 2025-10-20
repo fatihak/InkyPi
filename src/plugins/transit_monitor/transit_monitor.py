@@ -1,4 +1,4 @@
-from base_plugin import BasePlugin
+from plugins.base_plugin import BasePlugin
 
 class TransitMonitor(BasePlugin):
     def generate_image(self, settings, device_config):
