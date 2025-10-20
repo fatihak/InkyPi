@@ -1,4 +1,4 @@
-from ..base_plugin.base_plugin import BasePlugin
+from plugins.base_plugin.base_plugin import BasePlugin
 from PIL import Image
 
 class TransitMonitor(BasePlugin):
