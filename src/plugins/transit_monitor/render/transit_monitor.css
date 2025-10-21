@@ -1,8 +1,8 @@
 :root{
   --pad-x: 10px;
-  --pad-y: 30px; /* reserve top/bottom deadspace */
+  --pad-y: 50px; /* reserve top/bottom deadspace */
   --gap: 10px;
-  --card-h: 75px; /* 3 cards in 400x300 with margins */
+  --card-h: 60px; /* 3 cards in 400x300 with margins */
 }
 
 /* canvas */
