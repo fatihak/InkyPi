@@ -1,8 +1,8 @@
 :root {
   --pad-x: 10px;
-  --pad-y: 20px;
+  --pad-y: 20px; /* reserve for deadspace */
   --gap: 8px;
-  --card-h: 90px;
+  --card-h: 80px;
 }
 
 body {
@@ -19,14 +19,16 @@ body {
   flex-direction: column;
   justify-content: space-between;
   gap: var(--gap);
-  padding: var(--pad);
+  padding: var(--pad-y) var(--pad-x);
   height: 100%;
+  box-sizing: border-box;
 }
 
+/* card container */
 .card {
   display: flex;
+  flex-direction: column;
   justify-content: space-between;
-  align-items: center;
   height: var(--card-h);
   padding: 10px 12px;
   border-radius: 10px;
@@ -34,38 +36,11 @@ body {
   background: #f8f8f8;
 }
 
-/* left column */
-.left {
+/* top section: line square + time/eta */
+.top-row {
   display: flex;
-  flex-direction: column;
-  justify-content: center;
-  flex: 1;
-}
-
-.time {
-  font-size: 20px;
-  font-weight: 700;
-}
-
-.eta {
-  font-size: 16px;
-  margin-bottom: 4px;
-  opacity: 0.85;
-}
-
-.dest {
-  font-size: 14px;
-  line-height: 1.2;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* right column: colored square with line text */
-.right {
-  display: flex;
+  justify-content: space-between;
   align-items: center;
-  justify-content: center;
 }
 
 .line-box {
@@ -81,6 +56,34 @@ body {
   color: white;
 }
 
+.time-info {
+  text-align: right;
+}
+
+.time {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.eta {
+  font-size: 16px;
+  opacity: 0.85;
+}
+
+/* bottom section */
+.bottom-row {
+  margin-top: 4px;
+}
+
+.dest {
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.3;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 /* color themes for specific lines */
 .card[data-line^="22"] { --border-color: #e74c3c; } /* red-ish */
 .card[data-line^="6"] { --border-color: #3498db; } /* blue-ish */
