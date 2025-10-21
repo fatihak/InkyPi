@@ -1,81 +1,83 @@
-/* Contenedor principal */
-.text-content {
-  position: relative;
+body {
+  background: #ffffff;
+  font-family: "Noto Sans JP", "Inter", sans-serif;
   display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
+  justify-content: center;
   align-items: center;
-  text-align: center;
-  width: 100%;
-  max-width: 700px;
-  margin: auto;
-  gap: 1rem;
-  font-family: 'Jost', sans-serif;
-  background-color: #ffffff; /* Fondo blanco e-ink */
-  border-radius: 15px;
-  font-weight: 700;
-  color: #000000; /* Texto negro fuerte */
+  height: 480px;
+  margin: 0;
+  font-weight: bold;
 }
 
-/* Header superior: copyright */
+.text-content {
+  width: 800px;
+  height: 480px;
+  display: grid;
+  grid-template-rows: 10px 1fr 1fr 1fr;
+  grid-template-columns: 1fr 1fr;
+  background: #ffffff;
+  border-top: 12px solid #1d3557; /* azul fuerte */
+  padding: 30px;
+  box-sizing: border-box;
+}
+
 .header-top {
-  position: fixed;
-  top: 1rem;
-  right: 1rem;
+  grid-column: 1 / span 2;
+  text-align: right;
+  font-size: 14px;
+  color: #1d3557; /* azul oscuro */
 }
 
-.header-top .sign {
-  font-size: 1rem; /* Más legible */
-  color: #000000;
-  font-weight: 700;
+.header {
+  grid-column: 1 / span 2;
 }
 
-/* Título principal */
 .title {
-  font-weight: 900; /* Muy grueso para e-ink */
-  font-size: min(8cqh, 6cqi);
-  color: #000000;
-  letter-spacing: 0.5px;
-}
-
-/* Tipo de palabra */
-.content.type {
-  font-weight: 800; /* Más grueso que antes */
-  font-size: 3cqh;
-  color: #1a237e; /* Azul oscuro para contraste */
-  margin-bottom: 1rem;
-}
-
-/* Contenedores de descripción y ejemplo */
-.item-container {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  background-color: #ffffff;
-  border-left: 5px solid #1a237e; /* Azul fuerte, visible en e-ink */
-  padding: 1rem 1.5rem;
-  border-radius: 10px;
-  gap: 0.5rem;
-}
-
-/* Títulos dentro de los containers */
-.item-title {
+  grid-column: 1 / span 2;
+  font-size: 80px;
   font-weight: 800;
-  font-size: 3cqh;
-  color: #000000;
-  margin-bottom: 0.5rem;
-  text-align: left;
+  text-align: center;
+  color: #1d3557; /* azul principal */
 }
 
-/* Contenido de descripción y ejemplo */
-.content.description,
-.content.example {
-  font-weight: 700;
-  font-size: min(4cqh, 3cqi);
-  color: #000000;
-  white-space: pre-line;
-  overflow-wrap: break-word;
-  line-height: 1.4; /* Mejor lectura en e-ink */
+.type {
+  grid-column: 1 / span 2;
+  text-align: center;
+  font-size: 28px;
+  font-weight: bold;
+  color: #1d3557; /* azul principal */
+  padding: 4px 10px;
+  border-radius: 6px;
+}
+
+.item-container {
+  grid-column: 1 / span 2;
+  padding: 10px;
+}
+
+.item-title {
+  font-weight: bold;
+  color: #0077b6; /* azul intenso */
+  font-size: 22px;
+  margin-bottom: 5px;
+}
+
+.description {
+  color: #023e8a; /* azul oscuro plano */
+  border-left: 6px solid #1d3557; /* azul oscuro, alto contraste */
+  font-size: 22px;
+  line-height: 1.4;
+  padding: 6px 10px;
+  border-radius: 4px;
+}
+
+.example {
+  color: #023e8a; /* azul oscuro plano */
+  font-style: italic;
+  font-size: 22px;
+  border-left: 6px solid #1d3557; /* azul oscuro, alto contraste */
+  padding-left: 10px;
+  border-radius: 4px;
 }
 
 .content.lecture {
@@ -83,4 +85,5 @@
   font-size: min(3cqh, 2.5cqi); /* Pequeño pero legible */
   color: #555555; /* Gris oscuro para no competir con título */
   line-height: 1.2;
+  text-align: center;
 }

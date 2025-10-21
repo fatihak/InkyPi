@@ -6,12 +6,15 @@
     <span class="sign">Rashgaron</span>
   </div>
 
-  {% if lecture %}
-  <div class="content lecture">{{ lecture }}</div>
-  {% endif %}
+  <div class="header">
+    {% if lecture %}
+    <div class="content lecture">{{ lecture }}</div>
+    {% endif %}
 
-  <div class="title">{{ word }}</div>
-  <div class="content type">{{ type }}</div>
+    <div class="title">{{ word }}</div>
+    <div class="content type">{{ type }}</div>
+
+  </div>
 
   <div class="item-container">
     <p class="item-title">Description:</p>

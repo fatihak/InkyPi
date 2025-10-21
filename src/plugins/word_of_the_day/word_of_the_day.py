@@ -1,4 +1,6 @@
 import json
+
+import requests
 from plugins.base_plugin.base_plugin import BasePlugin
 from openai import OpenAI
 from datetime import date
@@ -32,8 +34,9 @@ class WordOfTheDay(BasePlugin):
             raise RuntimeError("Text Model is required.")
 
         try:
+            word = self.get_random_word()
             ai_client = OpenAI(api_key=api_key)
-            prompt_response = self.fetch_text_prompt(ai_client, text_model, text_lang)
+            prompt_response = self.fetch_text_prompt(ai_client, text_model, text_lang, word)
 
         except Exception as e:
             logger.error(f"Failed to make Open AI request: {str(e)}")
@@ -63,26 +66,37 @@ class WordOfTheDay(BasePlugin):
         return image
 
     @staticmethod
-    def fetch_text_prompt(ai_client, model, text_lang):
-        logger.info(f"Getting random text prompt from in {text_lang}, model: {model}")
+    def get_random_word():
+        url = "https://random-word-api.vercel.app/api?words=1"
+        # Make the API call
+        response = requests.get(url) 
 
-        today = date.today().strftime("%Y-%m-%d")
+        logger.info(f"Random word: {response}")
+        try:
+            word = response.json()
+            logger.info(f"Parsed JSON: {word}")
+            return word 
+        except json.JSONDecodeError as e:
+            logger.error(f"Failed to parse JSON: {e}")
+            return None
+
+    @staticmethod
+    def fetch_text_prompt(ai_client, model, text_lang, word):
+        logger.info(f"Getting random text prompt from in {text_lang}, model: {model}")
 
         system_content = "You are an assistant that returns only valid JSON objects."
 
         user_content = f"""
-        Today is {today}.
-        Give me a unique and interesting 'Word of the Day' in {text_lang}.
-        Each day, the word should naturally change and avoid frequent repetition.
+        Given the word '{word}', provide its equivalent in {text_lang}.
 
-        Respond strictly as a JSON object with these fields:
-        - word: the word itself (in {text_lang})
+        Return a valid JSON object with the following fields:
+        - word: the translated word in {text_lang}
         - type: part of speech (noun, verb, adjective, etc.)
         - description: a concise definition in English
         - example: one clear example sentence showing correct usage (in {text_lang})
-        - lecture: include ONLY if the word is not in the Roman alphabet
+        - lecture: include ONLY if the word is not written in the Roman alphabet
 
-        Do NOT include any extra text, explanation, or formatting. The JSON must be valid and parseable.
+        The JSON must be strictly valid and contain no additional text, comments, or formatting.
         """
 
         # Make the API call
