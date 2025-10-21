@@ -10,8 +10,8 @@ def parse_stop_codes(raw: str):
 
 class TransitMonitor(BasePlugin):
     def generate_image(self, settings, device_config):
-        #api_key = os.getenv("511_API_KEY")
-        api_key = "779650b4-c11a-41e2-bc99-af61125240da"
+        api_key = os.getenv("511_API_KEY")
+        #api_key = "779650b4-c11a-41e2-bc99-af61125240da"
         stops = parse_stop_codes(settings.get("stop_codes")) 
 
 
