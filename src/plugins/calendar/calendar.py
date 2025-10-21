@@ -105,6 +105,9 @@ class Calendar(BasePlugin):
                 start = current_dt - timedelta(days=offset)
                 start = datetime(start.year, start.month, start.day)
             end = start + timedelta(days=7)
+        elif view == "dayGrid":
+            start = datetime(current_dt.year, current_dt.month, 1) - timedelta(weeks=1)
+            end = datetime(current_dt.year, current_dt.month, 1) + timedelta(weeks=int(settings.get("displayWeeks", 1)))
         elif view == "dayGridMonth":
             start = datetime(current_dt.year, current_dt.month, 1) - timedelta(weeks=1)
             end = datetime(current_dt.year, current_dt.month, 1) + timedelta(weeks=6)
