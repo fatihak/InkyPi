@@ -1,8 +1,9 @@
 <div class="form-group">
     <label for="padImage" class="form-label">Scale to Fit:</label>
+    <!-- Hidden input ensures 'true' is always sent when unchecked -->
+    <input type="hidden" name="padImage" value="true">
     <div class="toggle-container">
-        <input type="checkbox" id="padImage" name="padImage" class="toggle-checkbox" value="false"
-               onclick="this.value = this.checked ? 'false' : 'true'">
+        <input type="checkbox" id="padImage" name="padImage" class="toggle-checkbox" value="false">
         <label for="padImage" class="toggle-label"></label>
     </div>
     <label for="randomize" class="form-label">Random Order:</label>
