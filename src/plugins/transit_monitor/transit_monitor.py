@@ -1,6 +1,7 @@
 from plugins.base_plugin.base_plugin import BasePlugin
 from PIL import Image, ImageDraw, ImageFont
 import requests
+import os
 import json
 import textwrap
 from datetime import datetime
@@ -9,7 +10,7 @@ from zoneinfo import ZoneInfo
 
 class TransitMonitor(BasePlugin):
     def generate_image(self, settings, device_config):
-        api_key = device_config.get_dotenv("511_API_KEY")
+        api_key = "779650b4-c11a-41e2-bc99-af61125240da"
         stop_code = "14621"  # hardcode for MVP
 
         busses = self.whenArrive(stop_code, api_key)  # your existing method
