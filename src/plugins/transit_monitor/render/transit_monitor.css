@@ -1,6 +1,6 @@
 :root{
   --pad-x: 10px;
-  --pad-y: 50px; /* reserve top/bottom deadspace */
+  --pad-y: 40px; /* reserve top/bottom deadspace */
   --gap: 10px;
   --card-h: 60px; /* 3 cards in 400x300 with margins */
 }
@@ -20,7 +20,7 @@ body{ margin:0; width:400px; height:300px; background:#fff; color:#000;
   grid-template-columns: 56px 1fr;  /* left narrow, right wide */
   align-items:center;
   height:var(--card-h);
-  border:2px solid var(--border, #000);
+  border:2px solid var(--border-color, #2b7b4b);
   border-radius:10px;
   background:#f8f8f8;
   padding:8px 10px;
