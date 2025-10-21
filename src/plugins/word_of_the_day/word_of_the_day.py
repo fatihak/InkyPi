@@ -94,10 +94,13 @@ class WordOfTheDay(BasePlugin):
         - type: part of speech (noun, verb, adjective, etc.)
         - meaning: a concise definition in English
         - example: one clear example sentence showing correct usage (in {text_lang})
-        - lecture: include ONLY if the word is not written in the Roman alphabet
+        - lecture: include ONLY if the word is not written in the Roman alphabet.
+        Provide the correct pronunciation in a readable phonetic form (e.g., hiragana/katakana for Japanese, pinyin for Chinese, transliteration for other scripts). 
+        Do NOT return the original script.
 
         The JSON must be strictly valid and contain no additional text, comments, or formatting.
         """
+
 
         # Make the API call
         response = ai_client.chat.completions.create(
