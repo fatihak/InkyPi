@@ -1,5 +1,6 @@
 :root {
-  --pad: 10px;
+  --pad-x: 10px;
+  --pad-y: 20px;
   --gap: 8px;
   --card-h: 90px;
 }
