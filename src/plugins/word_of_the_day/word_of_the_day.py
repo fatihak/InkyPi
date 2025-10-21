@@ -87,18 +87,19 @@ class WordOfTheDay(BasePlugin):
         system_content = "You are an assistant that returns only valid JSON objects."
 
         user_content = f"""
-        Given the word '{word}', provide its equivalent in {text_lang}.
+        Given the word '{word}', provide its most natural equivalent in {text_lang}.
+        If the language commonly uses a native term instead of a loanword, prefer the native word even if the meaning is not a perfect one-to-one match.
+        If no natural native equivalent exists, use the closest borrowed or mixed form.
 
         Return a valid JSON object with the following fields:
-        - word: the translated word in {text_lang}
+        - word: the most natural or native equivalent in {text_lang}
         - type: part of speech (noun, verb, adjective, etc.)
         - meaning: a concise definition in English
         - example: one clear example sentence showing correct usage (in {text_lang})
-        - lecture: include ONLY if the word is not written in the Roman alphabet.
-        Provide the correct pronunciation in a readable phonetic form (e.g., hiragana/katakana for Japanese, pinyin for Chinese, transliteration for other scripts). 
+        - lecture: include ONLY if the word is not written in the Roman alphabet. Provide the correct pronunciation in a readable phonetic form (e.g., hiragana/katakana for Japanese, pinyin for Chinese, transliteration for other scripts).
         Do NOT return the original script.
 
-        The JSON must be strictly valid and contain no additional text, comments, or formatting.
+        Ensure the JSON is strictly valid and contains no additional text, comments, or formatting.
         """
 
 
