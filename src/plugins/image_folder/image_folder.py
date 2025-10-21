@@ -1,5 +1,5 @@
 from plugins.base_plugin.base_plugin import BasePlugin
-from PIL import Image, ImageOps
+from PIL import Image, ImageOps, ImageColor
 import logging
 import os
 import random
@@ -21,24 +21,9 @@ def list_files_in_folder(folder_path):
         )
     ]
 
-def grab_image(image_path, dimensions, pad_image):
-    """Load an image from disk, auto-orient it, and resize to fit within the specified dimensions, preserving aspect ratio."""
-    try:
-        img = Image.open(image_path)
-        img = ImageOps.exif_transpose(img)  # Correct orientation using EXIF
-        img = ImageOps.contain(img, dimensions, Image.Resampling.LANCZOS)
-
-        if pad_image:
-            img = pad_image_blur(img, dimensions)
-        return img
-    except Exception as e:
-        logger.error(f"Error loading image from {image_path}: {e}")
-        return None
-
 class ImageFolder(BasePlugin):
     def generate_image(self, settings, device_config):
         folder_path = settings.get('folder_path')
-        pad_image = settings.get('padImage', False)
         if not folder_path:
             raise RuntimeError("Folder path is required.")
         
@@ -59,12 +44,24 @@ class ImageFolder(BasePlugin):
             raise RuntimeError(f"No image files found in folder: {folder_path}")
 
         image_url = random.choice(image_files)
-
         logger.info(f"Random image selected {image_url}")
 
-        image = grab_image(image_url, dimensions, pad_image)
+        img = None
+        try:
+            img = Image.open(image_url)
+            img = ImageOps.exif_transpose(img)  # Correct orientation using EXIF
 
-        if not image:
+            if settings.get('padImage') == "true":
+                if settings.get('backgroundOption', 'blur') == "blur":
+                    img = pad_image_blur(img, dimensions)
+                else:
+                    background_color = ImageColor.getcolor(settings.get('backgroundColor') or (255, 255, 255), "RGB")
+                    img = ImageOps.pad(img, dimensions, color=background_color, method=Image.Resampling.LANCZOS)
+
+        except Exception as e:
+            logger.error(f"Error loading image from {image_url}: {e}")
+
+        if not img:
             raise RuntimeError("Failed to load image, please check logs.")
 
-        return image
+        return img

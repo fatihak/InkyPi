@@ -20,12 +20,14 @@
     <input type="hidden" id="selected-clock-face" name="selectedClockFace" value="{{ clock_faces[0].Name }}" />
 </div>
 <div class="form-group">
-    <label for="primaryColor" class="form-label">Primary Color:</label>
-    <input type="color" name="primaryColor" value="{{ clock_faces[0].primary_color }}"/>
-</div>
-<div class="form-group">
-    <label for="secondaryColor" class="form-label">Secondary Color:</label>
-    <input type="color" name="secondaryColor" value="{{ clock_faces[0].secondary_color }}"/>
+    <div class="form-group">
+        <label for="primaryColor" class="form-label">Primary Color:</label>
+        <input type="color" name="primaryColor" class="color-picker" value="{{ clock_faces[0].primary_color }}"/>
+    </div>
+    <div class="form-group">
+        <label for="secondaryColor" class="form-label">Secondary Color:</label>
+        <input type="color" name="secondaryColor" class="color-picker" value="{{ clock_faces[0].secondary_color }}"/>
+    </div>
 </div>
 
 <script>
