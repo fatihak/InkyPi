@@ -2,12 +2,15 @@
 {% block content %}
 <div class="grid">
   {% for r in items %}
-  <div class="card" data-line="{{ r.line }}">
-    <div class="line-row">
-      <span class="line">{{ r.line }}</span>
-      <span class="eta">{{ r.arrival_time }} ({{ r.minutes_to_arrival }}m)</span>
+  <div class="card" data-line="{{ r.line|e }}">
+    <div class="left">
+      <div class="time">{{ r.arrival_time }}</div>
+      <div class="eta">{{ r.minutes_to_arrival }} min</div>
+      <div class="dest">{{ r.destination }}</div>
     </div>
-    <div class="dest">{{ r.destination }}</div>
+    <div class="right">
+      <div class="line-box">{{ r.line }}</div>
+    </div>
   </div>
   {% endfor %}
 </div>

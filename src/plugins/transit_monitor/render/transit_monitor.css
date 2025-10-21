@@ -1,60 +1,83 @@
 :root {
   --pad: 10px;
-  --gap: 10px;
-  --card-h: 85px;
+  --gap: 8px;
+  --card-h: 90px;
 }
 
 body {
-  margin: 0;
   width: 400px;
   height: 300px;
   background: #fff;
   font-family: system-ui, -apple-system, sans-serif;
+  margin: 0;
   color: #000;
 }
 
 .grid {
-  display: grid;
-  grid-template-rows: repeat(3, var(--card-h));
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
   gap: var(--gap);
   padding: var(--pad);
-  box-sizing: border-box;
+  height: 100%;
 }
 
 .card {
-  border: 3px solid var(--border-color, #000);
-  border-radius: 8px;
-  padding: 8px 10px;
   display: flex;
-  flex-direction: column;
-  justify-content: center;
+  justify-content: space-between;
+  align-items: center;
+  height: var(--card-h);
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 3px solid var(--border, #000);
   background: #f8f8f8;
 }
 
-.line-row {
+/* left column */
+.left {
   display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  margin-bottom: 4px;
+  flex-direction: column;
+  justify-content: center;
+  flex: 1;
 }
 
-.line {
-  font-weight: 700;
+.time {
   font-size: 20px;
-  letter-spacing: 0.3px;
+  font-weight: 700;
 }
 
 .eta {
-  font-weight: 700;
   font-size: 16px;
+  margin-bottom: 4px;
+  opacity: 0.85;
 }
 
 .dest {
-  font-size: 15px;
+  font-size: 14px;
   line-height: 1.2;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* right column: colored square with line text */
+.right {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.line-box {
+  width: 50px;
+  height: 50px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 18px;
+  background: var(--border, #000);
+  color: white;
 }
 
 /* color themes for specific lines */
