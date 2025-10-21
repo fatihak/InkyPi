@@ -51,7 +51,7 @@ class WordOfTheDay(BasePlugin):
         image_template_params = {
             "word": prompt_response["word"].capitalize(),
             "type": prompt_response["type"].capitalize(),
-            "description": prompt_response["description"].capitalize(),
+            "meaning": prompt_response["meaning"].capitalize(),
             "example": prompt_response["example"].capitalize(),
             "lecture": prompt_response.get("lecture", ""),
             "plugin_settings": settings,
@@ -92,7 +92,7 @@ class WordOfTheDay(BasePlugin):
         Return a valid JSON object with the following fields:
         - word: the translated word in {text_lang}
         - type: part of speech (noun, verb, adjective, etc.)
-        - description: a concise definition in English
+        - meaning: a concise definition in English
         - example: one clear example sentence showing correct usage (in {text_lang})
         - lecture: include ONLY if the word is not written in the Roman alphabet
 
