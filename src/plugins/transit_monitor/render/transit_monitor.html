@@ -4,15 +4,20 @@
 <div class="grid">
   {% for r in items %}
   <div class="card" data-line="{{ r.line|e }}">
-    <div class="top-row">
+    <div class="row">
       <div class="line-box">{{ r.line }}</div>
-      <div class="time-info">
-        <div class="time">{{ r.arrival_time }}</div>
-        <div class="eta">{{ r.minutes_to_arrival }} min</div>
+      <div class="info">
+        <div class="time-line">
+          <span class="time">{{ r.arrival_time }}</span>
+          <span class="eta">({{ r.minutes_to_arrival }} min)</span>
+        </div>
       </div>
     </div>
-    <div class="bottom-row">
-      <div class="dest">{{ r.destination }}</div>
+    <div class="row">
+      <div class="line-box ghost">{{ r.line }}</div>
+      <div class="info">
+        <div class="dest">{{ r.destination }}</div>
+      </div>
     </div>
   </div>
   {% endfor %}
