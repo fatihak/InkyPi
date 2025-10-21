@@ -33,7 +33,7 @@
         let backgroundOption = "blur"
         if (loadPluginSettings) {
             document.getElementById('folder_path').value = pluginSettings.folder_path;
-            document.getElementById('padImage').checked = pluginSettings.padImage;
+            document.getElementById('padImage').checked = pluginSettings.padImage == 'false';
             document.getElementById('backgroundColor').value = pluginSettings.backgroundColor;
 
             backgroundOption = pluginSettings.backgroundOption;

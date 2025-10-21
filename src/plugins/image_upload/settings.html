@@ -92,7 +92,7 @@
         const hiddenFileInputs = document.getElementById("hiddenFileInputs");
         let backgroundOption = "blur"
         if (loadPluginSettings) {
-            document.getElementById('padImage').checked = pluginSettings.padImage;
+            document.getElementById('padImage').checked = pluginSettings.padImage == 'false';
             document.getElementById('randomize').checked = pluginSettings.randomize;
             document.getElementById('backgroundColor').value = pluginSettings.backgroundColor;
 
