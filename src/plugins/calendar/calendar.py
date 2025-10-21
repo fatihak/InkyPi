@@ -27,7 +27,7 @@ class Calendar(BasePlugin):
 
         if not view:
             raise RuntimeError("View is required")
-        elif view not in ["timeGridDay", "timeGridWeek", "dayGridMonth", "listMonth"]:
+        elif view not in ["timeGridDay", "timeGridWeek", "dayGrid", "dayGridMonth", "listMonth"]:
             raise RuntimeError("Invalid view")
 
         if not calendar_urls:
