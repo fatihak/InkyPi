@@ -59,12 +59,24 @@ class ImageFolder(BasePlugin):
             raise RuntimeError(f"No image files found in folder: {folder_path}")
 
         image_url = random.choice(image_files)
-
         logger.info(f"Random image selected {image_url}")
 
-        image = grab_image(image_url, dimensions, pad_image)
+        img = None
+        try:
+            img = Image.open(image_url)
+            img = ImageOps.exif_transpose(img)  # Correct orientation using EXIF
+            img = ImageOps.contain(img, dimensions, Image.Resampling.LANCZOS)
 
-        if not image:
+            if settings.get('backgroundOption', 'blur') == "blur":
+                img = pad_image_blurry(img, dimensions)
+            else:
+                background_color = ImageColor.getcolor(settings.get('backgroundColor') or (255, 255, 255), "RGB")
+                img = ImageOps.pad(img, dimensions, color=background_color, method=Image.Resampling.LANCZOS)
+
+        except Exception as e:
+            logger.error(f"Error loading image from {image_path}: {e}")
+
+        if not img:
             raise RuntimeError("Failed to load image, please check logs.")
 
-        return image
+        return img
