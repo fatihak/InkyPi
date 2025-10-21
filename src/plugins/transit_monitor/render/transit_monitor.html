@@ -2,7 +2,7 @@
 {% block content %}
 <div class="grid">
   {% for r in items %}
-  <div class="card">
+  <div class="card" data-line="{{ r.line }}">
     <div class="line-row">
       <span class="line">{{ r.line }}</span>
       <span class="eta">{{ r.arrival_time }} ({{ r.minutes_to_arrival }}m)</span>

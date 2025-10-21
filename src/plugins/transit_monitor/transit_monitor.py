@@ -20,9 +20,8 @@ class TransitMonitor(BasePlugin):
             all_busses.extend(self.whenArrive(stop, api_key))
 
         all_busses.sort(key=lambda x: x["minutes_to_arrival"])
-        items = all_busses[:4]
+        items = all_busses[:3]
 
-        # render 400x300 via HTML/CSS
         return self.render_image(
             dimensions=(400, 300),
             html_file="transit_monitor.html",
