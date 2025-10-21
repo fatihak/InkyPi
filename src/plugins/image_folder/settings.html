@@ -16,6 +16,7 @@
             <input type="radio" id="backgroundOption" name="backgroundOption" value="color">
             <label>Color</label>
             <input type="color" id="backgroundColor" name="backgroundColor" value="#ffffff" class="color-picker"/>
+        </div>
     </div>
 </div>
 
@@ -36,6 +37,6 @@
 
             backgroundOption = pluginSettings.backgroundOption;
         }
-        document.getElementById('backgroundOption').value = backgroundOption;
+        document.querySelector(`input[name="backgroundOption"][value="${backgroundOption}"]`).checked = true;
     });
 </script>

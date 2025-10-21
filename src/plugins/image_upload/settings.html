@@ -122,6 +122,6 @@
                 hiddenFileInputs.appendChild(hiddenInput);
             });
         }
-        document.getElementById('backgroundOption').value = backgroundOption;
+        document.querySelector(`input[name="backgroundOption"][value="${backgroundOption}"]`).checked = true;
     });
 </script>
