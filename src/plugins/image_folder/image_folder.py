@@ -74,7 +74,7 @@ class ImageFolder(BasePlugin):
                 img = ImageOps.pad(img, dimensions, color=background_color, method=Image.Resampling.LANCZOS)
 
         except Exception as e:
-            logger.error(f"Error loading image from {image_path}: {e}")
+            logger.error(f"Error loading image from {image_url}: {e}")
 
         if not img:
             raise RuntimeError("Failed to load image, please check logs.")
