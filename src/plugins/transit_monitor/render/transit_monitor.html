@@ -1,0 +1,14 @@
+{% extends "plugin.html" %}
+{% block content %}
+<div class="grid">
+  {% for r in items %}
+  <div class="card">
+    <div class="line-row">
+      <span class="line">{{ r.line }}</span>
+      <span class="eta">{{ r.arrival_time }} ({{ r.minutes_to_arrival }}m)</span>
+    </div>
+    <div class="dest">{{ r.destination }}</div>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

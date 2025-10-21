@@ -10,8 +10,8 @@ def parse_stop_codes(raw: str):
 
 class TransitMonitor(BasePlugin):
     def generate_image(self, settings, device_config):
-        api_key = os.getenv("511_API_KEY")
-        #api_key = "779650b4-c11a-41e2-bc99-af61125240da"
+        #api_key = os.getenv("511_API_KEY")
+        api_key = "779650b4-c11a-41e2-bc99-af61125240da"
         stops = parse_stop_codes(settings.get("stop_codes")) 
 
 
@@ -19,23 +19,17 @@ class TransitMonitor(BasePlugin):
         for stop in stops:
             all_busses.extend(self.whenArrive(stop, api_key))
 
-        # MVP: dump raw JSON to screen
-        raw = json.dumps({"agency": "SF", "stops": stops, "busses": all_busses}, indent=2)
+                # sort soonest first, take 4
+        all_busses.sort(key=lambda x: x["minutes_to_arrival"])
+        items = all_busses[:4]
 
-        img = Image.new("RGB", (400, 300), "white")
-        d = ImageDraw.Draw(img)
-        try:
-            font = ImageFont.truetype("DejaVuSansMono.ttf", 14)
-        except:
-            font = ImageFont.load_default()
-
-        y = 10
-        for line in textwrap.wrap(raw, width=50):
-            d.text((10, y), line, fill="black", font=font)
-            y += 15
-            if y > 285:
-                break
-        return img
+        # render 400x300 via HTML/CSS
+        return self.render_image(
+            dimensions=(400, 300),
+            html_file="layout.html",
+            css_file="styles.css",
+            template_params={"items": items, "plugin_settings": settings}
+        )
     
     
     def whenArrive(self, stopCode, api_key):

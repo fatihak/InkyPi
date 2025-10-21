@@ -1,0 +1,38 @@
+/* Canvas: 400x300. We’ll do 4 rows ~65px tall with gaps. */
+:root { --pad: 8px; --gap: 6px; --card-h: 66px; }
+
+body {
+  margin: 0;
+  width: 400px; height: 300px;
+  font-family: system-ui, -apple-system, sans-serif;
+  color: #000; background: #fff;
+}
+
+.grid {
+  box-sizing: border-box;
+  padding: var(--pad);
+  display: grid;
+  grid-template-rows: repeat(4, var(--card-h));
+  gap: var(--gap);
+  height: 100%;
+}
+
+.card {
+  border: 2px solid #000;
+  border-radius: 6px;
+  padding: 6px 8px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.line-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 4px;
+}
+
+.line { font-weight: 700; font-size: 18px; letter-spacing: 0.3px; }
+.eta  { font-weight: 700; font-size: 16px; }
+.dest { font-size: 14px; line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
