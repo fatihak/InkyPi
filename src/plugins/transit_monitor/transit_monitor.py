@@ -1,40 +1,40 @@
 from plugins.base_plugin.base_plugin import BasePlugin
 from PIL import Image, ImageDraw, ImageFont
 import requests
-import os
-import json
-import textwrap
+import os, re, json, textwrap
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
+def parse_stop_codes(raw: str):
+    return [p for p in re.split(r"[,\s]+", raw or "") if p.isdigit()]
 
 class TransitMonitor(BasePlugin):
     def generate_image(self, settings, device_config):
+        #api_key = os.getenv("511_API_KEY")
         api_key = "779650b4-c11a-41e2-bc99-af61125240da"
-        stop_code = "14621"  # hardcode for MVP
+        stops = parse_stop_codes(settings.get("stop_codes")) 
 
-        busses = self.whenArrive(stop_code, api_key)  # your existing method
-        raw = repr(busses)  # or: json.dumps(busses, indent=2)
 
-        # make a white canvas matching your display
-        w, h = device_config.get_resolution()
-        img = Image.new("RGB", (w, h), "white")
+        all_busses = []
+        for stop in stops:
+            all_busses.extend(self.whenArrive(stop, api_key))
+
+        # MVP: dump raw JSON to screen
+        raw = json.dumps({"agency": "SF", "stops": stops, "busses": all_busses}, indent=2)
+
+        img = Image.new("RGB", (400, 300), "white")
         d = ImageDraw.Draw(img)
-
         try:
-            font = ImageFont.truetype("DejaVuSansMono.ttf", 14)  # mono looks nicer for raw text
+            font = ImageFont.truetype("DejaVuSansMono.ttf", 14)
         except:
             font = ImageFont.load_default()
 
-        # simple wrap so it stays on-screen
-        max_chars = 60  # tweak for your width/font
         y = 10
-        for line in textwrap.wrap(raw, width=max_chars):
+        for line in textwrap.wrap(raw, width=50):
             d.text((10, y), line, fill="black", font=font)
-            y += 16
-            if y > h - 16:
-                break  # stop if we run out of space
-
+            y += 15
+            if y > 285:
+                break
         return img
     
     
