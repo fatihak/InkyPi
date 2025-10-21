@@ -21,20 +21,6 @@ def list_files_in_folder(folder_path):
         )
     ]
 
-def grab_image(image_path, dimensions, pad_image):
-    """Load an image from disk, auto-orient it, and resize to fit within the specified dimensions, preserving aspect ratio."""
-    try:
-        img = Image.open(image_path)
-        img = ImageOps.exif_transpose(img)  # Correct orientation using EXIF
-        img = ImageOps.contain(img, dimensions, Image.Resampling.LANCZOS)
-
-        if pad_image:
-            img = pad_image_blurry(img, dimensions)
-        return img
-    except Exception as e:
-        logger.error(f"Error loading image from {image_path}: {e}")
-        return None
-
 class ImageFolder(BasePlugin):
     def generate_image(self, settings, device_config):
         folder_path = settings.get('folder_path')
