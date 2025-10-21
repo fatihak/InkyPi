@@ -1,5 +1,5 @@
 from plugins.base_plugin.base_plugin import BasePlugin
-from PIL import Image, ImageOps
+from PIL import Image, ImageOps, ImageColor
 import logging
 import os
 import random
@@ -38,7 +38,6 @@ def grab_image(image_path, dimensions, pad_image):
 class ImageFolder(BasePlugin):
     def generate_image(self, settings, device_config):
         folder_path = settings.get('folder_path')
-        pad_image = settings.get('padImage', False)
         if not folder_path:
             raise RuntimeError("Folder path is required.")
         
@@ -65,13 +64,13 @@ class ImageFolder(BasePlugin):
         try:
             img = Image.open(image_url)
             img = ImageOps.exif_transpose(img)  # Correct orientation using EXIF
-            img = ImageOps.contain(img, dimensions, Image.Resampling.LANCZOS)
 
-            if settings.get('backgroundOption', 'blur') == "blur":
-                img = pad_image_blurry(img, dimensions)
-            else:
-                background_color = ImageColor.getcolor(settings.get('backgroundColor') or (255, 255, 255), "RGB")
-                img = ImageOps.pad(img, dimensions, color=background_color, method=Image.Resampling.LANCZOS)
+            if settings.get('padImage') == "true":
+                if settings.get('backgroundOption', 'blur') == "blur":
+                    img = pad_image_blur(img, dimensions)
+                else:
+                    background_color = ImageColor.getcolor(settings.get('backgroundColor') or (255, 255, 255), "RGB")
+                    img = ImageOps.pad(img, dimensions, color=background_color, method=Image.Resampling.LANCZOS)
 
         except Exception as e:
             logger.error(f"Error loading image from {image_url}: {e}")
