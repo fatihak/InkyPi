@@ -8,6 +8,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+RANDOM_WORD_URL = "https://random-word-api.vercel.app/api?words=1"
 
 class WordOfTheDay(BasePlugin):
     def generate_settings_template(self):
@@ -67,9 +68,8 @@ class WordOfTheDay(BasePlugin):
 
     @staticmethod
     def get_random_word():
-        url = "https://random-word-api.vercel.app/api?words=1"
         # Make the API call
-        response = requests.get(url) 
+        response = requests.get(RANDOM_WORD_URL) 
 
         logger.info(f"Random word: {response}")
         try:
