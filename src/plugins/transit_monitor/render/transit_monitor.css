@@ -1,93 +1,52 @@
-:root {
+:root{
   --pad-x: 10px;
-  --pad-y: 20px; /* reserved top/bottom deadspace */
-  --gap: 8px;
-  --card-h: 70px; /* tighter fit for more cards */
+  --pad-y: 20px; /* reserve top/bottom deadspace */
+  --gap: 10px;
+  --card-h: 80px; /* 3 cards in 400x300 with margins */
 }
 
-body {
-  width: 400px;
-  height: 300px;
-  background: #fff;
-  font-family: system-ui, -apple-system, sans-serif;
-  margin: 0;
-  color: #000;
+/* canvas */
+body{ margin:0; width:400px; height:300px; background:#fff; color:#000;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
+
+.grid{
+  display:flex; flex-direction:column; gap:var(--gap);
+  padding:var(--pad-y) var(--pad-x); height:100%; box-sizing:border-box;
 }
 
-.grid {
-  display: flex;
-  flex-direction: column;
-  gap: var(--gap);
-  padding: var(--pad-y) var(--pad-x);
-  box-sizing: border-box;
-  height: 100%;
+/* card: two columns separated by a single vertical divider */
+.card{
+  display:grid;
+  grid-template-columns: 56px 1fr;  /* left narrow, right wide */
+  align-items:center;
+  height:var(--card-h);
+  border:2px solid var(--border, #000);
+  border-radius:10px;
+  background:#f8f8f8;
+  padding:8px 10px;
+  column-gap:10px;
 }
 
-/* Card */
-.card {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  height: var(--card-h);
-  border-radius: 8px;
-  border: 2px solid var(--border, #000);
-  background: #f8f8f8;
-  padding: 6px 10px;
+/* left: the line square */
+.left{ display:flex; align-items:center; justify-content:center; }
+.line-box{
+  width:44px; height:44px; border-radius:8px;
+  background:var(--border, #000); color:#fff;
+  display:flex; align-items:center; justify-content:center;
+  font-weight:800; font-size:18px;
 }
 
-/* Two-line structure */
-.row {
-  display: flex;
-  align-items: center;
-  margin-bottom: 2px;
+/* right: add the single vertical divider on its left edge */
+.right{
+  border-left:3px solid var(--border, #000);   /* <-- the one divider */
+  padding-left:10px;
+  display:flex; flex-direction:column; justify-content:center;
 }
 
-/* Line square */
-.line-box {
-  width: 36px;
-  height: 36px;
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 800;
-  font-size: 16px;
-  background: var(--border, #000);
-  color: white;
-  flex-shrink: 0;
-}
-
-/* faded duplicate on second line */
-.line-box.ghost {
-  background: transparent;
-  border: 2px solid var(--border, #000);
-  color: var(--border, #000);
-}
-
-/* Info area */
-.info {
-  margin-left: 8px;
-  flex: 1;
-}
-
-.time-line {
-  font-size: 17px;
-  font-weight: 700;
-}
-
-.eta {
-  font-size: 15px;
-  opacity: 0.75;
-  margin-left: 5px;
-}
-
-.dest {
-  font-size: 15px;
-  font-weight: 500;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
+/* text */
+.headline{ font-size:18px; font-weight:700; }
+.eta{ margin-left:6px; font-size:16px; opacity:.8; }
+.dest{ margin-top:4px; font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 
 /* color themes for specific lines */
 .card[data-line^="22"] { --border-color: #e74c3c; } /* red-ish */
