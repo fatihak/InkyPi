@@ -8,8 +8,8 @@
         {% for item in items %}
         <div class="rss-item">
             <div class="text-container">
-                <div class="item-title">{{ item.title }}</div>
-                <div class="item-description">{{ item.description }}</div>
+                <div class="item-title">{{ item.title | safe}}</div>
+                <div class="item-description">{{ item.description | safe}}</div>
             </div>
             {% if include_images and item.image %}
             <div class="item-image">
