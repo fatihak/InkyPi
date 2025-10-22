@@ -192,12 +192,16 @@ install_debian_dependencies() {
   fi
 }
 
-setup_memory_management() {
+setup_zramswap_service() {
   echo "Enabling and starting zramswap service."
+  sudo apt-get install -y zram-tools > /dev/null
   echo -e "ALGO=zstd\nPERCENT=60" | sudo tee /etc/default/zramswap > /dev/null
   sudo systemctl enable --now zramswap
+}
 
+setup_earlyoom_service() {
   echo "Enabling and starting earlyoom service."
+  sudo apt-get install -y earlyoom > /dev/null
   sudo systemctl enable --now earlyoom
 }
 
@@ -315,6 +319,11 @@ get_ip_address() {
   echo "$ip_address"
 }
 
+# Get OS release number, e.g. 11=Bullseye, 12=Bookworm, 13=Trixe
+get_os_version() {
+  echo "$(lsb_release -sr)"
+}
+
 ask_for_reboot() {
   # Get hostname and IP address
   hostname=$(get_hostname)
@@ -351,7 +360,14 @@ if [[ -n "$WS_TYPE" ]]; then
 fi
 enable_interfaces
 install_debian_dependencies
-setup_memory_management
+# check OS version for Bookworm to setup zramswap
+if [[ $(get_os_version) = "12" ]] ; then
+  echo "OS version is Bookworm - setting up zramswap"
+  setup_zramswap_service
+else
+  echo "OS version is not Bookworm - skipping zramswap setup."
+fi
+setup_earlyoom_service
 copy_project
 create_venv
 install_executable
