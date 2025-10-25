@@ -1,0 +1,30 @@
+{% extends "plugin.html" %}
+
+{% block content %}
+<div class="text-content">
+  <div class="header-top">
+    <span class="sign">Rashgaron</span>
+  </div>
+
+  <div class="header">
+    {% if lecture %}
+    <div class="content lecture">{{ lecture }}</div>
+    {% endif %}
+
+    <div class="title">{{ word }}</div>
+    <div class="content type">{{ type }}</div>
+
+  </div>
+
+  <div class="item-container">
+    <p class="item-title">Meaning:</p>
+    <p class="content description">{{ meaning }}</p>
+  </div>
+
+  <div class="item-container">
+    <p class="item-title">Example:</p>
+    <p class="content example">{{ example }}</p>
+  </div>
+</div>
+
+{% endblock %}

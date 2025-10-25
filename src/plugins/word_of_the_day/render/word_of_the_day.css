@@ -1,0 +1,89 @@
+body {
+  background: #ffffff;
+  font-family: "Noto Sans JP", "Inter", sans-serif;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 480px;
+  margin: 0;
+  font-weight: bold;
+}
+
+.text-content {
+  width: 800px;
+  height: 480px;
+  display: grid;
+  grid-template-rows: 10px 1fr 1fr 1fr;
+  grid-template-columns: 1fr 1fr;
+  background: #ffffff;
+  border-top: 12px solid #1d3557; /* azul fuerte */
+  padding: 30px;
+  box-sizing: border-box;
+}
+
+.header-top {
+  grid-column: 1 / span 2;
+  text-align: right;
+  font-size: 14px;
+  color: #1d3557; /* azul oscuro */
+}
+
+.header {
+  grid-column: 1 / span 2;
+}
+
+.title {
+  grid-column: 1 / span 2;
+  font-size: 80px;
+  font-weight: 800;
+  text-align: center;
+  color: #1d3557; /* azul principal */
+}
+
+.type {
+  grid-column: 1 / span 2;
+  text-align: center;
+  font-size: 28px;
+  font-weight: bold;
+  color: #1d3557; /* azul principal */
+  padding: 4px 10px;
+  border-radius: 6px;
+}
+
+.item-container {
+  grid-column: 1 / span 2;
+  padding: 10px;
+}
+
+.item-title {
+  font-weight: bold;
+  color: #0077b6; /* azul intenso */
+  font-size: 22px;
+  margin-bottom: 5px;
+}
+
+.description {
+  color: #023e8a; /* azul oscuro plano */
+  border-left: 6px solid #1d3557; /* azul oscuro, alto contraste */
+  font-size: 22px;
+  line-height: 1.4;
+  padding: 6px 10px;
+  border-radius: 4px;
+}
+
+.example {
+  color: #023e8a; /* azul oscuro plano */
+  font-style: italic;
+  font-size: 22px;
+  border-left: 6px solid #1d3557; /* azul oscuro, alto contraste */
+  padding-left: 10px;
+  border-radius: 4px;
+}
+
+.content.lecture {
+  font-weight: 700;
+  font-size: min(3cqh, 2.5cqi); /* Pequeño pero legible */
+  color: #555555; /* Gris oscuro para no competir con título */
+  line-height: 1.2;
+  text-align: center;
+}
