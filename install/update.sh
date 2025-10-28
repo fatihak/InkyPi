@@ -30,6 +30,25 @@ echo_error() {
   echo -e "$1 [\e[31m\xE2\x9C\x98\e[0m]\n"
 }
 
+setup_zramswap_service() {
+  echo "Enabling and starting zramswap service."
+  sudo apt-get install -y zram-tools > /dev/null
+  echo -e "ALGO=zstd\nPERCENT=60" | sudo tee /etc/default/zramswap > /dev/null
+  sudo systemctl enable --now zramswap
+}
+
+setup_earlyoom_service() {
+  echo "Enabling and starting earlyoom service."
+  sudo apt-get install -y earlyoom > /dev/null
+  sudo systemctl enable --now earlyoom
+}
+
+# Get OS release number, e.g. 11=Bullseye, 12=Bookworm, 13=Trixe
+get_os_version() {
+  echo "$(lsb_release -sr)"
+}
+
+
 # Ensure script is run with sudo
 if [ "$EUID" -ne 0 ]; then
   echo_error "ERROR: This script requires root privileges. Please run it with sudo."
@@ -45,11 +64,14 @@ else
   exit 1
 fi
 
-echo "Starting zramswap service."
-echo -e "ALGO=zstd\nPERCENT=60" | sudo tee /etc/default/zramswap > /dev/null
-sudo systemctl enable --now zramswap
-echo "Starting earlyoom service."
-sudo systemctl enable --now earlyoom
+# check OS version for Bookworm to setup zramswap
+if [[ $(get_os_version) = "12" ]] ; then
+  echo "OS version is Bookworm - setting up zramswap"
+  setup_zramswap_service
+else
+  echo "OS version is not Bookworm - skipping zramswap setup."
+fi
+setup_earlyoom_service
 
 # Check if virtual environment exists
 if [ ! -d "$VENV_PATH" ]; then
