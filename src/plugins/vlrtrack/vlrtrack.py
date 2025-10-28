@@ -72,6 +72,7 @@ class vlrtrack(BasePlugin):
         
         # Paste date and team names
         draw.text((400, 30), game_data["unix_timestamp"], fill="white", font=title_font, anchor="mt")
+        
         draw.text((175, 300), f"{game_data['team1']}", fill="white", font=title_font, anchor="mt")
         draw.text((625, 300), f"{game_data['team2']}", fill="white", font=title_font, anchor="mt")
         

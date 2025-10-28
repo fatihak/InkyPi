@@ -1,6 +1,27 @@
 {
     "name": "InkyPi Development",
     "display_type": "mock",
-    "resolution": [800, 480],
-    "orientation": "horizontal"
+    "resolution": [
+        800,
+        480
+    ],
+    "orientation": "horizontal",
+    "playlist_config": {
+        "playlists": [
+            {
+                "name": "Default",
+                "start_time": "00:00",
+                "end_time": "24:00",
+                "plugins": [],
+                "current_plugin_index": null
+            }
+        ],
+        "active_playlist": null
+    },
+    "refresh_info": {
+        "refresh_time": "2025-10-28T16:22:32.426418+00:00",
+        "image_hash": "71389864a21cc095b687419c4b5e2ac6a7d2f2137da1edeb8cf6b045abfea69d",
+        "refresh_type": "Manual Update",
+        "plugin_id": "vlrtrack"
+    }
 }

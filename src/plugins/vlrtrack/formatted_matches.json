@@ -1,26 +1,6 @@
 {
     "upcoming_games": [
         {
-            "team1": "FMCL MIX",
-            "team2": "ZETA GAMING",
-            "unix_timestamp": "Oct 28, 03:00 PM",
-            "match_series": "GROUP STAGE: OPENING (B)",
-            "match_event": "PROJECT BLENDER 2025: SPOTLIGHT",
-            "match_page": "https://www.vlr.gg/578608/fmcl-mix-vs-zeta-gaming-project-blender-2025-spotlight-opening-b",
-            "team1_logo": "http://owcdn.net/img/689e1c1aa5707.png",
-            "team2_logo": "http://owcdn.net/img/622248039d4e9.png"
-        },
-        {
-            "team1": "ALTERNATE ATTAX",
-            "team2": "RAFHA ESPORTS",
-            "unix_timestamp": "Oct 28, 04:00 PM",
-            "match_series": "GROUP STAGE: OPENING (B)",
-            "match_event": "PROJECT BLENDER 2025: SPOTLIGHT",
-            "match_page": "https://www.vlr.gg/578609/alternate-attax-vs-rafha-esports-project-blender-2025-spotlight-opening-b",
-            "team1_logo": "http://owcdn.net/img/62a1d1c3e765e.png",
-            "team2_logo": "http://owcdn.net/img/6834c21b42537.png"
-        },
-        {
             "team1": "T1 SPOTLIGHT",
             "team2": "GLOBAL ESPORTS SPOTLIGHT",
             "unix_timestamp": "Oct 30, 08:00 AM",

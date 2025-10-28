@@ -23,7 +23,7 @@ def getGames():
     extracted_data = []
 
     for segment in data["data"]["segments"]:
-        if not (segment["team1"] == "TBD" and segment["team2"] == "TBD"):  # Filter out matches where both teams are TBD
+        if not (segment["team1"] == "TBD" or segment["team2"] == "TBD"):  # Filter out matches where both teams are TBD
             # Scrape the match page for logos
             htmldata = getdata(segment["match_page"])
             soup = BeautifulSoup(htmldata, 'html.parser')
@@ -40,12 +40,6 @@ def getGames():
                 "team1_logo": "http:" + (images[2] if len(images) > 2 else None),
                 "team2_logo": "http:" + (images[3] if len(images) > 3 else None)
             })
-
-    
-
-    # Save the extracted data under "upcoming_games"
-    with open(os.path.join(os.path.dirname(__file__), "formatted_matches.json"), "w", encoding="utf-8") as f:
-        json.dump({"upcoming_games": extracted_data}, f, indent=4, ensure_ascii=False)
 
     print("Formatted JSON data saved to formatted_matches.json ✅")
     return extracted_data[0] if extracted_data else {}
