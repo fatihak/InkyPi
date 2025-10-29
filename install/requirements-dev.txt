@@ -12,3 +12,4 @@ recurring-ical-events==3.7.0
 psutil==7.0.0
 feedparser==6.0.11
 waitress==3.0.2
+pytest==8.4.2
