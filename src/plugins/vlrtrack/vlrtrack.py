@@ -24,7 +24,6 @@ class vlrtrack(BasePlugin):
 
         game_data = getGames()
         
-        # Use sunset.jpg as background
         image = Image.open(os.path.join(os.path.dirname(__file__), "background.jpg")).convert("RGBA")
         draw = ImageDraw.Draw(image)
 
