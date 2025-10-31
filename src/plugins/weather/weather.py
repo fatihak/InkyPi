@@ -3,12 +3,31 @@ from PIL import Image
 import os
 import requests
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timezone, date
+from astral import moon
 import pytz
 from io import BytesIO
 import math
 
 logger = logging.getLogger(__name__)
+        
+def get_moon_phase_name(phase_age: float) -> str:
+    """Determines the name of the lunar phase based on the age of the moon."""
+    PHASES_THRESHOLDS = [
+        (1.0, "newmoon"),
+        (7.0, "waxingcrescent"),
+        (8.5, "firstquarter"),
+        (14.0, "waxinggibbous"),
+        (15.5, "fullmoon"),
+        (22.0, "waninggibbous"),
+        (23.5, "lastquarter"),
+        (29.0, "waningcrescent"),
+    ]
+
+    for threshold, phase_name in PHASES_THRESHOLDS:
+        if phase_age <= threshold:
+            return phase_name  
+    return "newmoon"
 
 UNITS = {
     "standard": {
@@ -251,10 +270,10 @@ class Weather(BasePlugin):
             )
 
         return forecast
-
+        
     def parse_open_meteo_forecast(self, daily_data, tz):
         """
-        Parse the daily forecast from Open-Meteo API and inject moon phase from Farmsense API.
+        Parse the daily forecast from Open-Meteo API and calculate moon phase and illumination using the local 'astral' library.
         """
         times = daily_data.get('time', [])
         weather_codes = daily_data.get('weathercode', [])
@@ -272,24 +291,18 @@ class Weather(BasePlugin):
             weather_icon_path = self.get_plugin_dir(f"icons/{weather_icon}.png")
 
             timestamp = int(dt.replace(hour=12, minute=0, second=0).timestamp())
-            api_url = f"https://api.farmsense.net/v1/moonphases/?d={timestamp}"
+            target_date: date = dt.date()
            
             try:
-                resp = requests.get(api_url, verify=False)
-                moon = resp.json()[0]
-                phase_raw = moon.get("Phase", "New Moon")
-                illum_pct = float(moon.get("Illumination", 0)) * 100
-                phase_name = phase_raw.lower().replace(" ", "")
-                if phase_name == "darkmoon":
-                    phase_name = "newmoon"
-                elif phase_name in ("3rdquarter", "thirdquarter"):
-                    phase_name = "lastquarter"
-                elif phase_name in ("1stquarter", "firstquarter"):
-                    phase_name = "firstquarter"
-            except Exception:
+                phase_age = moon.phase(target_date)
+                phase_name = get_moon_phase_name(phase_age)
+                LUNAR_CYCLE_DAYS = 29.530588853
+                phase_fraction = phase_age / LUNAR_CYCLE_DAYS
+                illum_pct = (1 - math.cos(2 * math.pi * phase_fraction)) / 2 * 100
+            except Exception as e:
+                logger.error(f"Error calculating moon phase for {target_date}: {e}")
                 illum_pct = 0
                 phase_name = "newmoon"
-
             moon_icon_path = self.get_plugin_dir(f"icons/{phase_name}.png")
 
             forecast.append({
