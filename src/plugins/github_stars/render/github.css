@@ -1,0 +1,34 @@
+.title {
+    font-size: min(8dvw, 8dvh);
+    text-align: center;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.2em;
+}
+
+.stars {
+    font-size: 500%;
+    text-align: center;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.2em;
+}
+
+.github-container {
+    display: flex;
+    flex-direction: column;
+    gap: 5dvh;
+    font-family: "Jost";
+}
+
+.github-logo {
+    width: 1.1em;
+    height: 1.1em;
+    fill: currentColor; 
+}
+
+.github-stars {
+    fill: currentColor;
+}
