@@ -381,21 +381,63 @@
                     <label>Refresh</label>
                     <span title="Determines how often the data and image should be refreshed.">ⓘ</span>
                 </div>
-                <div class="form-group nowrap">
-                    <input type="radio" name="refreshType" value="interval" checked>
-                    <label for="interval">Every</label>
-                    <input type="number" id="interval" name="interval" class="form-input" required min="1" placeholder="Enter a number">
-                    <select id="unit" name="unit" class="form-input" required>
-                        <option value="minute">Minute</option>
-                        <option value="hour">Hour</option>
-                        <option value="day">Day</option>
-                    </select>
+                <div class="form-group nowrap" id="group-interval">
+                  <input type="radio" name="refreshType" id="refresh-interval" value="interval" checked>
+                  <label for="refresh-interval">Every</label>
+                  <input type="number" id="interval" name="interval" class="form-input" required min="1" placeholder="Enter a number">
+                  <select id="unit" name="unit" class="form-input" required>
+                    <option value="minute">Minute</option>
+                    <option value="hour">Hour</option>
+                    <option value="day">Day</option>
+                  </select>
                 </div>
-                <div class="form-group nowrap">
-                    <input type="radio" name="refreshType" value="scheduled">
-                    <label for="scheduled">Daily at </label>
-                    <input id="scheduled" class="time-input" type="time" name="refreshTime" step="900">
+
+                <div class="form-group nowrap" id="group-scheduled">
+                  <input type="radio" name="refreshType" id="refresh-scheduled" value="scheduled">
+                  <label for="refresh-scheduled">Daily at</label>
+                  <input id="scheduled" class="time-input" type="time" name="refreshTime" step="900">
                 </div>
+
+                <script>
+                  document.addEventListener('DOMContentLoaded', () => {
+                    // Interval group
+                    const groupInterval = document.getElementById('group-interval');
+                    const radioInterval = document.getElementById('refresh-interval');
+                    const inputInterval = document.getElementById('interval');
+
+                    // Scheduled group
+                    const groupScheduled = document.getElementById('group-scheduled');
+                    const radioScheduled = document.getElementById('refresh-scheduled');
+                    const inputScheduled = document.getElementById('scheduled');
+
+                    // Helper to activate a group
+                    const activateGroup = (radio, input) => {
+                      radio.checked = true;
+                      // Focus after a short delay to ensure radio updates visually
+                      setTimeout(() => input.focus(), 0);
+                    };
+
+                    // Click anywhere inside group → activate
+                    groupInterval.addEventListener('click', (e) => {
+                      if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+                      activateGroup(radioInterval, inputInterval);
+                    });
+
+                    groupScheduled.addEventListener('click', (e) => {
+                      if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+                      activateGroup(radioScheduled, inputScheduled);
+                    });
+
+                    // Clicking the radio itself → focus the input
+                    radioInterval.addEventListener('click', () => activateGroup(radioInterval, inputInterval));
+                    radioScheduled.addEventListener('click', () => activateGroup(radioScheduled, inputScheduled));
+
+                    // Focusing inputs → auto-select their radio
+                    inputInterval.addEventListener('focus', () => (radioInterval.checked = true));
+                    inputScheduled.addEventListener('focus', () => (radioScheduled.checked = true));
+                  });
+                </script>
+
             </form>
             <div class="buttons-container">
                 <button type="button" onclick="handleAction('add_to_playlist')" class="action-button">Save</button>
