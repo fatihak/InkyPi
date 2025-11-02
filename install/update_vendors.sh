@@ -13,7 +13,7 @@ echo "Updating Chart JS"
 curl -L https://cdn.jsdelivr.net/npm/chart.js -o src/static/scripts/chart.js
 
 echo "Updating fullcalendar CSS"
-curl -L https://cdn.jsdelivr.net/npm/fullcalendar@6.1.17/index.global.min.css -o src/static/styles/calendar.min.css
+curl -L https://cdn.jsdelivr.net/npm/fullcalendar@6.1.17/index.global.min.js -o src/static/styles/calendar.min.css
 
 echo "Updating fullcalendar JS"
 curl -L https://cdn.jsdelivr.net/npm/fullcalendar@6.1.17/index.global.min.js -o src/static/scripts/calendar.min.js
