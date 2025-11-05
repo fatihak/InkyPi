@@ -118,7 +118,14 @@ class Weather(BasePlugin):
     def parse_weather_data(self, weather_data, aqi_data, tz, units, time_format):
         current = weather_data.get("current")
         dt = datetime.fromtimestamp(current.get('dt'), tz=timezone.utc).astimezone(tz)
-        current_icon = current.get("weather")[0].get("icon").replace("n", "d")
+        current_icon = current.get("weather")[0].get("icon")
+        icon_codes_to_preserve = ["01", "02", "10"]
+        icon_code = current_icon[:2]
+        current_suffix = current_icon[-1]
+
+        if icon_code not in icon_codes_to_preserve:
+            if current_icon.endswith('n'):
+                current_icon = current_icon.replace("n", "d")
         data = {
             "current_date": dt.strftime("%A, %B %d"),
             "current_day_icon": self.get_plugin_dir(f'icons/{current_icon}.png'),
@@ -128,7 +135,7 @@ class Weather(BasePlugin):
             "units": units,
             "time_format": time_format
         }
-        data['forecast'] = self.parse_forecast(weather_data.get('daily'), tz)
+        data['forecast'] = self.parse_forecast(weather_data.get('daily'), tz, current_suffix)
         data['data_points'] = self.parse_data_points(weather_data, aqi_data, tz, units, time_format)
 
         data['hourly_forecast'] = self.parse_hourly(weather_data.get('hourly'), tz, time_format, units)
@@ -138,7 +145,8 @@ class Weather(BasePlugin):
         current = weather_data.get("current_weather", {})
         dt = datetime.fromisoformat(current.get('time')).astimezone(tz) if current.get('time') else datetime.now(tz)
         weather_code = current.get("weathercode", 0)
-        current_icon = self.map_weather_code_to_icon(weather_code, dt.hour)
+        is_day = current.get("is_day", 1)
+        current_icon = self.map_weather_code_to_icon(weather_code, is_day)
 
         data = {
             "current_date": dt.strftime("%A, %B %d"),
@@ -150,50 +158,64 @@ class Weather(BasePlugin):
             "time_format": time_format
         }
 
-        data['forecast'] = self.parse_open_meteo_forecast(weather_data.get('daily', {}), tz)
+        data['forecast'] = self.parse_open_meteo_forecast(weather_data.get('daily', {}), tz, is_day)
         data['data_points'] = self.parse_open_meteo_data_points(weather_data, aqi_data, tz, units, time_format)
         
         data['hourly_forecast'] = self.parse_open_meteo_hourly(weather_data.get('hourly', {}), tz, time_format)
         return data
 
-    def map_weather_code_to_icon(self, weather_code, hour):
+    def map_weather_code_to_icon(self, weather_code, is_day):
 
         icon = "01d" # Default to clear day icon
         
-        if weather_code in [0]: # Clear sky
+        if weather_code in [0]:   # Clear sky
             icon = "01d"
         elif weather_code in [1]: # Mainly clear
-            icon = "02d"
+            icon = "022d"
         elif weather_code in [2]: # Partly cloudy
-            icon = "03d"
+            icon = "02d"
         elif weather_code in [3]: # Overcast
             icon = "04d"
-        elif weather_code in [45, 48]: # Fog and depositing rime fog
-            icon = "50d"
-        elif weather_code in [51, 53, 55]: # Drizzle
+        elif weather_code in [51, 61, 80]: # Drizzle, showers, rain: Light
+            icon = "51d"          
+        elif weather_code in [53, 63, 81]: # Drizzle, showers, rain: Moderatr
+            icon = "53d"
+        elif weather_code in [55, 65, 82]: # Drizzle, showers, rain: Heavy
             icon = "09d"
-        elif weather_code in [56, 57]: # Freezing Drizzle
-            icon = "09d"
-        elif weather_code in [61, 63, 65]: # Rain: Slight, moderate, heavy
-            icon = "10d"
-        elif weather_code in [66, 67]: # Freezing Rain
-            icon = "10d"
-        elif weather_code in [71, 73, 75]: # Snow fall: Slight, moderate, heavy
+        elif weather_code in [45]: # Fog
+            icon = "50d"                       
+        elif weather_code in [48]: # Icy fog
+            icon = "48d"
+        elif weather_code in [56, 66]: # Light freezing Drizzle
+            icon = "56d"            
+        elif weather_code in [57, 67]: # Freezing Drizzle
+            icon = "57d"            
+        elif weather_code in [71, 85]: # Snow fall: Slight
+            icon = "71d"
+        elif weather_code in [73]:     # Snow fall: Moderate
+            icon = "73d"
+        elif weather_code in [75, 86]: # Snow fall: Heavy
             icon = "13d"
-        elif weather_code in [77]: # Snow grains
-            icon = "13d"
-        elif weather_code in [80, 81, 82]: # Rain showers: Slight, moderate, violent
-            icon = "09d"
-        elif weather_code in [85, 86]: # Snow showers slight and heavy
-            icon = "13d"
+        elif weather_code in [77]:     # Snow grain
+            icon = "77d"
         elif weather_code in [95]: # Thunderstorm
             icon = "11d"
         elif weather_code in [96, 99]: # Thunderstorm with slight and heavy hail
             icon = "11d"
-            
+
+        if is_day == 0:
+            if icon == "01d":
+                icon = "01n"      # Clear sky night
+            elif icon == "022d":
+                icon = "022n"     # Mainly clear night
+            elif icon == "02d":
+                icon = "02n"      # Partly cloudy night                
+            elif icon == "10d":
+                icon = "10n"      # Rain night
+
         return icon
 
-    def parse_forecast(self, daily_forecast, tz):
+    def parse_forecast(self, daily_forecast, tz, current_suffix):
         """
         - daily_forecast: list of daily entries from One‑Call v3 (each has 'dt', 'weather', 'temp', 'moon_phase')
         - tz: your target tzinfo (e.g. from zoneinfo or pytz)
@@ -220,11 +242,17 @@ class Weather(BasePlugin):
                 return "waningcrescent"
 
         forecast = []
+        icon_codes_to_apply_current_suffix = ["01", "02", "10"]
         for day in daily_forecast:
             # --- weather icon ---
             weather_icon = day["weather"][0]["icon"]  # e.g. "10d", "01n"
-            # always show day‑style icon
-            weather_icon = weather_icon.replace("n", "d")
+            icon_code = weather_icon[:2]
+            if icon_code in icon_codes_to_apply_current_suffix:
+                weather_icon_base = weather_icon[:-1]
+                weather_icon = weather_icon_base + current_suffix
+            else:
+                if weather_icon.endswith('n'):
+                    weather_icon = weather_icon.replace("n", "d")
             weather_icon_path = self.get_plugin_dir(f"icons/{weather_icon}.png")
 
             # --- moon phase & icon ---
@@ -252,7 +280,7 @@ class Weather(BasePlugin):
 
         return forecast
 
-    def parse_open_meteo_forecast(self, daily_data, tz):
+    def parse_open_meteo_forecast(self, daily_data, tz, is_day):
         """
         Parse the daily forecast from Open-Meteo API and inject moon phase from Farmsense API.
         """
@@ -268,7 +296,7 @@ class Weather(BasePlugin):
             day_label = dt.strftime("%a")
 
             code = weather_codes[i] if i < len(weather_codes) else 0
-            weather_icon = self.map_weather_code_to_icon(code, 12)
+            weather_icon = self.map_weather_code_to_icon(code, is_day)
             weather_icon_path = self.get_plugin_dir(f"icons/{weather_icon}.png")
 
             timestamp = int(dt.replace(hour=12, minute=0, second=0).timestamp())
@@ -634,9 +662,9 @@ class Weather(BasePlugin):
             return dt.strftime("%H:00" if hour_only else "%H:%M")
         
         if include_am_pm:
-            fmt = "%-I %p" if hour_only else "%-I:%M %p"
+            fmt = "%I %p" if hour_only else "%I:%M %p"
         else:
-            fmt = "%-I" if hour_only else "%-I:%M"
+            fmt = "%I" if hour_only else "%I:%M"
 
         return dt.strftime(fmt).lstrip("0")
     
