@@ -13,3 +13,4 @@ psutil==7.0.0
 feedparser==6.0.11
 waitress==3.0.2
 pytest==8.4.2
+json5==0.12.1
