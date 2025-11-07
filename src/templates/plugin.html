@@ -32,7 +32,7 @@
             const formData = new FormData(form);
             let url = '{{ url_for("plugin.update_now") }}';
             let method = 'POST';
-            let clearFormOnSubmit = true;
+            let clearFormOnSubmit = false;
             
             // Add uploaded files to the form under its key
             Object.keys(uploadedFiles).forEach(key => {
@@ -51,10 +51,10 @@
                     scheduleData[key] = value;
                 }
                 formData.append("refresh_settings", JSON.stringify(scheduleData));
+                clearFormOnSubmit = true
             } else if (action == "update_instance") {
                 url = "{{ url_for('plugin.update_plugin_instance', instance_name='') }}" + pluginInstanceName,
                 method = 'PUT'
-                clearFormOnSubmit = false
             }
 
             // Send data to the server
