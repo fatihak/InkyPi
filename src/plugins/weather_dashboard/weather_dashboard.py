@@ -300,34 +300,23 @@ class WeatherDashboard(BasePlugin):
                 "icon": os.path.join(icon_dir, 'icons/sunset.png')
             })
 
-        wind_speed = weather.get('current', {}).get("wind_speed")
-        if wind_speed is not None:
-            wind_display = str(int(wind_speed)) if wind_speed == int(wind_speed) else str(round(wind_speed, 1))
-        else:
-            wind_display = "N/A"
         data_points.append({
             "label": "Wind",
-            "measurement": wind_display,
+            "measurement": weather.get('current', {}).get("wind_speed"),
             "unit": UNITS[units]["speed"],
             "icon": os.path.join(icon_dir, 'icons/wind.png')
         })
 
-        humidity = weather.get('current', {}).get("humidity")
         data_points.append({
             "label": "Humidity",
-            "measurement": str(int(humidity)) if humidity is not None else "N/A",
+            "measurement": weather.get('current', {}).get("humidity"),
             "unit": '%',
             "icon": os.path.join(icon_dir, 'icons/humidity.png')
         })
 
-        uvi = weather.get('current', {}).get("uvi")
-        if uvi is not None:
-            uvi_display = str(int(uvi)) if uvi == int(uvi) else str(round(uvi, 1))
-        else:
-            uvi_display = "N/A"
         data_points.append({
             "label": "UV Index",
-            "measurement": uvi_display,
+            "measurement": weather.get('current', {}).get("uvi"),
             "unit": '',
             "icon": os.path.join(icon_dir, 'icons/uvi.png')
         })
@@ -372,14 +361,10 @@ class WeatherDashboard(BasePlugin):
             })
 
         # Wind
-        wind_speed = current_data.get("windspeed") or current_data.get("wind_speed") or 0
-        if wind_speed and wind_speed != 0:
-            wind_display = str(int(wind_speed)) if wind_speed == int(wind_speed) else str(round(wind_speed, 1))
-        else:
-            wind_display = "0"
+        wind_speed = current_data.get("windspeed", 0)
         data_points.append({
             "label": "Wind",
-            "measurement": wind_display,
+            "measurement": wind_speed,
             "unit": UNITS[units]["speed"],
             "icon": os.path.join(icon_dir, 'icons/wind.png')
         })
@@ -388,7 +373,7 @@ class WeatherDashboard(BasePlugin):
         data_points.append({
             "label": "Humidity",
             "measurement": "N/A",
-            "unit": '',
+            "unit": '%',
             "icon": os.path.join(icon_dir, 'icons/humidity.png')
         })
 
@@ -400,8 +385,7 @@ class WeatherDashboard(BasePlugin):
         for i, time_str in enumerate(uv_hourly_times):
             try:
                 if datetime.fromisoformat(time_str).astimezone(tz).hour == current_time.hour:
-                    uv_val = uv_values[i]
-                    current_uv = str(int(uv_val)) if uv_val == int(uv_val) else str(round(uv_val, 1))
+                    current_uv = uv_values[i]
                     break
             except Exception as e:
                 logger.debug(f"Error parsing UV data: {e}")
@@ -422,7 +406,7 @@ class WeatherDashboard(BasePlugin):
             try:
                 if datetime.fromisoformat(time_str).astimezone(tz).hour == current_time.hour:
                     aqi_val = aqi_values[i]
-                    current_aqi = str(int(aqi_val)) if aqi_val == int(aqi_val) else str(round(aqi_val, 1))
+                    current_aqi = aqi_val
                     if aqi_val is not None:
                         scale = ["Good","Fair","Moderate","Poor","Very Poor","Ext Poor"][min(int(aqi_val)//20, 5)]
                     break
