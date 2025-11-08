@@ -65,18 +65,19 @@
       {% if birthdays %}
       <div class="birthdays-list">
         {% for birthday in birthdays %}
-        <div class="birthday-item {% if birthday.days_until == 0 %}birthday-today{% elif birthday.days_until <= 3 %}birthday-soon{% endif %}">
+        {% set days = birthday.days_until | default(99) %}
+        <div class="birthday-item {% if days == 0 %}birthday-today{% elif days <= 3 %}birthday-soon{% endif %}">
           <span class="birthday-indicator">🎂</span>
           <span class="birthday-name">
             {{ birthday.name }}{% if birthday.age %} <span class="age">({{ birthday.age }})</span>{% endif %}
           </span>
           <span class="birthday-countdown">
-            {% if birthday.days_until == 0 %}
+            {% if days == 0 %}
               Today!
-            {% elif birthday.days_until == 1 %}
+            {% elif days == 1 %}
               Tomorrow
             {% else %}
-              in {{ birthday.days_until }}d
+              in {{ days }}d
             {% endif %}
           </span>
         </div>
