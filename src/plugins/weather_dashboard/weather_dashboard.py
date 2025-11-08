@@ -301,9 +301,13 @@ class WeatherDashboard(BasePlugin):
             })
 
         wind_speed = weather.get('current', {}).get("wind_speed")
+        if wind_speed is not None:
+            wind_display = str(int(wind_speed)) if wind_speed == int(wind_speed) else str(round(wind_speed, 1))
+        else:
+            wind_display = "N/A"
         data_points.append({
             "label": "Wind",
-            "measurement": str(round(wind_speed, 1)) if wind_speed is not None else "N/A",
+            "measurement": wind_display,
             "unit": UNITS[units]["speed"],
             "icon": os.path.join(icon_dir, 'icons/wind.png')
         })
@@ -311,15 +315,19 @@ class WeatherDashboard(BasePlugin):
         humidity = weather.get('current', {}).get("humidity")
         data_points.append({
             "label": "Humidity",
-            "measurement": str(humidity) if humidity is not None else "N/A",
+            "measurement": str(int(humidity)) if humidity is not None else "N/A",
             "unit": '%',
             "icon": os.path.join(icon_dir, 'icons/humidity.png')
         })
 
         uvi = weather.get('current', {}).get("uvi")
+        if uvi is not None:
+            uvi_display = str(int(uvi)) if uvi == int(uvi) else str(round(uvi, 1))
+        else:
+            uvi_display = "N/A"
         data_points.append({
             "label": "UV Index",
-            "measurement": str(round(uvi, 1)) if uvi is not None else "N/A",
+            "measurement": uvi_display,
             "unit": '',
             "icon": os.path.join(icon_dir, 'icons/uvi.png')
         })
@@ -364,10 +372,14 @@ class WeatherDashboard(BasePlugin):
             })
 
         # Wind
-        wind_speed = current_data.get("windspeed", 0)
+        wind_speed = current_data.get("windspeed") or current_data.get("wind_speed") or 0
+        if wind_speed and wind_speed != 0:
+            wind_display = str(int(wind_speed)) if wind_speed == int(wind_speed) else str(round(wind_speed, 1))
+        else:
+            wind_display = "0"
         data_points.append({
             "label": "Wind",
-            "measurement": str(round(wind_speed, 1)) if wind_speed else "0",
+            "measurement": wind_display,
             "unit": UNITS[units]["speed"],
             "icon": os.path.join(icon_dir, 'icons/wind.png')
         })
@@ -388,9 +400,11 @@ class WeatherDashboard(BasePlugin):
         for i, time_str in enumerate(uv_hourly_times):
             try:
                 if datetime.fromisoformat(time_str).astimezone(tz).hour == current_time.hour:
-                    current_uv = str(round(uv_values[i], 1))
+                    uv_val = uv_values[i]
+                    current_uv = str(int(uv_val)) if uv_val == int(uv_val) else str(round(uv_val, 1))
                     break
-            except:
+            except Exception as e:
+                logger.debug(f"Error parsing UV data: {e}")
                 continue
         data_points.append({
             "label": "UV Index",
@@ -403,16 +417,18 @@ class WeatherDashboard(BasePlugin):
         aqi_hourly_times = aqi_data.get('hourly', {}).get('time', [])
         aqi_values = aqi_data.get('hourly', {}).get('european_aqi', [])
         current_aqi = "N/A"
+        scale = ""
         for i, time_str in enumerate(aqi_hourly_times):
             try:
                 if datetime.fromisoformat(time_str).astimezone(tz).hour == current_time.hour:
-                    current_aqi = str(round(aqi_values[i], 1))
+                    aqi_val = aqi_values[i]
+                    current_aqi = str(int(aqi_val)) if aqi_val == int(aqi_val) else str(round(aqi_val, 1))
+                    if aqi_val is not None:
+                        scale = ["Good","Fair","Moderate","Poor","Very Poor","Ext Poor"][min(int(aqi_val)//20, 5)]
                     break
-            except:
+            except Exception as e:
+                logger.debug(f"Error parsing AQI data: {e}")
                 continue
-        scale = ""
-        if current_aqi != "N/A":
-            scale = ["Good","Fair","Moderate","Poor","Very Poor","Ext Poor"][min(int(float(current_aqi))//20, 5)]
         data_points.append({
             "label": "Air Quality",
             "measurement": current_aqi,

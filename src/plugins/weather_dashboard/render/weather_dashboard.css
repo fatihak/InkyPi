@@ -179,7 +179,7 @@
 }
 
 .day-name {
-  font-size: min(28cqh, 8cqi);
+  font-size: min(35cqh, 10cqi);
   font-weight: bold;
   line-height: 1;
 }
@@ -368,9 +368,10 @@
   align-items: center;
   justify-content: center;
   height: 100%;
-  font-size: min(25cqh, 5cqi);
-  color: rgba(128, 128, 128, 0.6);
+  font-size: min(30cqh, 6cqi);
+  color: rgba(100, 100, 100, 1);
   font-style: italic;
+  font-weight: 500;
 }
 
 /* Responsive Design for Vertical Orientation */
