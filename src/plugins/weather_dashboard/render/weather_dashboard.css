@@ -282,34 +282,37 @@
 }
 
 .birthday-indicator {
-  font-size: min(35cqh, 6cqi);
+  font-size: min(50cqh, 8cqi);
   line-height: 1;
   flex-shrink: 0;
+  font-weight: bold;
 }
 
 .birthday-name {
-  font-size: min(28cqh, 6cqi);
-  font-weight: 500;
+  font-size: min(40cqh, 8cqi);
+  font-weight: 700;
   flex: 1;
   line-height: 1.1;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  color: rgba(0, 0, 0, 1);
 }
 
 .age {
   font-size: 0.85em;
-  font-weight: 400;
-  opacity: 0.7;
+  font-weight: 700;
+  opacity: 1;
 }
 
 .birthday-countdown {
-  font-size: min(25cqh, 5cqi);
-  font-weight: 600;
+  font-size: min(38cqh, 7cqi);
+  font-weight: 700;
   text-align: right;
   white-space: nowrap;
   line-height: 1.1;
-  opacity: 0.9;
+  opacity: 1;
+  color: rgba(0, 0, 0, 1);
 }
 
 /* BOTTOM QUARTER: Countdown */
