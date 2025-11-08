@@ -219,41 +219,79 @@
 }
 
 .section-header {
-  font-size: min(35cqh, 8cqi);
-  font-weight: bold;
   text-align: center;
   margin-bottom: 1dvh;
+  container-type: size;
+}
+
+.header-main {
+  font-size: min(35cqh, 8cqi);
+  font-weight: bold;
   line-height: 1;
+}
+
+.header-sub {
+  font-size: min(22cqh, 4cqi);
+  font-weight: 300;
+  margin-top: 0.3dvh;
+  line-height: 1.2;
+  opacity: 0.8;
 }
 
 .birthdays-list {
   display: flex;
   flex-direction: column;
-  gap: 0.8dvh;
+  gap: 0.6dvh;
   overflow-y: auto;
 }
 
 .birthday-item {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 0.5dvh 0.5vw;
-  border-bottom: 1px solid rgba(128, 128, 128, 0.2);
+  gap: 0.5vw;
+  padding: 0.5dvh 0.7vw;
+  border-radius: 0.5vw;
+  background: rgba(128, 128, 128, 0.05);
+  transition: background 0.2s;
   container-type: size;
 }
 
+.birthday-item:hover {
+  background: rgba(128, 128, 128, 0.1);
+}
+
+.birthday-today {
+  background: rgba(255, 215, 0, 0.2) !important;
+  border: 1px solid rgba(255, 215, 0, 0.5);
+}
+
+.birthday-soon {
+  background: rgba(255, 165, 0, 0.1) !important;
+}
+
+.birthday-indicator {
+  font-size: min(35cqh, 6cqi);
+  line-height: 1;
+  flex-shrink: 0;
+}
+
 .birthday-name {
-  font-size: min(30cqh, 6cqi);
+  font-size: min(28cqh, 6cqi);
   font-weight: 500;
   flex: 1;
   line-height: 1.1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.birthday-date {
-  font-size: min(28cqh, 5cqi);
-  font-weight: 300;
+.birthday-countdown {
+  font-size: min(25cqh, 5cqi);
+  font-weight: 600;
   text-align: right;
+  white-space: nowrap;
   line-height: 1.1;
+  opacity: 0.9;
 }
 
 /* BOTTOM QUARTER: Countdown */

@@ -60,14 +60,26 @@
   <div class="info-section">
     <!-- TOP QUARTER: Week & Birthdays -->
     <div class="birthdays-section">
-      <div class="section-header">Week {{ current_week }}</div>
+      <div class="section-header">
+        <div class="header-main">Week {{ current_week }}</div>
+        <div class="header-sub">{{ current_date }}</div>
+      </div>
 
       {% if birthdays %}
       <div class="birthdays-list">
         {% for birthday in birthdays %}
-        <div class="birthday-item">
+        <div class="birthday-item {% if birthday.days_until == 0 %}birthday-today{% elif birthday.days_until <= 3 %}birthday-soon{% endif %}">
+          <span class="birthday-indicator">🎂</span>
           <span class="birthday-name">{{ birthday.name }}</span>
-          <span class="birthday-date">{{ birthday.date }}</span>
+          <span class="birthday-countdown">
+            {% if birthday.days_until == 0 %}
+              Today!
+            {% elif birthday.days_until == 1 %}
+              Tomorrow
+            {% else %}
+              in {{ birthday.days_until }}d
+            {% endif %}
+          </span>
         </div>
         {% endfor %}
       </div>
