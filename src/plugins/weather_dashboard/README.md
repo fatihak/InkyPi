@@ -53,8 +53,10 @@ The plugin supports two weather providers:
 4. **Title**: Display location name (OpenWeatherMap only) or custom title
 
 ### Birthday Settings
-1. **CSV File Path**: Full path to your birthday CSV file
-   - Example: `/home/user/birthdays.csv`
+1. **CSV File Path**: **Absolute path** to your birthday CSV file
+   - ⚠️ **IMPORTANT**: Use absolute paths like `/home/username/birthdays.csv`
+   - ❌ Do NOT use `~/birthdays.csv` - the tilde (~) expands to `/root/` since InkyPi runs as root
+   - ✅ Example: `/home/lumpidu/birthdays.csv`
    - See `birthdays_example.csv` for format
 
 ### Birthday CSV Format

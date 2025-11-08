@@ -28,6 +28,11 @@
 
 /* Weather Header */
 .weather-header {
+  height: 8dvh;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
   text-align: center;
   container-type: size;
 }
@@ -126,25 +131,32 @@
   flex-direction: column;
   justify-content: center;
   width: 80%;
+  height: 100%;
   container-type: size;
 }
 
 .metric-value {
-  font-size: min(35cqh, 12cqi);
+  font-size: min(46cqh, 26cqi);
   font-weight: bold;
-  line-height: 1;
+  line-height: 105%;
+  height: 70%;
+  text-align: center;
+  white-space: nowrap;
+  align-content: center;
 }
 
 .metric-unit {
   font-size: 0.6em;
-  font-weight: normal;
-  margin-left: 0.2em;
+  font-weight: lighter;
+  margin-left: 0.2vw;
 }
 
 .metric-label {
-  font-size: min(22cqh, 7cqi);
-  font-weight: 300;
-  line-height: 1.1;
+  font-size: min(32cqh, 15cqi);
+  font-weight: lighter;
+  line-height: 1;
+  height: 30%;
+  text-align: center;
 }
 
 /* Hourly Weather Chart */
