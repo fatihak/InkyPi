@@ -112,6 +112,11 @@ class WeatherDashboard(BasePlugin):
         template_params["countdown"] = countdown_info
         template_params["current_week"] = datetime.now(tz).isocalendar()[1]
 
+        # Add countdown image if provided
+        countdown_image = settings.get('countdownImage')
+        if countdown_image and os.path.exists(countdown_image):
+            template_params["countdown_image"] = countdown_image
+
         # Limit forecast to 3 days
         if 'forecast' in template_params:
             template_params['forecast'] = template_params['forecast'][:4]  # Current day + 3 forecast days
@@ -134,6 +139,7 @@ class WeatherDashboard(BasePlugin):
         """Load birthdays from CSV and return upcoming ones (within next 30 days)"""
         birthdays = []
         current_date = datetime.now(tz).date()
+        current_year = current_date.year
 
         try:
             with open(csv_path, 'r', encoding='utf-8') as f:
@@ -147,27 +153,40 @@ class WeatherDashboard(BasePlugin):
                         if not date_str or not name:
                             continue
 
+                        birth_year = None
                         # Try parsing with year first
                         if len(date_str.split('-')) == 3:
                             birth_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+                            birth_year = birth_date.year
                         else:
                             # Just month and day
                             birth_date = datetime.strptime(date_str, '%m-%d').date()
-                            birth_date = birth_date.replace(year=current_date.year)
+                            birth_date = birth_date.replace(year=current_year)
 
                         # Calculate next occurrence
-                        next_birthday = birth_date.replace(year=current_date.year)
+                        next_birthday = birth_date.replace(year=current_year)
                         if next_birthday < current_date:
-                            next_birthday = next_birthday.replace(year=current_date.year + 1)
+                            next_birthday = next_birthday.replace(year=current_year + 1)
 
                         # Only include if within next 30 days
                         days_until = (next_birthday - current_date).days
                         if days_until <= 30:
-                            birthdays.append({
+                            # Calculate age if birth year is known
+                            age = None
+                            if birth_year:
+                                turning_age = next_birthday.year - birth_year
+                                age = turning_age
+
+                            birthday_entry = {
                                 'name': name,
                                 'date': next_birthday.strftime('%b %d'),
                                 'days_until': days_until
-                            })
+                            }
+
+                            if age:
+                                birthday_entry['age'] = age
+
+                            birthdays.append(birthday_entry)
                     except Exception as e:
                         logger.warning(f"Failed to parse birthday row: {row}, error: {e}")
                         continue

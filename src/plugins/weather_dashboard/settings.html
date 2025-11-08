@@ -66,6 +66,12 @@
     <input type="date" id="countdownDate" name="countdownDate" class="form-input" />
 </div>
 
+<div class="form-group">
+    <label for="countdownImagePath" class="form-label">Countdown Image Path (Optional):</label>
+    <input type="text" id="countdownImagePath" name="countdownImage" class="form-input" placeholder="/home/user/event-image.jpg" />
+    <small>Image will be displayed in 16:9 aspect ratio. Leave empty for text-only countdown.</small>
+</div>
+
 <div id="mapModal" class="modal">
     <div class="modal-content">
         <span class="close-button" onclick="closeModal('mapModal')">×</span>
@@ -156,6 +162,7 @@
             document.getElementById('birthdayCSVPath').value = pluginSettings.birthdayCSVPath || '';
             document.getElementById('countdownTitle').value = pluginSettings.countdownTitle || '';
             document.getElementById('countdownDate').value = pluginSettings.countdownDate || '';
+            document.getElementById('countdownImagePath').value = pluginSettings.countdownImage || '';
         } else {
             // set default values
             document.getElementById('units').value = "imperial";

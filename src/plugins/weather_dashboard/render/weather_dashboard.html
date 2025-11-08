@@ -67,7 +67,9 @@
         {% for birthday in birthdays %}
         <div class="birthday-item {% if birthday.days_until == 0 %}birthday-today{% elif birthday.days_until <= 3 %}birthday-soon{% endif %}">
           <span class="birthday-indicator">🎂</span>
-          <span class="birthday-name">{{ birthday.name }}</span>
+          <span class="birthday-name">
+            {{ birthday.name }}{% if birthday.age %} <span class="age">({{ birthday.age }})</span>{% endif %}
+          </span>
           <span class="birthday-countdown">
             {% if birthday.days_until == 0 %}
               Today!
@@ -88,10 +90,19 @@
     <!-- BOTTOM QUARTER: Countdown -->
     <div class="countdown-section">
       {% if countdown %}
-      <div class="countdown-title">{{ countdown.title }}</div>
-      <div class="countdown-number">{{ countdown.day_count }}</div>
-      <div class="countdown-label">{{ countdown.label }}</div>
-      <div class="countdown-date">{{ countdown.date }}</div>
+        {% if countdown_image %}
+        <div class="countdown-image-container">
+          <img src="{{ countdown_image }}" alt="Countdown Image" class="countdown-image">
+        </div>
+        {% endif %}
+        <div class="countdown-content">
+          <div class="countdown-title">{{ countdown.title }}</div>
+          <div class="countdown-number">{{ countdown.day_count }}</div>
+          <div class="countdown-label">{{ countdown.label }}</div>
+          {% if not countdown_image %}
+          <div class="countdown-date">{{ countdown.date }}</div>
+          {% endif %}
+        </div>
       {% else %}
       <div class="no-data">No countdown set</div>
       {% endif %}

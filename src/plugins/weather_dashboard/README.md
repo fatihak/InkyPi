@@ -68,22 +68,34 @@ Bob Johnson,12-25
 ```
 
 **Date formats supported:**
-- Full date with year: `YYYY-MM-DD` (e.g., `1990-05-15`)
-- Month and day only: `MM-DD` (e.g., `03-20`)
+- Full date with year: `YYYY-MM-DD` (e.g., `1990-05-15`) - **Shows age!**
+- Month and day only: `MM-DD` (e.g., `03-20`) - No age displayed
 
 The plugin will:
 - Show only birthdays within the next 30 days
 - Display up to 5 upcoming birthdays
 - Sort by proximity to current date
+- **Calculate and display age when birth year is provided**
+
+Example display:
+```
+🎂 John Doe (35)    Today!
+🎂 Jane Smith       Tomorrow
+```
 
 ### Countdown Settings
 1. **Countdown Title**: Name of the event (e.g., "Vacation", "Wedding", "Conference")
 2. **Countdown Date**: Target date in YYYY-MM-DD format
+3. **Countdown Image** (Optional): Path to an image file to display with the countdown
+   - Example: `/home/user/vacation.jpg`
+   - Image is displayed in 16:9 aspect ratio
+   - Leave empty for text-only countdown
 
 The countdown displays:
 - Number of days remaining (or days passed if date has passed)
 - Event name
-- Target date
+- Optional custom image (16:9 aspect ratio)
+- Target date (when no image is provided)
 
 ## Installation
 
@@ -156,12 +168,23 @@ And line 163 to change the time window:
 if days_until <= 30:  # Change this number of days
 ```
 
-## Responsive Design
+## Responsive Design & Orientation
 
-The plugin automatically adapts to:
-- **Landscape orientation** (default): Weather on left, info on right
-- **Portrait orientation**: Weather on top, info on bottom
+The plugin automatically adapts to both orientations:
+- **Landscape/Panorama mode** (default): Weather on left (50%), info on right (50%)
+- **Portrait mode**: Weather on top (50%), info on bottom (50%)
 - Different screen sizes using container queries and viewport units
+
+### Changing Orientation
+
+Orientation is set in the **InkyPi Web UI > Settings > Device Settings**:
+1. Go to the InkyPi web interface
+2. Navigate to Settings
+3. Under "Device Settings", find "Orientation"
+4. Select either "Horizontal" or "Vertical"
+5. Save and refresh your display
+
+The plugin will automatically adjust its layout based on the orientation setting.
 
 ## Troubleshooting
 
