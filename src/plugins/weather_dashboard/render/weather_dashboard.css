@@ -65,6 +65,8 @@
   width: auto;
   max-width: 40%;
   object-fit: contain;
+  opacity: 1;
+  filter: contrast(1.2) brightness(0.95);
 }
 
 .current-info {
@@ -124,6 +126,8 @@
   width: 20%;
   height: 70%;
   object-fit: contain;
+  opacity: 1;
+  filter: contrast(1.2) brightness(0.95);
 }
 
 .metric-data {
@@ -201,6 +205,8 @@
   height: 40%;
   max-width: 8vw;
   object-fit: contain;
+  opacity: 1;
+  filter: contrast(1.2) brightness(0.95);
 }
 
 .temps {
@@ -263,25 +269,25 @@
   gap: 0.5vw;
   padding: 0.5dvh 0.7vw;
   border-radius: 0.5vw;
-  background: rgba(200, 200, 200, 0.3);
+  background: transparent;
   transition: background 0.2s;
   container-type: size;
   min-height: 4dvh;
-  border: 1px solid rgba(100, 100, 100, 0.4);
+  border: 2px solid rgba(100, 100, 100, 0.6);
 }
 
 .birthday-item:hover {
-  background: rgba(200, 200, 200, 0.4);
+  background: transparent;
 }
 
 .birthday-today {
-  background: rgba(255, 215, 0, 0.4) !important;
-  border: 2px solid rgba(200, 150, 0, 0.8);
+  background: transparent !important;
+  border: 3px solid rgba(0, 0, 0, 0.9);
 }
 
 .birthday-soon {
-  background: rgba(255, 215, 0, 0.2) !important;
-  border: 1px solid rgba(200, 150, 0, 0.5);
+  background: transparent !important;
+  border: 2px solid rgba(80, 80, 80, 0.7);
 }
 
 .birthday-indicator {
