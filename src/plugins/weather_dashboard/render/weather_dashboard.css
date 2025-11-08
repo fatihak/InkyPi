@@ -245,6 +245,7 @@
   margin-bottom: 1dvh;
   line-height: 1;
   height: 3dvh;
+  color: #000000 !important;
 }
 
 .birthdays-list {
@@ -262,23 +263,25 @@
   gap: 0.5vw;
   padding: 0.5dvh 0.7vw;
   border-radius: 0.5vw;
-  background: rgba(128, 128, 128, 0.05);
+  background: rgba(200, 200, 200, 0.3);
   transition: background 0.2s;
   container-type: size;
   min-height: 4dvh;
+  border: 1px solid rgba(100, 100, 100, 0.4);
 }
 
 .birthday-item:hover {
-  background: rgba(128, 128, 128, 0.1);
+  background: rgba(200, 200, 200, 0.4);
 }
 
 .birthday-today {
-  background: rgba(255, 215, 0, 0.2) !important;
+  background: rgba(255, 215, 0, 0.4) !important;
   border: 2px solid rgba(200, 150, 0, 0.8);
 }
 
 .birthday-soon {
-  background: rgba(255, 165, 0, 0.1) !important;
+  background: rgba(255, 215, 0, 0.2) !important;
+  border: 1px solid rgba(200, 150, 0, 0.5);
 }
 
 .birthday-indicator {
@@ -286,6 +289,7 @@
   line-height: 1;
   flex-shrink: 0;
   font-weight: bold;
+  color: #000000 !important;
 }
 
 .birthday-name {
@@ -296,13 +300,14 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: rgba(0, 0, 0, 1);
+  color: #000000 !important;
 }
 
 .age {
   font-size: 0.85em;
   font-weight: 700;
   opacity: 1;
+  color: #000000 !important;
 }
 
 .birthday-countdown {
@@ -312,7 +317,7 @@
   white-space: nowrap;
   line-height: 1.1;
   opacity: 1;
-  color: rgba(0, 0, 0, 1);
+  color: #000000 !important;
 }
 
 /* BOTTOM QUARTER: Countdown */
