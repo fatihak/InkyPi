@@ -143,9 +143,13 @@ class WeatherDashboard(BasePlugin):
 
         try:
             with open(csv_path, 'r', encoding='utf-8') as f:
-                reader = csv.DictReader(f)
+                # skipinitialspace removes spaces after commas
+                reader = csv.DictReader(f, skipinitialspace=True)
                 for row in reader:
                     try:
+                        # Strip whitespace from keys and values to handle "name, date" headers
+                        row = {k.strip(): v.strip() for k, v in row.items()}
+
                         # Parse birthday (expecting format: YYYY-MM-DD or MM-DD)
                         date_str = row.get('date', '').strip()
                         name = row.get('name', '').strip()
@@ -296,23 +300,26 @@ class WeatherDashboard(BasePlugin):
                 "icon": os.path.join(icon_dir, 'icons/sunset.png')
             })
 
+        wind_speed = weather.get('current', {}).get("wind_speed")
         data_points.append({
             "label": "Wind",
-            "measurement": weather.get('current', {}).get("wind_speed"),
+            "measurement": str(round(wind_speed, 1)) if wind_speed is not None else "N/A",
             "unit": UNITS[units]["speed"],
             "icon": os.path.join(icon_dir, 'icons/wind.png')
         })
 
+        humidity = weather.get('current', {}).get("humidity")
         data_points.append({
             "label": "Humidity",
-            "measurement": weather.get('current', {}).get("humidity"),
+            "measurement": str(humidity) if humidity is not None else "N/A",
             "unit": '%',
             "icon": os.path.join(icon_dir, 'icons/humidity.png')
         })
 
+        uvi = weather.get('current', {}).get("uvi")
         data_points.append({
             "label": "UV Index",
-            "measurement": weather.get('current', {}).get("uvi"),
+            "measurement": str(round(uvi, 1)) if uvi is not None else "N/A",
             "unit": '',
             "icon": os.path.join(icon_dir, 'icons/uvi.png')
         })
@@ -360,7 +367,7 @@ class WeatherDashboard(BasePlugin):
         wind_speed = current_data.get("windspeed", 0)
         data_points.append({
             "label": "Wind",
-            "measurement": wind_speed,
+            "measurement": str(round(wind_speed, 1)) if wind_speed else "0",
             "unit": UNITS[units]["speed"],
             "icon": os.path.join(icon_dir, 'icons/wind.png')
         })
@@ -369,7 +376,7 @@ class WeatherDashboard(BasePlugin):
         data_points.append({
             "label": "Humidity",
             "measurement": "N/A",
-            "unit": '%',
+            "unit": '',
             "icon": os.path.join(icon_dir, 'icons/humidity.png')
         })
 
@@ -381,7 +388,7 @@ class WeatherDashboard(BasePlugin):
         for i, time_str in enumerate(uv_hourly_times):
             try:
                 if datetime.fromisoformat(time_str).astimezone(tz).hour == current_time.hour:
-                    current_uv = uv_values[i]
+                    current_uv = str(round(uv_values[i], 1))
                     break
             except:
                 continue
@@ -399,13 +406,13 @@ class WeatherDashboard(BasePlugin):
         for i, time_str in enumerate(aqi_hourly_times):
             try:
                 if datetime.fromisoformat(time_str).astimezone(tz).hour == current_time.hour:
-                    current_aqi = round(aqi_values[i], 1)
+                    current_aqi = str(round(aqi_values[i], 1))
                     break
             except:
                 continue
         scale = ""
         if current_aqi != "N/A":
-            scale = ["Good","Fair","Moderate","Poor","Very Poor","Ext Poor"][min(int(current_aqi)//20, 5)]
+            scale = ["Good","Fair","Moderate","Poor","Very Poor","Ext Poor"][min(int(float(current_aqi))//20, 5)]
         data_points.append({
             "label": "Air Quality",
             "measurement": current_aqi,

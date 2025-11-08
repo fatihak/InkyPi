@@ -147,6 +147,13 @@
   line-height: 1.1;
 }
 
+/* Hourly Weather Chart */
+.chart-container {
+  width: 100%;
+  height: 16dvh;
+  margin: 0.5dvh 0;
+}
+
 /* 3-Day Forecast */
 .forecast-section {
   display: flex;
@@ -185,7 +192,7 @@
 }
 
 .temps {
-  font-size: min(22cqh, 6cqi);
+  font-size: min(28cqh, 8cqi);
   text-align: center;
   white-space: nowrap;
   line-height: 1;

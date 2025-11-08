@@ -32,11 +32,16 @@
       <div class="metric-item">
         <img class="metric-icon" src="{{ metric['icon'] }}" alt="{{ metric['label'] }}">
         <div class="metric-data">
-          <div class="metric-value">{{ metric['measurement'] }}<span class="metric-unit">{{ metric['unit'] }}</span></div>
+          <div class="metric-value">{{ metric['measurement'] | default('--') }}<span class="metric-unit">{{ metric['unit'] | default('') }}</span></div>
           <div class="metric-label">{{ metric['label'] }}</div>
         </div>
       </div>
       {% endfor %}
+    </div>
+
+    <!-- Hourly Weather Graph -->
+    <div class="chart-container">
+      <canvas id="hourlyTemperatureChart"></canvas>
     </div>
 
     <!-- 3-Day Forecast -->
@@ -110,5 +115,194 @@
     </div>
   </div>
 </div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const canvas = document.getElementById('hourlyTemperatureChart');
+    if (!canvas) return; // Exit if canvas not found
+
+    const ctx = canvas.getContext('2d');
+
+    // Extract hourly temperature and labels from template variables
+    const labels = [{% for hour in hourly_forecast %}"{{ hour.time }}"{% if not loop.last %}, {% endif %}{% endfor %}];
+    const temperatures = [{% for hour in hourly_forecast %}{{ hour.temperature }}{% if not loop.last %}, {% endif %}{% endfor %}];
+    const precipitation = [{% for hour in hourly_forecast %}{{ hour.precipitation * 100}}{% if not loop.last %}, {% endif %}{% endfor %}];
+    const rain = [{% for hour in hourly_forecast %}{{ hour.rain or 0 }}{% if not loop.last %}, {% endif %}{% endfor %}];
+    const units = document.getElementById('units-container').dataset.units;
+    const isImperial = units === "imperial";
+    const unit = isImperial ? "in" : "mm";
+    const threshold = isImperial ? 0.0035 : 0.09;
+
+    // Find min and max temperatures
+    const minTemp = Math.min(...temperatures);
+    var maxTemp = Math.max(...temperatures);
+
+    Chart.register({
+      id: 'annotationRain',
+      afterDatasetsDraw(chart, args, pluginOptions) {
+        const { ctx } = chart;
+        const rainData = pluginOptions.precipitationData || [];
+        const meta = chart.getDatasetMeta(1);
+
+        ctx.save();
+        ctx.textAlign = 'center';
+
+        meta.data.forEach((bar, i) => {
+          const rainAmount = rainData[i];
+          if (rainAmount && rainAmount > threshold) {
+            const x = bar.x;
+            const y = bar.y;
+            const base = bar.base;
+            const height = base - y;
+
+            let textY, unitY;
+
+            if (height < 25) {
+              textY = y - 10;
+              unitY = y - 3;
+            } else {
+              textY = y + 13;
+              unitY = y + 20;
+            }
+            ctx.fillStyle = "{{ plugin_settings.textColor }}";
+            ctx.fillText(rainAmount.toFixed(2), x, textY);
+            ctx.fillText(unit, x, unitY);
+          }
+        });
+
+        ctx.restore();
+      }
+    });
+
+    const chart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [{
+          type: 'line',
+          label: 'Hourly Temperature',
+          data: temperatures,
+          borderColor: 'rgba(241, 122, 36, 0.9)',
+          borderWidth: 2,
+          pointRadius: 0,
+          fill: true,
+          tension: 0.5
+        },
+        {
+          type: 'bar',
+          label: 'Precipitation Probability',
+          data: precipitation,
+          borderColor: 'rgba(26, 111, 176, 1)',
+          borderWidth: {
+            top: 2,
+            right: 0,
+            bottom: 0,
+            left: 0
+          },
+          yAxisID: 'y1',
+          barPercentage: 1.0,
+          categoryPercentage: 1.0,
+          fill: true,
+        }
+      ]
+      },
+      options: {
+        animation: {
+          duration: 0,
+        },
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: {
+            ticks: {
+              autoSkip: true,
+              padding: 0,
+              maxRotation: 0,
+              minRotation: 0,
+              color: "{{ plugin_settings.textColor }}",
+              font: {
+                family: 'Jost'
+              }
+            },
+            grid: {
+              tickLength: 0,
+              display: false
+            },
+            offset: true,
+            gridLines: {
+                drawBorder: false,
+            }
+          },
+          y: {
+            ticks: {
+              padding: 0,
+              color: "{{ plugin_settings.textColor }}",
+              font: {
+                family: 'Jost'
+              },
+              autoSkip: false,
+              callback: function(value, index, values) {
+                if (index === values.length-1) return maxTemp + "°";
+                else if (index === 0) return minTemp + "°";
+                else return '';
+              }
+            },
+            grid: { display: false },
+            min: minTemp,
+            max: maxTemp,
+          },
+          y1: {
+            position: 'right',
+            grid: { display: false },
+            ticks: {
+              padding: 0,
+              color: "{{ plugin_settings.textColor }}",
+              font: {
+                family: 'Jost'
+              },
+              autoSkip: false,
+              callback: function(value, index, values) {
+                if (index === values.length - 1) return "100%";
+                else if (index === 0) return "0%";
+                else return '';
+              }
+            },
+            min: 0,
+            max: 100,
+          }
+        },
+        plugins: {
+          legend: { display: false },
+          annotationRain: { precipitationData: rain }
+        },
+        elements: {
+          line: {
+            borderJoinStyle: 'round'
+          }
+        }
+      }
+    });
+
+    chart.update();
+
+    // Create gradients after chart is created
+    const gradientStart = chart.scales['y'].getPixelForValue(maxTemp);
+    const gradientEnd = chart.scales['y'].getPixelForValue(minTemp);
+
+    const tempGradient = ctx.createLinearGradient(0, gradientStart, 0, gradientEnd+10);
+    tempGradient.addColorStop(0, 'rgba(252,204,5, 0.95)');
+    tempGradient.addColorStop(1, 'rgba(252,204,5, 0.01)');
+    chart.data.datasets[0].backgroundColor = tempGradient;
+
+    const precipitationGradient = ctx.createLinearGradient(0, gradientStart, 0, gradientEnd);
+    precipitationGradient.addColorStop(0, 'rgba(26, 111, 176, 0.8)');
+    precipitationGradient.addColorStop(1, 'rgba(194, 223, 246, 0)');
+    chart.data.datasets[1].backgroundColor = precipitationGradient;
+
+    chart.update();
+  });
+</script>
 
 {% endblock %}
