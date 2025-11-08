@@ -23,7 +23,7 @@
   gap: 1dvh;
   height: 100%;
   padding-right: 1vw;
-  border-right: 1px solid rgba(128, 128, 128, 0.3);
+  border-right: 2px solid rgba(80, 80, 80, 0.6);
 }
 
 /* Weather Header */
@@ -175,7 +175,7 @@
   height: auto;
   flex: 1;
   padding: 1dvh 0.5vw;
-  border-top: 1px solid rgba(128, 128, 128, 0.3);
+  border-top: 2px solid rgba(80, 80, 80, 0.5);
 }
 
 .forecast-day {
@@ -185,7 +185,7 @@
   justify-content: space-around;
   flex: 1;
   padding: 0.5dvh 0.5vw;
-  border: 1px solid rgba(128, 128, 128, 0.4);
+  border: 2px solid rgba(80, 80, 80, 0.8);
   border-radius: 0.8vw;
   container-type: size;
 }
@@ -230,7 +230,7 @@
 .birthdays-section {
   display: flex;
   flex-direction: column;
-  border: 1px solid rgba(128, 128, 128, 0.3);
+  border: 2px solid rgba(80, 80, 80, 0.6);
   border-radius: 1vw;
   padding: 1dvh 1vw;
   overflow: hidden;
@@ -261,6 +261,7 @@
   background: rgba(128, 128, 128, 0.05);
   transition: background 0.2s;
   container-type: size;
+  min-height: 4dvh;
 }
 
 .birthday-item:hover {
@@ -269,7 +270,7 @@
 
 .birthday-today {
   background: rgba(255, 215, 0, 0.2) !important;
-  border: 1px solid rgba(255, 215, 0, 0.5);
+  border: 2px solid rgba(200, 150, 0, 0.8);
 }
 
 .birthday-soon {
@@ -313,7 +314,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  border: 1px solid rgba(128, 128, 128, 0.3);
+  border: 2px solid rgba(80, 80, 80, 0.6);
   border-radius: 1vw;
   padding: 1dvh 1vw;
   text-align: center;
