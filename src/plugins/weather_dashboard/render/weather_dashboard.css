@@ -219,23 +219,11 @@
 }
 
 .section-header {
-  text-align: center;
-  margin-bottom: 1dvh;
-  container-type: size;
-}
-
-.header-main {
   font-size: min(35cqh, 8cqi);
   font-weight: bold;
+  text-align: center;
+  margin-bottom: 1dvh;
   line-height: 1;
-}
-
-.header-sub {
-  font-size: min(22cqh, 4cqi);
-  font-weight: 300;
-  margin-top: 0.3dvh;
-  line-height: 1.2;
-  opacity: 0.8;
 }
 
 .birthdays-list {
