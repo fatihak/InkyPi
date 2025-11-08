@@ -48,7 +48,7 @@
         <div class="temps">
           <span class="high">{{ day.high }}°</span> / <span class="low">{{ day.low }}°</span>
         </div>
-        {% if day.pop > 0 %}
+        {% if (day.pop | default(0)) > 0 %}
         <div class="precipitation">{{ day.pop }}%</div>
         {% endif %}
       </div>
