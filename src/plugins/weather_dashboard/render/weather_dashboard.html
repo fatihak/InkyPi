@@ -1,0 +1,93 @@
+{% extends "plugin.html" %}
+
+{% block content %}
+<div id="units-container" data-units="{{ units }}"></div>
+
+<div class="dashboard-container">
+  <!-- LEFT HALF: Weather Section -->
+  <div class="weather-section">
+    <!-- Header -->
+    <div class="weather-header">
+      {% if title %}
+      <div class="location-title">{{ title }}</div>
+      {% endif %}
+      <div class="current-date">{{ current_date }}</div>
+    </div>
+
+    <!-- Current Weather -->
+    <div class="current-weather">
+      <img class="current-icon" src="{{ current_day_icon }}" alt="Current Weather">
+      <div class="current-info">
+        <div class="current-temp">
+          {{ current_temperature }}<span class="temp-unit">{{ temperature_unit }}</span>
+        </div>
+        <div class="feels-like">Feels {{ feels_like }}°</div>
+        <div class="weather-description">{{ current_description }}</div>
+      </div>
+    </div>
+
+    <!-- Compact Metrics Grid (2x3 or 3x2) -->
+    <div class="metrics-grid">
+      {% for metric in data_points %}
+      <div class="metric-item">
+        <img class="metric-icon" src="{{ metric.icon }}" alt="{{ metric.label }}">
+        <div class="metric-data">
+          <div class="metric-value">{{ metric.measurement }}<span class="metric-unit">{{ metric.unit }}</span></div>
+          <div class="metric-label">{{ metric.label }}</div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- 3-Day Forecast -->
+    <div class="forecast-section">
+      {% for day in forecast[1:4] %}
+      <div class="forecast-day">
+        <div class="day-name">{{ day.day }}</div>
+        <img class="forecast-icon" src="{{ day.icon }}" alt="{{ day.day }}">
+        <div class="temps">
+          <span class="high">{{ day.high }}°</span> / <span class="low">{{ day.low }}°</span>
+        </div>
+        {% if day.pop > 0 %}
+        <div class="precipitation">{{ day.pop }}%</div>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- RIGHT HALF: Info Section (split into two quarters) -->
+  <div class="info-section">
+    <!-- TOP QUARTER: Week & Birthdays -->
+    <div class="birthdays-section">
+      <div class="section-header">Week {{ current_week }}</div>
+
+      {% if birthdays %}
+      <div class="birthdays-list">
+        {% for birthday in birthdays %}
+        <div class="birthday-item">
+          <span class="birthday-name">{{ birthday.name }}</span>
+          <span class="birthday-date">{{ birthday.date }}</span>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="no-data">No upcoming birthdays</div>
+      {% endif %}
+    </div>
+
+    <!-- BOTTOM QUARTER: Countdown -->
+    <div class="countdown-section">
+      {% if countdown %}
+      <div class="countdown-title">{{ countdown.title }}</div>
+      <div class="countdown-number">{{ countdown.day_count }}</div>
+      <div class="countdown-label">{{ countdown.label }}</div>
+      <div class="countdown-date">{{ countdown.date }}</div>
+      {% else %}
+      <div class="no-data">No countdown set</div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+{% endblock %}

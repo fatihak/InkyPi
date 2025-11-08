@@ -1,0 +1,168 @@
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+<h3 class="section-header">Weather Settings</h3>
+
+<div class="form-group">
+    <label class="form-label">Location: </label>
+    <div class="form-group">
+        <span>Latitude </span>
+        <input readonly type="text" id="latitude" name="latitude" class="form-input" />
+    </div>
+    <div class="form-group">
+        <span>Longitude </span>
+        <input readonly type="text" id="longitude" name="longitude" class="form-input" />
+    </div>
+    <button type="button" id="openMap" class="action-button compact">Select Location</button>
+</div>
+
+<div class="form-group">
+    <label for="weatherProvider" class="form-label">Weather Provider:</label>
+    <select id="weatherProvider" name="weatherProvider" class="form-input" onchange="updateTitleOptions(this.value)">
+        <option value="OpenWeatherMap">OpenWeatherMap</option>
+        <option value="OpenMeteo">Open-Meteo</option>
+    </select>
+
+    <label for="units" class="form-label">Units:</label>
+    <select id="units" name="units" class="form-input">
+        <option value="imperial">Imperial (°F)</option>
+        <option value="metric">Metric (°C)</option>
+        <option value="standard">Standard (K)</option>
+    </select>
+</div>
+
+<div class="form-group" id="titleOptionWrapper">
+    <label class="form-label">Title:</label>
+
+    <div class="form-group">
+        <input type="radio" id="title-location" name="titleSelection" value="location">
+        <label for="title-location">Location</label>
+
+        <input type="radio" id="title-custom" name="titleSelection" value="custom">
+        <label for="title-custom">Custom</label>
+        <input type="text" id="customTitle" name="customTitle" class="form-input" placeholder="Type something..." />
+    </div>
+</div>
+
+<div class="separator"></div>
+<h3 class="section-header">Birthdays Settings</h3>
+
+<div class="form-group">
+    <label for="birthdayCSVPath" class="form-label">Birthday CSV File Path:</label>
+    <input type="text" id="birthdayCSVPath" name="birthdayCSVPath" class="form-input" placeholder="/home/user/birthdays.csv" />
+    <small>CSV format: name,date (e.g., "John Doe,1990-05-15" or "Jane Smith,03-20")</small>
+</div>
+
+<div class="separator"></div>
+<h3 class="section-header">Countdown Settings</h3>
+
+<div class="form-group">
+    <label for="countdownTitle" class="form-label">Countdown Title:</label>
+    <input type="text" id="countdownTitle" name="countdownTitle" class="form-input" placeholder="e.g., Vacation" />
+</div>
+
+<div class="form-group">
+    <label for="countdownDate" class="form-label">Countdown Date (YYYY-MM-DD):</label>
+    <input type="date" id="countdownDate" name="countdownDate" class="form-input" />
+</div>
+
+<div id="mapModal" class="modal">
+    <div class="modal-content">
+        <span class="close-button" onclick="closeModal('mapModal')">×</span>
+        <h2 id="modalTitle">Select Location</h2>
+        <div class="separator"></div>
+        <div id="map" style="width: 100%; height: 200px; margin: 10px 0px;"></div>
+        <button id="closeMap" class="action-button">Save</button>
+    </div>
+</div>
+
+<script>
+
+    function updateTitleOptions(provider) {
+        const titleLocationRadio = document.getElementById('title-location');
+        const titleLocationLabel = document.querySelector('label[for="title-location"]');
+        const titleCustomRadio = document.getElementById('title-custom');
+        const customTitleInput = document.getElementById('customTitle');
+
+        if (provider === 'OpenMeteo') {
+            // Hide or disable "Location" radio option
+            titleLocationRadio.style.display = 'none';
+            titleLocationLabel.style.display = 'none';
+            titleLocationRadio.disabled = true;
+
+            // Select and enable "Custom"
+            titleCustomRadio.checked = true;
+            titleCustomRadio.disabled = false;
+            customTitleInput.disabled = false;
+        } else {
+            // Show and enable both options
+            titleLocationRadio.style.display = '';
+            titleLocationLabel.style.display = '';
+            titleLocationRadio.disabled = false;
+
+            titleCustomRadio.disabled = false;
+            customTitleInput.disabled = false;
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+
+        const OSM_TILE_URL = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+        const $latitude = document.querySelector('#latitude');
+        const $longitude = document.querySelector('#longitude');
+        const $openMap = document.querySelector('#openMap');
+        const $mapModal = document.querySelector('#mapModal');
+        const $closeMap = document.querySelector('#closeMap');
+
+        let latitude = +$latitude.value;
+        let longitude = +$longitude.value;
+        let zoom = latitude && longitude ? 4.5 : 2.5;
+        let selectedTitle = 'location';
+        let weatherProvider = 'OpenWeatherMap';
+
+        let map, marker;
+
+        $openMap.addEventListener('click', () => {
+            openModal('mapModal')
+            setTimeout(() => {
+                if (!map) {
+                    map = L.map('map').setView([latitude, longitude], zoom);
+                    L.tileLayer(OSM_TILE_URL).addTo(map);
+                    marker = L.marker([latitude, longitude], { draggable: true }).addTo(map);
+
+                    map.on('click', event => {
+                        marker.setLatLng(event.latlng);
+                    });
+                }
+            }, 100);
+        });
+
+        $closeMap.addEventListener('click', () => {
+            const position = marker.getLatLng().wrap();
+            $latitude.value = position.lat;
+            $longitude.value = position.lng;
+            closeModal('mapModal');
+        });
+
+        if (loadPluginSettings) {
+            document.getElementById('latitude').value = pluginSettings.latitude;
+            document.getElementById('longitude').value = pluginSettings.longitude;
+            document.getElementById('units').value = pluginSettings.units;
+
+            selectedTitle = pluginSettings.titleSelection || 'location';
+            weatherProvider = pluginSettings.weatherProvider || 'OpenWeatherMap';
+
+            document.getElementById('customTitle').value = pluginSettings.customTitle || '';
+            document.getElementById('birthdayCSVPath').value = pluginSettings.birthdayCSVPath || '';
+            document.getElementById('countdownTitle').value = pluginSettings.countdownTitle || '';
+            document.getElementById('countdownDate').value = pluginSettings.countdownDate || '';
+        } else {
+            // set default values
+            document.getElementById('units').value = "imperial";
+        }
+
+        document.getElementById('weatherProvider').value = weatherProvider;
+        document.querySelector(`input[name="titleSelection"][value="${selectedTitle}"]`).checked = true;
+        updateTitleOptions(weatherProvider)
+    });
+</script>

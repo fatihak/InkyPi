@@ -1,0 +1,342 @@
+/* Basic Reset */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* Main Dashboard Container - 2 Column Layout */
+.dashboard-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;  /* 50/50 split */
+  gap: 2vw;
+  width: 100%;
+  height: 100%;
+  font-family: "Jost";
+  overflow: hidden;
+}
+
+/* ===== LEFT HALF: Weather Section ===== */
+.weather-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1dvh;
+  height: 100%;
+  padding-right: 1vw;
+  border-right: 1px solid rgba(128, 128, 128, 0.3);
+}
+
+/* Weather Header */
+.weather-header {
+  text-align: center;
+  container-type: size;
+}
+
+.location-title {
+  font-size: min(30cqh, 5cqi);
+  font-weight: bold;
+  line-height: 1;
+}
+
+.current-date {
+  font-size: min(22cqh, 3.5cqi);
+  line-height: 1.2;
+  margin-top: 0.3dvh;
+}
+
+/* Current Weather Display */
+.current-weather {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 1vw;
+  height: 20dvh;
+  container-type: size;
+}
+
+.current-icon {
+  height: 100%;
+  width: auto;
+  max-width: 40%;
+  object-fit: contain;
+}
+
+.current-info {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  height: 100%;
+  width: 60%;
+  container-type: size;
+}
+
+.current-temp {
+  font-size: min(50cqh, 18cqi);
+  font-weight: bold;
+  line-height: 1;
+  position: relative;
+}
+
+.temp-unit {
+  font-size: 0.4em;
+  position: absolute;
+  top: 0.5em;
+  margin-left: 0.1em;
+}
+
+.feels-like {
+  font-size: min(18cqh, 6cqi);
+  margin-top: 0.5dvh;
+  line-height: 1;
+}
+
+.weather-description {
+  font-size: min(16cqh, 5cqi);
+  margin-top: 0.3dvh;
+  text-transform: capitalize;
+  line-height: 1;
+}
+
+/* Compact Metrics Grid - 6 metrics (3x2 or 2x3 depending on space) */
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+  gap: 0.5dvh 1vw;
+  height: 18dvh;
+  width: 100%;
+}
+
+.metric-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5vw;
+  container-type: size;
+}
+
+.metric-icon {
+  width: 20%;
+  height: 70%;
+  object-fit: contain;
+}
+
+.metric-data {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  width: 80%;
+  container-type: size;
+}
+
+.metric-value {
+  font-size: min(35cqh, 12cqi);
+  font-weight: bold;
+  line-height: 1;
+}
+
+.metric-unit {
+  font-size: 0.6em;
+  font-weight: normal;
+  margin-left: 0.2em;
+}
+
+.metric-label {
+  font-size: min(22cqh, 7cqi);
+  font-weight: 300;
+  line-height: 1.1;
+}
+
+/* 3-Day Forecast */
+.forecast-section {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-evenly;
+  gap: 1vw;
+  height: auto;
+  flex: 1;
+  padding: 1dvh 0.5vw;
+  border-top: 1px solid rgba(128, 128, 128, 0.3);
+}
+
+.forecast-day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-around;
+  flex: 1;
+  padding: 0.5dvh 0.5vw;
+  border: 1px solid rgba(128, 128, 128, 0.4);
+  border-radius: 0.8vw;
+  container-type: size;
+}
+
+.day-name {
+  font-size: min(28cqh, 8cqi);
+  font-weight: bold;
+  line-height: 1;
+}
+
+.forecast-icon {
+  width: 100%;
+  height: 40%;
+  max-width: 8vw;
+  object-fit: contain;
+}
+
+.temps {
+  font-size: min(22cqh, 6cqi);
+  text-align: center;
+  white-space: nowrap;
+  line-height: 1;
+}
+
+.precipitation {
+  font-size: min(18cqh, 5cqi);
+  color: #1A6FB0;
+  font-weight: 500;
+  line-height: 1;
+}
+
+/* ===== RIGHT HALF: Info Section ===== */
+.info-section {
+  display: grid;
+  grid-template-rows: 1fr 1fr;  /* Split into two equal quarters */
+  gap: 2dvh;
+  height: 100%;
+  padding-left: 1vw;
+}
+
+/* TOP QUARTER: Birthdays */
+.birthdays-section {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid rgba(128, 128, 128, 0.3);
+  border-radius: 1vw;
+  padding: 1dvh 1vw;
+  overflow: hidden;
+  container-type: size;
+}
+
+.section-header {
+  font-size: min(35cqh, 8cqi);
+  font-weight: bold;
+  text-align: center;
+  margin-bottom: 1dvh;
+  line-height: 1;
+}
+
+.birthdays-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8dvh;
+  overflow-y: auto;
+}
+
+.birthday-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5dvh 0.5vw;
+  border-bottom: 1px solid rgba(128, 128, 128, 0.2);
+  container-type: size;
+}
+
+.birthday-name {
+  font-size: min(30cqh, 6cqi);
+  font-weight: 500;
+  flex: 1;
+  line-height: 1.1;
+}
+
+.birthday-date {
+  font-size: min(28cqh, 5cqi);
+  font-weight: 300;
+  text-align: right;
+  line-height: 1.1;
+}
+
+/* BOTTOM QUARTER: Countdown */
+.countdown-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(128, 128, 128, 0.3);
+  border-radius: 1vw;
+  padding: 1dvh 1vw;
+  text-align: center;
+  container-type: size;
+}
+
+.countdown-title {
+  font-size: min(30cqh, 7cqi);
+  font-weight: bold;
+  margin-bottom: 1dvh;
+  line-height: 1;
+}
+
+.countdown-number {
+  font-size: min(55cqh, 20cqi);
+  font-weight: bold;
+  line-height: 1;
+  margin: 0.5dvh 0;
+}
+
+.countdown-label {
+  font-size: min(25cqh, 6cqi);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  line-height: 1;
+  margin-top: 0.5dvh;
+}
+
+.countdown-date {
+  font-size: min(20cqh, 4cqi);
+  margin-top: 1dvh;
+  font-weight: 300;
+  line-height: 1.1;
+}
+
+.no-data {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  font-size: min(25cqh, 5cqi);
+  color: rgba(128, 128, 128, 0.6);
+  font-style: italic;
+}
+
+/* Responsive Design for Vertical Orientation */
+@media (max-aspect-ratio: 1) {
+  .dashboard-container {
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr 1fr;
+    gap: 2dvh;
+  }
+
+  .weather-section {
+    border-right: none;
+    border-bottom: 1px solid rgba(128, 128, 128, 0.3);
+    padding-right: 0;
+    padding-bottom: 1dvh;
+  }
+
+  .info-section {
+    padding-left: 0;
+    padding-top: 1dvh;
+  }
+
+  .metrics-grid {
+    grid-template-columns: repeat(2, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+  }
+}
+
+/* Very small screens */
+@media (max-width: 250px) {
+  .dashboard-container {
+    font-family: "Dogica";
+  }
+}
