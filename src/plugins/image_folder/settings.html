@@ -8,14 +8,6 @@
         <!-- Hidden input ensures 'true' is always sent when unchecked -->
         <input type="hidden" name="padImage" value="true">
     </div>
-    <div class="form-group">
-        <label for="subfolders" class="form-label">Include Subfolders:</label>
-        <div class="toggle-container">
-            <input type="checkbox" id="subfolders" name="subfolders" class="toggle-checkbox" value="false"
-                   onclick="this.value = this.checked ? 'true' : 'false'">
-            <label for="subfolders" class="toggle-label"></label>
-        </div>
-    </div>
 
     <div class="form-group">
         <label class="form-label" for="backgroundOption">Background:</label>
@@ -42,7 +34,6 @@
         if (loadPluginSettings) {
             document.getElementById('folder_path').value = pluginSettings.folder_path;
             document.getElementById('padImage').checked = pluginSettings.padImage == 'false';
-            document.getElementById('subfolders').checked = pluginSettings.subfolders || false;
             document.getElementById('backgroundColor').value = pluginSettings.backgroundColor;
 
             backgroundOption = pluginSettings.backgroundOption;

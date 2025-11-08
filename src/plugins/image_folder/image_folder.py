@@ -8,7 +8,7 @@ from utils.image_utils import pad_image_blur
 
 logger = logging.getLogger(__name__)
 
-def list_files_in_folder(folder_path, include_subfolders):
+def list_files_in_folder(folder_path):
     """Return a list of image file paths in the given folder, excluding hidden files."""
     image_extensions = ('.jpg', '.jpeg', '.png', '.gif', '.bmp', '.tiff', '.webp')
     image_files = []
@@ -16,8 +16,6 @@ def list_files_in_folder(folder_path, include_subfolders):
         for f in files:
             if f.lower().endswith(image_extensions) and not f.startswith('.'):
                 image_files.append(os.path.join(root, f))
-        if not include_subfolders:
-            break
 
     return image_files
 
@@ -37,10 +35,9 @@ class ImageFolder(BasePlugin):
         if device_config.get_config("orientation") == "vertical":
             dimensions = dimensions[::-1]
 
-        include_subfolders = settings.get('subfolders') == "true"            
-        logger.info(f"Grabbing a random image from: {folder_path} ({'including' if include_subfolders else 'excluding'} subfolders)")
+        logger.info(f"Grabbing a random image from: {folder_path}")
 
-        image_files = list_files_in_folder(folder_path, include_subfolders)
+        image_files = list_files_in_folder(folder_path)
         if not image_files:
             raise RuntimeError(f"No image files found in folder: {folder_path}")
 
