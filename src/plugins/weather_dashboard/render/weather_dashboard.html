@@ -236,17 +236,18 @@
             }
           },
           y: {
+            display: true,
             ticks: {
               padding: 0,
               color: "{{ plugin_settings.textColor }}",
               font: {
                 family: 'Jost'
               },
-              autoSkip: false,
+              maxTicksLimit: 2,
               callback: function(value, index, values) {
-                if (index === values.length-1) return maxTemp + "°";
-                else if (index === 0) return minTemp + "°";
-                else return '';
+                if (index === 0) return minTemp + "°";
+                else if (index === values.length - 1) return maxTemp + "°";
+                else return null;
               }
             },
             grid: { display: false },
@@ -254,6 +255,7 @@
             max: maxTemp,
           },
           y1: {
+            display: true,
             position: 'right',
             grid: { display: false },
             ticks: {
@@ -262,11 +264,11 @@
               font: {
                 family: 'Jost'
               },
-              autoSkip: false,
+              maxTicksLimit: 2,
               callback: function(value, index, values) {
-                if (index === values.length - 1) return "100%";
-                else if (index === 0) return "0%";
-                else return '';
+                if (index === 0) return "0%";
+                else if (index === values.length - 1) return "100%";
+                else return null;
               }
             },
             min: 0,

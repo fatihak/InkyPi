@@ -91,8 +91,17 @@ class WeatherDashboard(BasePlugin):
         # Get birthdays from CSV
         csv_path = settings.get('birthdayCSVPath', '')
         birthdays = []
-        if csv_path and os.path.exists(csv_path):
-            birthdays = self.load_birthdays(csv_path, tz)
+        if csv_path:
+            # Expand tilde and environment variables
+            csv_path = os.path.expanduser(csv_path)
+            csv_path = os.path.expandvars(csv_path)
+            logger.info(f"Looking for birthday CSV at: {csv_path}")
+            if os.path.exists(csv_path):
+                logger.info(f"Birthday CSV file found, loading birthdays...")
+                birthdays = self.load_birthdays(csv_path, tz)
+                logger.info(f"Loaded {len(birthdays)} upcoming birthdays")
+            else:
+                logger.warning(f"Birthday CSV file not found at: {csv_path}")
 
         # Get countdown info
         countdown_date_str = settings.get('countdownDate')
@@ -245,6 +254,7 @@ class WeatherDashboard(BasePlugin):
 
         data['forecast'] = self.parse_forecast(weather_data.get('daily'), tz, weather_plugin_dir)
         data['data_points'] = self.parse_compact_metrics(weather_data, aqi_data, tz, units, time_format, weather_plugin_dir)
+        logger.info(f"Parsed data_points: {data['data_points']}")
         data['hourly_forecast'] = self.parse_hourly(weather_data.get('hourly'), tz, time_format, units)
 
         return data
@@ -272,6 +282,7 @@ class WeatherDashboard(BasePlugin):
 
         data['forecast'] = self.parse_open_meteo_forecast(weather_data.get('daily', {}), tz, weather_plugin_dir)
         data['data_points'] = self.parse_open_meteo_compact_metrics(weather_data, aqi_data, tz, units, time_format, weather_plugin_dir)
+        logger.info(f"Parsed data_points: {data['data_points']}")
         data['hourly_forecast'] = self.parse_open_meteo_hourly(weather_data.get('hourly', {}), tz, time_format)
 
         return data
