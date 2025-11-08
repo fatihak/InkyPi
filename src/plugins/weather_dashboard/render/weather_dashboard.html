@@ -30,10 +30,10 @@
     <div class="metrics-grid">
       {% for metric in data_points %}
       <div class="metric-item">
-        <img class="metric-icon" src="{{ metric.icon }}" alt="{{ metric.label }}">
+        <img class="metric-icon" src="{{ metric['icon'] }}" alt="{{ metric['label'] }}">
         <div class="metric-data">
-          <div class="metric-value">{{ metric.measurement }}<span class="metric-unit">{{ metric.unit }}</span></div>
-          <div class="metric-label">{{ metric.label }}</div>
+          <div class="metric-value">{{ metric['measurement'] }}<span class="metric-unit">{{ metric['unit'] }}</span></div>
+          <div class="metric-label">{{ metric['label'] }}</div>
         </div>
       </div>
       {% endfor %}
@@ -43,13 +43,13 @@
     <div class="forecast-section">
       {% for day in forecast[1:4] %}
       <div class="forecast-day">
-        <div class="day-name">{{ day.day }}</div>
-        <img class="forecast-icon" src="{{ day.icon }}" alt="{{ day.day }}">
+        <div class="day-name">{{ day['day'] }}</div>
+        <img class="forecast-icon" src="{{ day['icon'] }}" alt="{{ day['day'] }}">
         <div class="temps">
-          <span class="high">{{ day.high }}°</span> / <span class="low">{{ day.low }}°</span>
+          <span class="high">{{ day['high'] }}°</span> / <span class="low">{{ day['low'] }}°</span>
         </div>
-        {% if (day.pop | default(0)) > 0 %}
-        <div class="precipitation">{{ day.pop }}%</div>
+        {% if (day['pop'] | default(0)) > 0 %}
+        <div class="precipitation">{{ day['pop'] }}%</div>
         {% endif %}
       </div>
       {% endfor %}
@@ -65,11 +65,11 @@
       {% if birthdays %}
       <div class="birthdays-list">
         {% for birthday in birthdays %}
-        {% set days = birthday.days_until | default(99) %}
+        {% set days = birthday['days_until'] | default(99) %}
         <div class="birthday-item {% if days == 0 %}birthday-today{% elif days <= 3 %}birthday-soon{% endif %}">
           <span class="birthday-indicator">🎂</span>
           <span class="birthday-name">
-            {{ birthday.name }}{% if birthday.age %} <span class="age">({{ birthday.age }})</span>{% endif %}
+            {{ birthday['name'] }}{% if birthday['age'] is defined %} <span class="age">({{ birthday['age'] }})</span>{% endif %}
           </span>
           <span class="birthday-countdown">
             {% if days == 0 %}
@@ -97,11 +97,11 @@
         </div>
         {% endif %}
         <div class="countdown-content">
-          <div class="countdown-title">{{ countdown.title }}</div>
-          <div class="countdown-number">{{ countdown.day_count }}</div>
-          <div class="countdown-label">{{ countdown.label }}</div>
+          <div class="countdown-title">{{ countdown['title'] }}</div>
+          <div class="countdown-number">{{ countdown['day_count'] }}</div>
+          <div class="countdown-label">{{ countdown['label'] }}</div>
           {% if not countdown_image %}
-          <div class="countdown-date">{{ countdown.date }}</div>
+          <div class="countdown-date">{{ countdown['date'] }}</div>
           {% endif %}
         </div>
       {% else %}
