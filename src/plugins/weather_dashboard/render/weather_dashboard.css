@@ -204,16 +204,17 @@
 }
 
 .temps {
-  font-size: min(28cqh, 8cqi);
+  font-size: min(32cqh, 9cqi);
   text-align: center;
   white-space: nowrap;
   line-height: 1;
+  font-weight: 700;
 }
 
 .precipitation {
-  font-size: min(18cqh, 5cqi);
+  font-size: min(22cqh, 6cqi);
   color: #1A6FB0;
-  font-weight: 500;
+  font-weight: 700;
   line-height: 1;
 }
 
@@ -243,6 +244,7 @@
   text-align: center;
   margin-bottom: 1dvh;
   line-height: 1;
+  height: 3dvh;
 }
 
 .birthdays-list {
@@ -250,6 +252,8 @@
   flex-direction: column;
   gap: 0.6dvh;
   overflow-y: auto;
+  flex: 1;
+  height: 100%;
 }
 
 .birthday-item {
