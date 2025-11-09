@@ -241,16 +241,15 @@
   border-radius: 1vw;
   padding: 1dvh 1vw;
   overflow: hidden;
-  container-type: size;
+  height: 100%;
 }
 
 .section-header {
-  font-size: min(35cqh, 8cqi);
+  font-size: min(3dvh, 2.5vw);
   font-weight: bold;
   text-align: center;
   margin-bottom: 1dvh;
   line-height: 1;
-  height: 3dvh;
   color: #000000 !important;
 }
 
@@ -260,19 +259,16 @@
   gap: 0.6dvh;
   overflow-y: auto;
   flex: 1;
-  height: 100%;
 }
 
 .birthday-item {
   display: flex;
   align-items: center;
   gap: 0.5vw;
-  padding: 0.5dvh 0.7vw;
+  padding: 0.8dvh 0.7vw;
   border-radius: 0.5vw;
   background: transparent;
   transition: background 0.2s;
-  container-type: size;
-  min-height: 4dvh;
   border: 2px solid rgba(100, 100, 100, 0.6);
 }
 
@@ -291,7 +287,7 @@
 }
 
 .birthday-indicator {
-  font-size: min(50cqh, 8cqi);
+  font-size: min(3dvh, 2vw);
   line-height: 1;
   flex-shrink: 0;
   font-weight: bold;
@@ -299,10 +295,10 @@
 }
 
 .birthday-name {
-  font-size: min(40cqh, 8cqi);
+  font-size: min(2.5dvh, 1.8vw);
   font-weight: 700;
   flex: 1;
-  line-height: 1.1;
+  line-height: 1.2;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -317,11 +313,11 @@
 }
 
 .birthday-countdown {
-  font-size: min(38cqh, 7cqi);
+  font-size: min(2.5dvh, 1.8vw);
   font-weight: 700;
   text-align: right;
   white-space: nowrap;
-  line-height: 1.1;
+  line-height: 1.2;
   opacity: 1;
   color: #000000 !important;
 }
