@@ -268,22 +268,19 @@
   padding: 0.8dvh 0.7vw;
   border-radius: 0.5vw;
   background: transparent;
-  transition: background 0.2s;
-  border: 2px solid rgba(100, 100, 100, 0.6);
+  border: 2px solid #000000;
 }
 
-.birthday-item:hover {
-  background: transparent;
-}
-
+/* Today's birthday - use RED (one of 6 e-ink colors) for emphasis */
 .birthday-today {
   background: transparent !important;
-  border: 3px solid rgba(0, 0, 0, 0.9);
+  border: 3px solid #FF0000;
 }
 
+/* Soon - thicker black border */
 .birthday-soon {
   background: transparent !important;
-  border: 2px solid rgba(80, 80, 80, 0.7);
+  border: 2.5px solid #000000;
 }
 
 .birthday-indicator {
