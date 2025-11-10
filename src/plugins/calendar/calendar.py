@@ -44,6 +44,8 @@ class Calendar(BasePlugin):
         time_format = device_config.get_config("time_format", default="12h")
         tz = pytz.timezone(timezone)
 
+        chromium = device_config.get_config("chromium", "chromium-headless-shell")
+
         current_dt = datetime.now(tz)
         start, end = self.get_view_range(view, current_dt, settings)
         logger.debug(f"Fetching events for {start} --> [{current_dt}] --> {end}")
@@ -64,7 +66,7 @@ class Calendar(BasePlugin):
             "font_scale": FONT_SIZES.get(settings.get("fontSize", "normal"))
         }
 
-        image = self.render_image(dimensions, "calendar.html", "calendar.css", template_params)
+        image = self.render_image(dimensions, chromium, "calendar.html", "calendar.css", template_params)
 
         if not image:
             raise RuntimeError("Failed to take screenshot, please check logs.")

@@ -15,7 +15,9 @@ class YearProgress(BasePlugin):
         dimensions = device_config.get_resolution()
         if device_config.get_config("orientation") == "vertical":
             dimensions = dimensions[::-1]
-        
+
+        chromium = device_config.get_config("chromium", "chromium-headless-shell")
+
         timezone = device_config.get_config("timezone", default="America/New_York")
         tz = pytz.timezone(timezone)
         current_time = datetime.now(tz)
@@ -34,5 +36,5 @@ class YearProgress(BasePlugin):
             "plugin_settings": settings
         }
         
-        image = self.render_image(dimensions, "year_progress.html", "year_progress.css", template_params)
+        image = self.render_image(dimensions, chromium, "year_progress.html", "year_progress.css", template_params)
         return image

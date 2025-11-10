@@ -118,6 +118,8 @@ class Weather(BasePlugin):
         if device_config.get_config("orientation") == "vertical":
             dimensions = dimensions[::-1]
 
+        chromium = device_config.get_config("chromium", "chromium-headless-shell")
+
         template_params["plugin_settings"] = settings
 
         # Add last refresh time
@@ -128,7 +130,7 @@ class Weather(BasePlugin):
             last_refresh_time = now.strftime("%Y-%m-%d %I:%M %p")
         template_params["last_refresh_time"] = last_refresh_time
 
-        image = self.render_image(dimensions, "weather.html", "weather.css", template_params)
+        image = self.render_image(dimensions, chromium, "weather.html", "weather.css", template_params)
 
         if not image:
             raise RuntimeError("Failed to take screenshot, please check logs.")

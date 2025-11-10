@@ -130,6 +130,7 @@ For more complex plugins or dashboards that display dynamic content, you can gen
 ### Using `render_image`
 You can generate an image by calling the `BasePlugin`'s `render_image` function, which accepts the following arguments:
 - `dimensions` (tuple)                  The width and height of the generated image.
+- `chromium` (str)                      The path to the chromium headless shell, defaults to `chromium-headless-shell`.
 - `html_file` (str)                     Name of the HTML file to render, located in the `render/` directory.
 - `css_file` (str, optional)            Name of the CSS file in the `render/` directory.
 - `template_params`(dict, optional)     A dictionary of values to be passed into the Jinja template.

@@ -82,7 +82,7 @@ def compute_image_hash(image):
     img_bytes = image.tobytes()
     return hashlib.sha256(img_bytes).hexdigest()
 
-def take_screenshot_html(html_str, dimensions, timeout_ms=None):
+def take_screenshot_html(html_str, dimensions, chromium, timeout_ms=None):
     image = None
     try:
         # Create a temporary HTML file
@@ -90,7 +90,7 @@ def take_screenshot_html(html_str, dimensions, timeout_ms=None):
             html_file.write(html_str.encode("utf-8"))
             html_file_path = html_file.name
 
-        image = take_screenshot(html_file_path, dimensions, timeout_ms)
+        image = take_screenshot(html_file_path, dimensions, chromium, timeout_ms)
 
         # Remove html file
         os.remove(html_file_path)
@@ -100,7 +100,7 @@ def take_screenshot_html(html_str, dimensions, timeout_ms=None):
 
     return image
 
-def take_screenshot(target, dimensions, timeout_ms=None):
+def take_screenshot(target, dimensions, chromium, timeout_ms=None):
     image = None
     try:
         # Create a temporary output file for the screenshot
@@ -108,7 +108,7 @@ def take_screenshot(target, dimensions, timeout_ms=None):
             img_file_path = img_file.name
 
         command = [
-            "chromium-headless-shell",
+            chromium or "chromium-headless-shell",
             target,
             "--headless",
             f"--screenshot={img_file_path}",

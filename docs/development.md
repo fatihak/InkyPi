@@ -82,17 +82,7 @@ Unzip 'chrome-headless-shell-win64.zip' in the same parent folder as InkPi:
 
 ![image showing the folder chrome-headless-shell-win64 in the same level as the folder InkyPi](images/chrome-headless-shell_location.png)
 
-And edit [src/utils/image_utls.py](https://github.com/fatihak/InkyPi/blob/9d9dbc9f338284f1663c2d706570c40cdd64535f/src/utils/image_utils.py#L111) to:
+And edit [src/config/device_dev.json] to contain a key called `chromium` and pointing to:
 
-#### Windows
-
-```python
-        command = [
-            "..\chrome-headless-shell-win64\chrome-headless-shell.exe",
-```
-#### macOS
-
-```python
-        command = [
-            "..\chrome-headless-shell-mac-arm64\chrome-headless-shell",
-```
+- `..\chrome-headless-shell-win64\chrome-headless-shell.exe` (Windows)
+- `../chrome-headless-shell-mac-arm64/chrome-headless-shell` (MacOS)

@@ -34,6 +34,8 @@ class Rss(BasePlugin):
         if device_config.get_config("orientation") == "vertical":
             dimensions = dimensions[::-1]
 
+        chromium = device_config.get_config("chromium", "chromium-headless-shell")
+
         template_params = {
             "title": title,
             "include_images": settings.get("includeImages") == "true",
@@ -42,7 +44,7 @@ class Rss(BasePlugin):
             "plugin_settings": settings
         }
 
-        image = self.render_image(dimensions, "rss.html", "rss.css", template_params)
+        image = self.render_image(dimensions, chromium, "rss.html", "rss.css", template_params)
         return image
     
     def parse_rss_feed(self, url, timeout=10):
