@@ -23,7 +23,6 @@ query($username: String!) {
 """
 
 def contributions_generate_image(plugin_instance, settings, device_config):
-    """Handles fetching, parsing, metrics, and rendering."""
     dimensions = device_config.get_resolution()
     if device_config.get_config("orientation") == "vertical":
         dimensions = dimensions[::-1]

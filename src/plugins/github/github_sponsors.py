@@ -32,8 +32,6 @@ query($username: String!) {
 """
 
 def sponsors_generate_image(plugin_instance, settings, device_config):
-    """Handles fetching, computing total, and rendering sponsor data."""
-
     dimensions = device_config.get_resolution()
     if device_config.get_config("orientation") == "vertical":
         dimensions = dimensions[::-1]
@@ -55,7 +53,6 @@ def sponsors_generate_image(plugin_instance, settings, device_config):
         "plugin_settings": settings
     }
 
-    # Uses BasePlugin's render_image
     return plugin_instance.render_image(
         dimensions,
         "github_sponsors.html",
@@ -81,7 +78,6 @@ def fetch_sponsorships(username, api_key):
 
     logger.debug(f"Fetched sponsor data for {username}: {data}")
     return data
-
 
 def calculate_monthly_total(data) -> int:
     sponsorships = data['data']['user']['sponsorshipsAsMaintainer']['nodes']
