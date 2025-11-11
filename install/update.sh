@@ -100,7 +100,7 @@ cp $SCRIPT_DIR/inkypi $BINPATH/
 sudo chmod +x $BINPATH/$APPNAME
 
 echo "Update JS and CSS files"
-./update_vendors.sh
+bash $SCRIPT_DIR/update_vendors.sh
 
 echo "Restarting $APPNAME service."
 sudo systemctl daemon-reload

@@ -379,6 +379,6 @@ fi
 install_app_service
 
 echo "Update JS and CSS files"
-./update_vendors.sh
+bash $SCRIPT_DIR/update_vendors.sh
 
 ask_for_reboot
