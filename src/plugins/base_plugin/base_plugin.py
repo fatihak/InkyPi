@@ -68,7 +68,7 @@ class BasePlugin:
         template_params['frame_styles'] = FRAME_STYLES
         return template_params
 
-    def render_image(self, dimensions, chromium, html_file, css_file=None, template_params={}):
+    def render_image(self, dimensions, html_file, css_file=None, template_params={}, chromium=None):
         # load the base plugin and current plugin css files
         css_files = [os.path.join(BASE_PLUGIN_RENDER_DIR, "plugin.css")]
         if css_file:
@@ -84,4 +84,4 @@ class BasePlugin:
         template = self.env.get_template(html_file)
         rendered_html = template.render(template_params)
 
-        return take_screenshot_html(rendered_html, dimensions, chromium)
+        return take_screenshot_html(rendered_html, dimensions, chromium=chromium)

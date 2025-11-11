@@ -6,8 +6,24 @@ import logging
 import hashlib
 import tempfile
 import subprocess
+import shutil
 
 logger = logging.getLogger(__name__)
+
+def find_chromium_executable():
+    possible_names = [
+        "chromium-headless-shell",
+        "chromium",
+        "chromium-browser",
+        "google-chrome",
+        "chrome"
+    ]
+    for name in possible_names:
+        path = shutil.which(name)
+        if path:
+            logger.debug(f"Found chromium executable: {path}")
+            return path
+    return None
 
 def get_image(image_url):
     response = requests.get(image_url)
@@ -82,7 +98,7 @@ def compute_image_hash(image):
     img_bytes = image.tobytes()
     return hashlib.sha256(img_bytes).hexdigest()
 
-def take_screenshot_html(html_str, dimensions, chromium, timeout_ms=None):
+def take_screenshot_html(html_str, dimensions, timeout_ms=None, chromium=None):
     image = None
     try:
         # Create a temporary HTML file
@@ -90,7 +106,7 @@ def take_screenshot_html(html_str, dimensions, chromium, timeout_ms=None):
             html_file.write(html_str.encode("utf-8"))
             html_file_path = html_file.name
 
-        image = take_screenshot(html_file_path, dimensions, chromium, timeout_ms)
+        image = take_screenshot(html_file_path, dimensions, timeout_ms, chromium)
 
         # Remove html file
         os.remove(html_file_path)
@@ -100,12 +116,18 @@ def take_screenshot_html(html_str, dimensions, chromium, timeout_ms=None):
 
     return image
 
-def take_screenshot(target, dimensions, chromium, timeout_ms=None):
+def take_screenshot(target, dimensions, timeout_ms=None, chromium=None):
     image = None
     try:
         # Create a temporary output file for the screenshot
         with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as img_file:
             img_file_path = img_file.name
+
+        if not chromium:
+            chromium = find_chromium_executable()
+            if not chromium:
+                logger.error("Chromium executable not found. Please install Chromium or specify its path.")
+                return None
 
         command = [
             chromium or "chromium-headless-shell",

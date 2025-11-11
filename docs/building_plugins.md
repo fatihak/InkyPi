@@ -130,10 +130,19 @@ For more complex plugins or dashboards that display dynamic content, you can gen
 ### Using `render_image`
 You can generate an image by calling the `BasePlugin`'s `render_image` function, which accepts the following arguments:
 - `dimensions` (tuple)                  The width and height of the generated image.
-- `chromium` (str)                      The path to the chromium headless shell, defaults to `chromium-headless-shell`.
 - `html_file` (str)                     Name of the HTML file to render, located in the `render/` directory.
 - `css_file` (str, optional)            Name of the CSS file in the `render/` directory.
 - `template_params`(dict, optional)     A dictionary of values to be passed into the Jinja template.
+- `chromium` (str, optional)            The path to the chromium headless shell, see below for defaults.
+
+Plugins should pick the path to `chromium` from the key called `chromium` in the device configuration.
+When `chromium` is not found in the device configuration or not passed to `render_image`, it will pick the first of the following defaults available on the path:
+
+- `chromium-headless-shell`
+- `chromium`
+- `chromium-browser`
+- `google-chrome`
+- `chrome`
 
 ### Defining HTML and CSS files
 - Place your HTML and CSS files in the `render/` subdirectory, as `render_image` looks for them there.

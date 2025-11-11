@@ -49,7 +49,7 @@ class AIText(BasePlugin):
         if device_config.get_config("orientation") == "vertical":
             dimensions = dimensions[::-1]
 
-        chromium = device_config.get_config("chromium", "chromium-headless-shell")
+        chromium = device_config.get_config("chromium")
 
         image_template_params = {
             "title": title,
@@ -57,7 +57,7 @@ class AIText(BasePlugin):
             "plugin_settings": settings
         }
         
-        image = self.render_image(dimensions, chromium, "ai_text.html", "ai_text.css", image_template_params)
+        image = self.render_image(dimensions, "ai_text.html", "ai_text.css", image_template_params, chromium)
 
         return image
     

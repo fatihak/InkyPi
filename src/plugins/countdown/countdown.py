@@ -26,7 +26,7 @@ class Countdown(BasePlugin):
         tz = pytz.timezone(timezone)
         current_time = datetime.now(tz)
 
-        chromium = device_config.get_config("chromium", "chromium-headless-shell")
+        chromium = device_config.get_config("chromium")
 
         countdown_date = datetime.strptime(countdown_date_str, "%Y-%m-%d")
         countdown_date = tz.localize(countdown_date)
@@ -42,5 +42,5 @@ class Countdown(BasePlugin):
             "plugin_settings": settings
         }
 
-        image = self.render_image(dimensions, chromium, "countdown.html", "countdown.css", template_params)
+        image = self.render_image(dimensions, "countdown.html", "countdown.css", template_params, chromium)
         return image

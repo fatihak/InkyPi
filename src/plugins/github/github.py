@@ -40,7 +40,7 @@ class GitHub(BasePlugin):
         if device_config.get_config("orientation") == "vertical":
             dimensions = dimensions[::-1]
 
-        chromium = device_config.get_config("chromium", "chromium-headless-shell")
+        chromium = device_config.get_config("chromium")
 
         api_key = device_config.load_env_key("GITHUB_SECRET")
         if not api_key:
@@ -68,7 +68,7 @@ class GitHub(BasePlugin):
             "plugin_settings": settings
         }
 
-        image = self.render_image(dimensions, chromium, "github.html", "github.css", template_params)
+        image = self.render_image(dimensions, "github.html", "github.css", template_params, chromium)
         return image
     
     def fetch_contributions(self, username, api_key):
