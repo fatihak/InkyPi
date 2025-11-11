@@ -4,6 +4,53 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ config.name }}</title>
+    <script>
+        let lastModified = null;
+        const refreshIntervalMs = 3 * 1000;
+
+        async function refreshImage() {
+            const img = document.querySelector('.image-container img');
+            if (!img) return;
+
+            try {
+                const headers = {};
+                if (lastModified) {
+                    headers['If-Modified-Since'] = lastModified;
+                }
+
+                const response = await fetch('{{ url_for("main.get_current_image") }}', { headers });
+                
+                if (response.status === 304) {
+                    // Image hasn't changed, no need to update
+                    return;
+                }
+
+                if (!response.ok) {
+                    console.error('Failed to fetch image:', response.status);
+                    return;
+                }
+
+                const blob = await response.blob();
+                const objectUrl = URL.createObjectURL(blob);
+                
+                // Update the image source
+                img.src = objectUrl;
+                
+                // Store the Last-Modified header for next request
+                lastModified = response.headers.get('Last-Modified');
+            } catch (error) {
+                console.error('Error refreshing image:', error);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Refresh image immediately on page load
+            refreshImage();
+            
+            // Set up auto-refresh based on plugin cycle interval
+            setInterval(refreshImage, refreshIntervalMs);
+        });
+    </script>
 </head>
 <link rel= "stylesheet" type= "text/css" href= "{{ url_for('static',filename='styles/main.css') }}">
 <body>
