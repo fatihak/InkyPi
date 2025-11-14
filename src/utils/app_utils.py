@@ -5,9 +5,7 @@ import subprocess
 
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont, ImageOps
-from pi_heif import register_heif_opener
 
-register_heif_opener()
 logger = logging.getLogger(__name__)
 
 FONT_FAMILIES = {
