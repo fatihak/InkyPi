@@ -5,7 +5,9 @@ import subprocess
 
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont, ImageOps
+from pi_heif import register_heif_opener
 
+register_heif_opener()
 logger = logging.getLogger(__name__)
 
 FONT_FAMILIES = {
@@ -132,7 +134,7 @@ def parse_form(request_form):
     return request_dict
 
 def handle_request_files(request_files, form_data={}):
-    allowed_file_extensions = {'pdf', 'png', 'jpg', 'jpeg', 'gif', 'webp'}
+    allowed_file_extensions = {'pdf', 'png', 'jpg', 'jpeg', 'gif', 'webp', 'heif', 'heic'}
     file_location_map = {}
     # handle existing file locations being provided as part of the form data
     for key in set(request_files.keys()):
