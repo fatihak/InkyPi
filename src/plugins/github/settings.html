@@ -1,9 +1,23 @@
+
+<div class="form-group">
+    <label for="githubType" class="form-label">Type:</label>
+    <select id="githubType" name="githubType" class="form-input" onchange="updateGitHubInputs()">
+        <option value="contributions">Contributions</option>
+        <option value="sponsors">Sponsors</option>
+        <option value="stars">Stars</option>
+    </select>
+</div>
+
 <div class="form-group">
     <div class="form-group">
         <label for="githubUsername" class="form-label">GitHub Username:</label>
-        <input type="text" id="githubUsername" name="githubUsername" placeholder="Type something..." required class="form-input">
+        <input type="text" id="githubUsername" name="githubUsername" placeholder="GitHub Username" required class="form-input">
     </div>
-    <div class="form-group">
+    <div class="form-group" id="repositoryGroup" style="display: none;">
+        <label for="githubRepository" class="form-label">Repository:</label>
+        <input type="text" id="githubRepository" name="githubRepository" placeholder="GitHub Repository" class="form-input">
+    </div>
+    <div class="form-group" id="colorGroup">
         <label for="contributionColor[]" class="form-label">Grid Colors:</label>
         <input type="color" name="contributionColor[]" class="color-picker">
         <input type="color" name="contributionColor[]" class="color-picker">
@@ -14,11 +28,33 @@
 </div>
 
 <script>
+    function updateGitHubInputs() {
+        const type = document.getElementById('githubType').value;
+        const repositoryGroup = document.getElementById('repositoryGroup');
+        const repositoryInput = document.getElementById('githubRepository');
+        const colorGroup = document.getElementById('colorGroup');
+
+        if (type === 'stars') {
+            repositoryGroup.style.display = 'block';
+            repositoryInput.required = true;
+            colorGroup.style.display = 'none';
+        } else {
+            repositoryGroup.style.display = 'none';
+            repositoryInput.required = false;
+            colorGroup.style.display = type === 'contributions' ? 'block' : 'none';
+        }
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
-        var colors = ['#ebedf0', '#9be9a8', '#40c463', '#30a14e', '#216e39']
+        var colors = ['#ebedf0', '#9be9a8', '#40c463', '#30a14e', '#216e39'];
+
         if (loadPluginSettings) {
+            document.getElementById('githubType').value = pluginSettings.githubType || 'contributions';
             document.getElementById('githubUsername').value = pluginSettings.githubUsername || '';
-            colors = pluginSettings['contributionColor[]'];
+            document.getElementById('githubRepository').value = pluginSettings.githubRepository || '';
+            colors = pluginSettings['contributionColor[]'] || colors;
+        } else {
+            document.getElementById('githubType').value = 'contributions';
         }
 
         document.querySelectorAll('input[name="contributionColor[]"]').forEach((input, index) => {
@@ -26,5 +62,7 @@
                 input.value = colors[index];
             }
         });
+
+        updateGitHubInputs();
     });
 </script>
