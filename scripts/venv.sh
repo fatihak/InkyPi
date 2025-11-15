@@ -1,8 +1,8 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-VENV_DIR=".venv"
+VENV_DIR="${VENV_DIR:-.venv}"
 REQUIREMENTS_FILE="install/requirements-dev.txt"
-SRC_DIR="src"
+SRC_DIR="$(realpath src)"
 
 if [ ! -d "$VENV_DIR" ]; then
     echo "Creating virtual environment in $VENV_DIR..."
