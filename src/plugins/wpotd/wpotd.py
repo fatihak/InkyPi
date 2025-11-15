@@ -57,7 +57,10 @@ class Wpotd(BasePlugin):
             logger.error("Failed to download WPOTD image.")
             raise RuntimeError("Failed to download WPOTD image.")
         if settings.get("shrinkToFitWpotd") == "true":
-            max_width, max_height = device_config.get_resolution()
+            dimensions = device_config.get_resolution()
+            if device_config.get_config("orientation") == "vertical":
+                dimensions = dimensions[::-1]
+            max_width, max_height = dimensions
             image = self._shrink_to_fit(image, max_width, max_height)
             logger.info(f"Image resized to fit device dimensions: {max_width},{max_height}")
 
