@@ -25,6 +25,8 @@ class TodoList(BasePlugin):
         if device_config.get_config("orientation") == "vertical":
             dimensions = dimensions[::-1]
 
+        chromium = device_config.get_config("chromium")
+
         lists = []
         for title, raw_list in zip(settings['list-title[]'], settings['list[]']):
             elements = [line for line in raw_list.split('\n') if line.strip()]
@@ -41,5 +43,5 @@ class TodoList(BasePlugin):
             "plugin_settings": settings
         }
         
-        image = self.render_image(dimensions, "todo_list.html", "todo_list.css", template_params)
+        image = self.render_image(dimensions, "todo_list.html", "todo_list.css", template_params, chromium)
         return image
