@@ -44,6 +44,11 @@
       <span>Event Time</span>
     </div>
 
+    <div class="form-group">
+      <input type="checkbox" id="textWrap" name="textWrap" value="true" onclick="this.value=this.checked ? 'true' : 'false';">
+      <span>Text Wrap</span>
+    </div>
+
     <div class="form-group" data-visible-modes="timeGridDay,timeGridWeek">
       <input type="checkbox" id="displayNowIndicator" name="displayNowIndicator" value="true" checked onclick="this.value=this.checked ? 'true' : 'false';">
       <span>Now Indicator</span>
@@ -187,6 +192,9 @@
 
             document.getElementById('displayEventTime').checked = pluginSettings.displayEventTime;
             document.getElementById('displayEventTime').value = pluginSettings.displayEventTime;
+
+            document.getElementById('textWrap').checked = pluginSettings.textWrap;
+            document.getElementById('textWrap').value = pluginSettings.textWrap;
 
             document.getElementById('displayNowIndicator').checked = pluginSettings.displayNowIndicator;
             document.getElementById('displayNowIndicator').value = pluginSettings.displayNowIndicator;

@@ -18,6 +18,13 @@
 ">
 
 </div>
+{% if plugin_settings.textWrap == "true" %}
+<style>
+    .fc-daygrid-event { /* Ensure event text wraps within the event box */
+        white-space: normal !important;
+    }
+</style>
+{% endif %}
 
 <script>
     const events = {{ events | tojson }};
@@ -45,6 +52,10 @@
             slotLabelFormat: timeFormat,
             slotMinTime: "{{ plugin_settings.startTimeInterval or 00}}:00:00",
             slotMaxTime: "{{ plugin_settings.endTimeInterval or 24}}:00:00",
+            {% if plugin_settings.textWrap == "true" %}
+            eventDisplay: 'block',            
+            eventMinHeight: Math.round({% if view == 'timeGrid' %}1.5 *{% endif %} 38 * Math.pow({{font_scale}}, 4)),
+            {% endif %}
             eventTimeFormat: timeFormat,
             displayEventTime: {{ (plugin_settings.displayEventTime == "true") | tojson}},
             weekends:  {{ (plugin_settings.displayWeekends == "true") | tojson}},
