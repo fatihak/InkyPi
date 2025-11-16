@@ -4,19 +4,30 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ config.name }}</title>
+    <script>
+        (function() {
+            const theme = localStorage.getItem('inkypi-theme') || 
+                         (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+            if (theme === 'dark') {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            }
+        })();
+    </script>
 </head>
 <link rel= "stylesheet" type= "text/css" href= "{{ url_for('static',filename='styles/main.css') }}">
 <body>
+    <script src="{{ url_for('static', filename='scripts/dark_mode.js') }}"></script>
     <!-- Subtle frame container -->
     <div class="frame">
         <!-- Page Title -->
         <header class="header">
             <h1>{{ config.name }}</h1>
-            <a href="{{ url_for('settings.settings_page') }}" class="settings-button">
-                <img src="{{ url_for('static', filename='icons/settings.png') }}" title="Settings" alt="settings icon" class="icon-image">
-            </a>
+            <button class="settings-button dark-mode-toggle" title="Toggle Dark Mode" aria-label="Toggle Dark Mode"></button>
             <a href="{{ url_for('playlist.playlists') }}" class="settings-button">
                 <img src="{{ url_for('static', filename='icons/playlist.png') }}" title="Playlists" alt="playlists icon" class="icon-image">
+            </a>
+            <a href="{{ url_for('settings.settings_page') }}" class="settings-button">
+                <img src="{{ url_for('static', filename='icons/settings.png') }}" title="Settings" alt="settings icon" class="icon-image">
             </a>
         </header>
 
@@ -36,5 +47,5 @@
             {% endfor %}
         </div>
     </div>
-<body>
+</body>
 </html>
