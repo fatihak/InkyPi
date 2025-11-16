@@ -3,7 +3,7 @@
   "packages": [
     "python@3.13",
     "ninja@latest",
-    "chromium@latest"
+    "chromium@142.0.7444.59" // Normally latest is in the nix cache, but for whatever reason, chromium latest is not currently cached, so pinning to a version that is cached to avoid long build times.
   ],
   "shell": {
     "init_hook": [
