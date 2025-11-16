@@ -9,6 +9,7 @@ import base64
 
 logger = logging.getLogger(__name__)
 
+STATIC_DIR = resolve_path("static")
 PLUGINS_DIR = resolve_path("plugins")
 BASE_PLUGIN_DIR =  os.path.join(PLUGINS_DIR, "base_plugin")
 BASE_PLUGIN_RENDER_DIR = os.path.join(BASE_PLUGIN_DIR, "render")
@@ -79,6 +80,7 @@ class BasePlugin:
         template_params["width"] = dimensions[0]
         template_params["height"] = dimensions[1]
         template_params["font_faces"] = get_fonts()
+        template_params["static_dir"] = STATIC_DIR
 
         # load and render the given html template
         template = self.env.get_template(html_file)

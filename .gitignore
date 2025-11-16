@@ -168,3 +168,7 @@ mock_display_output/
 
 # IDE files
 .idea
+
+# Static Files added by install/update_vendors.sh
+/src/static/scripts/
+/src/static/styles/

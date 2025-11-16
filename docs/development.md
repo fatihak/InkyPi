@@ -24,6 +24,7 @@ source venv/bin/activate  # Windows: venv\Scripts\activate
 
 # 3. Install Python dependencies and run
 pip install -r install/requirements-dev.txt
+bash install/update-vendors.sh
 python src/inkypi.py --dev
 ```
 

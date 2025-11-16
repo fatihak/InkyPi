@@ -99,6 +99,9 @@ echo "Updating executable in ${BINPATH}/$APPNAME"
 cp $SCRIPT_DIR/inkypi $BINPATH/
 sudo chmod +x $BINPATH/$APPNAME
 
+echo "Update JS and CSS files"
+bash $SCRIPT_DIR/update_vendors.sh
+
 echo "Restarting $APPNAME service."
 sudo systemctl daemon-reload
 sudo systemctl restart $APPNAME.service

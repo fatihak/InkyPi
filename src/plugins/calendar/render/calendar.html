@@ -2,8 +2,8 @@
 
 {% block content %}
 
-<link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.17/index.global.min.css" rel="stylesheet" />
-<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.17/index.global.min.js"></script>
+<link href="{{static_dir}}/styles/calendar.min.css" rel="stylesheet" />
+<script src="{{static_dir}}/scripts/calendar.min.js"></script>
 
 <div id="calendar" class="calendar" style="
 --fc-page-bg-color: {{ plugin_settings.backgroundColor or white }};

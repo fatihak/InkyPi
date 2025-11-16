@@ -17,11 +17,11 @@
     <script src="{{ url_for('static', filename='scripts/dark_mode.js') }}"></script>
     <script src="{{ url_for('static', filename='scripts/response_modal.js') }}"></script>
     <!-- Select2 CSS -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.1.0-beta.1/css/select2.min.css" rel="stylesheet" />
+    <link href="{{ url_for('static', filename='styles/select2.min.css') }}" rel="stylesheet" />
     <!-- jQuery -->
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="{{ url_for('static', filename='scripts/jquery.min.js') }}"></script>
     <!-- Select2 JS -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.1.0-beta.1/js/select2.min.js"></script>
+    <script src="{{ url_for('static', filename='scripts/select2.min.js') }}"></script>
 
     <script>
         const pluginSettings = {{ plugin_settings | tojson if plugin_settings else {} }};
