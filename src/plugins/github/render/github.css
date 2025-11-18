@@ -1,0 +1,69 @@
+.calendar-grid {
+    display: grid;
+    grid-template-columns: auto repeat(53, minmax(0, 1fr));
+    grid-template-rows: auto repeat(7, 1fr);
+    gap: 0.3vw;
+    width: 100%;
+}
+
+.day {
+    width: 100%;
+    aspect-ratio: 1;
+    border-radius: 0.3vw;
+}
+
+.title {
+    font-size: min(8dvw, 8dvh);
+    text-align: center;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.2em;
+}
+
+.github-container {
+    display: flex;
+    flex-direction: column;
+    gap: 5dvh;
+    font-family: "Jost";
+}
+
+.github-logo {
+    width: 1.1em;
+    height: 1.1em;
+    fill: currentColor; 
+}
+
+.month-label {
+    font-size: min(3dvw, 3dvh);
+    font-weight: bold;
+    text-align: left;
+}
+
+.metric-container {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+}
+
+.metric {
+    flex: 1;
+}
+
+.metric-title {
+    font-size: min(4dvw, 5dvh);
+    text-align: center;
+}
+
+.metric-value {
+    font-size: min(10dvw, 12dvh);
+    text-align: center;
+    line-height: 1;
+}
+
+@media (max-aspect-ratio: 4/5) {
+    .metric-container {
+      flex-direction: column;
+      gap: 2dvh;
+    }
+}

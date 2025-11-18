@@ -1,0 +1,125 @@
+  <style>
+    .lists-container {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+    
+    .list {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .list .title-container{
+      display: flex;
+    }
+
+    .list textarea {
+      resize: vertical;
+      min-height: 120px;
+      padding: 0.5rem;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+
+    .form-group textarea:focus {
+        outline: none;
+        border-color: #1abc9c;
+        box-shadow: 0 0 3px rgba(26, 188, 156, 0.5);
+    }
+
+  </style>
+
+<div class="form-group">
+    <div class="form-group nowrap">
+        <label for="title" class="form-label">Title</label>
+        <input type="text" id="title" name="title" placeholder="Type something..." class="form-input">
+    </div>
+    <div class="form-group nowrap">
+        <label for="listStyle" class="form-label">List Style:</label>
+        <select id="listStyle" name="listStyle" class="form-input">
+            <option value="disc">Disc (●)</option>
+            <option value="square">Square (◼)</option>
+            <option value="'\25C6  '">Diamond (◆)</option>
+            <option value="decimal">Decimal</option>
+            <option value="lower-roman">Roman Numeral</option>
+            <option value="lower-alpha">Alphabetical</option>
+        </select>
+    </div>
+    <div class="form-group nowrap">
+        <label for="fontSize" class="form-label">Font Size:</label>
+        <select id="fontSize" name="fontSize" class="form-input">
+            <option value="x-small">Extra Small</option>
+            <option value="small">Small</option>
+            <option value="normal">Normal</option>
+            <option value="large">Large</option>
+            <option value="x-large">Extra Larger</option>
+        </select>
+    </div>
+</div>
+<div class="lists-container" id="listsContainer">
+<!-- Lists will go here -->
+</div>
+
+<button class="header-button" id="addBtn">+ Add List</button>
+
+<script>
+    const container = document.getElementById("listsContainer");
+    const addBtn = document.getElementById("addBtn");
+    let listCount = 0;
+    const maxLists = 3;
+
+    function createList(title = "", text = "") {
+        if (listCount >= maxLists) return;
+
+        listCount++;
+        const list = document.createElement("div");
+        list.className = "list";
+
+        list.innerHTML = `
+        <div class="title-container form-group">
+            <input id="list-title[]" name="list-title[]" type="text" placeholder="List title" value="${title}">
+            <button class="delete-button" title="Delete List">
+                <img src="{{ url_for('static', filename='icons/remove.png') }}" alt="delete plugin" class="action-icon">
+            </button>
+        </div>
+        <textarea id="list[]" name="list[]" placeholder="Enter your tasks...">${text}</textarea>
+        `;
+
+        list.querySelector(".delete-button").onclick = () => {
+            list.remove();
+            listCount--;
+        };
+
+        container.appendChild(list);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        let fontSize = "normal";
+        let listStyle = "disc";
+
+        if (loadPluginSettings) {
+            document.getElementById('title').value = pluginSettings.title || '';
+            const titles = pluginSettings['list-title[]'] || [];
+            const texts = pluginSettings['list[]'] || [];
+
+            for (let i = 0; i < Math.min(titles.length, maxLists); i++) {
+                createList(titles[i], texts[i] || '');
+            }
+
+            fontSize = pluginSettings.fontSize;
+            listStyle = pluginSettings.listStyle;
+        }
+
+        if (listCount === 0) createList();
+
+        // Handle Add button
+        addBtn.onclick = () => {
+            if (listCount < maxLists) createList();
+        };
+
+        document.getElementById('fontSize').value = fontSize;
+        document.getElementById('listStyle').value = listStyle;
+    });
+</script>

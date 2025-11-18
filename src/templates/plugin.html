@@ -4,14 +4,24 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ plugin.display_name }} Settings</title>
+    <script>
+        (function() {
+            const theme = localStorage.getItem('inkypi-theme') || 
+                         (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+            if (theme === 'dark') {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            }
+        })();
+    </script>
     <link rel= "stylesheet" type= "text/css" href= "{{ url_for('static',filename='styles/main.css') }}">
+    <script src="{{ url_for('static', filename='scripts/dark_mode.js') }}"></script>
     <script src="{{ url_for('static', filename='scripts/response_modal.js') }}"></script>
     <!-- Select2 CSS -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.1.0-beta.1/css/select2.min.css" rel="stylesheet" />
+    <link href="{{ url_for('static', filename='styles/select2.min.css') }}" rel="stylesheet" />
     <!-- jQuery -->
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="{{ url_for('static', filename='scripts/jquery.min.js') }}"></script>
     <!-- Select2 JS -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.1.0-beta.1/js/select2.min.js"></script>
+    <script src="{{ url_for('static', filename='scripts/select2.min.js') }}"></script>
 
     <script>
         const pluginSettings = {{ plugin_settings | tojson if plugin_settings else {} }};
@@ -32,7 +42,7 @@
             const formData = new FormData(form);
             let url = '{{ url_for("plugin.update_now") }}';
             let method = 'POST';
-            let clearFormOnSubmit = true;
+            let clearFormOnSubmit = false;
             
             // Add uploaded files to the form under its key
             Object.keys(uploadedFiles).forEach(key => {
@@ -51,10 +61,10 @@
                     scheduleData[key] = value;
                 }
                 formData.append("refresh_settings", JSON.stringify(scheduleData));
+                clearFormOnSubmit = true
             } else if (action == "update_instance") {
                 url = "{{ url_for('plugin.update_plugin_instance', instance_name='') }}" + pluginInstanceName,
                 method = 'PUT'
-                clearFormOnSubmit = false
             }
 
             // Send data to the server
@@ -232,8 +242,6 @@
                 // set default values
                 let selectedFrameOption = document.querySelector('.image-option');
                 selectedFrame(selectedFrameOption);
-
-                document.getElementById('margin').value = "5";
             }
         });
     </script>
@@ -289,19 +297,19 @@
                                 <label for="margin" class="form-label">Margins:</label>
                                 <div class="form-group nowrap">
                                     <label for="topMargin" class="form-label">Top</label>
-                                    <input type="number" class="form-input" id="topMargin" name="topMargin" min="0" max="100" step="5">px
+                                    <input type="number" class="form-input" id="topMargin" name="topMargin" min="0" max="100" step="5"><span>px</span>
                                 </div>
                                 <div class="form-group nowrap">
                                     <label for="bottomMargin" class="form-label">Bottom</label>
-                                    <input type="number" class="form-input" id="bottomMargin" name="bottomMargin" min="0" max="100" step="5">px
+                                    <input type="number" class="form-input" id="bottomMargin" name="bottomMargin" min="0" max="100" step="5"><span>px</span>
                                 </div>
                                 <div class="form-group nowrap">
                                     <label for="leftMargin" class="form-label">Left</label>
-                                    <input type="number" class="form-input" id="leftMargin" name="leftMargin" min="0" max="100" step="5">px
+                                    <input type="number" class="form-input" id="leftMargin" name="leftMargin" min="0" max="100" step="5"><span>px</span>
                                 </div>
                                 <div class="form-group nowrap">
-                                    <label for="rightMargin" class="form-label":>Right</label>
-                                    <input type="number" class="form-input" id="rightMargin" name="rightMargin" min="0" max="100" step="5">px
+                                    <label for="rightMargin" class="form-label">Right</label>
+                                    <input type="number" class="form-input" id="rightMargin" name="rightMargin" min="0" max="100" step="5"><span>px</span>
                                 </div>
                             </div>
                         </div>    
@@ -383,21 +391,63 @@
                     <label>Refresh</label>
                     <span title="Determines how often the data and image should be refreshed.">ⓘ</span>
                 </div>
-                <div class="form-group nowrap">
-                    <input type="radio" name="refreshType" value="interval" checked>
-                    <label for="interval">Every</label>
-                    <input type="number" id="interval" name="interval" class="form-input" required min="1" placeholder="Enter a number">
-                    <select id="unit" name="unit" class="form-input" required>
-                        <option value="minute">Minute</option>
-                        <option value="hour">Hour</option>
-                        <option value="day">Day</option>
-                    </select>
+                <div class="form-group nowrap" id="group-interval">
+                  <input type="radio" name="refreshType" id="refresh-interval" value="interval" checked>
+                  <label for="refresh-interval">Every</label>
+                  <input type="number" id="interval" name="interval" class="form-input" required min="1" placeholder="Enter a number">
+                  <select id="unit" name="unit" class="form-input" required>
+                    <option value="minute">Minute</option>
+                    <option value="hour">Hour</option>
+                    <option value="day">Day</option>
+                  </select>
                 </div>
-                <div class="form-group nowrap">
-                    <input type="radio" name="refreshType" value="scheduled">
-                    <label for="scheduled">Daily at </label>
-                    <input id="scheduled" class="time-input" type="time" name="refreshTime" step="900">
+
+                <div class="form-group nowrap" id="group-scheduled">
+                  <input type="radio" name="refreshType" id="refresh-scheduled" value="scheduled">
+                  <label for="refresh-scheduled">Daily at</label>
+                  <input id="scheduled" class="time-input" type="time" name="refreshTime" step="900">
                 </div>
+
+                <script>
+                  document.addEventListener('DOMContentLoaded', () => {
+                    // Interval group
+                    const groupInterval = document.getElementById('group-interval');
+                    const radioInterval = document.getElementById('refresh-interval');
+                    const inputInterval = document.getElementById('interval');
+
+                    // Scheduled group
+                    const groupScheduled = document.getElementById('group-scheduled');
+                    const radioScheduled = document.getElementById('refresh-scheduled');
+                    const inputScheduled = document.getElementById('scheduled');
+
+                    // Helper to activate a group
+                    const activateGroup = (radio, input) => {
+                      radio.checked = true;
+                      // Focus after a short delay to ensure radio updates visually
+                      setTimeout(() => input.focus(), 0);
+                    };
+
+                    // Click anywhere inside group → activate
+                    groupInterval.addEventListener('click', (e) => {
+                      if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+                      activateGroup(radioInterval, inputInterval);
+                    });
+
+                    groupScheduled.addEventListener('click', (e) => {
+                      if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+                      activateGroup(radioScheduled, inputScheduled);
+                    });
+
+                    // Clicking the radio itself → focus the input
+                    radioInterval.addEventListener('click', () => activateGroup(radioInterval, inputInterval));
+                    radioScheduled.addEventListener('click', () => activateGroup(radioScheduled, inputScheduled));
+
+                    // Focusing inputs → auto-select their radio
+                    inputInterval.addEventListener('focus', () => (radioInterval.checked = true));
+                    inputScheduled.addEventListener('focus', () => (radioScheduled.checked = true));
+                  });
+                </script>
+
             </form>
             <div class="buttons-container">
                 <button type="button" onclick="handleAction('add_to_playlist')" class="action-button">Save</button>

@@ -30,6 +30,10 @@
   background-color:white;
 }
 
+.fc-dayGrid-view .fc-daygrid-day.fc-day-today .fc-daygrid-day-frame{
+  border: 2px solid var(--fc-border-color) !important;
+}
+
 .fc-dayGridMonth-view .fc-daygrid-day.fc-day-today .fc-daygrid-day-frame{
   border: 2px solid var(--fc-border-color) !important;
 }

@@ -1,0 +1,33 @@
+.countdown-container {
+  display: flex;
+  align-items: center; 
+  justify-content: center;
+  font-family: "Jost";
+  height: 100%;
+  width: 100%;
+}
+.countdown-wrapper {
+  width: 90%;
+  text-align: center;
+  margin: 0;
+  padding: 0;
+}
+.title {
+  font-size: min(11dvw, 11dvh);
+  font-weight: bold;
+  letter-spacing: .3px;
+  line-height: 1;
+}
+.subtitle {
+  margin: 0 0 4dvh;
+  font-size: min(5dvw, 5dvh);
+}
+.day_count {
+  line-height: 1;
+  font-size: min(32dvh, 32dvw);
+}
+.label {
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  font-size: min(8dvh, 8dvw)
+}

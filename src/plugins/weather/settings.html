@@ -17,8 +17,8 @@
 <div class="form-group">
     <label for="weatherProvider" class="form-label">Weather Provider:</label>
     <select id="weatherProvider" name="weatherProvider" class="form-input" onchange="updateTitleOptions(this.value)">
-        <option value="OpenWeatherMap">OpenWeatherMap</option>
         <option value="OpenMeteo">Open-Meteo</option>
+        <option value="OpenWeatherMap">OpenWeatherMap</option>
     </select>
 
     <label for="units" class="form-label">Units:</label>
@@ -78,7 +78,7 @@
             <option value=5>5</option>
             <option value=7>7</option>
         </select>
-        days
+        <span>days</span>
     </div>
 
     <div class="form-group">
@@ -110,6 +110,7 @@
         const customTitleInput = document.getElementById('customTitle');
         const titleTimeZone = document.getElementById('weatherTimeZone');
         const titleTimeZoneLabel = document.querySelector('label[for="weatherTimeZone"]');
+        const apiKeyLabel = document.querySelector('.api-key-label');
 
         if (provider === 'OpenMeteo') {
             // Hide or disable "Location" radio option
@@ -124,6 +125,9 @@
             titleCustomRadio.checked = true;
             titleCustomRadio.disabled = false;
             customTitleInput.disabled = false;
+
+            // Hide API Key required label for Open-Meteo
+            if (apiKeyLabel) apiKeyLabel.style.display = 'none';
         } else {
             // Show and enable both options
             titleLocationRadio.style.display = '';
@@ -136,6 +140,9 @@
             titleTimeZone.style.display = '';
             titleTimeZoneLabel.style.display = '';
             titleTimeZone.disabled = false;
+
+            // Show API Key required label for OpenWeatherMap
+            if (apiKeyLabel) apiKeyLabel.style.display = '';
         }
     }
 
@@ -152,7 +159,7 @@
         let longitude = +$longitude.value;
         let zoom = latitude && longitude ? 4.5 : 2.5;
         let selectedTitle = 'location';
-        let weatherProvider = 'OpenWeatherMap';
+        let weatherProvider = 'OpenMeteo';
 
         let map, marker;
 
@@ -207,7 +214,7 @@
             document.getElementById('weatherTimeZone').value = pluginSettings.weatherTimeZone;
             
             selectedTitle = pluginSettings.titleSelection || 'location';
-            weatherProvider = pluginSettings.weatherProvider || 'OpenWeatherMap';
+            weatherProvider = pluginSettings.weatherProvider || 'OpenMeteo';
 
             document.getElementById('customTitle').value = pluginSettings.customTitle || '';
         } else {

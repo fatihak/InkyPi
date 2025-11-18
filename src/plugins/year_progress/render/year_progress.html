@@ -1,0 +1,20 @@
+{% extends "plugin.html" %}
+
+{% block content %}
+
+<div class="progress-container">
+    <div class="progress-wrapper">
+        <div class="progress-title">{{year}}</div>
+        <div class="progress-subtitle">PROGRESS</div>
+        <div class="progress-bar">
+            <div class="progress-fill" style="width: {{ year_percent }}%; background-color: {{plugin_settings.textColor}};"></div>
+            <div class="progress-remaining" style="background-image: radial-gradient({{plugin_settings.textColor}} 1px, transparent 1px);"></div>
+        </div>
+        <div class="progress-labels">
+            <span>{{year_percent}}% DONE</span>
+            <span>{{days_left}} DAYS LEFT</span>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

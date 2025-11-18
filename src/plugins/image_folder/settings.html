@@ -1,24 +1,43 @@
 <div class="form-group">
-    <label for="url" class="form-label">Folder path:</label>
-    <input type="text" id="folder_path" name="folder_path" placeholder="Type something..." required class="form-input">
+    <div class="form-group">
+        <label for="padImage" class="form-label">Scale to Fit:</label>
+        <div class="toggle-container">
+            <input type="checkbox" id="padImage" name="padImage" class="toggle-checkbox" value="false">
+            <label for="padImage" class="toggle-label"></label>
+        </div>
+        <!-- Hidden input ensures 'true' is always sent when unchecked -->
+        <input type="hidden" name="padImage" value="true">
+    </div>
+
+    <div class="form-group">
+        <label class="form-label" for="backgroundOption">Background:</label>
+        <div class="form-group">
+            <input type="radio" id="backgroundOption" name="backgroundOption" value="blur">
+            <label>Blur</label>
+            <input type="radio" id="backgroundOption" name="backgroundOption" value="color">
+            <label>Color</label>
+            <input type="color" id="backgroundColor" name="backgroundColor" value="#ffffff" class="color-picker"/>
+        </div>
+    </div>
 </div>
 
 <div class="form-group">
-    <label for="padImage" class="form-label">Fit the image to the frame:</label>
-    <div class="toggle-container">
-        <input type="checkbox" id="padImage" name="padImage" class="toggle-checkbox" value="false"
-            onclick="this.value = this.checked ? 'true' : 'false'">
-        <label for="padImage" class="toggle-label"></label>
-    </div>
+    <label for="url" class="form-label">Folder path:</label>
+    <input type="text" id="folder_path" name="folder_path" placeholder="Type something..." required class="form-input">
 </div>
 
 
 <script>
     // populate form values from plugin settings
     document.addEventListener('DOMContentLoaded', () => {
+        let backgroundOption = "blur"
         if (loadPluginSettings) {
             document.getElementById('folder_path').value = pluginSettings.folder_path;
-            document.getElementById('padImage').checked = pluginSettings.padImage;
+            document.getElementById('padImage').checked = pluginSettings.padImage == 'false';
+            document.getElementById('backgroundColor').value = pluginSettings.backgroundColor;
+
+            backgroundOption = pluginSettings.backgroundOption;
         }
+        document.querySelector(`input[name="backgroundOption"][value="${backgroundOption}"]`).checked = true;
     });
 </script>

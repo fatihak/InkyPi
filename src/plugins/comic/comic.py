@@ -4,7 +4,7 @@ from PIL import Image, ImageDraw, ImageFont
 import requests
 
 from .comic_parser import COMICS, get_panel
-
+from utils.app_utils import get_font
 
 class Comic(BasePlugin):
     def generate_settings_template(self):
@@ -35,7 +35,7 @@ class Comic(BasePlugin):
 
         with Image.open(response.raw) as img:
             background = Image.new("RGB", (width, height), "white")
-            font = ImageFont.truetype("DejaVuSans.ttf", size=int(caption_font_size))
+            font = get_font("Jost", font_size=int(caption_font_size))
             draw = ImageDraw.Draw(background)
             top_padding, bottom_padding = 0, 0
 

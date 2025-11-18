@@ -1,0 +1,68 @@
+{% extends "plugin.html" %}
+
+{% block content %}
+<div class="list-dashboard" style="--font-scale: {{ font_scale }};">
+    {% if title %}<div class="title">{{ title }}</div>{% endif %}
+    <div class="lists-container">
+        {% for list in lists %}
+        <div class="list">
+            <div class="list-title">{{ list.title }}</div>
+            <ul style="list-style-type:{{ list_style }};">
+                {% for element in list.elements %}<li>{{ element }}</li>{% endfor %}
+            </ul>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<script>
+    function truncateLists() {
+        const lists = document.querySelectorAll('.list');
+        lists.forEach(list => {
+            const ul = list.querySelector('ul');
+            const items = Array.from(ul.querySelectorAll('li'));
+
+            // Reset all items to visible for measurement
+            items.forEach(item => item.style.display = '');
+
+            const containerHeight = ul.clientHeight;
+            let totalHeight = 0;
+            let visibleCount = 0;
+            let totalItems = items.length;
+
+            for (let i = 0; i < totalItems; i++) {
+                const itemHeight = items[i].clientHeight;
+                if (totalHeight + itemHeight > containerHeight) break;
+                totalHeight += itemHeight;
+                visibleCount++;
+            }
+            if (visibleCount < totalItems){
+                visibleCount--;
+            }
+
+            // Remove previously added "And X more"
+            const existingMore = ul.querySelector('.more-item');
+            if (existingMore) existingMore.remove();
+
+            // Hide overflowing items
+            items.forEach((item, index) => {
+                item.style.display = index < visibleCount ? '' : 'none';
+            });
+
+            const hiddenCount = totalItems - visibleCount;
+            if (hiddenCount > 0) {
+                const moreItem = document.createElement('li');
+                moreItem.className = 'more-item';
+                moreItem.textContent = `And ${hiddenCount} more...`;
+                ul.appendChild(moreItem);
+            }
+        });
+    }
+
+    // Run on page load and resize
+    window.addEventListener('load', truncateLists);
+    window.addEventListener('resize', truncateLists);
+</script>
+
+{% endblock %}
+

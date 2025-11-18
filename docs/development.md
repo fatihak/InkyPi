@@ -15,15 +15,16 @@ Works on **macOS**, **Linux**, and **Windows** - no hardware needed!
 
 ```bash
 # 1. Clone and setup
-git clone https://github.com/mudmin/InkyPi.git
+git clone https://github.com/fatihak/InkyPi.git
 cd InkyPi
 
 # 2. Create virtual environment
 python3 -m venv venv
 source venv/bin/activate  # Windows: venv\Scripts\activate
 
-# 3. Install dependencies and run
+# 3. Install Python dependencies and run
 pip install -r install/requirements-dev.txt
+bash install/update-vendors.sh
 python src/inkypi.py --dev
 ```
 
@@ -40,8 +41,8 @@ python src/inkypi.py --dev
 ## Essential Commands
 
 ```bash
-python src/inkypi.py --dev           # Start development server
 source venv/bin/activate             # Activate virtual environment
+python src/inkypi.py --dev           # Start development server
 deactivate                           # Exit virtual environment
 ```
 
@@ -58,3 +59,41 @@ deactivate                           # Exit virtual environment
 2. Click "Display" button
 3. Check `mock_display_output/latest.png` for result
 4. Iterate quickly without deployment
+
+## Other Requirements 
+InkyPi relies on system packages for some features, which are normally installed via the `install.sh` script. 
+
+For a local development instance you must manually manage these requirements.
+
+### Linux
+The required packages can be found in this file: 
+
+https://github.com/fatihak/InkyPi/blob/main/install/debian-requirements.txt
+
+Use your favourite package manager (such as `apt`) to install them.
+
+### Windows & macOS
+The most important package is `chromium-headless-shell`, which is used to render HTML templates to PNG images.
+
+Chromium Headless Shell doesn't appear to be available for Windows and macOS, but the alternative Chrome Headless Shell is. Download a suitable release of `chrome-headless-shell` for your OS (i.e. win64 = Windows 11 64-bit, or mac-arm64 = Apple Silicon Mac) from here:
+
+https://googlechromelabs.github.io/chrome-for-testing/
+
+Unzip 'chrome-headless-shell-win64.zip' in the same parent folder as InkPi:
+
+![image showing the folder chrome-headless-shell-win64 in the same level as the folder InkyPi](images/chrome-headless-shell_location.png)
+
+And edit [src/utils/image_utls.py](https://github.com/fatihak/InkyPi/blob/9d9dbc9f338284f1663c2d706570c40cdd64535f/src/utils/image_utils.py#L111) to:
+
+#### Windows
+
+```python
+        command = [
+            "..\chrome-headless-shell-win64\chrome-headless-shell.exe",
+```
+#### macOS
+
+```python
+        command = [
+            "..\chrome-headless-shell-mac-arm64\chrome-headless-shell",
+```
