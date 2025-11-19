@@ -17,9 +17,49 @@
 ">
 
 </div>
+{% if plugin_settings.textWrap == "true" %}
+<style>
+    .fc-daygrid-event { /* Ensure event text wraps within the event box */
+        white-space: normal !important;
+    }
+</style>
+{% endif %}
 
 <script>
     const events = {{ events | tojson }};
+    
+    {% if view == 'dayGrid' or view == 'dayGridMonth' %}
+    const splitEvents = [];
+    // Split events that span past midnight
+    events.forEach(event => {
+        if (!event.allDay && event.end) {
+            const startDate = new Date(event.start);
+            const endDate = new Date(event.end);
+            
+            // If event spans to next day
+            if (startDate.toDateString() !== endDate.toDateString()) {
+                // First event: start to midnight
+                splitEvents.push({
+                    ...event,
+                    end: new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate() + 1).toISOString()
+                });
+                
+                // Second event: midnight to end
+                splitEvents.push({
+                    ...event,
+                    title: event.title + ' (cont.)',
+                    start: new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate()).toISOString()
+                });
+            } else {
+                splitEvents.push(event);
+            }
+        } else {
+            splitEvents.push(event);
+        }
+    });
+    {% else %}
+    const splitEvents = events;
+    {% endif %}
 
     document.addEventListener('DOMContentLoaded', function () {
         const calendarEl = document.getElementById('calendar');
@@ -33,7 +73,7 @@
 
         const calendar = new FullCalendar.Calendar(calendarEl, {
             initialView: '{{ view }}',
-            events: events,
+            events: splitEvents,
             now: '{{ current_dt }}',
             timeZone: '{{ timezone }}',
             contentHeight: '100%',
@@ -44,6 +84,18 @@
             slotLabelFormat: timeFormat,
             slotMinTime: "{{ plugin_settings.startTimeInterval or 00}}:00:00",
             slotMaxTime: "{{ plugin_settings.endTimeInterval or 24}}:00:00",
+            {% if plugin_settings.textWrap == "true" %}
+            eventDisplay: 'block',            
+            eventMinHeight: Math.round({% if view == 'timeGrid' %}1.5 *{% endif %} 38 * Math.pow({{font_scale}}, 4)),
+            {% if view == 'dayGrid' or view == 'dayGridMonth' %}
+            eventDidMount: function(info) {
+                if (info.view.type.includes('dayGrid') && !info.event.allDay) {
+                    // Keep timed event on start day only
+                    info.event.setEnd(info.event.start);
+                }
+            },
+            {% endif %}
+            {% endif %}
             eventTimeFormat: timeFormat,
             displayEventTime: {{ (plugin_settings.displayEventTime == "true") | tojson}},
             weekends:  {{ (plugin_settings.displayWeekends == "true") | tojson}},
