@@ -17,7 +17,7 @@ fi
 echo "Activating virtual environment..."
 source $VENV_DIR/bin/activate
 
-if [ $? -ne 0 ]; then
+if [ -z "$VIRTUAL_ENV" ]; then
     echo "Failed to activate virtual environment."
     exit 1
 fi
