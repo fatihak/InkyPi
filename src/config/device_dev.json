@@ -19,8 +19,8 @@
         "active_playlist": null
     },
     "refresh_info": {
-        "refresh_time": "2025-10-28T16:22:32.426418+00:00",
-        "image_hash": "71389864a21cc095b687419c4b5e2ac6a7d2f2137da1edeb8cf6b045abfea69d",
+        "refresh_time": "2025-11-19T23:37:06.200250+00:00",
+        "image_hash": "336cdb0e8f976e48342bba8829cf2c95226a92bf7ff38bbd1213b2e18205380c",
         "refresh_type": "Manual Update",
         "plugin_id": "vlrtrack"
     }
