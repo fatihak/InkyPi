@@ -4,7 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ plugin.display_name }} Settings</title>
+    <script>
+        (function() {
+            const theme = localStorage.getItem('inkypi-theme') || 
+                         (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+            if (theme === 'dark') {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            }
+        })();
+    </script>
     <link rel= "stylesheet" type= "text/css" href= "{{ url_for('static',filename='styles/main.css') }}">
+    <script src="{{ url_for('static', filename='scripts/dark_mode.js') }}"></script>
     <script src="{{ url_for('static', filename='scripts/response_modal.js') }}"></script>
     <!-- Select2 CSS -->
     <link href="{{ url_for('static', filename='styles/select2.min.css') }}" rel="stylesheet" />
@@ -287,19 +297,19 @@
                                 <label for="margin" class="form-label">Margins:</label>
                                 <div class="form-group nowrap">
                                     <label for="topMargin" class="form-label">Top</label>
-                                    <input type="number" class="form-input" id="topMargin" name="topMargin" min="0" max="100" step="5">px
+                                    <input type="number" class="form-input" id="topMargin" name="topMargin" min="0" max="100" step="5"><span>px</span>
                                 </div>
                                 <div class="form-group nowrap">
                                     <label for="bottomMargin" class="form-label">Bottom</label>
-                                    <input type="number" class="form-input" id="bottomMargin" name="bottomMargin" min="0" max="100" step="5">px
+                                    <input type="number" class="form-input" id="bottomMargin" name="bottomMargin" min="0" max="100" step="5"><span>px</span>
                                 </div>
                                 <div class="form-group nowrap">
                                     <label for="leftMargin" class="form-label">Left</label>
-                                    <input type="number" class="form-input" id="leftMargin" name="leftMargin" min="0" max="100" step="5">px
+                                    <input type="number" class="form-input" id="leftMargin" name="leftMargin" min="0" max="100" step="5"><span>px</span>
                                 </div>
                                 <div class="form-group nowrap">
-                                    <label for="rightMargin" class="form-label":>Right</label>
-                                    <input type="number" class="form-input" id="rightMargin" name="rightMargin" min="0" max="100" step="5">px
+                                    <label for="rightMargin" class="form-label">Right</label>
+                                    <input type="number" class="form-input" id="rightMargin" name="rightMargin" min="0" max="100" step="5"><span>px</span>
                                 </div>
                             </div>
                         </div>    
