@@ -30,7 +30,8 @@ class Unsplash(BasePlugin):
         content_filter = settings.get('content_filter', 'low')
         color = settings.get('color')
         orientation = settings.get('orientation')
-        
+        image_size = settings.get('image_size', 'regular')  # Default to 'regular' for memory efficiency
+
         params = {
             'client_id': access_key,
             'content_filter': content_filter,
@@ -58,9 +59,11 @@ class Unsplash(BasePlugin):
                 results = data.get("results")
                 if not results:
                     raise RuntimeError("No images found for the given search query.")
-                image_url = random.choice(results)["urls"]["full"]
+                # Use selected image size (default: "regular" for memory efficiency on low-RAM devices)
+                image_url = random.choice(results)["urls"][image_size]
             else:
-                image_url = data["urls"]["full"]
+                # Use selected image size (default: "regular" for memory efficiency on low-RAM devices)
+                image_url = data["urls"][image_size]
         except requests.exceptions.RequestException as e:
             logger.error(f"Error fetching image from Unsplash API: {e}")
             raise RuntimeError("Failed to fetch image from Unsplash API, please check logs.")

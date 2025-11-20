@@ -45,17 +45,32 @@
             <option value="portrait">Portrait</option>
         </select>
     </div>
+
+    <div class="form-group">
+        <label for="image_size" class="form-label">Image Size:</label>
+        <select id="image_size" name="image_size" class="form-input">
+            <option value="regular">Regular (1080px) - Recommended</option>
+            <option value="small">Small (400px)</option>
+            <option value="full">Full (Original) - May cause crashes on low-RAM devices</option>
+        </select>
+        <small style="width: 100%; color: var(--text-primary);">
+            <strong>Regular</strong> is recommended for e-ink displays and uses less memory, preventing crashes on Raspberry Pi Zero.
+            <strong>Small</strong> downloads faster but may look pixelated.
+            <strong>Full</strong> is the original high-resolution image (can be 6000px+) and may crash devices with limited RAM.
+        </small>
+    </div>
 </div>
 
 <script>
     // populate form values from plugin settings
-    document.addEventListener('DOMContentLoaded', () => {        
+    document.addEventListener('DOMContentLoaded', () => {
         if (loadPluginSettings) {
             document.getElementById('search_query').value = pluginSettings.search_query || '';
             document.getElementById('collections').value = pluginSettings.collections || '';
             document.getElementById('content_filter').value = pluginSettings.content_filter || 'low';
             document.getElementById('color').value = pluginSettings.color || '';
             document.getElementById('orientation').value = pluginSettings.orientation || '';
+            document.getElementById('image_size').value = pluginSettings.image_size || 'regular';
         }
     });
 </script>
