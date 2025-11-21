@@ -6,8 +6,29 @@ import logging
 import hashlib
 import tempfile
 import subprocess
+import shutil
 
 logger = logging.getLogger(__name__)
+
+def find_chromium_executable():
+    possible_names = [
+        "chromium-headless-shell",
+        "chromium-browser",
+        "chromium",
+        "chrome-headless-shell",
+        "chrome-headless-shell.exe",
+        "google-chrome",
+        "chrome",
+        "chrome.exe",
+        "msedge.exe",
+        "msedge"
+    ]
+    for name in possible_names:
+        path = shutil.which(name)
+        if path:
+            logger.debug(f"Found chromium executable: {path}")
+            return path
+    return None
 
 def get_image(image_url):
     response = requests.get(image_url)
@@ -103,12 +124,17 @@ def take_screenshot_html(html_str, dimensions, timeout_ms=None):
 def take_screenshot(target, dimensions, timeout_ms=None):
     image = None
     try:
+        chromium = find_chromium_executable()
+        if not chromium:
+            logger.error("Chromium executable not found. Cannot take screenshot.")
+            return None
+
         # Create a temporary output file for the screenshot
         with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as img_file:
             img_file_path = img_file.name
 
         command = [
-            "chromium-headless-shell",
+            chromium,
             target,
             "--headless",
             f"--screenshot={img_file_path}",
