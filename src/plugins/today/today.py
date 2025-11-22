@@ -40,8 +40,9 @@ class Today(BasePlugin):
         end = start + timedelta(days=1)
         logger.debug(f"Fetching events for {start} --> [{current_dt}] --> {end}")
         events = self.fetch_ics_events(calendar_urls, calendar_colors, tz, start, end)
+        events.sort(key=lambda e: e.get('dtstart', ''))
         if not events:
-            logger.warn("No events found for ics url")
+            logger.warning("No events found for ics url")
 
         template_params = {
             "events": events[:10],
@@ -99,12 +100,16 @@ class Today(BasePlugin):
                 end = dtend.isoformat()
         elif "duration" in event:
             duration = event.decoded("duration")
-            end = (dtstart + duration).isoformat()
+            dtend = dtstart + duration
+            if isinstance(dtend, datetime):
+                end = dtend.astimezone(tz).isoformat()
+            else:
+                end = dtend.isoformat()
         return start, end, all_day
 
     def fetch_calendar(self, calendar_url):
         try:
-            response = requests.get(calendar_url)
+            response = requests.get(calendar_url, timeout=30)
             response.raise_for_status()
             return icalendar.Calendar.from_ical(response.text)
         except Exception as e:

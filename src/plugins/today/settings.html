@@ -71,10 +71,17 @@
 
         if (loadPluginSettings) {
             if (pluginSettings["calendarURLs[]"]) {
+                const colors = pluginSettings["calendarColors[]"] || [];
                 calendars = pluginSettings["calendarURLs[]"].map((url, i) => ({
                     url: url || '',
-                    color: pluginSettings["calendarColors[]"][i]  || '#007BFF'
+                    color: colors[i]  || '#007BFF'
                 }));
+            }
+            if (pluginSettings["language"]) {
+                language = pluginSettings["language"];
+            }
+            if (pluginSettings["fontSize"]) {
+                fontSize = pluginSettings["fontSize"];
             }
         }
 
