@@ -1,0 +1,56 @@
+
+.calendar-container {
+    align-items: center;
+    justify-content: center;
+    font-family: "Jost";
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+}
+
+.events-container {
+    overflow: hidden;
+    height: 100%;
+}
+
+
+.calendar-event {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 1dvw;
+    padding-bottom: 2dvh;
+    padding-top: 2dvh;
+    border-top: 1px solid ;
+    overflow: hidden;
+}
+
+.calendar-event .event-title {
+    font-weight: bold;
+    padding-bottom: 1dvh;
+    font-size: calc(min(4dvh, 3vw) * var(--font-scale));
+}
+
+.calendar-event .event-image {
+    flex-shrink: 0;
+    max-width: calc(15% * var(--font-scale));
+}
+
+.calendar-event .event-description {
+    font-size: calc(min(3.5dvh, 3vw) * var(--font-scale));
+}
+
+.calendar-event .text-container {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  line-height: 1.2;
+}
+
+.calendar-event:nth-child(even) {
+  flex-direction: row-reverse;
+}
+
+.event-description img {
+    display: none;
+}

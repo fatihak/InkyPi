@@ -1,0 +1,90 @@
+<div>
+  <label class="form-label">Calendars:</label>
+  <div id="calendarList"></div>
+  <button type="button" id="addCalendarBtn" class="form-input collapsible" onclick="addCalendarInput('', '#007BFF')">Add Calendar</button>
+</div>
+
+<div class="form-group">
+    <div class="form-group">
+        <label for="language" class="form-label">Language:</label>
+        <select id="language" name="language" class="form-input">
+            {% for code, name in locale_map.items() %}
+                <option value="{{ code }}">{{ name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <div class="form-group nowrap">
+        <label for="fontSize" class="form-label">Font Size:</label>
+        <select id="fontSize" name="fontSize" class="form-input">
+            <option value="x-small">Extra Small</option>
+            <option value="smaller">Smaller</option>
+            <option value="small">Small</option>
+            <option value="normal">Normal</option>
+            <option value="large">Large</option>
+            <option value="larger">Larger</option>
+            <option value="x-large">Extra Larger</option>
+        </select>
+    </div>
+</div>
+
+<script>
+    function addCalendarInput(url = '', color = '#007BFF') {
+        const calendarList = document.getElementById('calendarList');
+
+        const wrapper = document.createElement('div');
+        wrapper.classList.add('calendar-entry');
+        wrapper.classList.add('form-group');
+
+        const colorInput = document.createElement('input');
+        colorInput.type = 'color';
+        colorInput.name = 'calendarColors[]';
+        colorInput.classList.add('color-picker')
+        colorInput.value = color;
+
+        const urlInput = document.createElement('input');
+        urlInput.type = 'text';
+        urlInput.name = 'calendarURLs[]';
+        urlInput.placeholder = 'Calendar URL';
+        urlInput.required = true;
+        urlInput.classList.add('form-input');
+        urlInput.value = url;
+
+        const removeBtn = document.createElement('button');
+        removeBtn.type = 'button';
+        removeBtn.innerText = '✕';
+        removeBtn.classList.add('remove-btn');
+        removeBtn.onclick = () => wrapper.remove();
+
+        wrapper.appendChild(colorInput);
+        wrapper.appendChild(urlInput);
+        wrapper.appendChild(removeBtn);
+
+        calendarList.appendChild(wrapper);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        // defaults
+        let language = "en";
+        let calendars = [{ url: '', color: '#007BFF' }];
+        let fontSize = "normal";
+
+        if (loadPluginSettings) {
+            if (pluginSettings["calendarURLs[]"]) {
+                calendars = pluginSettings["calendarURLs[]"].map((url, i) => ({
+                    url: url || '',
+                    color: pluginSettings["calendarColors[]"][i]  || '#007BFF'
+                }));
+            }
+        }
+
+        // populate language dropdown
+        document.getElementById('language').value = language;
+        document.getElementById('fontSize').value = fontSize;
+
+        // populate calendars
+        calendars.forEach(({ url, color }) => {
+            addCalendarInput(url, color);
+        });
+    });
+</script>

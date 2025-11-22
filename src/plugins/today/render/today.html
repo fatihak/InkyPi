@@ -1,0 +1,38 @@
+{% extends "plugin.html" %}
+
+{% block content %}
+
+<div class="calendar-container" style="--font-scale: {{ font_scale }};">
+    <div class="events-container">
+        {% for event in events %}
+        <div class="calendar-event">
+            <div class="text-container">
+                <div class="event-title">{{ event.title | safe}}</div>
+                <div class="event-description">{{ event.description | safe}}</div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<script>
+  window.addEventListener("load", () => {
+    const container = document.querySelector(".events-container");
+    const containerHeight = container.clientHeight;
+
+    let accumulatedHeight = 0;
+    const items = container.querySelectorAll(".calendar-event");
+
+    items.forEach(item => {
+      const itemHeight = item.clientHeight;
+
+      if (accumulatedHeight > 0 && accumulatedHeight + itemHeight > containerHeight) {
+        item.style.display = "none";
+      }
+      accumulatedHeight += itemHeight;
+    });
+  });
+</script>
+
+{% endblock %}
+
