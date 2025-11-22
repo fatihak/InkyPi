@@ -24,6 +24,10 @@ class ImmichProvider:
         r.raise_for_status()
         albums = r.json()
         album = [a for a in albums if a["albumName"] == album][0]
+
+        if album is None:
+            raise RuntimeError(f"Album {album} not found.")
+
         return album["id"]
 
     def get_asset_ids(self, album_id: str) -> list[str]:
@@ -36,30 +40,10 @@ class ImmichProvider:
         r2.raise_for_status()
         assets_data = r2.json()
 
-        asset_items = assets_data.get("assets", [])["items"]
+        asset_items = assets_data.get("assets", {}).get("items", [])
         return [asset["id"] for asset in asset_items]
 
-    def get_aligned_asset_ids(self, asset_ids: list[str]) ->list[str]:
-        aligned_ids = []
-
-        for id in asset_ids:
-            asset_url = f"{self.base_url}/api/assets/{id}"
-            asset_response = requests.get(asset_url, headers=self.headers)
-            asset_response.raise_for_status()
-            asset_info = asset_response.json()
-
-            exif = asset_info.get("exifInfo", {})
-            width = exif.get("exifImageWidth")
-            height = exif.get("exifImageHeight")
-
-            if self.orientation == "horizontal" and width > height:
-                aligned_ids.append(id)
-            elif self.orientation == "vertical" and width < height:
-                aligned_ids.append(id)
-
-        return aligned_ids
-
-    def get_image(self, album:str, settings, repeat=True) -> ImageFile | None:
+    def get_image(self, album:str) -> ImageFile | None:
         try:
             logger.info(f"Getting id for album {album}")
             album_id = self.get_album_id(album)
@@ -69,20 +53,7 @@ class ImmichProvider:
             logger.error(f"Error grabbing image from {self.base_url}: {e}")
             return None
 
-        prev_images: list = settings.get("prev_images", [])
-        asset_ids = list(set(asset_ids) - set(prev_images))
-
-        if not repeat and not asset_ids:
-            asset_ids = prev_images
-            prev_images = []
-            settings["prev_images"] = []
-
-        asset_ids = self.get_aligned_asset_ids(asset_ids)
         asset_id = choice(asset_ids)
-
-        if not repeat:
-            prev_images.append(asset_id)
-            settings["prev_images"] = prev_images
 
         logger.info(f"Downloading image {asset_id}")
         r = requests.get(f"{self.base_url}/api/assets/{asset_id}/original", headers=self.headers)
@@ -101,9 +72,8 @@ class ImageAlbum(BasePlugin):
         return template_params
 
     def generate_image(self, settings, device_config):
-        random = settings.get("randomize", False)
-        random_repetition = settings.get("randomRepetition", False)
         orientation = device_config.get_config("orientation")
+        img = None
 
         match settings.get("albumProvider"):
             case "Immich":
@@ -120,17 +90,20 @@ class ImageAlbum(BasePlugin):
                     raise RuntimeError("Album is required.")
 
                 provider = ImmichProvider(url, key, orientation)
-                img = provider.get_image(album, settings, random_repetition)
+                img = provider.get_image(album)
                 if not img:
                     raise RuntimeError("Failed to load image, please check logs.")
 
-        if settings.get("padImage", False):
+        if img is None:
+            raise RuntimeError("Failed to load image, please check logs.")
+
+        if settings.get('padImage') == "true":
             dimensions = device_config.get_resolution()
 
             if orientation == "vertical":
                 dimensions = dimensions[::-1]
 
-            if settings.get('blur') == "true":
+            if settings.get('backgroundOption') == "blur":
                 return pad_image_blur(img, dimensions)
             else:
                 background_color = ImageColor.getcolor(settings.get('backgroundColor') or (255, 255, 255), "RGB")
