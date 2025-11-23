@@ -20,7 +20,7 @@
     padding-bottom: 0.5dvh;
 }
 
-.dow {
+.today {
     text-align: center;
     font-size: calc(min(5dvh, 4vw) * var(--font-scale));
     padding-bottom: 0.5dvh;
