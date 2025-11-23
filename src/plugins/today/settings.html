@@ -31,6 +31,7 @@
 <script>
     function addCalendarInput(url = '', description = true) {
         const calendarList = document.getElementById('calendarList');
+        const id = `description_${Date.now()}`;
 
         const wrapper = document.createElement('div');
         wrapper.classList.add('calendar-entry');
@@ -44,15 +45,26 @@
         const descriptionCheckbox = document.createElement('input');
         descriptionCheckbox.type = 'checkbox';
         descriptionCheckbox.checked = description;
+        descriptionCheckbox.id = id;
         descriptionCheckbox.onchange = () => {
             descriptionValue.value = descriptionCheckbox.checked ? 'true' : 'false';
         };
-        descriptionCheckbox.classList.add('form-checkbox');
+        descriptionCheckbox.classList.add('toggle-checkbox');
 
         const descriptionLabel = document.createElement('label');
         descriptionLabel.innerText = 'Description';
-        descriptionLabel.appendChild(descriptionValue);
-        descriptionLabel.appendChild(descriptionCheckbox);
+        descriptionLabel.htmlFor = id;
+        descriptionLabel.classList.add('form-label');
+
+        const blindLabel = document.createElement('label');
+        blindLabel.htmlFor = id;
+        blindLabel.classList.add('toggle-label');
+
+        const toggleContainer = document.createElement('div');
+        toggleContainer.classList.add('toggle-container');
+        toggleContainer.appendChild(descriptionValue);
+        toggleContainer.appendChild(descriptionCheckbox);
+        toggleContainer.appendChild(blindLabel);
 
         const urlInput = document.createElement('input');
         urlInput.type = 'text';
@@ -70,6 +82,7 @@
 
         wrapper.appendChild(urlInput);
         wrapper.appendChild(descriptionLabel);
+        wrapper.appendChild(toggleContainer);
         wrapper.appendChild(removeBtn);
 
         calendarList.appendChild(wrapper);
