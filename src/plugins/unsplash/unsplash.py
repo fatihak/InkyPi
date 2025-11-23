@@ -6,6 +6,8 @@ import logging
 import random
 import gc
 import psutil
+import tempfile
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -27,24 +29,64 @@ def _is_low_resource_device():
 def grab_image(image_url, dimensions, timeout_ms=40000):
     """
     Grab an image from a URL and resize it to the specified dimensions.
-    Automatically optimizes for device capabilities - uses memory-efficient
-    methods on low-RAM devices and maximum quality on powerful devices.
+    Automatically optimizes for device capabilities:
+    - Low-resource devices: Uses temp file + draft mode for maximum memory efficiency
+    - Powerful devices: Uses in-memory processing for maximum speed
     """
     is_low_resource = _is_low_resource_device()
+    tmp_path = None
 
     try:
         logger.debug(f"Downloading image from {image_url}")
         logger.debug(f"Target dimensions: {dimensions[0]}x{dimensions[1]}")
 
-        # Stream the download to avoid loading entire file into memory at once
-        response = requests.get(image_url, timeout=timeout_ms / 1000, stream=True)
-        response.raise_for_status()
+        if is_low_resource:
+            # LOW-RESOURCE PATH: Stream to temp file to minimize memory usage
+            logger.debug("Using disk-based streaming (low-resource mode)")
 
-        # Load image from streamed response
-        img = Image.open(BytesIO(response.content))
-        original_size = img.size
-        original_pixels = original_size[0] * original_size[1]
-        logger.info(f"Downloaded image: {original_size[0]}x{original_size[1]} ({img.mode} mode, {original_pixels/1_000_000:.1f}MP)")
+            # Create temp file
+            with tempfile.NamedTemporaryFile(delete=False, suffix='.jpg') as tmp:
+                tmp_path = tmp.name
+
+                # Stream download directly to disk (only 8KB chunks in RAM at a time)
+                response = requests.get(image_url, timeout=timeout_ms / 1000, stream=True)
+                response.raise_for_status()
+
+                downloaded_bytes = 0
+                for chunk in response.iter_content(chunk_size=8192):
+                    if chunk:
+                        tmp.write(chunk)
+                        downloaded_bytes += len(chunk)
+
+                logger.debug(f"Downloaded {downloaded_bytes / 1024:.1f}KB to temp file")
+
+            # Open image from disk with draft mode for massive memory savings
+            img = Image.open(tmp_path)
+            original_size = img.size
+            original_pixels = original_size[0] * original_size[1]
+            logger.info(f"Loaded image: {original_size[0]}x{original_size[1]} ({img.mode} mode, {original_pixels/1_000_000:.1f}MP)")
+
+            # DRAFT MODE: Tell PIL to load a lower-resolution version during decoding
+            # This can reduce memory by 80-90% for very large images!
+            img.draft('RGB', (dimensions[0] * 2, dimensions[1] * 2))
+            logger.debug(f"Draft mode applied - PIL will decode at reduced resolution")
+
+            # Load the image (draft mode takes effect here)
+            img.load()
+            logger.debug(f"Image decoded: {img.size[0]}x{img.size[1]} (draft mode reduced from {original_size[0]}x{original_size[1]})")
+
+        else:
+            # HIGH-PERFORMANCE PATH: In-memory processing for speed
+            logger.debug("Using in-memory processing (high-performance mode)")
+
+            response = requests.get(image_url, timeout=timeout_ms / 1000, stream=True)
+            response.raise_for_status()
+
+            # Load image directly into memory
+            img = Image.open(BytesIO(response.content))
+            original_size = img.size
+            original_pixels = original_size[0] * original_size[1]
+            logger.info(f"Downloaded image: {original_size[0]}x{original_size[1]} ({img.mode} mode, {original_pixels/1_000_000:.1f}MP)")
 
         # Convert to RGB if necessary (removes alpha channel, saves memory)
         # E-ink displays don't need alpha channel anyway
@@ -66,7 +108,7 @@ def grab_image(image_url, dimensions, timeout_ms=40000):
             logger.debug("Using high-quality processing (LANCZOS filter)")
 
         # For very large images on low-resource devices, use aggressive two-stage resize
-        # Use thumbnail() which is more memory efficient than resize()
+        # Note: draft() mode may have already reduced size significantly
         if use_two_stage and (img.size[0] > dimensions[0] * 2 or img.size[1] > dimensions[1] * 2):
             logger.debug(f"Image is {img.size[0]}x{img.size[1]}, using two-stage resize for memory efficiency")
 
@@ -100,14 +142,23 @@ def grab_image(image_url, dimensions, timeout_ms=40000):
 
         logger.info(f"Image processing complete: {dimensions[0]}x{dimensions[1]}")
         return img
+
     except MemoryError as e:
         logger.error(f"Out of memory while processing image from {image_url}: {e}")
-        logger.error("Try using a smaller image size setting (Small or Regular instead of Full/Raw)")
+        logger.error("Try using a smaller image size setting (Small or Regular instead of Full)")
         gc.collect()  # Try to free memory
         return None
     except Exception as e:
         logger.error(f"Error grabbing image from {image_url}: {e}")
         return None
+    finally:
+        # Clean up temp file if it was created
+        if tmp_path and os.path.exists(tmp_path):
+            try:
+                os.unlink(tmp_path)
+                logger.debug(f"Cleaned up temp file: {tmp_path}")
+            except Exception as e:
+                logger.warning(f"Could not delete temp file {tmp_path}: {e}")
 
 class Unsplash(BasePlugin):
     def generate_image(self, settings, device_config):
