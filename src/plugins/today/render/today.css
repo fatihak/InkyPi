@@ -15,15 +15,15 @@
 
 .dow {
     text-align: center;
-    font-size: calc(min(6dvh, 5vw) * var(--font-scale));
+    font-size: calc(min(8dvh, 6vw) * var(--font-scale));
     font-weight: bold;
     padding-bottom: 0.5dvh;
 }
 
 .today {
     text-align: center;
-    font-size: calc(min(5dvh, 4vw) * var(--font-scale));
-    padding-bottom: 0.5dvh;
+    font-size: calc(min(7dvh, 5vw) * var(--font-scale));
+    padding-bottom: 4dvh;
 }
 
 .calendar-event {
