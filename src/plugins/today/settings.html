@@ -1,7 +1,7 @@
 <div>
   <label class="form-label">Calendars:</label>
   <div id="calendarList"></div>
-  <button type="button" id="addCalendarBtn" class="form-input collapsible" onclick="addCalendarInput('', '#007BFF')">Add Calendar</button>
+  <button type="button" id="addCalendarBtn" class="form-input collapsible" onclick="addCalendarInput('', true)">Add Calendar</button>
 </div>
 
 <div class="form-group">
@@ -29,18 +29,30 @@
 </div>
 
 <script>
-    function addCalendarInput(url = '', color = '#007BFF') {
+    function addCalendarInput(url = '', description = true) {
         const calendarList = document.getElementById('calendarList');
 
         const wrapper = document.createElement('div');
         wrapper.classList.add('calendar-entry');
         wrapper.classList.add('form-group');
 
-        const colorInput = document.createElement('input');
-        colorInput.type = 'color';
-        colorInput.name = 'calendarColors[]';
-        colorInput.classList.add('color-picker')
-        colorInput.value = color;
+        const descriptionValue = document.createElement('input');
+        descriptionValue.type = 'hidden';
+        descriptionValue.name = 'calendarDescriptions[]';
+        descriptionValue.value = description ? 'true' : 'false';
+
+        const descriptionCheckbox = document.createElement('input');
+        descriptionCheckbox.type = 'checkbox';
+        descriptionCheckbox.checked = description;
+        descriptionCheckbox.onchange = () => {
+            descriptionValue.value = descriptionCheckbox.checked ? 'true' : 'false';
+        };
+        descriptionCheckbox.classList.add('form-checkbox');
+
+        const descriptionLabel = document.createElement('label');
+        descriptionLabel.innerText = 'Description';
+        descriptionLabel.appendChild(descriptionValue);
+        descriptionLabel.appendChild(descriptionCheckbox);
 
         const urlInput = document.createElement('input');
         urlInput.type = 'text';
@@ -56,8 +68,8 @@
         removeBtn.classList.add('remove-btn');
         removeBtn.onclick = () => wrapper.remove();
 
-        wrapper.appendChild(colorInput);
         wrapper.appendChild(urlInput);
+        wrapper.appendChild(descriptionLabel);
         wrapper.appendChild(removeBtn);
 
         calendarList.appendChild(wrapper);
@@ -66,15 +78,14 @@
     document.addEventListener('DOMContentLoaded', () => {
         // defaults
         let language = "en";
-        let calendars = [{ url: '', color: '#007BFF' }];
+        let calendars = [{ url: '', description: true }];
         let fontSize = "normal";
 
         if (loadPluginSettings) {
-            if (pluginSettings["calendarURLs[]"]) {
-                const colors = pluginSettings["calendarColors[]"] || [];
+            if (pluginSettings["calendarURLs[]"] && pluginSettings["calendarDescriptions[]"]) {
                 calendars = pluginSettings["calendarURLs[]"].map((url, i) => ({
                     url: url || '',
-                    color: colors[i]  || '#007BFF'
+                    description: pluginSettings["calendarDescriptions[]"][i] || true
                 }));
             }
             if (pluginSettings["language"]) {
@@ -90,8 +101,8 @@
         document.getElementById('fontSize').value = fontSize;
 
         // populate calendars
-        calendars.forEach(({ url, color }) => {
-            addCalendarInput(url, color);
+        calendars.forEach(({ url, description }) => {
+            addCalendarInput(url, description);
         });
     });
 </script>

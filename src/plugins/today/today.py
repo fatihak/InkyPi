@@ -23,7 +23,7 @@ class Today(BasePlugin):
 
     def generate_image(self, settings, device_config):
         calendar_urls = settings.get('calendarURLs[]')
-        calendar_colors = settings.get('calendarColors[]')
+        calendar_descriptions = settings.get('calendarDescriptions[]')
 
         if not calendar_urls:
             raise RuntimeError("At least one calendar URL is required")
@@ -42,7 +42,7 @@ class Today(BasePlugin):
         start = datetime(current_dt.year, current_dt.month, current_dt.day)
         end = start + timedelta(days=1)
         logger.debug(f"Fetching events for {start} --> [{current_dt}] --> {end}")
-        events = self.fetch_ics_events(calendar_urls, calendar_colors, tz, start, end)
+        events = self.fetch_ics_events(calendar_urls, calendar_descriptions, tz, start, end)
         events.sort(key=lambda e: e.get('dtstart', ''))
         if not events:
             logger.warning("No events found for ics url")
@@ -66,24 +66,24 @@ class Today(BasePlugin):
             raise RuntimeError("Failed to take screenshot, please check logs.")
         return image
 
-    def fetch_ics_events(self, calendar_urls, colors, tz, start_range, end_range):
+    def fetch_ics_events(self, calendar_urls, descriptions, tz, start_range, end_range):
         parsed_events = []
 
-        for calendar_url, color in zip(calendar_urls, colors):
+        for calendar_url, show_description in zip(calendar_urls, descriptions):
+            show_description = show_description.lower() == 'true'  # Convert string to boolean
+
             cal = self.fetch_calendar(calendar_url)
             events = recurring_ical_events.of(cal).between(start_range, end_range)
-            contrast_color = self.get_contrast_color(color)
 
             for event in events:
                 start, end, all_day = self.parse_data_points(event, tz)
                 parsed_event = {
                     "title": html.unescape(event.get("summary")),
-                    "description": html.unescape(event.get("description", "")),
                     "start": start,
-                    "backgroundColor": color,
-                    "textColor": contrast_color,
                     "allDay": all_day
                 }
+                if show_description:
+                    parsed_event["description"] = html.unescape(event.get("description", ""))
                 if end:
                     parsed_event['end'] = end
 
@@ -125,14 +125,3 @@ class Today(BasePlugin):
             return icalendar.Calendar.from_ical(calendar_data)
         except Exception as e:
             raise RuntimeError(f"Failed to fetch iCalendar url: {str(e)}")
-
-    def get_contrast_color(self, color):
-        """
-        Returns '#000000' (black) or '#ffffff' (white) depending on the contrast
-        against the given color.
-        """
-        r, g, b = ImageColor.getrgb(color)
-        # YIQ formula to estimate brightness
-        yiq = (r * 299 + g * 587 + b * 114) / 1000
-
-        return '#000000' if yiq >= 150 else '#ffffff'
