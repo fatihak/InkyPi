@@ -49,14 +49,14 @@
     <div class="form-group">
         <label for="image_size" class="form-label">Image Size:</label>
         <select id="image_size" name="image_size" class="form-input">
+            <option value="small">Small (400px) - Fastest</option>
             <option value="regular">Regular (1080px) - Recommended</option>
-            <option value="small">Small (400px)</option>
-            <option value="full">Full (Original) - May cause crashes on low-RAM devices</option>
+            <option value="full">Full (2000px+) - High quality</option>
         </select>
         <small style="width: 100%; color: var(--text-primary);">
-            <strong>Regular</strong> is recommended for e-ink displays and uses less memory, preventing crashes on Raspberry Pi Zero.
-            <strong>Small</strong> downloads faster but may look pixelated.
-            <strong>Full</strong> is the original high-resolution image (can be 6000px+) and may crash devices with limited RAM.
+            <strong>Small:</strong> Fast downloads, good for simple images.<br>
+            <strong>Regular (Recommended):</strong> Perfect balance for e-ink displays. Safe on all devices.<br>
+            <strong>Full:</strong> Very high resolution (2000-4000px). Automatically downgraded to Regular on Raspberry Pi Zero to prevent crashes.
         </small>
     </div>
 </div>
