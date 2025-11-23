@@ -120,7 +120,9 @@ class Today(BasePlugin):
         try:
             response = requests.get(calendar_url, timeout=30)
             response.raise_for_status()
-            return icalendar.Calendar.from_ical(response.text)
+            response.encoding = 'utf-8'  # Ensure UTF-8 encoding
+            calendar_data = response.text
+            return icalendar.Calendar.from_ical(calendar_data)
         except Exception as e:
             raise RuntimeError(f"Failed to fetch iCalendar url: {str(e)}")
 
