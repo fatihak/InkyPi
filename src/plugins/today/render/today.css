@@ -13,6 +13,18 @@
     height: 100%;
 }
 
+.dow {
+    text-align: center;
+    font-size: calc(min(6dvh, 5vw) * var(--font-scale));
+    font-weight: bold;
+    padding-bottom: 0.5dvh;
+}
+
+.dow {
+    text-align: center;
+    font-size: calc(min(5dvh, 4vw) * var(--font-scale));
+    padding-bottom: 0.5dvh;
+}
 
 .calendar-event {
     display: flex;

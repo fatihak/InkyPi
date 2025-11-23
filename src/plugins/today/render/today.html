@@ -3,6 +3,8 @@
 {% block content %}
 
 <div class="calendar-container" style="--font-scale: {{ font_scale }};">
+    {% if day_of_week %}<div class="dow">{{ day_of_week }}</div>{% endif %}
+    {% if today %}<div class="today">{{ today }}</div>{% endif %}
     <div class="events-container">
         {% for event in events %}
         <div class="calendar-event">

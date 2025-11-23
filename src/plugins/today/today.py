@@ -8,6 +8,9 @@ import requests
 import logging
 from datetime import datetime, timedelta
 import pytz
+import html
+from babel.dates import format_date
+
 
 logger = logging.getLogger(__name__)
 
@@ -44,12 +47,18 @@ class Today(BasePlugin):
         if not events:
             logger.warning("No events found for ics url")
 
+        language = settings.get('language', 'en')
+        day_of_week = format_date(current_dt, 'EEEE', locale=language)
+        today = format_date(current_dt, 'long', locale=language)
+
         template_params = {
             "events": events[:10],
             "current_dt": current_dt.replace(minute=0, second=0, microsecond=0).isoformat(),
             "timezone": timezone,
             "plugin_settings": settings,
             "font_scale": FONT_SIZES.get(settings.get('fontSize', 'normal'), 1),
+            "day_of_week": day_of_week,
+            "today": today
         }
 
         image = self.render_image(dimensions, "today.html", "today.css", template_params)
@@ -68,8 +77,8 @@ class Today(BasePlugin):
             for event in events:
                 start, end, all_day = self.parse_data_points(event, tz)
                 parsed_event = {
-                    "title": str(event.get("summary")),
-                    "description": str(event.get("description", "")),
+                    "title": html.unescape(event.get("summary")),
+                    "description": html.unescape(event.get("description", "")),
                     "start": start,
                     "backgroundColor": color,
                     "textColor": contrast_color,
