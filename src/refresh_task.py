@@ -29,6 +29,10 @@ class RefreshTask:
         self.refresh_event.set()
         self.refresh_result = {}
 
+        # Status tracking for frontend polling
+        self.status_lock = threading.Lock()
+        self.current_status = "idle"  # idle, starting, updating, complete, error
+
     def start(self):
         """Starts the background thread for refreshing the display."""
         if not self.thread or not self.thread.is_alive():
@@ -50,7 +54,7 @@ class RefreshTask:
         """Background task that manages the periodic refresh of the display.
 
         This function runs in a loop, sleeping for a configured duration (`plugin_cycle_interval_seconds`) or until
-        manually triggered via `manual_update()`. Detrmines the next plugin to refresh based on active playlists and 
+        manually triggered via `manual_update()`. Detrmines the next plugin to refresh based on active playlists and
         updates the display accordingly.
 
         Workflow:
@@ -64,7 +68,7 @@ class RefreshTask:
         5. Updates the refresh metadata in the device configuration.
         6. Repeats the process until `stop()` is called.
 
-        Handles any exceptions that occur during the refresh process and ensures the refresh event is set 
+        Handles any exceptions that occur during the refresh process and ensures the refresh event is set
         to indicate completion.
 
         Exceptions:
@@ -109,6 +113,9 @@ class RefreshTask:
                         plugin_config = self.device_config.get_plugin(refresh_action.get_plugin_id())
                         if plugin_config is None:
                             logger.error(f"Plugin config not found for '{refresh_action.get_plugin_id()}'.")
+                            self.set_status("error")
+                            time.sleep(1)
+                            self.set_status("idle")
                             continue
                         plugin = get_plugin_instance(plugin_config)
                         image = refresh_action.execute(plugin, self.device_config, current_dt)
@@ -119,35 +126,74 @@ class RefreshTask:
                         # check if image is the same as current image
                         if image_hash != latest_refresh.image_hash:
                             logger.info(f"Updating display. | refresh_info: {refresh_info}")
+                            self.set_status("updating")
                             self.display_manager.display_image(image, image_settings=plugin.config.get("image_settings", []))
+                            self.set_status("complete")
                         else:
                             logger.info(f"Image already displayed, skipping refresh. | refresh_info: {refresh_info}")
+                            self.set_status("complete")
 
                         # update latest refresh data in the device config
                         self.device_config.refresh_info = RefreshInfo(**refresh_info)
                         self.device_config.write_config()
 
+                        # Reset status to idle after a short delay (allow frontend to see "complete")
+                        time.sleep(1)
+                        self.set_status("idle")
+
             except Exception as e:
                 logger.exception('Exception during refresh')
                 self.refresh_result["exception"] = e  # Capture exception
+                self.set_status("error")
+                # Reset to idle after error
+                time.sleep(1)
+                self.set_status("idle")
             finally:
                 self.refresh_event.set()
 
     def manual_update(self, refresh_action):
-        """Manually triggers an update for the specified plugin id and plugin settings by notifying the background process."""
+        """Manually triggers an update for the specified plugin id and plugin settings by notifying the background process.
+
+        Returns:
+            bool: True if update was queued, False if an update is already in progress
+        """
         if self.running:
             with self.condition:
+                # Check if there's already an update in progress or queued (atomic check)
+                with self.status_lock:
+                    if self.current_status in ["starting", "updating", "complete"] or self.manual_update_request:
+                        logger.warning(f"Update already in progress (status: {self.current_status}), rejecting new request")
+                        return False
+                    # Set initial status atomically
+                    self.current_status = "starting"
+
                 self.manual_update_request = refresh_action
                 self.refresh_result = {}
                 self.refresh_event.clear()
 
                 self.condition.notify_all()  # Wake the thread to process manual update
-
-            self.refresh_event.wait()
-            if self.refresh_result.get("exception"):
-                raise self.refresh_result.get("exception")
+                return True
         else:
             logger.warn("Background refresh task is not running, unable to do a manual update")
+            return False
+
+    def get_status(self):
+        """Returns the current refresh status for polling."""
+        with self.status_lock:
+            return self.current_status
+
+    def set_status(self, status):
+        """Sets the current refresh status."""
+        with self.status_lock:
+            self.current_status = status
+            logger.info(f"Refresh status changed to: {status}")
+
+    def reset_status(self):
+        """Forcefully resets status to idle. Use this to recover from stuck states."""
+        with self.status_lock:
+            old_status = self.current_status
+            self.current_status = "idle"
+            logger.warning(f"Forcefully reset status from '{old_status}' to 'idle'")
 
     def signal_config_change(self):
         """Notify the background thread that config has changed (e.g., interval updated)."""
@@ -186,7 +232,7 @@ class RefreshTask:
         logger.info(f"Determined next plugin. | active_playlist: {playlist.name} | plugin_instance: {plugin.name}")
 
         return playlist, plugin
-    
+
     def log_system_stats(self):
         metrics = {
             'cpu_percent': psutil.cpu_percent(interval=1),
@@ -204,22 +250,22 @@ class RefreshTask:
 
 class RefreshAction:
     """Base class for a refresh action. Subclasses should override the methods below."""
-    
+
     def refresh(self, plugin, device_config, current_dt):
         """Perform a refresh operation and return the updated image."""
         raise NotImplementedError("Subclasses must implement the refresh method.")
-    
+
     def get_refresh_info(self):
         """Return refresh metadata as a dictionary."""
         raise NotImplementedError("Subclasses must implement the get_refresh_info method.")
-    
+
     def get_plugin_id(self):
         """Return the plugin ID associated with this refresh."""
         raise NotImplementedError("Subclasses must implement the get_plugin_id method.")
 
 class ManualRefresh(RefreshAction):
     """Performs a manual refresh based on a plugin's ID and its associated settings.
-    
+
     Attributes:
         plugin_id (str): The ID of the plugin to refresh.
         plugin_settings (dict): The settings for the manual refresh.
@@ -274,7 +320,7 @@ class PlaylistRefresh(RefreshAction):
 
         # Check if a refresh is needed based on the plugin instance's criteria
         if self.plugin_instance.should_refresh(current_dt) or self.force:
-            logger.info(f"Refreshing plugin instance. | plugin_instance: '{self.plugin_instance.name}'") 
+            logger.info(f"Refreshing plugin instance. | plugin_instance: '{self.plugin_instance.name}'")
             # Generate a new image
             image = plugin.generate_image(self.plugin_instance.settings, device_config)
             image.save(plugin_image_path)

@@ -6,7 +6,7 @@
     <title>Playlists</title>
     <script>
         (function() {
-            const theme = localStorage.getItem('inkypi-theme') || 
+            const theme = localStorage.getItem('inkypi-theme') ||
                          (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
             if (theme === 'dark') {
                 document.documentElement.setAttribute('data-theme', 'dark');
@@ -30,7 +30,7 @@
                         plugin_instance: pluginInstance
                     })
                 });
-                
+
                 const result = await response.json();
                 if (response.ok) {
                     sessionStorage.setItem("storedMessage", JSON.stringify({ type: "success", text: `Success! ${result.message}` }));
@@ -44,7 +44,114 @@
             }
         }
 
+        let statusPollInterval = null;
+        let originalTitle = document.title;
+        let updateTimeoutId = null;
+
+        // Helper functions to manage update state
+        function isUpdateInProgress() {
+            return sessionStorage.getItem('inkypi_update_in_progress') === 'true';
+        }
+
+        function setUpdateInProgress(inProgress) {
+            if (inProgress) {
+                sessionStorage.setItem('inkypi_update_in_progress', 'true');
+            } else {
+                sessionStorage.removeItem('inkypi_update_in_progress');
+            }
+        }
+
+        // If update was in progress, resume polling on page load
+        if (isUpdateInProgress()) {
+            console.log('Resuming status polling from previous page');
+            document.addEventListener('DOMContentLoaded', () => startStatusPolling());
+        }
+
+        async function pollUpdateStatus() {
+            try {
+                const response = await fetch('{{ url_for("plugin.update_status") }}');
+                const result = await response.json();
+                const status = result.status;
+
+                // Update tab title and state based on status
+                if (status === 'starting' || status === 'updating') {
+                    document.title = status === 'starting' ? '⏳ Starting...' : '🔄 Updating...';
+                    setUpdateInProgress(true);
+                } else if (status === 'complete' || status === 'error') {
+                    document.title = status === 'complete' ? '✓ Complete!' : '✗ Error';
+                    setUpdateInProgress(false);
+                    stopStatusPolling();
+                    // Restore original title after 3 seconds
+                    setTimeout(() => {
+                        document.title = originalTitle;
+                    }, 3000);
+                } else if (status === 'idle') {
+                    setUpdateInProgress(false);
+                    stopStatusPolling();
+                    document.title = originalTitle;
+                }
+            } catch (error) {
+                console.error('Error polling status:', error);
+                setUpdateInProgress(false);
+                stopStatusPolling();
+            }
+        }
+
+        function startStatusPolling() {
+            // Clear any existing interval
+            stopStatusPolling();
+            // Poll every 2 seconds
+            statusPollInterval = setInterval(pollUpdateStatus, 2000);
+            // Also poll immediately
+            pollUpdateStatus();
+
+            // Safety timeout - if update takes more than 3 minutes, reset state
+            updateTimeoutId = setTimeout(() => {
+                console.warn('Update timeout - resetting state after 3 minutes');
+                setUpdateInProgress(false);
+                stopStatusPolling();
+                document.title = originalTitle + ' (timeout)';
+            }, 180000); // 3 minutes
+        }
+
+        function stopStatusPolling() {
+            if (statusPollInterval) {
+                clearInterval(statusPollInterval);
+                statusPollInterval = null;
+            }
+            if (updateTimeoutId) {
+                clearTimeout(updateTimeoutId);
+                updateTimeoutId = null;
+            }
+        }
+
+        // Emergency function to reset stuck status (callable from browser console)
+        async function resetUpdateStatus() {
+            try {
+                const response = await fetch('{{ url_for("plugin.reset_status") }}', { method: 'POST' });
+                const result = await response.json();
+                if (response.ok) {
+                    console.log('Status reset successfully');
+                    setUpdateInProgress(false);
+                    stopStatusPolling();
+                    document.title = originalTitle;
+                    alert('Status has been reset. You can now start a new update.');
+                } else {
+                    console.error('Failed to reset status');
+                }
+            } catch (error) {
+                console.error('Error resetting status:', error);
+            }
+        }
+        window.resetUpdateStatus = resetUpdateStatus;
+
         async function displayPluginInstance(playlistName, pluginId, pluginInstance) {
+            // Prevent multiple concurrent update requests
+            if (isUpdateInProgress()) {
+                showResponseModal('failure', 'Request Rejected: An update is already in progress. Please wait for it to complete before starting a new update.');
+                return;
+            }
+
             const loadingIndicator = document.getElementById(pluginInstance)?.querySelector('.loading-indicator');
             loadingIndicator.style.display = 'block';
             try {
@@ -59,13 +166,17 @@
                         plugin_instance: pluginInstance
                     })
                 });
-                
+
                 const result = await response.json();
                 if (response.ok) {
+                    // Start polling for status updates
+                    setUpdateInProgress(true);
+                    startStatusPolling();
                     sessionStorage.setItem("storedMessage", JSON.stringify({ type: "success", text: `Success! ${result.message}` }));
                     location.reload();
                 } else {
                     showResponseModal('failure', `Error!  ${result.error}`);
+                    setUpdateInProgress(false);
                 }
             } catch (error) {
                 console.error('Error:', error);
@@ -76,6 +187,9 @@
             }
         }
 
+        // Clean up polling when page is unloaded
+        window.addEventListener('beforeunload', stopStatusPolling);
+
         // Open modal for **creating** a new playlist
         function openCreateModal() {
             document.getElementById("modalTitle").textContent = "New Playlist";
@@ -83,7 +197,7 @@
             document.getElementById("editingPlaylistName").value = ""; // Empty value means it's new
             document.getElementById("start_time").value = "00:00";
             document.getElementById("end_time").value = "24:00";
-            
+
             document.getElementById("saveButton").setAttribute("onclick", "createPlaylist()");
             document.getElementById("deleteButton").classList.add("hidden"); // Hide delete button
 
@@ -108,7 +222,7 @@
             const modal = document.getElementById('playlistModal');
             modal.style.display = 'block';
         }
-    
+
         function closeModal() {
             const modal = document.getElementById('playlistModal');
             modal.style.display = 'none';
@@ -237,7 +351,7 @@
             </div>
         </div>
         <div class="separator"></div>
-        
+
         <!-- Playlists Container -->
         <div class="playlist-list">
             {% for playlist in playlist_config.playlists %}
