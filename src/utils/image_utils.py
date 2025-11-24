@@ -142,6 +142,8 @@ def take_screenshot(target, dimensions, timeout_ms=None):
             "--disable-extensions",
             "--disable-plugins",
             "--mute-audio",
+            "--renderer-process-limit=1",
+            "--no-zygote",
             "--no-sandbox"
         ]
         if timeout_ms:
