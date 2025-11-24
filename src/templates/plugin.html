@@ -58,8 +58,16 @@
                 const response = await fetch('{{ url_for("plugin.update_status") }}');
                 const result = await response.json();
                 const status = result.status;
+                const refreshType = result.refresh_type;
 
-                // Update tab title and state based on status
+                // Only track manual requests (ignore scheduled/background refreshes)
+                if (refreshType !== 'manual') {
+                    // This is a scheduled refresh, not our manual request
+                    console.log(`Ignoring ${refreshType} refresh status: ${status}`);
+                    return;
+                }
+
+                // Update tab title and state based on status for manual requests
                 if (status === 'starting' || status === 'updating') {
                     document.title = status === 'starting' ? '⏳ Starting...' : '🔄 Updating...';
                     setUpdateInProgress(true);

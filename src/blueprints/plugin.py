@@ -195,8 +195,8 @@ def update_now():
 @plugin_bp.route('/update_status', methods=['GET'])
 def update_status():
     refresh_task = current_app.config['REFRESH_TASK']
-    status = refresh_task.get_status()
-    return jsonify({"status": status}), 200
+    status_info = refresh_task.get_status()
+    return jsonify(status_info), 200
 
 @plugin_bp.route('/reset_status', methods=['POST'])
 def reset_status():
