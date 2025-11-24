@@ -1,164 +1,10 @@
 from plugins.base_plugin.base_plugin import BasePlugin
-from PIL import Image
-from io import BytesIO
+from utils.image_loader import _is_low_resource_device
 import requests
 import logging
 import random
-import gc
-import psutil
-import tempfile
-import os
 
 logger = logging.getLogger(__name__)
-
-def _is_low_resource_device():
-    """
-    Detect if running on a low-resource device (e.g., Raspberry Pi Zero).
-    Returns True if device has less than 1GB RAM, False otherwise.
-    """
-    try:
-        total_memory_gb = psutil.virtual_memory().total / (1024 ** 3)
-        is_low_resource = total_memory_gb < 1.0
-        logger.debug(f"Device RAM: {total_memory_gb:.2f}GB - Low resource mode: {is_low_resource}")
-        return is_low_resource
-    except Exception as e:
-        # If we can't detect, assume low resource to be safe
-        logger.warning(f"Could not detect device memory: {e}. Defaulting to low-resource mode.")
-        return True
-
-def grab_image(image_url, dimensions, timeout_ms=40000):
-    """
-    Grab an image from a URL and resize it to the specified dimensions.
-    Automatically optimizes for device capabilities:
-    - Low-resource devices: Uses temp file + draft mode for maximum memory efficiency
-    - Powerful devices: Uses in-memory processing for maximum speed
-    """
-    is_low_resource = _is_low_resource_device()
-    tmp_path = None
-
-    try:
-        logger.debug(f"Downloading image from {image_url}")
-        logger.debug(f"Target dimensions: {dimensions[0]}x{dimensions[1]}")
-
-        if is_low_resource:
-            # LOW-RESOURCE PATH: Stream to temp file to minimize memory usage
-            logger.debug("Using disk-based streaming (low-resource mode)")
-
-            # Create temp file
-            with tempfile.NamedTemporaryFile(delete=False, suffix='.jpg') as tmp:
-                tmp_path = tmp.name
-
-                # Stream download directly to disk (only 8KB chunks in RAM at a time)
-                response = requests.get(image_url, timeout=timeout_ms / 1000, stream=True)
-                response.raise_for_status()
-
-                downloaded_bytes = 0
-                for chunk in response.iter_content(chunk_size=8192):
-                    if chunk:
-                        tmp.write(chunk)
-                        downloaded_bytes += len(chunk)
-
-                logger.debug(f"Downloaded {downloaded_bytes / 1024:.1f}KB to temp file")
-
-            # Open image from disk with draft mode for massive memory savings
-            img = Image.open(tmp_path)
-            original_size = img.size
-            original_pixels = original_size[0] * original_size[1]
-            logger.info(f"Loaded image: {original_size[0]}x{original_size[1]} ({img.mode} mode, {original_pixels/1_000_000:.1f}MP)")
-
-            # DRAFT MODE: Tell PIL to load a lower-resolution version during decoding
-            # This can reduce memory by 80-90% for very large images!
-            img.draft('RGB', (dimensions[0] * 2, dimensions[1] * 2))
-            logger.debug(f"Draft mode applied - PIL will decode at reduced resolution")
-
-            # Load the image (draft mode takes effect here)
-            img.load()
-            logger.debug(f"Image decoded: {img.size[0]}x{img.size[1]} (draft mode reduced from {original_size[0]}x{original_size[1]})")
-
-        else:
-            # HIGH-PERFORMANCE PATH: In-memory processing for speed
-            logger.debug("Using in-memory processing (high-performance mode)")
-
-            response = requests.get(image_url, timeout=timeout_ms / 1000, stream=True)
-            response.raise_for_status()
-
-            # Load image directly into memory
-            img = Image.open(BytesIO(response.content))
-            original_size = img.size
-            original_pixels = original_size[0] * original_size[1]
-            logger.info(f"Downloaded image: {original_size[0]}x{original_size[1]} ({img.mode} mode, {original_pixels/1_000_000:.1f}MP)")
-
-        # Convert to RGB if necessary (removes alpha channel, saves memory)
-        # E-ink displays don't need alpha channel anyway
-        if img.mode in ('RGBA', 'LA', 'P'):
-            logger.debug(f"Converting image from {img.mode} to RGB")
-            img = img.convert('RGB')
-
-        # Choose resampling filter based on device capabilities
-        if is_low_resource:
-            # On low-resource devices: use BICUBIC for faster processing
-            # Quality difference is imperceptible on e-ink displays
-            quality_filter = Image.BICUBIC
-            use_two_stage = True
-            logger.debug("Using memory-efficient processing (BICUBIC filter)")
-        else:
-            # On powerful devices: use LANCZOS for maximum quality
-            quality_filter = Image.LANCZOS
-            use_two_stage = False  # Single-pass resize, no need to optimize
-            logger.debug("Using high-quality processing (LANCZOS filter)")
-
-        # For very large images on low-resource devices, use aggressive two-stage resize
-        # Note: draft() mode may have already reduced size significantly
-        if use_two_stage and (img.size[0] > dimensions[0] * 2 or img.size[1] > dimensions[1] * 2):
-            logger.debug(f"Image is {img.size[0]}x{img.size[1]}, using two-stage resize for memory efficiency")
-
-            # First pass: Aggressive downsample using thumbnail (in-place modification, very memory efficient)
-            # Calculate intermediate size that maintains aspect ratio
-            aspect = img.size[0] / img.size[1]
-            if aspect > 1:  # Landscape
-                intermediate_size = (dimensions[0] * 2, int(dimensions[0] * 2 / aspect))
-            else:  # Portrait
-                intermediate_size = (int(dimensions[1] * 2 * aspect), dimensions[1] * 2)
-
-            logger.debug(f"Stage 1: Downsampling to ~{intermediate_size[0]}x{intermediate_size[1]} using NEAREST")
-            # thumbnail() modifies in-place and is MUCH more memory efficient
-            img.thumbnail(intermediate_size, Image.NEAREST)
-            logger.debug(f"Stage 1 complete: {img.size[0]}x{img.size[1]}")
-            gc.collect()  # Force garbage collection after first stage
-
-            # Second pass: high-quality resize to exact dimensions
-            logger.debug(f"Stage 2: Final resize to {dimensions[0]}x{dimensions[1]} using LANCZOS")
-            img = img.resize(dimensions, Image.LANCZOS)
-            logger.debug(f"Stage 2 complete: {dimensions[0]}x{dimensions[1]}")
-        else:
-            # Standard resize with appropriate quality filter
-            logger.debug(f"Resizing directly from {img.size[0]}x{img.size[1]} to {dimensions[0]}x{dimensions[1]}")
-            img = img.resize(dimensions, quality_filter)
-
-        # Explicit garbage collection on low-resource devices
-        if is_low_resource:
-            gc.collect()
-            logger.debug("Garbage collection completed")
-
-        logger.info(f"Image processing complete: {dimensions[0]}x{dimensions[1]}")
-        return img
-
-    except MemoryError as e:
-        logger.error(f"Out of memory while processing image from {image_url}: {e}")
-        logger.error("Try using a smaller image size setting (Small or Regular instead of Full)")
-        gc.collect()  # Try to free memory
-        return None
-    except Exception as e:
-        logger.error(f"Error grabbing image from {image_url}: {e}")
-        return None
-    finally:
-        # Clean up temp file if it was created
-        if tmp_path and os.path.exists(tmp_path):
-            try:
-                os.unlink(tmp_path)
-                logger.debug(f"Cleaned up temp file: {tmp_path}")
-            except Exception as e:
-                logger.warning(f"Could not delete temp file {tmp_path}: {e}")
 
 class Unsplash(BasePlugin):
     def generate_image(self, settings, device_config):
@@ -253,7 +99,8 @@ class Unsplash(BasePlugin):
 
         logger.info(f"Fetching image (size: {image_size}): {image_url}")
 
-        image = grab_image(image_url, dimensions, timeout_ms=40000)
+        # Use adaptive image loader for memory-efficient processing
+        image = self.image_loader.from_url(image_url, dimensions, timeout_ms=40000)
 
         if not image:
             logger.error("Failed to load and process image")

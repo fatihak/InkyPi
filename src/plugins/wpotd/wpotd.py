@@ -1,7 +1,7 @@
 """
 Wpotd Plugin for InkyPi
 This plugin fetches the Wikipedia Picture of the Day (Wpotd) from Wikipedia's API
-and displays it on the InkyPi device. 
+and displays it on the InkyPi device.
 
 It supports optional manual date selection or random dates and can resize the image to fit the device's dimensions.
 
@@ -44,23 +44,42 @@ class Wpotd(BasePlugin):
         return template_params
 
     def generate_image(self, settings: Dict[str, Any], device_config: Dict[str, Any]) -> Image.Image:
-        logger.info(f"WPOTD plugin settings: {settings}")
+        logger.info("=== Wikipedia POTD Plugin: Starting image generation ===")
+
         datetofetch = self._determine_date(settings)
-        logger.info(f"WPOTD plugin datetofetch: {datetofetch}")
+        logger.info(f"Fetching Wikipedia Picture of the Day for: {datetofetch}")
+        logger.debug(f"Settings: shrink_to_fit={settings.get('shrinkToFitWpotd', 'false')}, randomize={settings.get('randomizeWpotd', 'false')}")
 
         data = self._fetch_potd(datetofetch)
         picurl = data["image_src"]
-        logger.info(f"WPOTD plugin Picture URL: {picurl}")
+        logger.info(f"Image URL: {picurl}")
+        logger.debug(f"Image filename: {data.get('filename', 'Unknown')}")
 
-        image = self._download_image(picurl)
-        if image is None:
-            logger.error("Failed to download WPOTD image.")
-            raise RuntimeError("Failed to download WPOTD image.")
+        # Get dimensions
+        max_width, max_height = device_config.get_resolution()
+        if device_config.get_config("orientation") == "vertical":
+            max_width, max_height = max_height, max_width
+            logger.debug(f"Vertical orientation detected, dimensions: {max_width}x{max_height}")
+
+        dimensions = (max_width, max_height)
+
+        # Use adaptive loader if shrink-to-fit is enabled
         if settings.get("shrinkToFitWpotd") == "true":
-            max_width, max_height = device_config.get_resolution()
-            image = self._shrink_to_fit(image, max_width, max_height)
-            logger.info(f"Image resized to fit device dimensions: {max_width},{max_height}")
+            logger.debug("Shrink-to-fit enabled, using adaptive loader")
+            image = self._download_image(picurl, dimensions=dimensions, resize=True)
+            if image is None:
+                logger.error("Failed to download WPOTD image")
+                raise RuntimeError("Failed to download WPOTD image.")
+            logger.info(f"Image resized to fit device dimensions: {max_width}x{max_height}")
+        else:
+            # Original behavior: download without resizing
+            logger.debug("Shrink-to-fit disabled, downloading original size")
+            image = self._download_image(picurl, resize=False)
+            if image is None:
+                logger.error("Failed to download WPOTD image")
+                raise RuntimeError("Failed to download WPOTD image.")
 
+        logger.info("=== Wikipedia POTD Plugin: Image generation complete ===")
         return image
 
     def _determine_date(self, settings: Dict[str, Any]) -> date:
@@ -73,15 +92,29 @@ class Wpotd(BasePlugin):
         else:
             return datetime.today().date()
 
-    def _download_image(self, url: str) -> Image.Image:
+    def _download_image(self, url: str, dimensions: tuple = None, resize: bool = False) -> Image.Image:
+        """
+        Download image from URL, optionally resizing with adaptive loader.
+
+        Args:
+            url: Image URL
+            dimensions: Target dimensions if resizing
+            resize: Whether to use adaptive resizing
+        """
         try:
             if url.lower().endswith(".svg"):
                 logger.warning("SVG format is not supported by Pillow. Skipping image download.")
                 raise RuntimeError("Unsupported image format: SVG.")
 
-            response = self.SESSION.get(url, headers=self.HEADERS, timeout=10)
-            response.raise_for_status()
-            return Image.open(BytesIO(response.content))
+            if resize and dimensions:
+                # Use adaptive loader for memory-efficient processing
+                return self.image_loader.from_url(url, dimensions, timeout_ms=10000, headers=self.HEADERS)
+            else:
+                # Original behavior: download without resizing
+                response = self.SESSION.get(url, headers=self.HEADERS, timeout=10)
+                response.raise_for_status()
+                return Image.open(BytesIO(response.content))
+
         except UnidentifiedImageError as e:
             logger.error(f"Unsupported image format at {url}: {str(e)}")
             raise RuntimeError("Unsupported image format.")
@@ -139,7 +172,7 @@ class Wpotd(BasePlugin):
         except Exception as e:
             logger.error(f"Wikipedia API request failed with params {params}: {str(e)}")
             raise RuntimeError("Wikipedia API request failed.")
-        
+
     def _shrink_to_fit(self, image: Image.Image, max_width: int, max_height: int) -> Image.Image:
         """
         Resize the image to fit within max_width and max_height while maintaining aspect ratio.
