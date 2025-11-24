@@ -8,7 +8,7 @@ and high-performance strategies on capable devices (Pi 3/4).
 
 from PIL import Image
 from io import BytesIO
-import requests
+from utils.http_client import get_http_session
 import logging
 import gc
 import psutil
@@ -152,7 +152,8 @@ class AdaptiveImageLoader:
             with tempfile.NamedTemporaryFile(delete=False, suffix='.jpg') as tmp:
                 tmp_path = tmp.name
 
-                response = requests.get(url, timeout=timeout_ms / 1000, stream=True, headers=request_headers)
+                session = get_http_session()
+                response = session.get(url, timeout=timeout_ms / 1000, stream=True, headers=request_headers)
                 response.raise_for_status()
 
                 downloaded_bytes = 0
@@ -221,7 +222,8 @@ class AdaptiveImageLoader:
             # Merge provided headers with defaults
             request_headers = {**self.DEFAULT_HEADERS, **(headers or {})}
 
-            response = requests.get(url, timeout=timeout_ms / 1000, stream=True, headers=request_headers)
+            session = get_http_session()
+            response = session.get(url, timeout=timeout_ms / 1000, stream=True, headers=request_headers)
             response.raise_for_status()
 
             img = Image.open(BytesIO(response.content))

@@ -1,6 +1,6 @@
 from plugins.base_plugin.base_plugin import BasePlugin
 from utils.image_loader import _is_low_resource_device
-import requests
+from utils.http_client import get_http_session
 import logging
 import random
 
@@ -65,7 +65,8 @@ class Unsplash(BasePlugin):
 
         try:
             logger.debug("Fetching image from Unsplash API...")
-            response = requests.get(url, params=params)
+            session = get_http_session()
+            response = session.get(url, params=params)
             response.raise_for_status()
             data = response.json()
 

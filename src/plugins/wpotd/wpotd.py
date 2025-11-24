@@ -24,7 +24,7 @@ Flow:
 from plugins.base_plugin.base_plugin import BasePlugin
 from PIL import Image, UnidentifiedImageError
 from io import BytesIO
-import requests
+from utils.http_client import get_http_session
 import logging
 from random import randint
 from datetime import datetime, timedelta, date
@@ -34,8 +34,7 @@ from typing import Dict, Any
 logger = logging.getLogger(__name__)
 
 class Wpotd(BasePlugin):
-    SESSION = requests.Session()
-    HEADERS = {'User-Agent': 'InkyPi/0.0 (https://github.com/fatihak/InkyPi/)'}
+    HEADERS = {'User-Agent': 'InkyPi/1.0 (https://github.com/fatihak/InkyPi/)'}
     API_URL = "https://en.wikipedia.org/w/api.php"
 
     def generate_settings_template(self) -> Dict[str, Any]:
@@ -111,7 +110,8 @@ class Wpotd(BasePlugin):
                 return self.image_loader.from_url(url, dimensions, timeout_ms=10000, headers=self.HEADERS)
             else:
                 # Original behavior: download without resizing
-                response = self.SESSION.get(url, headers=self.HEADERS, timeout=10)
+                session = get_http_session()
+                response = session.get(url, headers=self.HEADERS, timeout=10)
                 response.raise_for_status()
                 return Image.open(BytesIO(response.content))
 
@@ -166,42 +166,10 @@ class Wpotd(BasePlugin):
 
     def _make_request(self, params: Dict[str, Any]) -> Dict[str, Any]:
         try:
-            response = self.SESSION.get(self.API_URL, params=params, headers=self.HEADERS, timeout=10)
+            session = get_http_session()
+            response = session.get(self.API_URL, params=params, headers=self.HEADERS, timeout=10)
             response.raise_for_status()
             return response.json()
         except Exception as e:
             logger.error(f"Wikipedia API request failed with params {params}: {str(e)}")
             raise RuntimeError("Wikipedia API request failed.")
-
-    def _shrink_to_fit(self, image: Image.Image, max_width: int, max_height: int) -> Image.Image:
-        """
-        Resize the image to fit within max_width and max_height while maintaining aspect ratio.
-        Uses high-quality resampling.
-        """
-        orig_width, orig_height = image.size
-
-        if orig_width > max_width or orig_height > max_height:
-            # Determine whether to constrain by width or height
-            if orig_width >= orig_height:
-                # Landscape or square -> constrain by max_width
-                if orig_width > max_width:
-                    new_width = max_width
-                    new_height = int(orig_height * max_width / orig_width)
-                else:
-                    new_width, new_height = orig_width, orig_height
-            else:
-                # Portrait -> constrain by max_height
-                if orig_height > max_height:
-                    new_height = max_height
-                    new_width = int(orig_width * max_height / orig_height)
-                else:
-                    new_width, new_height = orig_width, orig_height
-            # Resize using high-quality resampling
-            image = image.resize((new_width, new_height), Image.LANCZOS)
-            # Create a new image with white background and paste the resized image in the center
-            new_image = Image.new("RGB", (max_width, max_height), (255, 255, 255))
-            new_image.paste(image, ((max_width - new_width) // 2, (max_height - new_height) // 2))
-            return new_image
-        else:
-            # If the image is already within bounds, return it as is
-            return image

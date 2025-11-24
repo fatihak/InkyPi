@@ -1,7 +1,6 @@
 from plugins.base_plugin.base_plugin import BasePlugin
 from PIL import Image, ImageDraw, ImageFont
 import logging
-import requests
 
 from .comic_parser import COMICS, get_panel
 from utils.app_utils import get_font

@@ -8,7 +8,7 @@ For the API key, set `NASA_SECRET={API_KEY}` in your .env file.
 from plugins.base_plugin.base_plugin import BasePlugin
 from PIL import Image
 from io import BytesIO
-import requests
+from utils.http_client import get_http_session
 import logging
 from random import randint
 from datetime import datetime, timedelta
@@ -51,7 +51,8 @@ class Apod(BasePlugin):
             logger.info("Fetching today's APOD")
 
         logger.debug("Requesting NASA APOD API...")
-        response = requests.get("https://api.nasa.gov/planetary/apod", params=params)
+        session = get_http_session()
+        response = session.get("https://api.nasa.gov/planetary/apod", params=params)
 
         if response.status_code != 200:
             logger.error(f"NASA API error (status {response.status_code}): {response.text}")
