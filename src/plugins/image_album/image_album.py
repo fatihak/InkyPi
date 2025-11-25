@@ -12,8 +12,9 @@ from utils.image_utils import pad_image_blur
 
 logger = logging.getLogger(__name__)
 
+
 class ImmichProvider:
-    def __init__(self, base_url:str, key:str,orientation:str):
+    def __init__(self, base_url: str, key: str, orientation: str):
         self.base_url = base_url
         self.key = key
         self.orientation = orientation
@@ -31,19 +32,27 @@ class ImmichProvider:
         return album["id"]
 
     def get_asset_ids(self, album_id: str) -> list[str]:
-        body = {
-            "albumIds": [album_id],
-            "size": 1000,
-            "page": 1
-        }
-        r2 = requests.post(f"{self.base_url}/api/search/metadata", json=body, headers=self.headers)
-        r2.raise_for_status()
-        assets_data = r2.json()
+        all_items = []
+        page_items = [1]
+        page = 1
 
-        asset_items = assets_data.get("assets", {}).get("items", [])
-        return [asset["id"] for asset in asset_items]
+        while page_items:
+            body = {
+                "albumIds": [album_id],
+                "size": 1000,
+                "page": page
+            }
+            r2 = requests.post(f"{self.base_url}/api/search/metadata", json=body, headers=self.headers)
+            r2.raise_for_status()
+            assets_data = r2.json()
 
-    def get_image(self, album:str) -> ImageFile | None:
+            page_items = assets_data.get("assets", {}).get("items", [])
+            all_items.extend(page_items)
+            page += 1
+
+        return [asset["id"] for asset in all_items]
+
+    def get_image(self, album: str) -> ImageFile | None:
         try:
             logger.info(f"Getting id for album {album}")
             album_id = self.get_album_id(album)
