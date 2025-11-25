@@ -308,6 +308,58 @@ copy_project() {
   show_loader "\tCreating symlink from $SRC_PATH to $INSTALL_PATH/src"
 }
 
+# Get MAC address from primary network interface
+get_mac_address() {
+  # Try to get MAC from eth0 first (Ethernet), then wlan0 (WiFi)
+  local mac=""
+  if [ -f /sys/class/net/eth0/address ]; then
+    mac=$(cat /sys/class/net/eth0/address)
+  elif [ -f /sys/class/net/wlan0/address ]; then
+    mac=$(cat /sys/class/net/wlan0/address)
+  else
+    # Fallback: get first available interface
+    for interface in /sys/class/net/*; do
+      if [ -f "$interface/address" ] && [ "$(basename "$interface")" != "lo" ]; then
+        mac=$(cat "$interface/address")
+        break
+      fi
+    done
+  fi
+  
+  if [ -z "$mac" ]; then
+    echo_error "ERROR: Could not determine MAC address"
+    exit 1
+  fi
+  
+  # Remove colons and get last 4 characters
+  mac_clean=$(echo "$mac" | tr -d ':')
+  echo "${mac_clean: -4}"
+}
+
+# Set hostname to appname + last 4 chars of MAC address
+set_hostname() {
+  local mac_suffix=$(get_mac_address)
+  local new_hostname="${APPNAME}${mac_suffix}"
+  
+  echo "Setting hostname to: $new_hostname"
+  
+  # Set hostname using hostnamectl (preferred method)
+  hostnamectl set-hostname "$new_hostname" > /dev/null 2>&1
+  
+  # Also update /etc/hostname
+  echo "$new_hostname" > /etc/hostname
+  
+  # Update /etc/hosts to include the new hostname
+  if ! grep -q "127.0.1.1.*$new_hostname" /etc/hosts; then
+    # Remove old hostname entries if they exist
+    sed -i "/127.0.1.1/d" /etc/hosts
+    # Add new hostname entry
+    echo "127.0.1.1	$new_hostname" >> /etc/hosts
+  fi
+  
+  echo_success "\tHostname set to: $new_hostname"
+}
+
 # Get Raspberry Pi hostname
 get_hostname() {
   echo "$(hostname)"
@@ -353,6 +405,7 @@ ask_for_reboot() {
 # to maintain default INKY display support.
 parse_arguments "$@"
 check_permissions
+set_hostname
 stop_service
 # fetch the WS display driver if defined.
 if [[ -n "$WS_TYPE" ]]; then
