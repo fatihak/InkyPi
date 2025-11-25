@@ -46,27 +46,27 @@ def plugin_page(plugin_id):
 def image(plugin_id, filename):
     # Resolve plugins directory dynamically
     plugins_dir = resolve_path("plugins")
-    
+
     # Construct the full path to the plugin's file
     plugin_dir = os.path.join(plugins_dir, plugin_id)
-    
+
     # Security check to prevent directory traversal
     safe_path = os.path.abspath(os.path.join(plugin_dir, filename))
     if not safe_path.startswith(os.path.abspath(plugin_dir)):
         return "Invalid path", 403
-    
+
     # Convert to absolute path for send_from_directory
     abs_plugin_dir = os.path.abspath(plugin_dir)
-    
+
     # Check if the directory and file exist
     if not os.path.isdir(abs_plugin_dir):
         logger.error(f"Plugin directory not found: {abs_plugin_dir}")
         return "Plugin directory not found", 404
-        
+
     if not os.path.isfile(safe_path):
         logger.error(f"File not found: {safe_path}")
         return "File not found", 404
-    
+
     # Serve the file from the plugin directory
     return send_from_directory(abs_plugin_dir, filename)
 
@@ -142,11 +142,13 @@ def display_plugin_instance():
         if not plugin_instance:
             return jsonify({"success": False, "message": f"Plugin instance '{plugin_instance_name}' not found"}), 400
 
-        refresh_task.manual_update(PlaylistRefresh(playlist, plugin_instance, force=True))
+        queued = refresh_task.manual_update(PlaylistRefresh(playlist, plugin_instance, force=True))
+        if not queued:
+            return jsonify({"error": "Request Rejected: An update is already in progress. Please wait for it to complete before starting a new update."}), 409
     except Exception as e:
         return jsonify({"error": f"An error occurred: {str(e)}"}), 500
 
-    return jsonify({"success": True, "message": "Display updated"}), 200
+    return jsonify({"success": True, "message": "Display update started"}), 200
 
 @plugin_bp.route('/update_now', methods=['POST'])
 def update_now():
@@ -161,20 +163,43 @@ def update_now():
 
         # Check if refresh task is running
         if refresh_task.running:
-            refresh_task.manual_update(ManualRefresh(plugin_id, plugin_settings))
+            # Trigger async update (returns immediately)
+            queued = refresh_task.manual_update(ManualRefresh(plugin_id, plugin_settings))
+            if not queued:
+                return jsonify({"error": "Request Rejected: An update is already in progress. Please wait for it to complete before starting a new update."}), 409
+            return jsonify({"success": True, "message": "Display update started"}), 200
         else:
-            # In development mode, directly update the display
+            # In development mode, directly update the display (synchronous)
             logger.info("Refresh task not running, updating display directly")
             plugin_config = device_config.get_plugin(plugin_id)
             if not plugin_config:
                 return jsonify({"error": f"Plugin '{plugin_id}' not found"}), 404
-                
+
+            refresh_task.set_status("starting")
             plugin = get_plugin_instance(plugin_config)
             image = plugin.generate_image(plugin_settings, device_config)
+            refresh_task.set_status("updating")
             display_manager.display_image(image, image_settings=plugin_config.get("image_settings", []))
-            
+            refresh_task.set_status("complete")
+            # Reset to idle after brief delay
+            import time
+            time.sleep(1)
+            refresh_task.set_status("idle")
+            return jsonify({"success": True, "message": "Display updated"}), 200
+
     except Exception as e:
         logger.exception(f"Error in update_now: {str(e)}")
+        refresh_task.set_status("error")
         return jsonify({"error": f"An error occurred: {str(e)}"}), 500
 
-    return jsonify({"success": True, "message": "Display updated"}), 200
+@plugin_bp.route('/update_status', methods=['GET'])
+def update_status():
+    refresh_task = current_app.config['REFRESH_TASK']
+    status_info = refresh_task.get_status()
+    return jsonify(status_info), 200
+
+@plugin_bp.route('/reset_status', methods=['POST'])
+def reset_status():
+    refresh_task = current_app.config['REFRESH_TASK']
+    refresh_task.reset_status()
+    return jsonify({"success": True, "message": "Status reset to idle"}), 200
