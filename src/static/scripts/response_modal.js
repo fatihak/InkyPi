@@ -5,11 +5,13 @@ function showResponseModal(status, message) {
     const modalMessage = document.getElementById('modalMessage');
 
     // Remove any previous status classes
-    modal.classList.remove('success', 'failure');
+    modal.classList.remove('success', 'failure', 'warning');
 
     // Add the correct class based on the status
     if (status === 'success') {
         modal.classList.add('success'); // Apply success class
+    } else if (status === 'warning') {
+        modal.classList.add('warning'); // Apply warning class
     } else {
         modal.classList.add('failure'); // Apply failure class
     }
