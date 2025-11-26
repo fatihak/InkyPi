@@ -4,19 +4,76 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ config.name }}</title>
+    <script>
+        (function() {
+            const theme = localStorage.getItem('inkypi-theme') || 
+                         (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+            if (theme === 'dark') {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            }
+        })();
+        let lastModified = null;
+        const refreshIntervalMs = 3 * 1000;
+
+        async function refreshImage() {
+            const img = document.querySelector('.image-container img');
+            if (!img) return;
+
+            try {
+                const headers = {};
+                if (lastModified) {
+                    headers['If-Modified-Since'] = lastModified;
+                }
+
+                const response = await fetch('{{ url_for("main.get_current_image") }}', { headers });
+                
+                if (response.status === 304) {
+                    // Image hasn't changed, no need to update
+                    return;
+                }
+
+                if (!response.ok) {
+                    console.error('Failed to fetch image:', response.status);
+                    return;
+                }
+
+                const blob = await response.blob();
+                const objectUrl = URL.createObjectURL(blob);
+                
+                // Update the image source
+                img.src = objectUrl;
+                
+                // Store the Last-Modified header for next request
+                lastModified = response.headers.get('Last-Modified');
+            } catch (error) {
+                console.error('Error refreshing image:', error);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Refresh image immediately on page load
+            refreshImage();
+            
+            // Set up auto-refresh based on plugin cycle interval
+            setInterval(refreshImage, refreshIntervalMs);
+        });
+    </script>
 </head>
 <link rel= "stylesheet" type= "text/css" href= "{{ url_for('static',filename='styles/main.css') }}">
+<script src="{{ url_for('static', filename='scripts/image_modal.js') }}"></script>
 <body>
+    <script src="{{ url_for('static', filename='scripts/dark_mode.js') }}"></script>
     <!-- Subtle frame container -->
     <div class="frame">
         <!-- Page Title -->
         <header class="header">
             <h1>{{ config.name }}</h1>
-            <a href="{{ url_for('settings.settings_page') }}" class="settings-button">
-                <img src="{{ url_for('static', filename='icons/settings.png') }}" title="Settings" alt="settings icon" class="icon-image">
-            </a>
+            <button class="settings-button dark-mode-toggle" title="Toggle Dark Mode" aria-label="Toggle Dark Mode"></button>
             <a href="{{ url_for('playlist.playlists') }}" class="settings-button">
                 <img src="{{ url_for('static', filename='icons/playlist.png') }}" title="Playlists" alt="playlists icon" class="icon-image">
+            </a>
+            <a href="{{ url_for('settings.settings_page') }}" class="settings-button">
+                <img src="{{ url_for('static', filename='icons/settings.png') }}" title="Settings" alt="settings icon" class="icon-image">
             </a>
         </header>
 
@@ -36,5 +93,5 @@
             {% endfor %}
         </div>
     </div>
-<body>
+</body>
 </html>

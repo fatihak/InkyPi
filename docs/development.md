@@ -24,6 +24,7 @@ source venv/bin/activate  # Windows: venv\Scripts\activate
 
 # 3. Install Python dependencies and run
 pip install -r install/requirements-dev.txt
+bash install/update_vendors.sh
 python src/inkypi.py --dev
 ```
 
@@ -94,5 +95,5 @@ And edit [src/utils/image_utls.py](https://github.com/fatihak/InkyPi/blob/9d9dbc
 
 ```python
         command = [
-            "..\chrome-headless-shell-mac-arm64\chrome-headless-shell",
+            "../chrome-headless-shell-mac-arm64/chrome-headless-shell",
 ```
