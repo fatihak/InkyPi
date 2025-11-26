@@ -1,8 +1,8 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-VENV_DIR=".venv"
+VENV_DIR="${VENV_DIR:-.venv}"
 REQUIREMENTS_FILE="install/requirements-dev.txt"
-SRC_DIR="src"
+SRC_DIR="$(realpath src)"
 
 if [ ! -d "$VENV_DIR" ]; then
     echo "Creating virtual environment in $VENV_DIR..."
@@ -17,7 +17,7 @@ fi
 echo "Activating virtual environment..."
 source $VENV_DIR/bin/activate
 
-if [ $? -ne 0 ]; then
+if [ -z "$VIRTUAL_ENV" ]; then
     echo "Failed to activate virtual environment."
     exit 1
 fi
