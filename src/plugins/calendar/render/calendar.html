@@ -1,66 +1,320 @@
 {% extends "plugin.html" %}
 
 {% block content %}
-
 <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.17/index.global.min.css" rel="stylesheet" />
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.17/index.global.min.js"></script>
 
 <div id="calendar" class="calendar" style="
---fc-page-bg-color: {{ plugin_settings.backgroundColor or white }};
---fc-border-color: {{ plugin_settings.textColor }};
---fc-today-bg-color: '';
---fc-now-indicator-color: {{ plugin_settings.nowIndicatorColor or red }};
---fc-event-border-color: {{ plugin_settings.textColor or white }};
+  --fc-page-bg-color: {{ plugin_settings.backgroundColor or 'white' }};
+  --fc-border-color: {{ plugin_settings.textColor }};
+  --fc-today-bg-color: '';
+  --fc-now-indicator-color: {{ plugin_settings.nowIndicatorColor or 'red' }};
+  --fc-event-border-color: {{ plugin_settings.textColor or 'white' }};
+  --fc-small-font-size: {{ 0.85 * font_scale }}em;
+  --fc-title-font-size: {{ 1.75 * font_scale }}em;
+  --fc-table-font-size: {{ 1 * font_scale }}em;
+"></div>
 
---fc-small-font-size: {{ 0.85 * font_scale }}em;
---fc-title-font-size: {{ 1.75 * font_scale }}em;
---fc-table-font-size: {{ 1 * font_scale }}em;
-">
-
-</div>
+<style>
+  {% if plugin_settings.blockLayout == "true" %}
+  .fc-daygrid-event { white-space: normal !important; }
+  .fc-custom-weekend { background-color: color-mix(in srgb, var(--fc-page-bg-color), black 25%) !important; }
+  {% endif %}
+  .badge { position: absolute; z-index: 2000; pointer-events: none; background-color: var(--fc-page-bg-color); }
+  .fc-timegrid-col { position: relative; }
+  .fc-event { position: relative; z-index: 1; }
+  .fc-timegrid-event { min-height: 2.75em !important; }
+</style>
 
 <script>
-    const events = {{ events | tojson }};
+  let events = {{ events | tojson }};
 
-    document.addEventListener('DOMContentLoaded', function () {
-        const calendarEl = document.getElementById('calendar');
-        const timeFormat = {
-            hour: "numeric",
-            minute: "2-digit",
-            omitZeroMinute: {{ (time_format == "12h") | tojson }},
-            hour12: {{ (time_format == "12h") | tojson }},
-            meridiem: 'short'
-        };
+  let earliestEventStart = "{{ plugin_settings.startTimeInterval or '00' }}:00:00"; // Default to startTimeInterval
+  {% if plugin_settings.dynamicStart == "true" %}
+  let earliestEvent = events.reduce((earliest, event) => { // Must run prior to event splitting
+    if (!event.allDay && event.start) {
+      if (!earliest || !earliest.start || earliest.allDay) return event;
+      const eTime = new Date(event.start).getHours() * 60 + new Date(event.start).getMinutes();
+      const minTime = new Date(earliest.start).getHours() * 60 + new Date(earliest.start).getMinutes();
+      return eTime < minTime ? event : earliest;
+    }
+    return earliest;
+  }, events[0]);
 
-        const calendar = new FullCalendar.Calendar(calendarEl, {
-            initialView: '{{ view }}',
-            events: events,
-            now: '{{ current_dt }}',
-            timeZone: '{{ timezone }}',
-            contentHeight: '100%',
-            slotDuration: '01:00:00',
-            expandRows: true,
-            locale: "{{ plugin_settings.language or 'en' }}",
-            firstDay: "{{ plugin_settings.weekStartDay or 0}}",
-            slotLabelFormat: timeFormat,
-            slotMinTime: "{{ plugin_settings.startTimeInterval or 00}}:00:00",
-            slotMaxTime: "{{ plugin_settings.endTimeInterval or 24}}:00:00",
-            eventTimeFormat: timeFormat,
-            displayEventTime: {{ (plugin_settings.displayEventTime == "true") | tojson}},
-            weekends:  {{ (plugin_settings.displayWeekends == "true") | tojson}},
-            nowIndicator: {{ (plugin_settings.displayNowIndicator == "true") | tojson}},
-            fixedWeekCount: false,
-            {% if view == 'timeGrid' %}duration: {days : 7 },{% endif %}
-            {% if view == 'dayGrid' %}duration: {weeks : "{{ plugin_settings.displayWeeks or 4}}" },{% endif %}
-            headerToolbar: {
-                left: '',
-                center: "{{ 'title' if plugin_settings.displayTitle == 'true' else '' }}",
-                right: ''
-            },
-            slotDuration: "01:00:00"
+  if (earliestEvent && earliestEvent.start) {
+      const d = new Date(earliestEvent.start);
+      const hours = String(d.getHours()).padStart(2, '0');
+      const minutes = String(d.getMinutes()).padStart(2, '0');
+      earliestEventStart = `${hours}:${minutes}:00`;
+  }
+  {% endif %}
+
+  {% if plugin_settings.blockLayout == "true" and (view == 'dayGrid' or view == 'dayGridMonth') %}
+  // For block rendering, split events that span past midnight
+  let splitEvents = [];
+  events.forEach(event => {
+    if (!event.allDay && event.end) {
+      const startDatePart = event.start.split('T')[0];
+      const endDatePart = event.end.split('T')[0];
+      if (startDatePart !== endDatePart) {
+        const offsetMatch = event.start.match(/([+-]\d{2}:?\d{2}|Z)$/);
+        const offset = offsetMatch ? offsetMatch[0] : 'Z';
+        const [y, m, d] = startDatePart.split('-').map(n => parseInt(n, 10));
+        const dateObj = new Date(y, m - 1, d + 1);
+        const nextY = dateObj.getFullYear();
+        const nextM = String(dateObj.getMonth() + 1).padStart(2, '0');
+        const nextD = String(dateObj.getDate()).padStart(2, '0');
+        const nextDayDateStr = `${nextY}-${nextM}-${nextD}`;
+        const midnightTime = `T00:00:00${offset}`;
+        const splitPoint = `${nextDayDateStr}${midnightTime}`;
+        // First segment
+        splitEvents.push({ ...event, end: splitPoint });
+        // Second segment
+        splitEvents.push({
+          ...event,
+          title: event.title + ' (cont.)',
+          splitType: 'midnightContinuation',
+          start: splitPoint
         });
-        calendar.render();
+      } else {
+        splitEvents.push(event);
+      }
+    } else {
+      splitEvents.push(event);
+    }
+  });
+  events = splitEvents;
+  {% endif %}
+
+  document.addEventListener('DOMContentLoaded', function () {
+    const calendarEl = document.getElementById('calendar');
+    const timeFormat = {
+      hour: "numeric",
+      minute: "2-digit",
+      omitZeroMinute: {{ (time_format == "12h") | tojson }},
+      hour12: {{ (time_format == "12h") | tojson }},
+      meridiem: 'short'
+    };
+
+    const calendar = new FullCalendar.Calendar(calendarEl, {
+      initialView: '{{ view }}',
+      events: events,
+      now: '{{ current_dt }}',
+      timeZone: '{{ timezone }}',
+      contentHeight: '100%',
+      slotDuration: '01:00:00',
+      expandRows: true,
+      locale: "{{ plugin_settings.language or 'en' }}",
+      firstDay: "{{ plugin_settings.weekStartDay or 0 }}",
+      slotLabelFormat: timeFormat,
+      slotMinTime: earliestEventStart,
+      slotMaxTime: "{{ plugin_settings.endTimeInterval or '24' }}:00:00",
+      eventTimeFormat: timeFormat,
+      displayEventTime: {{ (plugin_settings.displayEventTime == "true") | tojson }},
+      weekends: {{ (plugin_settings.displayWeekends == "true") | tojson }},
+      nowIndicator: {{ (plugin_settings.displayNowIndicator == "true") | tojson }},
+      fixedWeekCount: false,
+      {% if view == 'timeGrid' %}duration: { days: 7 },{% endif %}
+      {% if view == 'dayGrid' %}duration: { weeks: "{{ plugin_settings.displayWeeks or 4 }}" },{% endif %}
+      headerToolbar: {
+        left: '',
+        center: "{{ 'title' if plugin_settings.displayTitle == 'true' else '' }}",
+        right: ''
+      },
+      {% if plugin_settings.blockLayout == "true" %}
+      eventDisplay: 'block', // Display events as blocks
+      eventMinHeight: Math.round({% if view == 'timeGrid' %}1.5 * {% endif %}38 * Math.pow({{ font_scale }}, 4)), // Minimum event height for blocks
+      dayCellClassNames: function(arg) { // Weekend's are shaded darker than weekdays
+          var date = arg.date;
+          var dayOfWeek = date.getUTCDay(); // Sunday - 0, Saturday - 6
+          if (dayOfWeek == 0 || dayOfWeek === 6) {
+          return 'fc-custom-weekend';
+          }
+          return '';
+      },
+      viewDidMount: function(info) { // Create before and after events badges indicating more events than can fit in the view
+        if (info.view.type.includes('timeGrid')) {
+          let minHour = parseInt("{{ plugin_settings.startTimeInterval or 0 }}");
+          let maxHour = parseInt("{{ plugin_settings.endTimeInterval or 24 }}");
+
+          function generateBadgeHTML(events) {
+            let adjective, chev_angle, cutoffHour;
+            if (new Date(events[0].start).getHours() < minHour) {
+              adjective = 'before';
+              chev_angle = 270;
+              cutoffHour = (new Date(0, 0, 0, minHour).toLocaleTimeString([], {
+                hour: 'numeric', minute: 'numeric', hour12: {{ (time_format == "12h") | tojson }}, meridiem: 'narrow'
+              })).replace('m', '').replace(' ', '');
+            } else {
+              adjective = 'after';
+              chev_angle = 90;
+              cutoffHour = (new Date(0, 0, 0, maxHour).toLocaleTimeString([], {
+                hour: 'numeric', minute: 'numeric', hour12: {{ (time_format == "12h") | tojson }}, meridiem: 'narrow'
+              })).replace('m', '').replace(' ', '');
+            }
+            const arrow = `<span style="transform:rotate(${chev_angle}deg);display:inline-block; vertical-align:middle; line-height:.8;font-size:2.4em;padding: 0px 4px 0px 2px;">»</span>`;
+            switch (events.length) {
+              case 1:
+                const startDate = new Date(events[0].start);
+                const timeStr = startDate.toLocaleTimeString([], { hour: 'numeric', minute: 'numeric', hour12: {{ (time_format == "12h") | tojson }}}).replace('m', '').replace(' ', '');
+                return arrow + `<span style="background-color:${events[0].backgroundColor};color:${events[0].textColor};">${timeStr}</span> ${events[0].title}`;
+              case 2:
+                return arrow + events.map(e => {
+                  const sd = new Date(e.start);
+                  const ts = sd.toLocaleTimeString([], { hour: 'numeric', minute: 'numeric', hour12: {{ (time_format == "12h") | tojson }}}).replace('m', '').replace(' ', '');
+                  return `<span title="${(e.title || '').replace(/"/g, '&quot;')}" style="pointer-events: auto; cursor: help; background-color:${e.backgroundColor};color:${e.textColor};border: 0px 2px 0px 2px;">${ts}</span>`;
+                }).join(' & ');
+              default:
+                const details = events.map(e => {
+                   const t = new Date(e.start).toLocaleTimeString([], { hour: 'numeric', minute: 'numeric', hour12: {{ (time_format == "12h") | tojson }}}).replace('m', '').replace(' ', '');
+                   return `${t} ${e.title || ''}`;
+                }).join('\n').replace(/"/g, '&quot;');
+                return arrow + `<span title="${details}" style="pointer-events: auto; cursor: help;">${events.length} more ${adjective} ${cutoffHour}</span>`;
+            }
+          }
+
+          function getVisibleColor(eventColor, backgroundColor) {
+            const getLuminance = hex => {
+              const h = hex.replace('#', '');
+              const r = parseInt(h.substr(0, 2), 16);
+              const g = parseInt(h.substr(2, 2), 16);
+              const b = parseInt(h.substr(4, 2), 16);
+              return (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+            };
+            const eventLum = getLuminance(eventColor);
+            const bgLum = getLuminance(backgroundColor);
+            const contrast = Math.abs(eventLum - bgLum);
+            if (contrast < 0.15) {
+              return bgLum > 0.5 ? '#000000' : '#ffffff';
+            }
+            return eventColor;
+          }
+
+          function generateMultiBorderCSS(events, gapColor, lineThickness = 1, gapThickness = 1) {
+            let position = 0;
+            const stops = [];
+            const colors = events.map(event => getVisibleColor(event.backgroundColor, '{{ plugin_settings.backgroundColor or "#ffffff" }}'));
+            colors.forEach((color, idx) => {
+              stops.push(`${color} ${position}px`);
+              position += lineThickness;
+              stops.push(`${color} ${position}px`);
+              if (idx < colors.length - 1) {
+                stops.push(`${gapColor} ${position}px`);
+                position += gapThickness;
+                stops.push(`${gapColor} ${position}px`);
+              }
+            });
+            stops.push(`${gapColor} ${position}px`);
+            return `background: linear-gradient(to bottom, ${stops.join(', ')}); background-position: 0 0; background-repeat: no-repeat; padding-top: ${position}px`;
+          }
+
+          const toDateKey = dateStr => dateStr.split('T')[0];
+          const eventsByDay = {};
+          events.forEach(ev => {
+            const day = toDateKey(ev.start);
+            if (!eventsByDay[day]) eventsByDay[day] = [];
+            eventsByDay[day].push(ev);
+          });
+
+          // Get page background color for badges
+          const calendarEl = document.getElementById('calendar');
+          const pageBgColor = getComputedStyle(calendarEl).getPropertyValue('--fc-page-bg-color').trim() || '#ffffff';
+          
+          document.querySelectorAll('td.fc-timegrid-col').forEach(dayCol => {
+            const dayStr = dayCol.getAttribute('data-date');
+            if (!dayStr) return;
+            const dayEvents = eventsByDay[dayStr] || [];
+            const beforeEvents = dayEvents.filter(e => new Date(e.start).getHours() < minHour);
+            let afterEvents = dayEvents.filter(e => {
+              const sd = new Date(e.start);
+              const hour = sd.getHours() + sd.getMinutes() / 60;
+              return hour > (maxHour - 1) + 0.09;
+            });
+            if (afterEvents.length > 1) {
+              afterEvents = dayEvents.filter(e => {
+                const sd = new Date(e.start);
+                const hour = sd.getHours() + sd.getMinutes() / 60;
+                return hour > maxHour-1;
+              });
+            }
+            // Remove counted events from normal rendering
+            eventsByDay[dayStr] = dayEvents.filter(e => !beforeEvents.includes(e) && !afterEvents.includes(e));
+            const colCells = Array.from(dayCol.querySelectorAll('div.fc-timegrid-col-events'));
+            if (colCells.length === 0) return;
+            const firstSlot = colCells[0];
+            
+            if (beforeEvents.length > 0 && firstSlot) {
+              const badge = document.createElement('div');
+              badge.className = 'badge';
+              badge.innerHTML = generateBadgeHTML(beforeEvents);
+              // Use pageBgColor for the gaps in the border to make them solid
+              const border = generateMultiBorderCSS(beforeEvents, pageBgColor, 1.5, 1.5);
+              // Apply the background color
+              badge.style.cssText = `position:absolute; top:0; left:0; right:0; z-index:10; text-align:center; font-size:0.7em; font-weight:bold; ${border}; background-color: ${pageBgColor}; opacity: 0.85;`;
+              firstSlot.style.position = 'relative';
+              firstSlot.prepend(badge);
+
+              // Push events down to avoid overlap
+              // FIXME: If a beforeEvents badge exists, fix events in last hour so they don't get pushed too far down
+              // Increase timeout to ensure FullCalendar has finished positioning
+              setTimeout(() => {
+                  // Force a minimum height if offsetHeight is 0 (which happens if not yet painted)
+                  const rectHeight = badge.getBoundingClientRect().height;
+                  const badgeHeight = rectHeight > 0 ? rectHeight : 30; 
+                  
+                  const eventsInCol = firstSlot.querySelectorAll('.fc-event');
+                  eventsInCol.forEach(event => {
+                      let currentTop = parseFloat(event.style.top);
+                      // If top is not set or NaN, assume 0
+                      if (isNaN(currentTop)) currentTop = 0;
+                      
+                      // If the event is overlapping the badge (plus a little buffer)
+                      if (currentTop < badgeHeight) {
+                          const targetTop = badgeHeight + 2;
+                          const pushDownAmount = targetTop - currentTop;
+                          
+                          // Push top down
+                          event.style.top = targetTop + 'px';
+                          
+                          // Also adjust bottom to preserve height if it exists
+                          // FullCalendar often uses top and bottom to define the event's vertical position/size
+                          if (event.style.bottom) {
+                              let currentBottom = parseFloat(event.style.bottom);
+                              if (!isNaN(currentBottom)) {
+                                  event.style.bottom = (currentBottom - pushDownAmount) + 'px';
+                              }
+                          }
+                      }
+                  });
+              }, 300);
+            }
+            
+            if (afterEvents.length > 0) {
+              const slots = dayCol.querySelectorAll('div');
+              if (slots.length > 0) {
+                const badge = document.createElement('div');
+                badge.className = 'badge';
+                badge.innerHTML = generateBadgeHTML(afterEvents);
+                const border = generateMultiBorderCSS(afterEvents, pageBgColor, 1.5, 1.5);
+                badge.style.cssText = `position:absolute; bottom:1em; width:99%; text-align:center; font-size:0.7em; font-weight:bold; padding-left:4px; padding-right:0px; ${border}; background-color: ${pageBgColor}; opacity: 0.75;`;
+                const container = slots[0].parentElement;
+                container.style.position = 'relative';
+                container.appendChild(badge);
+              }
+            }
+          });
+
+          // Refresh events after badge processing
+          events = Object.values(eventsByDay).flat();
+          calendar.removeAllEvents();
+          events.forEach(ev => calendar.addEvent(ev));
+        }
+      },
+      {% endif %}
+      slotDuration: "01:00:00"
     });
+    calendar.render();
+  });
 </script>
 
 {% endblock %}

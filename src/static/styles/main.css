@@ -512,6 +512,10 @@ body {
     background-color: #c4515b; /* Failure color */
 }
 
+.success-failure-modal.warning {
+    background-color: #f39c12; /* Warning color */
+}
+
 /* Loading Indicator Styles */
 .loading-indicator {
     display: none; /* Hidden by default */

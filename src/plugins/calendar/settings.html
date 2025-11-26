@@ -44,6 +44,11 @@
       <span>Event Time</span>
     </div>
 
+    <div class="form-group" title="Display events as blocks instead of lists, adds badges to indicate events starting or ending outside of the dayview interval, and shades weekend days 25% darker.">
+      <input type="checkbox" id="blockLayout" name="blockLayout" value="true" onclick="this.value=this.checked ? 'true' : 'false';">
+      <span>Block Layout</span>
+    </div>
+
     <div class="form-group" data-visible-modes="timeGridDay,timeGridWeek">
       <input type="checkbox" id="displayNowIndicator" name="displayNowIndicator" value="true" checked onclick="this.value=this.checked ? 'true' : 'false';">
       <span>Now Indicator</span>
@@ -72,9 +77,13 @@
 
     <div class="form-group nowrap" data-visible-modes="timeGridDay,timeGridWeek">
         <label for="interval">Time Interval:</label>
-        <input type="number" id="startTimeInterval" name="startTimeInterval" class="form-input" min="0" max="24" placeholder="00">
+        <input type="number" id="startTimeInterval" name="startTimeInterval" class="form-input" min="0" max="24" placeholder="08" oninput="validateTimeInterval()">
         -
-        <input type="number" id="endTimeInterval" name="endTimeInterval" class="form-input" min="0" max="24" placeholder="24">
+        <input type="number" id="endTimeInterval" name="endTimeInterval" class="form-input" min="0" max="24" placeholder="22" oninput="validateTimeInterval()">
+        <div class="form-group" style="margin-left: 10px;" title="When enabled, the calendar start time will automatically adjust to the earliest event of the day.">
+            <input type="checkbox" id="dynamicStart" name="dynamicStart" value="true" onclick="this.value=this.checked ? 'true' : 'false';">
+            <span>Dynamic Start</span>
+        </div>
     </div>
 
     <div class="form-group nowrap" data-visible-modes="dayGrid">
@@ -127,6 +136,24 @@
                 input.disabled = !shouldShow;
             });
         });
+    }
+
+    function validateTimeInterval() {
+        const startInput = document.getElementById('startTimeInterval');
+        const endInput = document.getElementById('endTimeInterval');
+        let start = parseInt(startInput.value) || 0;
+        let end = parseInt(endInput.value) || 24;
+        
+        if (end - start < 1) {
+            // If start is 24, we can't set end to 25. So we must reduce start.
+            if (start >= 24) {
+                start = 23;
+                startInput.value = start;
+            }
+            
+            endInput.value = start + 1;
+            showResponseModal('warning', 'End time must be at least 1 hour greater than start time');
+        }
     }
 
     function addCalendarInput(url = '', color = '#007BFF') {
@@ -188,6 +215,9 @@
             document.getElementById('displayEventTime').checked = pluginSettings.displayEventTime;
             document.getElementById('displayEventTime').value = pluginSettings.displayEventTime;
 
+            document.getElementById('blockLayout').checked = pluginSettings.blockLayout;
+            document.getElementById('blockLayout').value = pluginSettings.blockLayout;
+
             document.getElementById('displayNowIndicator').checked = pluginSettings.displayNowIndicator;
             document.getElementById('displayNowIndicator').value = pluginSettings.displayNowIndicator;
             document.getElementById('nowIndicatorColor').value = pluginSettings.nowIndicatorColor;
@@ -199,6 +229,8 @@
 
             document.getElementById("startTimeInterval").value = pluginSettings.startTimeInterval;
             document.getElementById("endTimeInterval").value = pluginSettings.endTimeInterval;
+            document.getElementById("dynamicStart").checked = pluginSettings.dynamicStart;
+            document.getElementById("dynamicStart").value = pluginSettings.dynamicStart;
 
             document.getElementById("displayWeeks").value = pluginSettings.displayWeeks;
             
