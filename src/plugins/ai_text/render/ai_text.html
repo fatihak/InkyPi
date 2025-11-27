@@ -3,6 +3,6 @@
 {% block content %}
 <div class="text-content">
   <div class="title">{{ title }}</div>
-  <div class="content">{{ content }}</div>
+  <div class="content">{{ content | safe }}</div>
 </div>
 {% endblock %}

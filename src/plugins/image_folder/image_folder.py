@@ -10,16 +10,14 @@ logger = logging.getLogger(__name__)
 
 def list_files_in_folder(folder_path):
     """Return a list of image file paths in the given folder, excluding hidden files."""
-    image_extensions = ('.jpg', '.jpeg', '.png', '.gif', '.bmp', '.tiff', '.webp')
-    return [
-        os.path.join(folder_path, f)
-        for f in os.listdir(folder_path)
-        if (
-            os.path.isfile(os.path.join(folder_path, f))
-            and f.lower().endswith(image_extensions)
-            and not f.startswith('.')
-        )
-    ]
+    image_extensions = ('.jpg', '.jpeg', '.png', '.gif', '.bmp', '.tiff', '.webp', '.heif', '.heic')
+    image_files = []
+    for root, dirs, files in os.walk(folder_path):
+        for f in files:
+            if f.lower().endswith(image_extensions) and not f.startswith('.'):
+                image_files.append(os.path.join(root, f))
+
+    return image_files
 
 class ImageFolder(BasePlugin):
     def generate_image(self, settings, device_config):

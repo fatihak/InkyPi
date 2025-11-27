@@ -377,4 +377,8 @@ if [[ -n "$WS_TYPE" ]]; then
   update_config
 fi
 install_app_service
+
+echo "Update JS and CSS files"
+bash $SCRIPT_DIR/update_vendors.sh
+
 ask_for_reboot

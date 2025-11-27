@@ -184,7 +184,12 @@ class Playlist:
 
     def is_active(self, current_time):
         """Check if the playlist is active at the given time."""
-        return self.start_time <= current_time < self.end_time
+        if self.start_time <= self.end_time:
+            # Non-wrapping window (EG: 09:00-15:00)
+            return self.start_time <= current_time < self.end_time
+        else:
+            # Wrapping window across midnight (EG: 21:00-03:00)
+            return current_time >= self.start_time or current_time < self.end_time
 
     def add_plugin(self, plugin_data):
         """Add a new plugin instance to the playlist."""
@@ -240,6 +245,10 @@ class Playlist:
             end = datetime.strptime("00:00", "%H:%M")
             end += timedelta(days=1)
 
+        # If the window wraps past midnight (EG: 21:00 -> 03:00), treat end as next day
+        if end < start:
+            end += timedelta(days=1)
+            
         return int((end - start).total_seconds() // 60)
 
     def to_dict(self):
