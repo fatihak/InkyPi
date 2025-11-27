@@ -9,12 +9,6 @@ def getGames():
     res = requests.get("https://vlrggapi.vercel.app/match?q=upcoming&num_pages=1&max_retries=3&request_delay=1&timeout=30")
     data = res.json()
 
-    # Save JSON to a file
-    with open(os.path.join(os.path.dirname(__file__), "matches.json"), "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=4, ensure_ascii=False)
-
-    print("JSON data saved to matches.json ✅")
-
     def getdata(url): 
         r = requests.get(url) 
         return r.text 
@@ -41,5 +35,5 @@ def getGames():
                 "team2_logo": "http:" + (images[3] if len(images) > 3 else None)
             })
 
-    print("Formatted JSON data saved to formatted_matches.json ✅")
+    print("Formatted JSON data ✅")
     return extracted_data[0] if extracted_data else {}

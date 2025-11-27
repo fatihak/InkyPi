@@ -35,14 +35,10 @@ class vlrtrack(BasePlugin):
         draw.rectangle([(88, 113), (261, 286)], outline="white", width=3, fill= (30, 30, 30))
 
         logo_url = game_data["team1_logo"]
-        output_path = "output1.png"
 
         response = requests.get(logo_url)
 
         if response.status_code == 200:
-            with open(output_path, "wb") as f:
-                f.write(response.content)
-            print(f"Image saved as {output_path}")
             logo_img = Image.open(BytesIO(response.content)).convert("RGBA")
             logo_img.thumbnail((150, 150))
             
@@ -54,14 +50,10 @@ class vlrtrack(BasePlugin):
         draw.rectangle([(538, 113), (712, 286)], outline="white", width=3, fill= (30, 30, 30))
         
         logo_url = game_data["team2_logo"]
-        output_path = "output2.png"
 
         response = requests.get(logo_url)
 
         if response.status_code == 200:
-            with open(output_path, "wb") as f:
-                f.write(response.content)
-            print(f"Image saved as {output_path}")
             logo_img = Image.open(BytesIO(response.content)).convert("RGBA")
             logo_img.thumbnail((150, 150))
 
@@ -74,5 +66,7 @@ class vlrtrack(BasePlugin):
         
         draw.text((175, 300), f"{game_data['team1']}", fill="white", font=title_font, anchor="mt")
         draw.text((625, 300), f"{game_data['team2']}", fill="white", font=title_font, anchor="mt")
+
+        print("Image generated ✅")
         
         return image
