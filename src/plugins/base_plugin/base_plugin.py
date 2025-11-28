@@ -2,6 +2,7 @@ import logging
 import os
 from utils.app_utils import resolve_path, get_fonts
 from utils.image_utils import take_screenshot_html
+from utils.image_loader import AdaptiveImageLoader
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from pathlib import Path
 import asyncio
@@ -38,6 +39,9 @@ class BasePlugin:
     def __init__(self, config, **dependencies):
         self.config = config
 
+        # Initialize adaptive image loader for device-aware image processing
+        self.image_loader = AdaptiveImageLoader()
+
         self.render_dir = self.get_plugin_dir("render")
         if os.path.exists(self.render_dir):
             # instantiate jinja2 env with base plugin and current plugin render directories
@@ -65,7 +69,7 @@ class BasePlugin:
         settings_path = self.get_plugin_dir("settings.html")
         if Path(settings_path).is_file():
             template_params["settings_template"] = f"{self.get_plugin_id()}/settings.html"
-        
+
         template_params['frame_styles'] = FRAME_STYLES
         return template_params
 
