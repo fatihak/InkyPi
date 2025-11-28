@@ -1,7 +1,7 @@
 """
 Wpotd Plugin for InkyPi
 This plugin fetches the Wikipedia Picture of the Day (Wpotd) from Wikipedia's API
-and displays it on the InkyPi device.
+and displays it on the InkyPi device. 
 
 It supports optional manual date selection or random dates and can resize the image to fit the device's dimensions.
 
@@ -112,8 +112,8 @@ class Wpotd(BasePlugin):
                 # Original behavior: download without resizing
                 session = get_http_session()
                 response = session.get(url, headers=self.HEADERS, timeout=10)
-                response.raise_for_status()
-                return Image.open(BytesIO(response.content))
+            response.raise_for_status()
+            return Image.open(BytesIO(response.content))
 
         except UnidentifiedImageError as e:
             logger.error(f"Unsupported image format at {url}: {str(e)}")
@@ -173,3 +173,4 @@ class Wpotd(BasePlugin):
         except Exception as e:
             logger.error(f"Wikipedia API request failed with params {params}: {str(e)}")
             raise RuntimeError("Wikipedia API request failed.")
+        
