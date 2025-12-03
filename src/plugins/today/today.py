@@ -52,7 +52,7 @@ class Today(BasePlugin):
         today = format_date(current_dt, 'long', locale=language)
 
         template_params = {
-            "events": events[:10],
+            "events": events,
             "current_dt": current_dt.replace(minute=0, second=0, microsecond=0).isoformat(),
             "timezone": timezone,
             "plugin_settings": settings,
@@ -77,6 +77,9 @@ class Today(BasePlugin):
 
             for event in events:
                 start, end, all_day = self.parse_data_points(event, tz)
+                if not all_day:
+                    logger.debug(f"Skipping non all-day event: {event.get('summary')} at {start}")
+                    continue
                 parsed_event = {
                     "title": html.unescape(event.get("summary")),
                     "start": start,
