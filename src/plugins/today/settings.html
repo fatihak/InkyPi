@@ -1,0 +1,124 @@
+<div>
+  <label class="form-label">Calendars:</label>
+  <div id="calendarList"></div>
+  <button type="button" id="addCalendarBtn" class="form-input collapsible" onclick="addCalendarInput('', true)">Add Calendar</button>
+</div>
+
+<div class="form-group">
+    <div class="form-group">
+        <label for="language" class="form-label">Language:</label>
+        <select id="language" name="language" class="form-input">
+            {% for code, name in locale_map.items() %}
+                <option value="{{ code }}">{{ name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <div class="form-group nowrap">
+        <label for="fontSize" class="form-label">Font Size:</label>
+        <select id="fontSize" name="fontSize" class="form-input">
+            <option value="x-small">Extra Small</option>
+            <option value="smaller">Smaller</option>
+            <option value="small">Small</option>
+            <option value="normal">Normal</option>
+            <option value="large">Large</option>
+            <option value="larger">Larger</option>
+            <option value="x-large">Extra Large</option>
+        </select>
+    </div>
+</div>
+
+<script>
+    function addCalendarInput(url = '', description = true) {
+        const calendarList = document.getElementById('calendarList');
+        const id = `description_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+
+        const wrapper = document.createElement('div');
+        wrapper.classList.add('calendar-entry');
+        wrapper.classList.add('form-group');
+
+        console.log(url, description)
+        const descriptionValue = document.createElement('input');
+        descriptionValue.type = 'hidden';
+        descriptionValue.name = 'calendarDescriptions[]';
+        descriptionValue.value = description;
+        console.log(descriptionValue.value);
+
+        const descriptionCheckbox = document.createElement('input');
+        descriptionCheckbox.type = 'checkbox';
+        descriptionCheckbox.checked = description === 'true' ? true : false;
+        descriptionCheckbox.id = id;
+        descriptionCheckbox.onchange = () => {
+            descriptionValue.value = descriptionCheckbox.checked === true ? 'true' : 'false';
+        };
+        descriptionCheckbox.classList.add('toggle-checkbox');
+        console.log(descriptionCheckbox);
+
+        const descriptionLabel = document.createElement('label');
+        descriptionLabel.innerText = 'Description';
+        descriptionLabel.htmlFor = id;
+        descriptionLabel.classList.add('form-label');
+
+        const blindLabel = document.createElement('label');
+        blindLabel.htmlFor = id;
+        blindLabel.classList.add('toggle-label');
+
+        const toggleContainer = document.createElement('div');
+        toggleContainer.classList.add('toggle-container');
+        toggleContainer.appendChild(descriptionValue);
+        toggleContainer.appendChild(descriptionCheckbox);
+        toggleContainer.appendChild(blindLabel);
+
+        const urlInput = document.createElement('input');
+        urlInput.type = 'text';
+        urlInput.name = 'calendarURLs[]';
+        urlInput.placeholder = 'Calendar URL';
+        urlInput.required = true;
+        urlInput.classList.add('form-input');
+        urlInput.value = url;
+
+        const removeBtn = document.createElement('button');
+        removeBtn.type = 'button';
+        removeBtn.innerText = '✕';
+        removeBtn.classList.add('remove-btn');
+        removeBtn.onclick = () => wrapper.remove();
+
+        wrapper.appendChild(urlInput);
+        wrapper.appendChild(descriptionLabel);
+        wrapper.appendChild(toggleContainer);
+        wrapper.appendChild(removeBtn);
+
+        calendarList.appendChild(wrapper);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        // defaults
+        let language = "en";
+        let calendars = [{ url: '', description: true }];
+        let fontSize = "normal";
+
+        if (loadPluginSettings) {
+            if (pluginSettings["calendarURLs[]"] && pluginSettings["calendarDescriptions[]"]) {
+                calendars = pluginSettings["calendarURLs[]"].map((url, i) => ({
+                    url: url || '',
+                    description: pluginSettings["calendarDescriptions[]"][i] || true
+                }));
+            }
+            if (pluginSettings["language"]) {
+                language = pluginSettings["language"];
+            }
+            if (pluginSettings["fontSize"]) {
+                fontSize = pluginSettings["fontSize"];
+            }
+        }
+
+        // populate language dropdown
+        document.getElementById('language').value = language;
+        document.getElementById('fontSize').value = fontSize;
+
+        // populate calendars
+        calendars.forEach(({ url, description }) => {
+            addCalendarInput(url, description);
+        });
+    });
+</script>
