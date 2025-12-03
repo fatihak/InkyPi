@@ -31,25 +31,28 @@
 <script>
     function addCalendarInput(url = '', description = true) {
         const calendarList = document.getElementById('calendarList');
-        const id = `description_${Date.now()}`;
+        const id = `description_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
 
         const wrapper = document.createElement('div');
         wrapper.classList.add('calendar-entry');
         wrapper.classList.add('form-group');
 
+        console.log(url, description)
         const descriptionValue = document.createElement('input');
         descriptionValue.type = 'hidden';
         descriptionValue.name = 'calendarDescriptions[]';
-        descriptionValue.value = description ? 'true' : 'false';
+        descriptionValue.value = description;
+        console.log(descriptionValue.value);
 
         const descriptionCheckbox = document.createElement('input');
         descriptionCheckbox.type = 'checkbox';
-        descriptionCheckbox.checked = description;
+        descriptionCheckbox.checked = description === 'true' ? true : false;
         descriptionCheckbox.id = id;
         descriptionCheckbox.onchange = () => {
-            descriptionValue.value = descriptionCheckbox.checked ? 'true' : 'false';
+            descriptionValue.value = descriptionCheckbox.checked === true ? 'true' : 'false';
         };
         descriptionCheckbox.classList.add('toggle-checkbox');
+        console.log(descriptionCheckbox);
 
         const descriptionLabel = document.createElement('label');
         descriptionLabel.innerText = 'Description';
