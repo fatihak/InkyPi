@@ -61,6 +61,11 @@ def resize_image(image, desired_size, image_settings=[]):
     return image.resize((desired_width, desired_height), Image.LANCZOS)
 
 def apply_image_enhancement(img, image_settings={}):
+    # Convert image to RGB mode if necessary for enhancement operations
+    # ImageEnhance requires RGB mode for operations like blend
+    if img.mode not in ('RGB', 'L'):
+        img = img.convert('RGB')
+        
 
     # Apply Brightness
     img = ImageEnhance.Brightness(img).enhance(image_settings.get("brightness", 1.0))
