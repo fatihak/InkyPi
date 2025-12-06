@@ -2,6 +2,7 @@ import logging
 import os
 import socket
 import subprocess
+import textwrap
 
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont, ImageOps
@@ -132,6 +133,32 @@ def generate_startup_image(dimensions=(800,480)):
     text_height = bbox[3] - bbox[1]
     ip_y = y_text + text_height * 1.35
     image_draw.text((width/2, ip_y), ip_text, anchor="mm", fill=text_color, font=get_font("Jost", ip_text_font_size))
+
+    return image
+
+def generate_error_image(message, dimensions=(800,480)):
+    bg_color = (255,255,255)
+    text_color = (0,0,0)
+    width,height = dimensions
+
+    image = Image.new("RGBA", dimensions, bg_color)
+    image_draw = ImageDraw.Draw(image)
+
+    # Calculate font size based on width
+    font_size = int(width * 0.05)
+    font = get_font("Jost", font_size)
+
+    # Wrap text
+    # Estimate chars per line. This is rough approximation.
+    chars_per_line = 30 
+    
+    lines = []
+    for line in message.split('\n'):
+        lines.extend(textwrap.wrap(line, width=chars_per_line))
+    
+    wrapped_message = "\n".join(lines)
+
+    image_draw.text((width/2, height/2), wrapped_message, anchor="mm", fill=text_color, font=font, align="center")
 
     return image
 
