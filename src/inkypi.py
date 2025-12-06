@@ -39,6 +39,7 @@ logger = logging.getLogger(__name__)
 # Parse command line arguments
 parser = argparse.ArgumentParser(description='InkyPi Display Server')
 parser.add_argument('--dev', action='store_true', help='Run in development mode')
+parser.add_argument('--run-once', action='store_true', help='Advance to next plugin, render, and exit')
 args = parser.parse_args()
 
 # Set development mode settings
@@ -83,6 +84,11 @@ app.register_blueprint(playlist_bp)
 register_heif_opener()
 
 if __name__ == '__main__':
+
+    if args.run_once:
+        logger.info("Run once flag detected. Running single refresh cycle and exiting.")
+        refresh_task.run_once()
+        sys.exit(0)
 
     # start the background refresh task
     refresh_task.start()
