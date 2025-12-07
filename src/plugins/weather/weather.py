@@ -214,7 +214,7 @@ class Weather(BasePlugin):
 
     def get_moon_phase_icon_path(self, phase_name: str, lat: float) -> str:
         """Determines the path to the moon icon, inverting it if the location is in the Southern Hemisphere."""
-        # Only Waxing and Waning phases are inverted between hemispheres.
+        # Waxing, Waning, First and Last quarter phases are inverted between hemispheres.
         if lat < 0: # Southern Hemisphere
             if phase_name == "waxingcrescent":
                 phase_name = "waningcrescent"
@@ -224,6 +224,10 @@ class Weather(BasePlugin):
                 phase_name = "waxingcrescent"
             elif phase_name == "waninggibbous":
                 phase_name = "waxinggibbous"
+            elif phase_name == "firstquarter":
+                phase_name = "lastquarter"
+            elif phase_name == "lastquarter":
+                phase_name = "firstquarter"
         
         return self.get_plugin_dir(f"icons/{phase_name}.png")
 
