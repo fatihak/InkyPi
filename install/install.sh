@@ -69,8 +69,21 @@ parse_arguments() {
             \?) echo "Invalid option: -$OPTARG." >&2
                 exit 1
                 ;;
-            :) echo "Option -$OPTARG requires an argument." >&2
-               exit 1
+            :) case $OPTARG in
+                   W) echo_error "ERROR: Option -W requires a Waveshare device model argument."
+                      echo_error "Usage: -W <waveshare_device_model>"
+                      echo_error "Example: -W epd7in3f"
+                      exit 1
+                      ;;
+                   H) echo_error "ERROR: Option -H requires a hostname argument."
+                      echo_error "Usage: -H <hostname>"
+                      echo_error "Example: -H myinkypi"
+                      exit 1
+                      ;;
+                   *) echo_error "ERROR: Option -$OPTARG requires an argument." >&2
+                      exit 1
+                      ;;
+               esac
                ;;
         esac
     done
