@@ -5,12 +5,16 @@
 # Description: This script automates the installatin of InkyPI and creation of
 #              the InkyPI service.
 #
-# Usage: ./install.sh [-W <waveshare_device>]
+# Usage: ./install.sh [-W <waveshare_device>] [-H <hostname>]
 #        -W <waveshare_device> (optional) Install for a Waveshare device, 
 #                               specifying the device model type, e.g. epd7in3e.
 #
 #                               If not specified then the Pimoroni Inky display
 #                               is assumed.
+#        -H <hostname>          (optional) Set a custom hostname for the device.
+#
+#                               If not specified, the hostname will be auto-generated
+#                               as 'inkypi' + last 4 characters of MAC address.
 # =============================================================================
 
 # Formatting stuff
@@ -48,17 +52,24 @@ PIP_REQUIREMENTS_FILE="$SCRIPT_DIR/requirements.txt"
 WS_TYPE=""
 WS_REQUIREMENTS_FILE="$SCRIPT_DIR/ws-requirements.txt"
 
-# Parse the agumments, looking for the -W option.
+# Custom hostname (optional)
+# empty means use auto-generated hostname based on MAC address
+CUSTOM_HOSTNAME=""
+
+# Parse the arguments, looking for the -W and -H options.
 parse_arguments() {
-    while getopts ":W:" opt; do
+    while getopts ":W:H:" opt; do
         case $opt in
             W) WS_TYPE=$OPTARG
                 echo "Optional parameter WS is set for Waveshare support.  Screen type is: $WS_TYPE"
                 ;;
+            H) CUSTOM_HOSTNAME=$OPTARG
+                echo "Optional parameter H is set for custom hostname.  Hostname is: $CUSTOM_HOSTNAME"
+                ;;
             \?) echo "Invalid option: -$OPTARG." >&2
                 exit 1
                 ;;
-            :) echo "Option -$OPTARG requires an the model type of the Waveshare screen." >&2
+            :) echo "Option -$OPTARG requires an argument." >&2
                exit 1
                ;;
         esac
@@ -336,10 +347,20 @@ get_mac_address() {
   echo "${mac_clean: -4}"
 }
 
-# Set hostname to appname + last 4 chars of MAC address
+# Set hostname to custom value or appname + last 4 chars of MAC address
 set_hostname() {
-  local mac_suffix=$(get_mac_address)
-  local new_hostname="${APPNAME}${mac_suffix}"
+  local new_hostname=""
+  
+  if [[ -n "$CUSTOM_HOSTNAME" ]]; then
+    # Use custom hostname if provided
+    new_hostname="$CUSTOM_HOSTNAME"
+    echo "Using custom hostname: $new_hostname"
+  else
+    # Auto-generate hostname based on MAC address
+    local mac_suffix=$(get_mac_address)
+    new_hostname="${APPNAME}${mac_suffix}"
+    echo "Auto-generating hostname: $new_hostname"
+  fi
   
   echo "Setting hostname to: $new_hostname"
   
