@@ -15,6 +15,7 @@
 #
 #                               If not specified, the hostname will be auto-generated
 #                               as 'inkypi' + last 4 characters of MAC address.
+#                               To skip hostname setting entirely, use -H "" or -H none.
 # =============================================================================
 
 # Formatting stuff
@@ -53,8 +54,10 @@ WS_TYPE=""
 WS_REQUIREMENTS_FILE="$SCRIPT_DIR/ws-requirements.txt"
 
 # Custom hostname (optional)
-# empty means use auto-generated hostname based on MAC address
+# empty = use auto-generated hostname based on MAC address
+# "none" or empty string = skip hostname setting entirely
 CUSTOM_HOSTNAME=""
+SKIP_HOSTNAME=false
 
 # Parse the arguments, looking for the -W and -H options.
 parse_arguments() {
@@ -64,7 +67,13 @@ parse_arguments() {
                 echo "Optional parameter WS is set for Waveshare support.  Screen type is: $WS_TYPE"
                 ;;
             H) CUSTOM_HOSTNAME=$OPTARG
-                echo "Optional parameter H is set for custom hostname.  Hostname is: $CUSTOM_HOSTNAME"
+                # Check if user wants to skip hostname setting
+                if [[ -z "$CUSTOM_HOSTNAME" || "$CUSTOM_HOSTNAME" == "none" ]]; then
+                    SKIP_HOSTNAME=true
+                    echo "Optional parameter H is set to skip hostname setting."
+                else
+                    echo "Optional parameter H is set for custom hostname.  Hostname is: $CUSTOM_HOSTNAME"
+                fi
                 ;;
             \?) echo "Invalid option: -$OPTARG." >&2
                 exit 1
@@ -77,7 +86,10 @@ parse_arguments() {
                       ;;
                    H) echo_error "ERROR: Option -H requires a hostname argument."
                       echo_error "Usage: -H <hostname>"
-                      echo_error "Example: -H myinkypi"
+                      echo_error "Examples:"
+                      echo_error "  -H myinkypi     (set custom hostname)"
+                      echo_error "  -H \"\"           (skip hostname setting)"
+                      echo_error "  -H none         (skip hostname setting)"
                       exit 1
                       ;;
                    *) echo_error "ERROR: Option -$OPTARG requires an argument." >&2
@@ -360,8 +372,14 @@ get_mac_address() {
   echo "${mac_clean: -4}"
 }
 
-# Set hostname to custom value or appname + last 4 chars of MAC address
+# Set hostname to custom value, auto-generated value, or skip if requested
 set_hostname() {
+  # Skip hostname setting if explicitly requested
+  if [[ "$SKIP_HOSTNAME" == true ]]; then
+    echo "Skipping hostname setting as requested."
+    return 0
+  fi
+  
   local new_hostname=""
   
   if [[ -n "$CUSTOM_HOSTNAME" ]]; then
