@@ -20,10 +20,17 @@
     <div class="calendar-grid">
       <!-- Month labels -->
       {% for label in month_positions %}
-        <div class="month-label"
-            style="grid-column-start: {{ label.index + 2 }}; grid-row-start: 1;">
-          {{ label.name }}
-        </div>
+        {% set idx = loop.index0 %}
+        {# Count consecutive weeks from label.index at start of this month #}
+        {% set start = label.index %}
+        {% set next_label_idx = month_positions[idx + 1].index if idx + 1 < month_positions|length else grid|length %}
+        {% set col_span = next_label_idx - start %}
+        {% if col_span >= 3 %}
+          <div class="month-label"
+              style="grid-column-start: {{ start + 2 }}; grid-row-start: 1;">
+            {{ label.name }}
+          </div>
+        {% endif %}
       {% endfor %}
       <!-- Contribution squares -->
       {% for week in grid %}
