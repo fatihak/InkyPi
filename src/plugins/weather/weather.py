@@ -338,7 +338,7 @@ class Weather(BasePlugin):
             weather_icon_path = self.get_plugin_dir(f"icons/{weather_icon}.png")
 
             timestamp = int(dt.replace(hour=12, minute=0, second=0).timestamp())
-            target_date: date = dt.date()
+            target_date: date = dt.date() + timedelta(days=1)
            
             try:
                 phase_age = moon.phase(target_date)
