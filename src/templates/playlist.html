@@ -38,11 +38,6 @@
             border-color: var(--accent-primary);
         }
 
-        .plugin-thumbnail.not-generated {
-            opacity: 0.5;
-            filter: grayscale(100%);
-        }
-
         /* Thumbnail Preview Modal */
         .thumbnail-preview-modal {
             display: none;
@@ -325,15 +320,6 @@
                 showResponseModal(type, text);
                 sessionStorage.removeItem("storedMessage"); // Clear stored message after displaying
             }
-
-            // Handle thumbnail image errors
-            const thumbnails = document.querySelectorAll('.plugin-thumbnail');
-            thumbnails.forEach(img => {
-                img.addEventListener('error', function() {
-                    this.src = this.dataset.fallback;
-                    this.classList.add('not-generated');
-                });
-            });
         });
     </script>
 </head>
@@ -369,16 +355,18 @@
                                 <img src="{{ url_for('plugin.image', plugin_id=plugin_instance.plugin_id, filename='icon.png') }}" alt="Plugin Icon" class="plugin-icon">
                                 <span class="plugin-instance">{{ plugin_instance.name }}</span>
 
-                                <!-- Thumbnail preview -->
+                                <!-- Thumbnail preview - only show if image has been generated -->
+                                {% if plugin_instance.latest_refresh_time %}
                                 <div class="plugin-thumbnail-container" onclick="showThumbnailPreview('{{ playlist.name }}', '{{ plugin_instance.plugin_id }}', '{{ plugin_instance.name }}')">
                                     <img
                                         src="{{ url_for('plugin.plugin_instance_image', playlist_name=playlist.name, plugin_id=plugin_instance.plugin_id, instance_name=plugin_instance.name) }}"
                                         alt="Preview"
                                         class="plugin-thumbnail"
                                         title="Click to view full size"
-                                        data-fallback="{{ url_for('static', filename='icons/display.png') }}"
+                                        onerror="this.parentElement.style.display='none';"
                                     >
                                 </div>
+                                {% endif %}
 
                                 <!-- Check if the current plugin is the one being displayed -->
                                 {% if playlist.name == refresh_info.playlist and plugin_instance.name == refresh_info.plugin_instance %}

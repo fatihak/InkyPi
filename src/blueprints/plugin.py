@@ -9,43 +9,10 @@ import logging
 logger = logging.getLogger(__name__)
 plugin_bp = Blueprint("plugin", __name__)
 
-def _delete_uploaded_images_from_settings(settings, deleted_paths=None):
-    """Recursively find and delete uploaded images from plugin settings."""
-    if deleted_paths is None:
-        deleted_paths = set()
-
-    saved_images_dir = resolve_path(os.path.join("static", "images", "saved"))
-
-    if isinstance(settings, dict):
-        for key, value in settings.items():
-            if isinstance(value, str) and saved_images_dir in value:
-                # This is a path to an uploaded image
-                if os.path.exists(value) and value not in deleted_paths:
-                    try:
-                        os.remove(value)
-                        deleted_paths.add(value)
-                        logger.info(f"Deleted uploaded image: {value}")
-                    except Exception as e:
-                        logger.warning(f"Failed to delete uploaded image {value}: {e}")
-            elif isinstance(value, (dict, list)):
-                _delete_uploaded_images_from_settings(value, deleted_paths)
-    elif isinstance(settings, list):
-        for item in settings:
-            if isinstance(item, str) and saved_images_dir in item:
-                if os.path.exists(item) and item not in deleted_paths:
-                    try:
-                        os.remove(item)
-                        deleted_paths.add(item)
-                        logger.info(f"Deleted uploaded image: {item}")
-                    except Exception as e:
-                        logger.warning(f"Failed to delete uploaded image {item}: {e}")
-            elif isinstance(item, (dict, list)):
-                _delete_uploaded_images_from_settings(item, deleted_paths)
-
-def _delete_plugin_instance_images(device_config, plugin_instance):
+def _delete_plugin_instance_images(device_config, plugin_instance_obj):
     """Delete all images associated with a plugin instance."""
     # Delete the plugin instance's generated image
-    plugin_image_path = os.path.join(device_config.plugin_image_dir, plugin_instance.get_image_path())
+    plugin_image_path = os.path.join(device_config.plugin_image_dir, plugin_instance_obj.get_image_path())
     if os.path.exists(plugin_image_path):
         try:
             os.remove(plugin_image_path)
@@ -53,9 +20,14 @@ def _delete_plugin_instance_images(device_config, plugin_instance):
         except Exception as e:
             logger.warning(f"Failed to delete plugin instance image {plugin_image_path}: {e}")
 
-    # Delete any uploaded images referenced in the plugin settings
-    if plugin_instance.settings:
-        _delete_uploaded_images_from_settings(plugin_instance.settings)
+    # Call the plugin's cleanup method to handle plugin-specific resource cleanup
+    try:
+        plugin_config = device_config.get_plugin(plugin_instance_obj.plugin_id)
+        if plugin_config:
+            plugin = get_plugin_instance(plugin_config)
+            plugin.cleanup(plugin_instance_obj.settings)
+    except Exception as e:
+        logger.warning(f"Error during plugin cleanup for {plugin_instance_obj.plugin_id}: {e}")
 
 # Removed module-level PLUGINS_DIR - will resolve dynamically in route handlers
 
