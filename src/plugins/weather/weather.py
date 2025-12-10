@@ -444,11 +444,14 @@ class Weather(BasePlugin):
         else:
             logging.error(f"Sunset not found in OpenWeatherMap response, this is expected for polar areas in midnight sun and polar night periods.")
 
+        wind_deg = weather.get('current', {}).get("wind_deg", 0)
+        wind_arrow = self.get_wind_arrow(wind_deg)
         data_points.append({
             "label": "Wind",
             "measurement": weather.get('current', {}).get("wind_speed"),
             "unit": UNITS[units]["speed"],
-            "icon": self.get_plugin_dir('icons/wind.png')
+            "icon": self.get_plugin_dir('icons/wind.png'),
+            "arrow": wind_arrow
         })
 
         data_points.append({
@@ -528,10 +531,12 @@ class Weather(BasePlugin):
 
         # Wind
         wind_speed = current_data.get("windspeed", 0)
+        wind_deg = current_data.get("winddirection", 0)
+        wind_arrow = self.get_wind_arrow(wind_deg)
         wind_unit = UNITS[units]["speed"]
         data_points.append({
             "label": "Wind", "measurement": wind_speed, "unit": wind_unit,
-            "icon": self.get_plugin_dir('icons/wind.png')
+            "icon": self.get_plugin_dir('icons/wind.png'), "arrow": wind_arrow
         })
 
         # Humidity
@@ -635,6 +640,25 @@ class Weather(BasePlugin):
         })
 
         return data_points
+
+    def get_wind_arrow(self, wind_deg: float) -> str:
+        DIRECTIONS = [
+            ("↑", 22.5),    # North (N)
+            ("↗", 67.5),    # North-East (NE)
+            ("→", 112.5),   # East (E)
+            ("↘", 157.5),   # South-East (SE)
+            ("↓", 202.5),   # South (S)
+            ("↙", 247.5),   # South-West (SW)
+            ("←", 292.5),   # West (W)
+            ("↖", 337.5),   # North-West (NW)
+            ("↑", 360.0)    # Wrap back to North
+        ]
+        wind_deg = wind_deg % 360
+        for arrow, upper_bound in DIRECTIONS:
+            if wind_deg < upper_bound:
+                return arrow
+        
+        return "↑"
 
     def get_weather_data(self, api_key, units, lat, long):
         url = WEATHER_URL.format(lat=lat, long=long, units=units, api_key=api_key)
