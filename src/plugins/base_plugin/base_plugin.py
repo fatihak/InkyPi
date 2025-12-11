@@ -54,6 +54,17 @@ class BasePlugin:
     def generate_image(self, settings, device_config):
         raise NotImplementedError("generate_image must be implemented by subclasses")
 
+    def cleanup(self, settings):
+        """Optional cleanup method that plugins can override to delete associated resources.
+
+        Called when a plugin instance is deleted. Plugins should override this to clean up
+        any files, external resources, or other data associated with the plugin instance.
+
+        Args:
+            settings: The plugin instance's settings dict, which may contain file paths or other resources
+        """
+        pass  # Default implementation does nothing
+
     def get_plugin_id(self):
         return self.config.get("id")
 

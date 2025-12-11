@@ -2,6 +2,7 @@ from plugins.base_plugin.base_plugin import BasePlugin
 from PIL import Image, ImageOps, ImageColor
 import logging
 import random
+import os
 
 from utils.image_utils import pad_image_blur
 
@@ -91,3 +92,17 @@ class ImageUpload(BasePlugin):
 
         logger.info("=== Image Upload Plugin: Image generation complete ===")
         return image
+
+    def cleanup(self, settings):
+        """Delete all uploaded image files associated with this plugin instance."""
+        image_locations = settings.get("imageFiles[]", [])
+        if not image_locations:
+            return
+
+        for image_path in image_locations:
+            if os.path.exists(image_path):
+                try:
+                    os.remove(image_path)
+                    logger.info(f"Deleted uploaded image: {image_path}")
+                except Exception as e:
+                    logger.warning(f"Failed to delete uploaded image {image_path}: {e}")
