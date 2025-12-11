@@ -24,10 +24,10 @@ class ImageFolder(BasePlugin):
         folder_path = settings.get('folder_path')
         if not folder_path:
             raise RuntimeError("Folder path is required.")
-        
+
         if not os.path.exists(folder_path):
             raise RuntimeError(f"Folder does not exist: {folder_path}")
-        
+
         if not os.path.isdir(folder_path):
             raise RuntimeError(f"Path is not a directory: {folder_path}")
 
@@ -62,4 +62,6 @@ class ImageFolder(BasePlugin):
         if not img:
             raise RuntimeError("Failed to load image, please check logs.")
 
+        # Add debug overlay if enabled
+        img = self.add_debug_overlay(img, settings, device_config)
         return img

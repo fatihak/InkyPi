@@ -15,7 +15,7 @@ class YearProgress(BasePlugin):
         dimensions = device_config.get_resolution()
         if device_config.get_config("orientation") == "vertical":
             dimensions = dimensions[::-1]
-        
+
         timezone = device_config.get_config("timezone", default="America/New_York")
         tz = pytz.timezone(timezone)
         current_time = datetime.now(tz)
@@ -33,6 +33,6 @@ class YearProgress(BasePlugin):
             "days_left": round(days_left),
             "plugin_settings": settings
         }
-        
-        image = self.render_image(dimensions, "year_progress.html", "year_progress.css", template_params)
+
+        image = self.render_image(dimensions, "year_progress.html", "year_progress.css", template_params, device_config=device_config)
         return image

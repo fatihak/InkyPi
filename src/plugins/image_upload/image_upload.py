@@ -48,10 +48,13 @@ class ImageUpload(BasePlugin):
                 dimensions = dimensions[::-1]
 
             if settings.get('backgroundOption') == "blur":
-                return pad_image_blur(image, dimensions)
+                image = pad_image_blur(image, dimensions)
             else:
                 background_color = ImageColor.getcolor(settings.get('backgroundColor') or (255, 255, 255), "RGB")
-                return ImageOps.pad(image, dimensions, color=background_color, method=Image.Resampling.LANCZOS)
+                image = ImageOps.pad(image, dimensions, color=background_color, method=Image.Resampling.LANCZOS)
+
+        # Add debug overlay if enabled
+        image = self.add_debug_overlay(image, settings, device_config)
         return image
 
     def cleanup(self, settings):

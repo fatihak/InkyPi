@@ -57,6 +57,7 @@ def save_settings():
             "orientation": form_data.get("orientation"),
             "inverted_image": form_data.get("invertImage"),
             "log_system_stats": form_data.get("logSystemStats"),
+            "show_debug_info": form_data.get("showDebugInfo"),
             "timezone": form_data.get("timezoneName"),
             "time_format": form_data.get("timeFormat"),
             "plugin_cycle_interval_seconds": plugin_cycle_interval_seconds,
@@ -94,7 +95,7 @@ def shutdown():
 def download_logs():
     try:
         buffer = io.StringIO()
-        
+
         # Get 'hours' from query parameters, default to 2 if not provided or invalid
         hours_str = request.args.get('hours', '2')
         try:
