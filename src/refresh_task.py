@@ -231,13 +231,8 @@ class ManualRefresh(RefreshAction):
 
     def execute(self, plugin, device_config, current_dt: datetime):
         """Performs a manual refresh using the stored plugin ID and settings."""
-        plugin._cache_used = False  # Manual refresh always regenerates
-        plugin._start_generation_timer()
-        try:
-            image = plugin.generate_image(self.plugin_settings, device_config)
-            return image
-        finally:
-            plugin._stop_generation_timer()
+        image = plugin.generate_image(self.plugin_settings, device_config)
+        return image
 
     def get_refresh_info(self):
         """Return refresh metadata as a dictionary."""
@@ -281,19 +276,13 @@ class PlaylistRefresh(RefreshAction):
         # Check if a refresh is needed based on the plugin instance's criteria
         if self.plugin_instance.should_refresh(current_dt) or self.force:
             logger.info(f"Refreshing plugin instance. | plugin_instance: '{self.plugin_instance.name}'")
-            # Generate a new image with timing
-            plugin._cache_used = False
-            plugin._start_generation_timer()
-            try:
-                image = plugin.generate_image(self.plugin_instance.settings, device_config)
-                image.save(plugin_image_path)
-                self.plugin_instance.latest_refresh_time = current_dt.isoformat()
-            finally:
-                plugin._stop_generation_timer()
+            # Generate a new image
+            image = plugin.generate_image(self.plugin_instance.settings, device_config)
+            image.save(plugin_image_path)
+            self.plugin_instance.latest_refresh_time = current_dt.isoformat()
         else:
             logger.info(f"Not time to refresh plugin instance, using latest image. | plugin_instance: {self.plugin_instance.name}.")
-            # Load the existing image from disk (cached)
-            plugin._cache_used = True
+            # Load the existing image from disk
             with Image.open(plugin_image_path) as img:
                 image = img.copy()
 

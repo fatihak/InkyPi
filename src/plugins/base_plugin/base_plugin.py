@@ -8,7 +8,6 @@ import asyncio
 import base64
 from datetime import datetime
 import pytz
-import time
 from PIL import Image, ImageDraw, ImageFont
 
 logger = logging.getLogger(__name__)
@@ -41,9 +40,6 @@ class BasePlugin:
     """Base class for all plugins."""
     def __init__(self, config, **dependencies):
         self.config = config
-        self._generation_start_time = None
-        self._generation_duration = None
-        self._cache_used = False  # Track if image was loaded from cache
 
         self.render_dir = self.get_plugin_dir("render")
         if os.path.exists(self.render_dir):
@@ -314,12 +310,3 @@ class BasePlugin:
             }
         """
         return None
-
-    def _start_generation_timer(self):
-        """Internal method to track generation start time."""
-        self._generation_start_time = time.time()
-
-    def _stop_generation_timer(self):
-        """Internal method to track generation duration."""
-        if self._generation_start_time:
-            self._generation_duration = time.time() - self._generation_start_time
