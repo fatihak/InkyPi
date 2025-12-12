@@ -125,7 +125,7 @@ def update_playlist(playlist_name):
     end_time = data.get("end_time")
     if not new_name or not start_time or not end_time:
         return jsonify({"success": False, "error": "Missing required fields"}), 400
-    
+
     playlist = playlist_manager.get_playlist(playlist_name)
     if not playlist:
         return jsonify({"error": f"Playlist '{playlist_name}' does not exist"}), 400
@@ -144,10 +144,15 @@ def delete_playlist(playlist_name):
 
     if not playlist_name:
         return jsonify({"error": f"Playlist name is required"}), 400
-    
+
     playlist = playlist_manager.get_playlist(playlist_name)
     if not playlist:
         return jsonify({"error": f"Playlist '{playlist_name}' does not exist"}), 400
+
+    # Delete all images associated with plugin instances in this playlist
+    from blueprints.plugin import _delete_plugin_instance_images
+    for plugin_instance in playlist.plugins:
+        _delete_plugin_instance_images(device_config, plugin_instance)
 
     playlist_manager.delete_playlist(playlist_name)
     device_config.write_config()
@@ -158,23 +163,23 @@ def delete_playlist(playlist_name):
 def format_relative_time(iso_date_string):
     # Parse the input ISO date string
     dt = datetime.fromisoformat(iso_date_string)
-    
+
     # Get the timezone from the parsed datetime
     if dt.tzinfo is None:
         raise ValueError("Input datetime doesn't have a timezone.")
-    
+
     # Get the current time in the same timezone as the input datetime
     now = datetime.now(dt.tzinfo)
     delta = now - dt
-    
+
     # Compute time difference
     diff_seconds = delta.total_seconds()
     diff_minutes = diff_seconds / 60
-    
+
     # Define formatting
     time_format = "%I:%M %p"  # Example: 04:30 PM
     month_day_format = "%b %d at " + time_format  # Example: Feb 12 at 04:30 PM
-    
+
     # Determine relative time string
     if diff_seconds < 120:
         return "just now"

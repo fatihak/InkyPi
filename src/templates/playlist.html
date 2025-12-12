@@ -6,7 +6,7 @@
     <title>Playlists</title>
     <script>
         (function() {
-            const theme = localStorage.getItem('inkypi-theme') || 
+            const theme = localStorage.getItem('inkypi-theme') ||
                          (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
             if (theme === 'dark') {
                 document.documentElement.setAttribute('data-theme', 'dark');
@@ -16,6 +16,83 @@
     <link rel= "stylesheet" type= "text/css" href= "{{ url_for('static',filename='styles/main.css') }}">
     <script src="{{ url_for('static', filename='scripts/dark_mode.js') }}"></script>
     <script src="{{ url_for('static', filename='scripts/response_modal.js') }}"></script>
+    <style>
+        /* Plugin Instance Thumbnail */
+        .plugin-thumbnail-container {
+            position: relative;
+            cursor: pointer;
+            margin-left: 8px;
+        }
+
+        .plugin-thumbnail {
+            width: 40px;
+            height: 40px;
+            object-fit: cover;
+            border: 2px solid var(--border-color);
+            border-radius: 4px;
+            transition: transform 0.2s ease, border-color 0.2s ease;
+        }
+
+        .plugin-thumbnail:hover {
+            transform: scale(1.1);
+            border-color: var(--accent-primary);
+        }
+
+        /* Thumbnail Preview Modal */
+        .thumbnail-preview-modal {
+            display: none;
+            position: fixed;
+            z-index: 1001;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: var(--modal-overlay);
+            backdrop-filter: blur(3px);
+        }
+
+        .thumbnail-preview-content {
+            position: relative;
+            margin: 5% auto;
+            padding: 20px;
+            width: 90%;
+            max-width: 800px;
+            background-color: var(--modal-bg);
+            border-radius: 12px;
+            box-shadow: 0 4px 20px var(--shadow-medium);
+        }
+
+        .thumbnail-preview-content img {
+            width: 100%;
+            height: auto;
+            border-radius: 8px;
+        }
+
+        .thumbnail-preview-close {
+            position: absolute;
+            top: 10px;
+            right: 20px;
+            font-size: 35px;
+            font-weight: bold;
+            color: var(--close-btn-color);
+            cursor: pointer;
+            transition: color 0.3s ease;
+        }
+
+        .thumbnail-preview-close:hover,
+        .thumbnail-preview-close:focus {
+            color: var(--close-btn-hover);
+        }
+
+        .thumbnail-preview-info {
+            margin-top: 10px;
+            padding: 10px;
+            background-color: var(--bg-primary);
+            border-radius: 6px;
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+    </style>
     <script>
         async function deletePluginInstance(playlistName, pluginId, pluginInstance) {
             try {
@@ -30,7 +107,7 @@
                         plugin_instance: pluginInstance
                     })
                 });
-                
+
                 const result = await response.json();
                 if (response.ok) {
                     sessionStorage.setItem("storedMessage", JSON.stringify({ type: "success", text: `Success! ${result.message}` }));
@@ -41,6 +118,30 @@
             } catch (error) {
                 console.error('Error:', error);
                 alert('An error occurred while processing your request.');
+            }
+        }
+
+        function showThumbnailPreview(playlistName, pluginId, instanceName) {
+            const modal = document.getElementById('thumbnailPreviewModal');
+            const img = document.getElementById('thumbnailPreviewImage');
+            const info = document.getElementById('thumbnailPreviewInfo');
+
+            const imageUrl = `/plugin_instance_image/${encodeURIComponent(playlistName)}/${encodeURIComponent(pluginId)}/${encodeURIComponent(instanceName)}`;
+            img.src = imageUrl;
+            info.textContent = `Plugin: ${pluginId} | Instance: ${instanceName}`;
+            modal.style.display = 'block';
+        }
+
+        function closeThumbnailPreview() {
+            const modal = document.getElementById('thumbnailPreviewModal');
+            modal.style.display = 'none';
+        }
+
+        // Close modal when clicking outside the image
+        window.onclick = function(event) {
+            const modal = document.getElementById('thumbnailPreviewModal');
+            if (event.target === modal) {
+                closeThumbnailPreview();
             }
         }
 
@@ -59,7 +160,7 @@
                         plugin_instance: pluginInstance
                     })
                 });
-                
+
                 const result = await response.json();
                 if (response.ok) {
                     sessionStorage.setItem("storedMessage", JSON.stringify({ type: "success", text: `Success! ${result.message}` }));
@@ -83,7 +184,7 @@
             document.getElementById("editingPlaylistName").value = ""; // Empty value means it's new
             document.getElementById("start_time").value = "00:00";
             document.getElementById("end_time").value = "24:00";
-            
+
             document.getElementById("saveButton").setAttribute("onclick", "createPlaylist()");
             document.getElementById("deleteButton").classList.add("hidden"); // Hide delete button
 
@@ -108,7 +209,7 @@
             const modal = document.getElementById('playlistModal');
             modal.style.display = 'block';
         }
-    
+
         function closeModal() {
             const modal = document.getElementById('playlistModal');
             modal.style.display = 'none';
@@ -237,7 +338,7 @@
             </div>
         </div>
         <div class="separator"></div>
-        
+
         <!-- Playlists Container -->
         <div class="playlist-list">
             {% for playlist in playlist_config.playlists %}
@@ -253,6 +354,19 @@
                             <div class="plugin-info" id="{{plugin_instance.name}}">
                                 <img src="{{ url_for('plugin.image', plugin_id=plugin_instance.plugin_id, filename='icon.png') }}" alt="Plugin Icon" class="plugin-icon">
                                 <span class="plugin-instance">{{ plugin_instance.name }}</span>
+
+                                <!-- Thumbnail preview - only show if image has been generated -->
+                                {% if plugin_instance.latest_refresh_time %}
+                                <div class="plugin-thumbnail-container" onclick="showThumbnailPreview('{{ playlist.name }}', '{{ plugin_instance.plugin_id }}', '{{ plugin_instance.name }}')">
+                                    <img
+                                        src="{{ url_for('plugin.plugin_instance_image', playlist_name=playlist.name, plugin_id=plugin_instance.plugin_id, instance_name=plugin_instance.name) }}"
+                                        alt="Preview"
+                                        class="plugin-thumbnail"
+                                        title="Click to view full size"
+                                        onerror="this.parentElement.style.display='none';"
+                                    >
+                                </div>
+                                {% endif %}
 
                                 <!-- Check if the current plugin is the one being displayed -->
                                 {% if playlist.name == refresh_info.playlist and plugin_instance.name == refresh_info.plugin_instance %}
@@ -316,5 +430,14 @@
 
     <!-- Success/Error Modal -->
     {% include 'response_modal.html' %}
+
+    <!-- Thumbnail Preview Modal -->
+    <div id="thumbnailPreviewModal" class="thumbnail-preview-modal">
+        <div class="thumbnail-preview-content">
+            <span class="thumbnail-preview-close" onclick="closeThumbnailPreview()">×</span>
+            <img id="thumbnailPreviewImage" src="" alt="Plugin Instance Preview">
+            <div class="thumbnail-preview-info" id="thumbnailPreviewInfo"></div>
+        </div>
+    </div>
 </body>
 </html>
