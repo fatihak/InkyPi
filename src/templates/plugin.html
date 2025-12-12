@@ -6,7 +6,7 @@
     <title>{{ plugin.display_name }} Settings</title>
     <script>
         (function() {
-            const theme = localStorage.getItem('inkypi-theme') || 
+            const theme = localStorage.getItem('inkypi-theme') ||
                          (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
             if (theme === 'dark') {
                 document.documentElement.setAttribute('data-theme', 'dark');
@@ -28,6 +28,7 @@
         const pluginInstanceName ='{{ plugin_instance }}';
         const loadPluginSettings = pluginInstanceName != '';
         const styleSettings = {{ style_settings | default(false) | tojson }};
+        const refreshSettings = {{ refresh_settings | tojson if refresh_settings else {} }};
 
         let uploadedFiles = {};
 
@@ -43,7 +44,7 @@
             let url = '{{ url_for("plugin.update_now") }}';
             let method = 'POST';
             let clearFormOnSubmit = false;
-            
+
             // Add uploaded files to the form under its key
             Object.keys(uploadedFiles).forEach(key => {
                 if (uploadedFiles[key].length > 0) {
@@ -65,6 +66,20 @@
             } else if (action == "update_instance") {
                 url = "{{ url_for('plugin.update_plugin_instance', instance_name='') }}" + pluginInstanceName,
                 method = 'PUT'
+
+                // Add refresh settings if editing an existing instance
+                const refreshFormData = {
+                    refreshType: document.querySelector('input[name="editRefreshType"]:checked').value
+                };
+
+                if (refreshFormData.refreshType === 'interval') {
+                    refreshFormData.interval = document.getElementById('edit-interval').value;
+                    refreshFormData.unit = document.getElementById('edit-unit').value;
+                } else if (refreshFormData.refreshType === 'scheduled') {
+                    refreshFormData.refreshTime = document.getElementById('edit-scheduled').value;
+                }
+
+                formData.append("refresh_settings", JSON.stringify(refreshFormData));
             }
 
             // Send data to the server
@@ -106,12 +121,12 @@
             const modal = document.getElementById(modal_id);
             modal.style.display = 'block';
         }
-    
+
         function closeModal(modal_id) {
             const modal = document.getElementById(modal_id);
             modal.style.display = 'none';
         }
-    
+
         // Close modal if the user clicks outside the modal content
         window.onclick = function (event) {
             const modal = document.getElementById('scheduleModal');
@@ -243,6 +258,75 @@
                 let selectedFrameOption = document.querySelector('.image-option');
                 selectedFrame(selectedFrameOption);
             }
+
+            // Setup interactive refresh settings for edit mode
+            if (loadPluginSettings) {
+                const editGroupInterval = document.getElementById('edit-group-interval');
+                const editGroupScheduled = document.getElementById('edit-group-scheduled');
+
+                if (editGroupInterval && editGroupScheduled) {
+                    const radioInterval = document.getElementById('edit-refresh-interval');
+                    const radioScheduled = document.getElementById('edit-refresh-scheduled');
+                    const inputInterval = document.getElementById('edit-interval');
+                    const inputScheduled = document.getElementById('edit-scheduled');
+                    const selectUnit = document.getElementById('edit-unit');
+
+                    // Helper to activate a group
+                    const activateGroup = (radio, input) => {
+                        radio.checked = true;
+                        setTimeout(() => input.focus(), 0);
+                    };
+
+                    // Click anywhere inside group → activate
+                    editGroupInterval.addEventListener('click', (e) => {
+                        if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+                        activateGroup(radioInterval, inputInterval);
+                    });
+
+                    editGroupScheduled.addEventListener('click', (e) => {
+                        if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+                        activateGroup(radioScheduled, inputScheduled);
+                    });
+
+                    // Clicking the radio itself → focus the input
+                    radioInterval.addEventListener('click', () => activateGroup(radioInterval, inputInterval));
+                    radioScheduled.addEventListener('click', () => activateGroup(radioScheduled, inputScheduled));
+
+                    // Focusing inputs → auto-select their radio
+                    inputInterval.addEventListener('focus', () => (radioInterval.checked = true));
+                    inputScheduled.addEventListener('focus', () => (radioScheduled.checked = true));
+                    selectUnit.addEventListener('focus', () => (radioInterval.checked = true));
+
+                    // Prepopulate refresh settings
+                    if (refreshSettings.interval) {
+                        // Convert seconds back to appropriate unit
+                        const seconds = refreshSettings.interval;
+                        let value, unit;
+
+                        if (seconds % 86400 === 0) {
+                            value = seconds / 86400;
+                            unit = 'day';
+                        } else if (seconds % 3600 === 0) {
+                            value = seconds / 3600;
+                            unit = 'hour';
+                        } else if (seconds % 60 === 0) {
+                            value = seconds / 60;
+                            unit = 'minute';
+                        } else {
+                            // Default to minutes if not evenly divisible
+                            value = Math.round(seconds / 60);
+                            unit = 'minute';
+                        }
+
+                        radioInterval.checked = true;
+                        inputInterval.value = value;
+                        selectUnit.value = unit;
+                    } else if (refreshSettings.scheduled) {
+                        radioScheduled.checked = true;
+                        inputScheduled.value = refreshSettings.scheduled;
+                    }
+                }
+            }
         });
     </script>
 </head>
@@ -265,6 +349,37 @@
             <div class="settings-container">
                 {% include settings_template %}
 
+                <!-- Collapsible Refresh Settings Section (only for editing existing instances) -->
+                {% if plugin_instance %}
+                <div class="collapsible">
+                    <button type="button" class="collapsible-header" onclick="toggleCollapsible(this)">
+                        Refresh Settings <span class="collapsible-icon">▼</span>
+                    </button>
+                    <div class="settings-container collapsible-content">
+                        <div class="form-group">
+                            <label>Refresh</label>
+                            <span title="Determines how often the data and image should be refreshed.">ⓘ</span>
+                        </div>
+                        <div class="form-group nowrap" id="edit-group-interval">
+                          <input type="radio" name="editRefreshType" id="edit-refresh-interval" value="interval" checked>
+                          <label for="edit-refresh-interval">Every</label>
+                          <input type="number" id="edit-interval" name="edit-interval" class="form-input" required min="1" placeholder="Enter a number">
+                          <select id="edit-unit" name="edit-unit" class="form-input" required>
+                            <option value="minute">Minute</option>
+                            <option value="hour">Hour</option>
+                            <option value="day">Day</option>
+                          </select>
+                        </div>
+
+                        <div class="form-group nowrap" id="edit-group-scheduled">
+                          <input type="radio" name="editRefreshType" id="edit-refresh-scheduled" value="scheduled">
+                          <label for="edit-refresh-scheduled">Daily at</label>
+                          <input id="edit-scheduled" class="time-input" type="time" name="edit-refreshTime" step="900">
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
                 <!-- Collapsible Style Settings Section -->
                 {% if style_settings %}
                 <div class="collapsible">
@@ -273,7 +388,7 @@
                     </button>
                     <div class="settings-container collapsible-content">
                         <div class="form-group">
-                            
+
                             <div class="form-group nowrap">
                                 <label for="selected-frame" class="form-label">Frame:</label>
                                 <div id="frame-selection" class="image-grid">
@@ -312,8 +427,8 @@
                                     <input type="number" class="form-input" id="rightMargin" name="rightMargin" min="0" max="100" step="5"><span>px</span>
                                 </div>
                             </div>
-                        </div>    
-                        
+                        </div>
+
                         <!-- Background Color Option -->
                         <div class="form-group">
                             <label class="form-label">Background:</label>
@@ -337,10 +452,10 @@
                                 </div>
                             </div>
                         </div>
-                        
+
                         <!-- Hidden input fields to store existing file data -->
                         <div id="hiddenFileInput"></div>
-                        
+
                         <!-- Text Color Picker -->
                         <div class="form-group">
                             <label for="textColor" class="form-label">Text Color:</label>

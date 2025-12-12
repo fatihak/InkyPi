@@ -53,6 +53,7 @@ def plugin_page(plugin_id):
                 # add plugin instance settings to the template to prepopulate
                 template_params["plugin_settings"] = plugin_instance.settings
                 template_params["plugin_instance"] = plugin_instance_name
+                template_params["refresh_settings"] = plugin_instance.refresh
 
             template_params["playlists"] = playlist_manager.get_playlist_names()
         except Exception as e:
@@ -170,6 +171,24 @@ def update_plugin_instance(instance_name):
         plugin_instance = playlist_manager.find_plugin(plugin_id, instance_name)
         if not plugin_instance:
             return jsonify({"error": f"Plugin instance: {instance_name} does not exist"}), 500
+
+        # Handle refresh settings if provided
+        refresh_settings_json = plugin_settings.pop("refresh_settings", None)
+        if refresh_settings_json:
+            from utils.time_utils import calculate_seconds
+            refresh_settings = json.loads(refresh_settings_json)
+            refresh_type = refresh_settings.get('refreshType')
+
+            if refresh_type == "interval":
+                unit = refresh_settings.get('unit')
+                interval = refresh_settings.get('interval')
+                if unit and interval:
+                    refresh_interval_seconds = calculate_seconds(int(interval), unit)
+                    plugin_instance.refresh = {"interval": refresh_interval_seconds}
+            elif refresh_type == "scheduled":
+                refresh_time = refresh_settings.get('refreshTime')
+                if refresh_time:
+                    plugin_instance.refresh = {"scheduled": refresh_time}
 
         plugin_instance.settings = plugin_settings
         device_config.write_config()
