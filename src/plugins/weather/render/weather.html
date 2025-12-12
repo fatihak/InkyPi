@@ -5,9 +5,6 @@
 
 
 <div class="weather-dashboard">
-  {% if plugin_settings.displayRefreshTime == "true" %}
-  <div class="last-refresh">Last refresh: {{ last_refresh_time }}</div>
-  {% endif %}
   <!-- Current Date -->
   <div class="header">
     <div class="title">{{ title }}</div>
@@ -97,11 +94,11 @@
 	const isImperial = units === "imperial";
 	const unit = isImperial ? "in" : "mm";
 	const threshold = isImperial ? 0.0035 : 0.09;
-	
+
     // Find min and max temperatures
     const minTemp = Math.min(...temperatures);
     var maxTemp = Math.max(...temperatures);
-	
+
     Chart.register({
       id: 'annotationRain',
       afterDatasetsDraw(chart, args, pluginOptions) {
@@ -119,9 +116,9 @@
             const y = bar.y;
 			const base = bar.base;
 			const height = base - y;
-			
+
 			let textY, unitY;
-			
+
 			if (height < 25) {
 			  textY = y - 10;
 			  unitY = y - 3;
@@ -131,14 +128,14 @@
 			}
             ctx.fillStyle = "{{ plugin_settings.textColor }}";
             ctx.fillText(rainAmount.toFixed(2), x, textY);
-            ctx.fillText(unit, x, unitY); 
+            ctx.fillText(unit, x, unitY);
           }
         });
 
         ctx.restore();
       }
     });
-	
+
     const chart = new Chart(ctx, {
       type: 'line',
       data: {

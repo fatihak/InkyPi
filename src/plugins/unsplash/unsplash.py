@@ -30,7 +30,7 @@ class Unsplash(BasePlugin):
         content_filter = settings.get('content_filter', 'low')
         color = settings.get('color')
         orientation = settings.get('orientation')
-        
+
         params = {
             'client_id': access_key,
             'content_filter': content_filter,
@@ -80,4 +80,6 @@ class Unsplash(BasePlugin):
         if not image:
             raise RuntimeError("Failed to load image, please check logs.")
 
+        # Add debug overlay if enabled
+        image = self.add_debug_overlay(image, settings, device_config)
         return image

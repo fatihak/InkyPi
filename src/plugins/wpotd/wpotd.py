@@ -1,7 +1,7 @@
 """
 Wpotd Plugin for InkyPi
 This plugin fetches the Wikipedia Picture of the Day (Wpotd) from Wikipedia's API
-and displays it on the InkyPi device. 
+and displays it on the InkyPi device.
 
 It supports optional manual date selection or random dates and can resize the image to fit the device's dimensions.
 
@@ -64,6 +64,8 @@ class Wpotd(BasePlugin):
             image = self._shrink_to_fit(image, max_width, max_height)
             logger.info(f"Image resized to fit device dimensions: {max_width},{max_height}")
 
+        # Add debug overlay if enabled
+        image = self.add_debug_overlay(image, settings, device_config)
         return image
 
     def _determine_date(self, settings: Dict[str, Any]) -> date:
@@ -142,7 +144,7 @@ class Wpotd(BasePlugin):
         except Exception as e:
             logger.error(f"Wikipedia API request failed with params {params}: {str(e)}")
             raise RuntimeError("Wikipedia API request failed.")
-        
+
     def _shrink_to_fit(self, image: Image.Image, max_width: int, max_height: int) -> Image.Image:
         """
         Resize the image to fit within max_width and max_height while maintaining aspect ratio.

@@ -27,7 +27,11 @@ class Comic(BasePlugin):
             dimensions = dimensions[::-1]
         width, height = dimensions
 
-        return self._compose_image(comic_panel, is_caption, caption_font_size, width, height)
+        image = self._compose_image(comic_panel, is_caption, caption_font_size, width, height)
+
+        # Add debug overlay if enabled
+        image = self.add_debug_overlay(image, settings, device_config)
+        return image
 
     def _compose_image(self, comic_panel, is_caption, caption_font_size, width, height):
         response = requests.get(comic_panel["image_url"], stream=True)
@@ -57,10 +61,10 @@ class Comic(BasePlugin):
             y_middle = (height - img.height) // 2
             y_top_bound = top_padding
             y_bottom_bound = height - img.height - bottom_padding
-            
+
             x = (width - img.width) // 2
             y = y = min(max(y_middle, y_top_bound), y_bottom_bound)
-            
+
             background.paste(img, (x, y))
 
             return background

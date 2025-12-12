@@ -39,7 +39,7 @@ class Calendar(BasePlugin):
         dimensions = device_config.get_resolution()
         if device_config.get_config("orientation") == "vertical":
             dimensions = dimensions[::-1]
-        
+
         timezone = device_config.get_config("timezone", default="America/New_York")
         time_format = device_config.get_config("time_format", default="12h")
         tz = pytz.timezone(timezone)
@@ -64,12 +64,12 @@ class Calendar(BasePlugin):
             "font_scale": FONT_SIZES.get(settings.get("fontSize", "normal"))
         }
 
-        image = self.render_image(dimensions, "calendar.html", "calendar.css", template_params)
+        image = self.render_image(dimensions, "calendar.html", "calendar.css", template_params, device_config=device_config)
 
         if not image:
             raise RuntimeError("Failed to take screenshot, please check logs.")
         return image
-    
+
     def fetch_ics_events(self, calendar_urls, colors, tz, start_range, end_range):
         parsed_events = []
 
@@ -93,7 +93,7 @@ class Calendar(BasePlugin):
                 parsed_events.append(parsed_event)
 
         return parsed_events
-    
+
     def get_view_range(self, view, current_dt, settings):
         start = datetime(current_dt.year, current_dt.month, current_dt.day)
         if view == "timeGridDay":
@@ -115,7 +115,7 @@ class Calendar(BasePlugin):
         elif view == "listMonth":
             end = start + timedelta(weeks=5)
         return start, end
-        
+
     def parse_data_points(self, event, tz):
         all_day = False
         dtstart = event.decoded("dtstart")
