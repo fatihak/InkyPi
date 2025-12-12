@@ -643,15 +643,15 @@ class Weather(BasePlugin):
 
     def get_wind_arrow(self, wind_deg: float) -> str:
         DIRECTIONS = [
-            ("↑", 22.5),    # North (N)
-            ("↗", 67.5),    # North-East (NE)
-            ("→", 112.5),   # East (E)
-            ("↘", 157.5),   # South-East (SE)
-            ("↓", 202.5),   # South (S)
-            ("↙", 247.5),   # South-West (SW)
-            ("←", 292.5),   # West (W)
-            ("↖", 337.5),   # North-West (NW)
-            ("↑", 360.0)    # Wrap back to North
+            ("↓", 22.5),    # North (N)
+            ("↙", 67.5),    # North-East (NE)
+            ("←", 112.5),   # East (E)
+            ("↖", 157.5),   # South-East (SE)
+            ("↑", 202.5),   # South (S)
+            ("↗", 247.5),   # South-West (SW)
+            ("→", 292.5),   # West (W)
+            ("↘", 337.5),   # North-West (NW)
+            ("↓", 360.0)    # Wrap back to North
         ]
         wind_deg = wind_deg % 360
         for arrow, upper_bound in DIRECTIONS:
