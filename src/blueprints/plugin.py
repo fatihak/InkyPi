@@ -164,16 +164,14 @@ def update_plugin_instance(instance_name):
 
         if not instance_name:
             raise RuntimeError("Instance name is required")
-        plugin_settings = form_data
-        plugin_settings.update(handle_request_files(request.files, request.form))
 
-        plugin_id = plugin_settings.pop("plugin_id")
+        plugin_id = form_data.pop("plugin_id")
         plugin_instance = playlist_manager.find_plugin(plugin_id, instance_name)
         if not plugin_instance:
             return jsonify({"error": f"Plugin instance: {instance_name} does not exist"}), 500
 
         # Handle refresh settings if provided
-        refresh_settings_json = plugin_settings.pop("refresh_settings", None)
+        refresh_settings_json = form_data.pop("refresh_settings", None)
         if refresh_settings_json:
             from utils.time_utils import calculate_seconds
             refresh_settings = json.loads(refresh_settings_json)
@@ -190,7 +188,13 @@ def update_plugin_instance(instance_name):
                 if refresh_time:
                     plugin_instance.refresh = {"scheduled": refresh_time}
 
-        plugin_instance.settings = plugin_settings
+        # Only update plugin settings if there's actual data (not just refresh settings)
+        plugin_settings = form_data
+        plugin_settings.update(handle_request_files(request.files, request.form))
+
+        if plugin_settings:  # Only update if there are actual plugin settings
+            plugin_instance.settings = plugin_settings
+
         device_config.write_config()
     except Exception as e:
         return jsonify({"error": f"An error occurred: {str(e)}"}), 500

@@ -16,6 +16,7 @@
     <link rel= "stylesheet" type= "text/css" href= "{{ url_for('static',filename='styles/main.css') }}">
     <script src="{{ url_for('static', filename='scripts/dark_mode.js') }}"></script>
     <script src="{{ url_for('static', filename='scripts/response_modal.js') }}"></script>
+    <script src="{{ url_for('static', filename='scripts/refresh_settings_manager.js') }}"></script>
     <!-- Select2 CSS -->
     <link href="{{ url_for('static', filename='styles/select2.min.css') }}" rel="stylesheet" />
     <!-- jQuery -->
@@ -32,44 +33,32 @@
 
         let uploadedFiles = {};
 
+        // Initialize refresh settings managers
+        let editRefreshManager = null;
+        {% if plugin_instance %}
+        editRefreshManager = createRefreshSettingsManager('refreshSettingsModal', 'edit');
+        {% endif %}
+
         async function saveRefreshSettings() {
-            const loadingIndicator = document.getElementById('loadingIndicator');
-            loadingIndicator.style.display = 'block';
+            if (!editRefreshManager) return;
 
-            try {
-                const refreshFormData = {
-                    refreshType: document.querySelector('input[name="editRefreshType"]:checked').value
-                };
-
-                if (refreshFormData.refreshType === 'interval') {
-                    refreshFormData.interval = document.getElementById('edit-interval').value;
-                    refreshFormData.unit = document.getElementById('edit-unit').value;
-                } else if (refreshFormData.refreshType === 'scheduled') {
-                    refreshFormData.refreshTime = document.getElementById('edit-scheduled').value;
-                }
-
-                const formData = new FormData();
-                formData.append("plugin_id", "{{ plugin.id }}");
-                formData.append("refresh_settings", JSON.stringify(refreshFormData));
+            await editRefreshManager.submit(async (formData) => {
+                const data = new FormData();
+                data.append("plugin_id", "{{ plugin.id }}");
+                data.append("refresh_settings", JSON.stringify(formData));
 
                 const response = await fetch("{{ url_for('plugin.update_plugin_instance', instance_name='') }}" + pluginInstanceName, {
                     method: 'PUT',
-                    body: formData
+                    body: data
                 });
 
                 const result = await response.json();
                 if (response.ok) {
                     showResponseModal('success', `Success! ${result.message}`);
-                    closeModal('refreshSettingsModal');
                 } else {
-                    showResponseModal('failure', `Error!  ${result.error}`);
+                    throw new Error(result.error || 'Failed to update refresh settings');
                 }
-            } catch (error) {
-                console.error('Error:', error);
-                alert('An error occurred while processing your request.');
-            } finally {
-                loadingIndicator.style.display = 'none';
-            }
+            });
         }
 
         async function handleAction(action) {
@@ -144,13 +133,20 @@
         }
 
         function openModal(modal_id) {
+            // Handle refresh settings modal specially with the manager
+            if (modal_id === 'refreshSettingsModal' && editRefreshManager) {
+                editRefreshManager.open({ refreshSettings });
+                return;
+            }
+
+            // Generic modal opening for other modals
             const modal = document.getElementById(modal_id);
-            modal.style.display = 'block';
+            if (modal) modal.style.display = 'block';
         }
 
         function closeModal(modal_id) {
             const modal = document.getElementById(modal_id);
-            modal.style.display = 'none';
+            if (modal) modal.style.display = 'none';
         }
 
         // Close modal if the user clicks outside the modal content
@@ -170,6 +166,8 @@
         }
 
         function selectedFrame(element) {
+            if (!element) return; // Guard clause for null element
+
             // Remove the selected class from any previously selected option
             const previousSelection = document.querySelector('.image-option.selected');
             if (previousSelection) {
@@ -285,74 +283,7 @@
                 selectedFrame(selectedFrameOption);
             }
 
-            // Setup interactive refresh settings for edit mode
-            if (loadPluginSettings) {
-                const editGroupInterval = document.getElementById('edit-group-interval');
-                const editGroupScheduled = document.getElementById('edit-group-scheduled');
-
-                if (editGroupInterval && editGroupScheduled) {
-                    const radioInterval = document.getElementById('edit-refresh-interval');
-                    const radioScheduled = document.getElementById('edit-refresh-scheduled');
-                    const inputInterval = document.getElementById('edit-interval');
-                    const inputScheduled = document.getElementById('edit-scheduled');
-                    const selectUnit = document.getElementById('edit-unit');
-
-                    // Helper to activate a group
-                    const activateGroup = (radio, input) => {
-                        radio.checked = true;
-                        setTimeout(() => input.focus(), 0);
-                    };
-
-                    // Click anywhere inside group → activate
-                    editGroupInterval.addEventListener('click', (e) => {
-                        if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
-                        activateGroup(radioInterval, inputInterval);
-                    });
-
-                    editGroupScheduled.addEventListener('click', (e) => {
-                        if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
-                        activateGroup(radioScheduled, inputScheduled);
-                    });
-
-                    // Clicking the radio itself → focus the input
-                    radioInterval.addEventListener('click', () => activateGroup(radioInterval, inputInterval));
-                    radioScheduled.addEventListener('click', () => activateGroup(radioScheduled, inputScheduled));
-
-                    // Focusing inputs → auto-select their radio
-                    inputInterval.addEventListener('focus', () => (radioInterval.checked = true));
-                    inputScheduled.addEventListener('focus', () => (radioScheduled.checked = true));
-                    selectUnit.addEventListener('focus', () => (radioInterval.checked = true));
-
-                    // Prepopulate refresh settings
-                    if (refreshSettings.interval) {
-                        // Convert seconds back to appropriate unit
-                        const seconds = refreshSettings.interval;
-                        let value, unit;
-
-                        if (seconds % 86400 === 0) {
-                            value = seconds / 86400;
-                            unit = 'day';
-                        } else if (seconds % 3600 === 0) {
-                            value = seconds / 3600;
-                            unit = 'hour';
-                        } else if (seconds % 60 === 0) {
-                            value = seconds / 60;
-                            unit = 'minute';
-                        } else {
-                            // Default to minutes if not evenly divisible
-                            value = Math.round(seconds / 60);
-                            unit = 'minute';
-                        }
-
-                        radioInterval.checked = true;
-                        inputInterval.value = value;
-                        selectUnit.value = unit;
-                    } else if (refreshSettings.scheduled) {
-                        radioScheduled.checked = true;
-                        inputScheduled.value = refreshSettings.scheduled;
-                    }
-                }
-            }
+            // Setup interactive refresh settings for edit mode (removed - now handled in openModal)
         });
     </script>
 </head>
@@ -493,26 +424,8 @@
             <h2>Refresh Settings</h2>
             <div class="separator"></div>
             <form id="refreshSettingsForm" class="settings-form">
-                <div class="form-group">
-                    <label>Refresh</label>
-                    <span title="Determines how often the data and image should be refreshed.">ⓘ</span>
-                </div>
-                <div class="form-group nowrap" id="edit-group-interval">
-                  <input type="radio" name="editRefreshType" id="edit-refresh-interval" value="interval" checked>
-                  <label for="edit-refresh-interval">Every</label>
-                  <input type="number" id="edit-interval" name="edit-interval" class="form-input" required min="1" placeholder="Enter a number">
-                  <select id="edit-unit" name="edit-unit" class="form-input" required>
-                    <option value="minute">Minute</option>
-                    <option value="hour">Hour</option>
-                    <option value="day">Day</option>
-                  </select>
-                </div>
-
-                <div class="form-group nowrap" id="edit-group-scheduled">
-                  <input type="radio" name="editRefreshType" id="edit-refresh-scheduled" value="scheduled">
-                  <label for="edit-refresh-scheduled">Daily at</label>
-                  <input id="edit-scheduled" class="time-input" type="time" name="edit-refreshTime" step="900">
-                </div>
+                {% set prefix = "edit" %}
+                {% include 'refresh_settings_form.html' %}
             </form>
             <div class="buttons-container">
                 <button type="button" onclick="saveRefreshSettings()" class="action-button">Save</button>
@@ -540,66 +453,9 @@
                     <label for="instance" class="form-label">Instance Name:</label>
                     <input type="text" id="instance" name="instance_name" placeholder="Type something..." required class="form-input">
                 </div>
-                <div class="form-group">
-                    <label>Refresh</label>
-                    <span title="Determines how often the data and image should be refreshed.">ⓘ</span>
-                </div>
-                <div class="form-group nowrap" id="group-interval">
-                  <input type="radio" name="refreshType" id="refresh-interval" value="interval" checked>
-                  <label for="refresh-interval">Every</label>
-                  <input type="number" id="interval" name="interval" class="form-input" required min="1" placeholder="Enter a number">
-                  <select id="unit" name="unit" class="form-input" required>
-                    <option value="minute">Minute</option>
-                    <option value="hour">Hour</option>
-                    <option value="day">Day</option>
-                  </select>
-                </div>
 
-                <div class="form-group nowrap" id="group-scheduled">
-                  <input type="radio" name="refreshType" id="refresh-scheduled" value="scheduled">
-                  <label for="refresh-scheduled">Daily at</label>
-                  <input id="scheduled" class="time-input" type="time" name="refreshTime" step="900">
-                </div>
-
-                <script>
-                  document.addEventListener('DOMContentLoaded', () => {
-                    // Interval group
-                    const groupInterval = document.getElementById('group-interval');
-                    const radioInterval = document.getElementById('refresh-interval');
-                    const inputInterval = document.getElementById('interval');
-
-                    // Scheduled group
-                    const groupScheduled = document.getElementById('group-scheduled');
-                    const radioScheduled = document.getElementById('refresh-scheduled');
-                    const inputScheduled = document.getElementById('scheduled');
-
-                    // Helper to activate a group
-                    const activateGroup = (radio, input) => {
-                      radio.checked = true;
-                      // Focus after a short delay to ensure radio updates visually
-                      setTimeout(() => input.focus(), 0);
-                    };
-
-                    // Click anywhere inside group → activate
-                    groupInterval.addEventListener('click', (e) => {
-                      if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
-                      activateGroup(radioInterval, inputInterval);
-                    });
-
-                    groupScheduled.addEventListener('click', (e) => {
-                      if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
-                      activateGroup(radioScheduled, inputScheduled);
-                    });
-
-                    // Clicking the radio itself → focus the input
-                    radioInterval.addEventListener('click', () => activateGroup(radioInterval, inputInterval));
-                    radioScheduled.addEventListener('click', () => activateGroup(radioScheduled, inputScheduled));
-
-                    // Focusing inputs → auto-select their radio
-                    inputInterval.addEventListener('focus', () => (radioInterval.checked = true));
-                    inputScheduled.addEventListener('focus', () => (radioScheduled.checked = true));
-                  });
-                </script>
+                {% set prefix = "add" %}
+                {% include 'refresh_settings_form.html' %}
 
             </form>
             <div class="buttons-container">

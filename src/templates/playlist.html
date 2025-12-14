@@ -16,6 +16,7 @@
     <link rel= "stylesheet" type= "text/css" href= "{{ url_for('static',filename='styles/main.css') }}">
     <script src="{{ url_for('static', filename='scripts/dark_mode.js') }}"></script>
     <script src="{{ url_for('static', filename='scripts/response_modal.js') }}"></script>
+    <script src="{{ url_for('static', filename='scripts/refresh_settings_manager.js') }}"></script>
     <style>
         /* Plugin Instance Thumbnail */
         .plugin-thumbnail-container {
@@ -342,91 +343,41 @@
         let currentEditPluginId = '';
         let currentEditInstance = '';
 
+        // Initialize refresh settings manager
+        const playlistRefreshManager = createRefreshSettingsManager('refreshSettingsModal', 'modal');
+
         // Function to open refresh settings modal from playlist view
         function openRefreshModal(playlistName, pluginId, instanceName, refreshSettings) {
             currentEditPlaylist = playlistName;
             currentEditPluginId = pluginId;
             currentEditInstance = instanceName;
 
-            const modal = document.getElementById('refreshSettingsModal');
-
-            if (!modal) {
-                console.error('refreshSettingsModal not found!');
-                return;
-            }
-
-            // Prepopulate refresh settings
-            if (refreshSettings.interval) {
-                // Convert seconds back to appropriate unit
-                const seconds = refreshSettings.interval;
-                let value, unit;
-
-                if (seconds % 86400 === 0) {
-                    value = seconds / 86400;
-                    unit = 'day';
-                } else if (seconds % 3600 === 0) {
-                    value = seconds / 3600;
-                    unit = 'hour';
-                } else if (seconds % 60 === 0) {
-                    value = seconds / 60;
-                    unit = 'minute';
-                } else {
-                    // Default to minutes if not evenly divisible
-                    value = Math.round(seconds / 60);
-                    unit = 'minute';
-                }
-
-                document.getElementById('refresh-modal-interval').checked = true;
-                document.getElementById('modal-interval').value = value;
-                document.getElementById('modal-unit').value = unit;
-            } else if (refreshSettings.scheduled) {
-                document.getElementById('refresh-modal-scheduled').checked = true;
-                document.getElementById('modal-scheduled').value = refreshSettings.scheduled;
-            }
-
-            modal.style.display = 'block';
+            playlistRefreshManager.open({ refreshSettings });
         }
 
         function closeRefreshModal() {
-            const modal = document.getElementById('refreshSettingsModal');
-            modal.style.display = 'none';
+            playlistRefreshManager.close();
         }
 
         async function saveRefreshSettings() {
-            try {
-                const refreshType = document.querySelector('input[name="modalRefreshType"]:checked').value;
-                const refreshData = {
-                    refreshType: refreshType
-                };
-
-                if (refreshType === 'interval') {
-                    refreshData.interval = document.getElementById('modal-interval').value;
-                    refreshData.unit = document.getElementById('modal-unit').value;
-                } else if (refreshType === 'scheduled') {
-                    refreshData.refreshTime = document.getElementById('modal-scheduled').value;
-                }
-
-                const formData = new FormData();
-                formData.append('plugin_id', currentEditPluginId);
-                formData.append('refresh_settings', JSON.stringify(refreshData));
+            await playlistRefreshManager.submit(async (formData) => {
+                const data = new FormData();
+                data.append('plugin_id', currentEditPluginId);
+                data.append('refresh_settings', JSON.stringify(formData));
 
                 const response = await fetch("{{ url_for('plugin.update_plugin_instance', instance_name='') }}" + currentEditInstance, {
                     method: 'PUT',
-                    body: formData
+                    body: data
                 });
 
                 const result = await response.json();
                 if (response.ok) {
-                    closeRefreshModal();
                     sessionStorage.setItem("storedMessage", JSON.stringify({ type: "success", text: `Success! ${result.message}` }));
                     location.reload();
                 } else {
-                    showResponseModal('failure', `Error!  ${result.error}`);
+                    throw new Error(result.error || 'Failed to update refresh settings');
                 }
-            } catch (error) {
-                console.error('Error:', error);
-                alert('An error occurred while processing your request.');
-            }
+            });
         }
     </script>
 </head>
@@ -550,65 +501,8 @@
             <h2>Refresh Settings</h2>
             <div class="separator"></div>
             <form id="refreshSettingsForm" class="settings-form">
-                <div class="form-group">
-                    <label>Refresh</label>
-                    <span title="Determines how often the data and image should be refreshed.">ⓘ</span>
-                </div>
-                <div class="form-group nowrap" id="modal-group-interval">
-                  <input type="radio" name="modalRefreshType" id="refresh-modal-interval" value="interval" checked>
-                  <label for="refresh-modal-interval">Every</label>
-                  <input type="number" id="modal-interval" name="modal-interval" class="form-input" required min="1" placeholder="Enter a number">
-                  <select id="modal-unit" name="modal-unit" class="form-input" required>
-                    <option value="minute">Minute</option>
-                    <option value="hour">Hour</option>
-                    <option value="day">Day</option>
-                  </select>
-                </div>
-
-                <div class="form-group nowrap" id="modal-group-scheduled">
-                  <input type="radio" name="modalRefreshType" id="refresh-modal-scheduled" value="scheduled">
-                  <label for="refresh-modal-scheduled">Daily at</label>
-                  <input id="modal-scheduled" class="time-input" type="time" name="modal-refreshTime" step="900">
-                </div>
-
-                <script>
-                  document.addEventListener('DOMContentLoaded', () => {
-                    // Interval group
-                    const groupInterval = document.getElementById('modal-group-interval');
-                    const radioInterval = document.getElementById('refresh-modal-interval');
-                    const inputInterval = document.getElementById('modal-interval');
-
-                    // Scheduled group
-                    const groupScheduled = document.getElementById('modal-group-scheduled');
-                    const radioScheduled = document.getElementById('refresh-modal-scheduled');
-                    const inputScheduled = document.getElementById('modal-scheduled');
-
-                    // Helper to activate a group
-                    const activateGroup = (radio, input) => {
-                      radio.checked = true;
-                      setTimeout(() => input.focus(), 0);
-                    };
-
-                    // Click anywhere inside group → activate
-                    groupInterval.addEventListener('click', (e) => {
-                      if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
-                      activateGroup(radioInterval, inputInterval);
-                    });
-
-                    groupScheduled.addEventListener('click', (e) => {
-                      if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
-                      activateGroup(radioScheduled, inputScheduled);
-                    });
-
-                    // Clicking the radio itself → focus the input
-                    radioInterval.addEventListener('click', () => activateGroup(radioInterval, inputInterval));
-                    radioScheduled.addEventListener('click', () => activateGroup(radioScheduled, inputScheduled));
-
-                    // Focusing inputs → auto-select their radio
-                    inputInterval.addEventListener('focus', () => (radioInterval.checked = true));
-                    inputScheduled.addEventListener('focus', () => (radioScheduled.checked = true));
-                  });
-                </script>
+                {% set prefix = "modal" %}
+                {% include 'refresh_settings_form.html' %}
             </form>
             <div class="buttons-container">
                 <button type="button" class="action-button" onclick="saveRefreshSettings()">Save</button>
