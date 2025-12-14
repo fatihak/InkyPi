@@ -32,6 +32,46 @@
 
         let uploadedFiles = {};
 
+        async function saveRefreshSettings() {
+            const loadingIndicator = document.getElementById('loadingIndicator');
+            loadingIndicator.style.display = 'block';
+
+            try {
+                const refreshFormData = {
+                    refreshType: document.querySelector('input[name="editRefreshType"]:checked').value
+                };
+
+                if (refreshFormData.refreshType === 'interval') {
+                    refreshFormData.interval = document.getElementById('edit-interval').value;
+                    refreshFormData.unit = document.getElementById('edit-unit').value;
+                } else if (refreshFormData.refreshType === 'scheduled') {
+                    refreshFormData.refreshTime = document.getElementById('edit-scheduled').value;
+                }
+
+                const formData = new FormData();
+                formData.append("plugin_id", "{{ plugin.id }}");
+                formData.append("refresh_settings", JSON.stringify(refreshFormData));
+
+                const response = await fetch("{{ url_for('plugin.update_plugin_instance', instance_name='') }}" + pluginInstanceName, {
+                    method: 'PUT',
+                    body: formData
+                });
+
+                const result = await response.json();
+                if (response.ok) {
+                    showResponseModal('success', `Success! ${result.message}`);
+                    closeModal('refreshSettingsModal');
+                } else {
+                    showResponseModal('failure', `Error!  ${result.error}`);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('An error occurred while processing your request.');
+            } finally {
+                loadingIndicator.style.display = 'none';
+            }
+        }
+
         async function handleAction(action) {
             const loadingIndicator = document.getElementById('loadingIndicator');
             loadingIndicator.style.display = 'block';
@@ -66,20 +106,6 @@
             } else if (action == "update_instance") {
                 url = "{{ url_for('plugin.update_plugin_instance', instance_name='') }}" + pluginInstanceName,
                 method = 'PUT'
-
-                // Add refresh settings if editing an existing instance
-                const refreshFormData = {
-                    refreshType: document.querySelector('input[name="editRefreshType"]:checked').value
-                };
-
-                if (refreshFormData.refreshType === 'interval') {
-                    refreshFormData.interval = document.getElementById('edit-interval').value;
-                    refreshFormData.unit = document.getElementById('edit-unit').value;
-                } else if (refreshFormData.refreshType === 'scheduled') {
-                    refreshFormData.refreshTime = document.getElementById('edit-scheduled').value;
-                }
-
-                formData.append("refresh_settings", JSON.stringify(refreshFormData));
             }
 
             // Send data to the server
@@ -337,9 +363,16 @@
 
         <!-- Plugin Title and Icon -->
         <div class="app-header">
-            <img src="{{ url_for('plugin.image', plugin_id=plugin.id, filename='icon.png') }}" alt="{{ plugin.display_name }} icon" class="app-icon">
-            <h1 class="app-title">{{ plugin.display_name }}</h1>
-            {% if api_key and api_key.required %}<span class="api-key-label" title="{{api_key.service}} (Set {{api_key.expected_key}} in .env)">Requires API Key</span>{% endif %}
+            <div class="header-content">
+                <div class="title-container">
+                    <img src="{{ url_for('plugin.image', plugin_id=plugin.id, filename='icon.png') }}" alt="{{ plugin.display_name }} icon" class="app-icon">
+                    <h1 class="app-title">{{ plugin.display_name }}</h1>
+                    {% if api_key and api_key.required %}<span class="api-key-label" title="{{api_key.service}} (Set {{api_key.expected_key}} in .env)">Requires API Key</span>{% endif %}
+                </div>
+                {% if plugin_instance %}
+                    <button class="header-button" onclick="openModal('refreshSettingsModal')">Refresh Settings</button>
+                {% endif %}
+            </div>
             <div id="loadingIndicator" class="loading-indicator"></div>
         </div>
         <div class="separator"></div>
@@ -348,37 +381,6 @@
         <form id = "settingsForm" class="settings-form" onsubmit="return false;">
             <div class="settings-container">
                 {% include settings_template %}
-
-                <!-- Collapsible Refresh Settings Section (only for editing existing instances) -->
-                {% if plugin_instance %}
-                <div class="collapsible">
-                    <button type="button" class="collapsible-header" onclick="toggleCollapsible(this)">
-                        Refresh Settings <span class="collapsible-icon">▼</span>
-                    </button>
-                    <div class="settings-container collapsible-content">
-                        <div class="form-group">
-                            <label>Refresh</label>
-                            <span title="Determines how often the data and image should be refreshed.">ⓘ</span>
-                        </div>
-                        <div class="form-group nowrap" id="edit-group-interval">
-                          <input type="radio" name="editRefreshType" id="edit-refresh-interval" value="interval" checked>
-                          <label for="edit-refresh-interval">Every</label>
-                          <input type="number" id="edit-interval" name="edit-interval" class="form-input" required min="1" placeholder="Enter a number">
-                          <select id="edit-unit" name="edit-unit" class="form-input" required>
-                            <option value="minute">Minute</option>
-                            <option value="hour">Hour</option>
-                            <option value="day">Day</option>
-                          </select>
-                        </div>
-
-                        <div class="form-group nowrap" id="edit-group-scheduled">
-                          <input type="radio" name="editRefreshType" id="edit-refresh-scheduled" value="scheduled">
-                          <label for="edit-refresh-scheduled">Daily at</label>
-                          <input id="edit-scheduled" class="time-input" type="time" name="edit-refreshTime" step="900">
-                        </div>
-                    </div>
-                </div>
-                {% endif %}
 
                 <!-- Collapsible Style Settings Section -->
                 {% if style_settings %}
@@ -482,6 +484,42 @@
 
     <!-- Success/Error Modal -->
     {% include 'response_modal.html' %}
+
+    <!-- Refresh Settings Modal (for editing existing instances) -->
+    {% if plugin_instance %}
+    <div id="refreshSettingsModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" onclick="closeModal('refreshSettingsModal')">×</span>
+            <h2>Refresh Settings</h2>
+            <div class="separator"></div>
+            <form id="refreshSettingsForm" class="settings-form">
+                <div class="form-group">
+                    <label>Refresh</label>
+                    <span title="Determines how often the data and image should be refreshed.">ⓘ</span>
+                </div>
+                <div class="form-group nowrap" id="edit-group-interval">
+                  <input type="radio" name="editRefreshType" id="edit-refresh-interval" value="interval" checked>
+                  <label for="edit-refresh-interval">Every</label>
+                  <input type="number" id="edit-interval" name="edit-interval" class="form-input" required min="1" placeholder="Enter a number">
+                  <select id="edit-unit" name="edit-unit" class="form-input" required>
+                    <option value="minute">Minute</option>
+                    <option value="hour">Hour</option>
+                    <option value="day">Day</option>
+                  </select>
+                </div>
+
+                <div class="form-group nowrap" id="edit-group-scheduled">
+                  <input type="radio" name="editRefreshType" id="edit-refresh-scheduled" value="scheduled">
+                  <label for="edit-refresh-scheduled">Daily at</label>
+                  <input id="edit-scheduled" class="time-input" type="time" name="edit-refreshTime" step="900">
+                </div>
+            </form>
+            <div class="buttons-container">
+                <button type="button" onclick="saveRefreshSettings()" class="action-button">Save</button>
+            </div>
+        </div>
+    </div>
+    {% endif %}
 
     <!-- Schedule Configuration Modal -->
     <div id="scheduleModal" class="modal">
