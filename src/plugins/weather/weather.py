@@ -49,7 +49,7 @@ WEATHER_URL = "https://api.openweathermap.org/data/3.0/onecall?lat={lat}&lon={lo
 AIR_QUALITY_URL = "http://api.openweathermap.org/data/2.5/air_pollution?lat={lat}&lon={long}&appid={api_key}"
 GEOCODING_URL = "http://api.openweathermap.org/geo/1.0/reverse?lat={lat}&lon={long}&limit=1&appid={api_key}"
 
-OPEN_METEO_FORECAST_URL = "https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={long}&hourly=temperature_2m,precipitation,precipitation_probability,relative_humidity_2m,surface_pressure,visibility&daily=weathercode,temperature_2m_max,temperature_2m_min,sunrise,sunset&current_weather=true&timezone=auto&models=best_match&forecast_days={forecast_days}"
+OPEN_METEO_FORECAST_URL = "https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={long}&hourly=temperature_2m,precipitation,precipitation_probability,relative_humidity_2m,surface_pressure,visibility&daily=weathercode,temperature_2m_max,temperature_2m_min,sunrise,sunset&current=temperature,windspeed,winddirection,is_day,precipitation,weather_code,apparent_temperature&timezone=auto&models=best_match&forecast_days={forecast_days}"
 OPEN_METEO_AIR_QUALITY_URL = "https://air-quality-api.open-meteo.com/v1/air-quality?latitude={lat}&longitude={long}&hourly=european_aqi,uv_index,uv_index_clear_sky&timezone=auto"
 OPEN_METEO_UNIT_PARAMS = {
     "standard": "temperature_unit=kelvin&wind_speed_unit=ms&precipitation_unit=mm",
@@ -161,7 +161,7 @@ class Weather(BasePlugin):
         return data
 
     def parse_open_meteo_data(self, weather_data, aqi_data, tz, units, time_format, lat):
-        current = weather_data.get("current_weather", {})
+        current = weather_data.get("current", {})
         dt = datetime.fromisoformat(current.get('time')).astimezone(tz) if current.get('time') else datetime.now(tz)
         weather_code = current.get("weathercode", 0)
         is_day = current.get("is_day", 1)
@@ -498,7 +498,7 @@ class Weather(BasePlugin):
         """Parses current data points from Open-Meteo API response."""
         data_points = []
         daily_data = weather_data.get('daily', {})
-        current_data = weather_data.get('current_weather', {})
+        current_data = weather_data.get('current', {})
         hourly_data = weather_data.get('hourly', {})
 
         current_time = datetime.now(tz)
