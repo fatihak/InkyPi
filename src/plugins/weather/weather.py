@@ -368,15 +368,18 @@ class Weather(BasePlugin):
         for hour in hourly_forecast[:24]:
             dt = datetime.fromtimestamp(hour.get('dt'), tz=timezone.utc).astimezone(tz)
             rain_mm = hour.get("rain", {}).get("1h", 0.0)
+            snow_mm = hour.get("snow", {}).get("1h", 0.0)
+            total_precip_mm = rain_mm + snow_mm
+            
             if units == "imperial":
-                rain = rain_mm / 25.4
+                precip_value = total_precip_mm / 25.4
             else:
-                rain = rain_mm 
+                precip_value = total_precip_mm 
             hour_forecast = {
                 "time": self.format_time(dt, time_format, hour_only=True),
                 "temperature": int(hour.get("temp")),
                 "precipitation": hour.get("pop"),
-                "rain": round(rain, 2)
+                "rain": round(precip_value, 2)
             }
             hourly.append(hour_forecast)
         return hourly
