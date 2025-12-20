@@ -3,7 +3,7 @@ from PIL import Image
 import os
 import requests
 import logging
-from datetime import datetime, timezone, date
+from datetime import datetime, timedelta, timezone, date
 from astral import moon
 import pytz
 from io import BytesIO
@@ -69,8 +69,8 @@ class Weather(BasePlugin):
         return template_params
 
     def generate_image(self, settings, device_config):
-        lat = settings.get('latitude')
-        long = settings.get('longitude')
+        lat = float(settings.get('latitude'))
+        long = float(settings.get('longitude'))
         if not lat or not long:
             raise RuntimeError("Latitude and Longitude are required.")
 
@@ -97,15 +97,15 @@ class Weather(BasePlugin):
                 if settings.get('weatherTimeZone', 'locationTimeZone') == 'locationTimeZone':
                     logger.info("Using location timezone for OpenWeatherMap data.")
                     wtz = self.parse_timezone(weather_data)
-                    template_params = self.parse_weather_data(weather_data, aqi_data, wtz, units, time_format)
+                    template_params = self.parse_weather_data(weather_data, aqi_data, wtz, units, time_format, lat)
                 else:
                     logger.info("Using configured timezone for OpenWeatherMap data.")
-                    template_params = self.parse_weather_data(weather_data, aqi_data, tz, units, time_format)
+                    template_params = self.parse_weather_data(weather_data, aqi_data, tz, units, time_format, lat)
             elif weather_provider == "OpenMeteo":
                 forecast_days = 7
                 weather_data = self.get_open_meteo_data(lat, long, units, forecast_days + 1)
                 aqi_data = self.get_open_meteo_air_quality(lat, long)
-                template_params = self.parse_open_meteo_data(weather_data, aqi_data, tz, units, time_format)
+                template_params = self.parse_open_meteo_data(weather_data, aqi_data, tz, units, time_format, lat)
             else:
                 raise RuntimeError(f"Unknown weather provider: {weather_provider}")
 
@@ -134,10 +134,17 @@ class Weather(BasePlugin):
             raise RuntimeError("Failed to take screenshot, please check logs.")
         return image
 
-    def parse_weather_data(self, weather_data, aqi_data, tz, units, time_format):
+    def parse_weather_data(self, weather_data, aqi_data, tz, units, time_format, lat):
         current = weather_data.get("current")
         dt = datetime.fromtimestamp(current.get('dt'), tz=timezone.utc).astimezone(tz)
-        current_icon = current.get("weather")[0].get("icon").replace("n", "d")
+        current_icon = current.get("weather")[0].get("icon")
+        icon_codes_to_preserve = ["01", "02", "10"]
+        icon_code = current_icon[:2]
+        current_suffix = current_icon[-1]
+
+        if icon_code not in icon_codes_to_preserve:
+            if current_icon.endswith('n'):
+                current_icon = current_icon.replace("n", "d")
         data = {
             "current_date": dt.strftime("%A, %B %d"),
             "current_day_icon": self.get_plugin_dir(f'icons/{current_icon}.png'),
@@ -147,17 +154,18 @@ class Weather(BasePlugin):
             "units": units,
             "time_format": time_format
         }
-        data['forecast'] = self.parse_forecast(weather_data.get('daily'), tz)
+        data['forecast'] = self.parse_forecast(weather_data.get('daily'), tz, current_suffix, lat)
         data['data_points'] = self.parse_data_points(weather_data, aqi_data, tz, units, time_format)
 
         data['hourly_forecast'] = self.parse_hourly(weather_data.get('hourly'), tz, time_format, units)
         return data
 
-    def parse_open_meteo_data(self, weather_data, aqi_data, tz, units, time_format):
+    def parse_open_meteo_data(self, weather_data, aqi_data, tz, units, time_format, lat):
         current = weather_data.get("current_weather", {})
         dt = datetime.fromisoformat(current.get('time')).astimezone(tz) if current.get('time') else datetime.now(tz)
         weather_code = current.get("weathercode", 0)
-        current_icon = self.map_weather_code_to_icon(weather_code, dt.hour)
+        is_day = current.get("is_day", 1)
+        current_icon = self.map_weather_code_to_icon(weather_code, is_day)
 
         data = {
             "current_date": dt.strftime("%A, %B %d"),
@@ -169,50 +177,83 @@ class Weather(BasePlugin):
             "time_format": time_format
         }
 
-        data['forecast'] = self.parse_open_meteo_forecast(weather_data.get('daily', {}), tz)
+        data['forecast'] = self.parse_open_meteo_forecast(weather_data.get('daily', {}), tz, is_day, lat)
         data['data_points'] = self.parse_open_meteo_data_points(weather_data, aqi_data, tz, units, time_format)
         
         data['hourly_forecast'] = self.parse_open_meteo_hourly(weather_data.get('hourly', {}), tz, time_format)
         return data
 
-    def map_weather_code_to_icon(self, weather_code, hour):
+    def map_weather_code_to_icon(self, weather_code, is_day):
 
         icon = "01d" # Default to clear day icon
         
-        if weather_code in [0]: # Clear sky
+        if weather_code in [0]:   # Clear sky
             icon = "01d"
         elif weather_code in [1]: # Mainly clear
-            icon = "02d"
+            icon = "022d"
         elif weather_code in [2]: # Partly cloudy
-            icon = "03d"
+            icon = "02d"
         elif weather_code in [3]: # Overcast
             icon = "04d"
-        elif weather_code in [45, 48]: # Fog and depositing rime fog
-            icon = "50d"
-        elif weather_code in [51, 53, 55]: # Drizzle
+        elif weather_code in [51, 61, 80]: # Drizzle, showers, rain: Light
+            icon = "51d"          
+        elif weather_code in [53, 63, 81]: # Drizzle, showers, rain: Moderatr
+            icon = "53d"
+        elif weather_code in [55, 65, 82]: # Drizzle, showers, rain: Heavy
             icon = "09d"
-        elif weather_code in [56, 57]: # Freezing Drizzle
-            icon = "09d"
-        elif weather_code in [61, 63, 65]: # Rain: Slight, moderate, heavy
-            icon = "10d"
-        elif weather_code in [66, 67]: # Freezing Rain
-            icon = "10d"
-        elif weather_code in [71, 73, 75]: # Snow fall: Slight, moderate, heavy
+        elif weather_code in [45]: # Fog
+            icon = "50d"                       
+        elif weather_code in [48]: # Icy fog
+            icon = "48d"
+        elif weather_code in [56, 66]: # Light freezing Drizzle
+            icon = "56d"            
+        elif weather_code in [57, 67]: # Freezing Drizzle
+            icon = "57d"            
+        elif weather_code in [71, 85]: # Snow fall: Slight
+            icon = "71d"
+        elif weather_code in [73]:     # Snow fall: Moderate
+            icon = "73d"
+        elif weather_code in [75, 86]: # Snow fall: Heavy
             icon = "13d"
-        elif weather_code in [77]: # Snow grains
-            icon = "13d"
-        elif weather_code in [80, 81, 82]: # Rain showers: Slight, moderate, violent
-            icon = "09d"
-        elif weather_code in [85, 86]: # Snow showers slight and heavy
-            icon = "13d"
+        elif weather_code in [77]:     # Snow grain
+            icon = "77d"
         elif weather_code in [95]: # Thunderstorm
             icon = "11d"
         elif weather_code in [96, 99]: # Thunderstorm with slight and heavy hail
             icon = "11d"
-            
+
+        if is_day == 0:
+            if icon == "01d":
+                icon = "01n"      # Clear sky night
+            elif icon == "022d":
+                icon = "022n"     # Mainly clear night
+            elif icon == "02d":
+                icon = "02n"      # Partly cloudy night                
+            elif icon == "10d":
+                icon = "10n"      # Rain night
+
         return icon
 
-    def parse_forecast(self, daily_forecast, tz):
+    def get_moon_phase_icon_path(self, phase_name: str, lat: float) -> str:
+        """Determines the path to the moon icon, inverting it if the location is in the Southern Hemisphere."""
+        # Waxing, Waning, First and Last quarter phases are inverted between hemispheres.
+        if lat < 0: # Southern Hemisphere
+            if phase_name == "waxingcrescent":
+                phase_name = "waningcrescent"
+            elif phase_name == "waxinggibbous":
+                phase_name = "waninggibbous"
+            elif phase_name == "waningcrescent":
+                phase_name = "waxingcrescent"
+            elif phase_name == "waninggibbous":
+                phase_name = "waxinggibbous"
+            elif phase_name == "firstquarter":
+                phase_name = "lastquarter"
+            elif phase_name == "lastquarter":
+                phase_name = "firstquarter"
+        
+        return self.get_plugin_dir(f"icons/{phase_name}.png")
+
+    def parse_forecast(self, daily_forecast, tz, current_suffix, lat):
         """
         - daily_forecast: list of daily entries from One‑Call v3 (each has 'dt', 'weather', 'temp', 'moon_phase')
         - tz: your target tzinfo (e.g. from zoneinfo or pytz)
@@ -239,17 +280,23 @@ class Weather(BasePlugin):
                 return "waningcrescent"
 
         forecast = []
+        icon_codes_to_apply_current_suffix = ["01", "02", "10"]
         for day in daily_forecast:
             # --- weather icon ---
             weather_icon = day["weather"][0]["icon"]  # e.g. "10d", "01n"
-            # always show day‑style icon
-            weather_icon = weather_icon.replace("n", "d")
+            icon_code = weather_icon[:2]
+            if icon_code in icon_codes_to_apply_current_suffix:
+                weather_icon_base = weather_icon[:-1]
+                weather_icon = weather_icon_base + current_suffix
+            else:
+                if weather_icon.endswith('n'):
+                    weather_icon = weather_icon.replace("n", "d")
             weather_icon_path = self.get_plugin_dir(f"icons/{weather_icon}.png")
 
             # --- moon phase & icon ---
             moon_phase = float(day["moon_phase"])  # [0.0–1.0]
-            phase_name = choose_phase_name(moon_phase)
-            moon_icon_path = self.get_plugin_dir(f"icons/{phase_name}.png")
+            phase_name_north_hemi = choose_phase_name(moon_phase)
+            moon_icon_path = self.get_moon_phase_icon_path(phase_name_north_hemi, lat)
             # --- true illumination percent, no decimals ---
             illum_fraction = (1 - math.cos(2 * math.pi * moon_phase)) / 2
             moon_pct = f"{illum_fraction * 100:.0f}"
@@ -271,7 +318,7 @@ class Weather(BasePlugin):
 
         return forecast
         
-    def parse_open_meteo_forecast(self, daily_data, tz):
+    def parse_open_meteo_forecast(self, daily_data, tz, is_day, lat):
         """
         Parse the daily forecast from Open-Meteo API and calculate moon phase and illumination using the local 'astral' library.
         """
@@ -287,15 +334,15 @@ class Weather(BasePlugin):
             day_label = dt.strftime("%a")
 
             code = weather_codes[i] if i < len(weather_codes) else 0
-            weather_icon = self.map_weather_code_to_icon(code, 12)
+            weather_icon = self.map_weather_code_to_icon(code, is_day)
             weather_icon_path = self.get_plugin_dir(f"icons/{weather_icon}.png")
 
             timestamp = int(dt.replace(hour=12, minute=0, second=0).timestamp())
-            target_date: date = dt.date()
+            target_date: date = dt.date() + timedelta(days=1)
            
             try:
                 phase_age = moon.phase(target_date)
-                phase_name = get_moon_phase_name(phase_age)
+                phase_name_north_hemi = get_moon_phase_name(phase_age)
                 LUNAR_CYCLE_DAYS = 29.530588853
                 phase_fraction = phase_age / LUNAR_CYCLE_DAYS
                 illum_pct = (1 - math.cos(2 * math.pi * phase_fraction)) / 2 * 100
@@ -303,7 +350,7 @@ class Weather(BasePlugin):
                 logger.error(f"Error calculating moon phase for {target_date}: {e}")
                 illum_pct = 0
                 phase_name = "newmoon"
-            moon_icon_path = self.get_plugin_dir(f"icons/{phase_name}.png")
+            moon_icon_path = self.get_moon_phase_icon_path(phase_name_north_hemi, lat)
 
             forecast.append({
                 "day": day_label,
@@ -397,11 +444,14 @@ class Weather(BasePlugin):
         else:
             logging.error(f"Sunset not found in OpenWeatherMap response, this is expected for polar areas in midnight sun and polar night periods.")
 
+        wind_deg = weather.get('current', {}).get("wind_deg", 0)
+        wind_arrow = self.get_wind_arrow(wind_deg)
         data_points.append({
             "label": "Wind",
             "measurement": weather.get('current', {}).get("wind_speed"),
             "unit": UNITS[units]["speed"],
-            "icon": self.get_plugin_dir('icons/wind.png')
+            "icon": self.get_plugin_dir('icons/wind.png'),
+            "arrow": wind_arrow
         })
 
         data_points.append({
@@ -481,10 +531,12 @@ class Weather(BasePlugin):
 
         # Wind
         wind_speed = current_data.get("windspeed", 0)
+        wind_deg = current_data.get("winddirection", 0)
+        wind_arrow = self.get_wind_arrow(wind_deg)
         wind_unit = UNITS[units]["speed"]
         data_points.append({
             "label": "Wind", "measurement": wind_speed, "unit": wind_unit,
-            "icon": self.get_plugin_dir('icons/wind.png')
+            "icon": self.get_plugin_dir('icons/wind.png'), "arrow": wind_arrow
         })
 
         # Humidity
@@ -589,6 +641,25 @@ class Weather(BasePlugin):
 
         return data_points
 
+    def get_wind_arrow(self, wind_deg: float) -> str:
+        DIRECTIONS = [
+            ("↓", 22.5),    # North (N)
+            ("↙", 67.5),    # North-East (NE)
+            ("←", 112.5),   # East (E)
+            ("↖", 157.5),   # South-East (SE)
+            ("↑", 202.5),   # South (S)
+            ("↗", 247.5),   # South-West (SW)
+            ("→", 292.5),   # West (W)
+            ("↘", 337.5),   # North-West (NW)
+            ("↓", 360.0)    # Wrap back to North
+        ]
+        wind_deg = wind_deg % 360
+        for arrow, upper_bound in DIRECTIONS:
+            if wind_deg < upper_bound:
+                return arrow
+        
+        return "↑"
+
     def get_weather_data(self, api_key, units, lat, long):
         url = WEATHER_URL.format(lat=lat, long=long, units=units, api_key=api_key)
         response = requests.get(url)
@@ -647,9 +718,9 @@ class Weather(BasePlugin):
             return dt.strftime("%H:00" if hour_only else "%H:%M")
         
         if include_am_pm:
-            fmt = "%-I %p" if hour_only else "%-I:%M %p"
+            fmt = "%I %p" if hour_only else "%I:%M %p"
         else:
-            fmt = "%-I" if hour_only else "%-I:%M"
+            fmt = "%I" if hour_only else "%I:%M"
 
         return dt.strftime(fmt).lstrip("0")
     

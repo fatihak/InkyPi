@@ -7,6 +7,14 @@ assignees: ''
 
 ---
 
+**Prerequisites**
+
+Please confirm the following:
+
+- [ ] I have searched [open](https://github.com/fatihak/InkyPi/issues) and [closed](https://github.com/fatihak/InkyPi/issues?utf8=%E2%9C%93&q=is%3Aissue+is%3Aclosed) issues to make sure it isn't already reported
+- [ ] I reviewed the [troubleshooting guide](https://github.com/fatihak/InkyPi/blob/main/docs/troubleshooting.md)
+- [ ] I reviewed InkyPi service logs and will paste any relevant logs below
+
 **Describe the bug**
 A clear and concise description of what the bug is.
 
