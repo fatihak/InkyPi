@@ -6,6 +6,7 @@ import logging
 import hashlib
 import tempfile
 import subprocess
+import shutil
 
 logger = logging.getLogger(__name__)
 
@@ -105,15 +106,32 @@ def take_screenshot_html(html_str, dimensions, timeout_ms=None):
 
     return image
 
+def _find_chromium_binary():
+    """Find the first available Chromium-based binary in system PATH."""
+    candidates = ["chromium-headless-shell", "chromium", "chrome"]
+    for candidate in candidates:
+        path = shutil.which(candidate)
+        if path:
+            logger.debug(f"Found browser binary: {candidate} at {path}")
+            return candidate
+    return None
+
+
 def take_screenshot(target, dimensions, timeout_ms=None):
     image = None
     try:
+        # Find available browser binary
+        browser = _find_chromium_binary()
+        if not browser:
+            logger.error("No Chromium-based browser found. Install chromium, chromium-headless-shell, or chrome.")
+            return None
+
         # Create a temporary output file for the screenshot
         with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as img_file:
             img_file_path = img_file.name
 
         command = [
-            "chromium-headless-shell",
+            browser,
             target,
             "--headless",
             f"--screenshot={img_file_path}",
@@ -129,6 +147,8 @@ def take_screenshot(target, dimensions, timeout_ms=None):
             "--disable-extensions",
             "--disable-plugins",
             "--mute-audio",
+            "--renderer-process-limit=1",
+            "--no-zygote",
             "--no-sandbox"
         ]
         if timeout_ms:
@@ -137,8 +157,7 @@ def take_screenshot(target, dimensions, timeout_ms=None):
 
         # Check if the process failed or the output file is missing
         if result.returncode != 0 or not os.path.exists(img_file_path):
-            logger.error("Failed to take screenshot:")
-            logger.error(result.stderr.decode('utf-8'))
+            logger.error(f"Failed to take screenshot (return code: {result.returncode})")
             return None
 
         # Load the image using PIL
