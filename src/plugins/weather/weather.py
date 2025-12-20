@@ -291,6 +291,7 @@ class Weather(BasePlugin):
             else:
                 if weather_icon.endswith('n'):
                     weather_icon = weather_icon.replace("n", "d")
+            weather_icon = f"{icon_code}d"        
             weather_icon_path = self.get_plugin_dir(f"icons/{weather_icon}.png")
 
             # --- moon phase & icon ---
@@ -334,7 +335,7 @@ class Weather(BasePlugin):
             day_label = dt.strftime("%a")
 
             code = weather_codes[i] if i < len(weather_codes) else 0
-            weather_icon = self.map_weather_code_to_icon(code, is_day)
+            weather_icon = self.map_weather_code_to_icon(code, is_day=1)
             weather_icon_path = self.get_plugin_dir(f"icons/{weather_icon}.png")
 
             timestamp = int(dt.replace(hour=12, minute=0, second=0).timestamp())
