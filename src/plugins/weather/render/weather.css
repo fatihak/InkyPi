@@ -283,6 +283,10 @@
   line-height: 140%;
 }
 
+.wind-arrow-symbol {
+    font-weight: 900;
+    -webkit-text-stroke: 1px black;
+}
 
 @media (max-aspect-ratio: 1) {
   .today-container {
