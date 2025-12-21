@@ -49,7 +49,7 @@ WEATHER_URL = "https://api.openweathermap.org/data/3.0/onecall?lat={lat}&lon={lo
 AIR_QUALITY_URL = "http://api.openweathermap.org/data/2.5/air_pollution?lat={lat}&lon={long}&appid={api_key}"
 GEOCODING_URL = "http://api.openweathermap.org/geo/1.0/reverse?lat={lat}&lon={long}&limit=1&appid={api_key}"
 
-OPEN_METEO_FORECAST_URL = "https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={long}&hourly=temperature_2m,precipitation,precipitation_probability,relative_humidity_2m,surface_pressure,visibility&daily=weathercode,temperature_2m_max,temperature_2m_min,sunrise,sunset&current=temperature,windspeed,winddirection,is_day,precipitation,weather_code,apparent_temperature&timezone=auto&models=best_match&forecast_days={forecast_days}"
+OPEN_METEO_FORECAST_URL = "https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={long}&hourly=weather_code,temperature_2m,precipitation,precipitation_probability,relative_humidity_2m,surface_pressure,visibility&daily=weathercode,temperature_2m_max,temperature_2m_min,sunrise,sunset&current=temperature,windspeed,winddirection,is_day,precipitation,weather_code,apparent_temperature&timezone=auto&models=best_match&forecast_days={forecast_days}"
 OPEN_METEO_AIR_QUALITY_URL = "https://air-quality-api.open-meteo.com/v1/air-quality?latitude={lat}&longitude={long}&hourly=european_aqi,uv_index,uv_index_clear_sky&timezone=auto"
 OPEN_METEO_UNIT_PARAMS = {
     "standard": "temperature_unit=kelvin&wind_speed_unit=ms&precipitation_unit=mm",
@@ -136,6 +136,7 @@ class Weather(BasePlugin):
 
     def parse_weather_data(self, weather_data, aqi_data, tz, units, time_format, lat):
         current = weather_data.get("current")
+        daily_forecast = weather_data.get("daily", [])
         dt = datetime.fromtimestamp(current.get('dt'), tz=timezone.utc).astimezone(tz)
         current_icon = current.get("weather")[0].get("icon")
         icon_codes_to_preserve = ["01", "02", "10"]
@@ -157,11 +158,12 @@ class Weather(BasePlugin):
         data['forecast'] = self.parse_forecast(weather_data.get('daily'), tz, current_suffix, lat)
         data['data_points'] = self.parse_data_points(weather_data, aqi_data, tz, units, time_format)
 
-        data['hourly_forecast'] = self.parse_hourly(weather_data.get('hourly'), tz, time_format, units)
+        data['hourly_forecast'] = self.parse_hourly(weather_data.get('hourly'), tz, time_format, units, daily_forecast)
         return data
 
     def parse_open_meteo_data(self, weather_data, aqi_data, tz, units, time_format, lat):
         current = weather_data.get("current", {})
+        daily = weather_data.get('daily', {})
         dt = datetime.fromisoformat(current.get('time')).astimezone(tz) if current.get('time') else datetime.now(tz)
         weather_code = current.get("weathercode", 0)
         is_day = current.get("is_day", 1)
@@ -180,7 +182,7 @@ class Weather(BasePlugin):
         data['forecast'] = self.parse_open_meteo_forecast(weather_data.get('daily', {}), tz, is_day, lat)
         data['data_points'] = self.parse_open_meteo_data_points(weather_data, aqi_data, tz, units, time_format)
         
-        data['hourly_forecast'] = self.parse_open_meteo_hourly(weather_data.get('hourly', {}), tz, time_format)
+        data['hourly_forecast'] = self.parse_open_meteo_hourly(weather_data.get('hourly', {}), tz, time_format, daily.get('sunrise', []), daily.get('sunset', []))
         return data
 
     def map_weather_code_to_icon(self, weather_code, is_day):
@@ -364,13 +366,29 @@ class Weather(BasePlugin):
 
         return forecast
 
-    def parse_hourly(self, hourly_forecast, tz, time_format, units):
+    def parse_hourly(self, hourly_forecast, tz, time_format, units, daily_forecast):
         hourly = []
+        icon_codes_to_preserve = ["01", "02", "10"]
+        
+        sun_map = {}
+        for day in daily_forecast:
+            day_date = datetime.fromtimestamp(day['dt'], tz=timezone.utc).astimezone(tz).date()
+            sun_map[day_date] = (day['sunrise'], day['sunset'])
+        
         for hour in hourly_forecast[:24]:
-            dt = datetime.fromtimestamp(hour.get('dt'), tz=timezone.utc).astimezone(tz)
+            dt_epoch = hour.get('dt')
+            dt = datetime.fromtimestamp(dt_epoch, tz=timezone.utc).astimezone(tz)
             rain_mm = hour.get("rain", {}).get("1h", 0.0)
             snow_mm = hour.get("snow", {}).get("1h", 0.0)
             total_precip_mm = rain_mm + snow_mm
+            sunrise, sunset = sun_map.get(dt.date(), (0, 0))
+        
+            is_day = sunrise <= dt_epoch < sunset
+            suffix = 'd' if is_day else 'n'
+        
+            raw_icon = hour.get("weather", [{}])[0].get("icon", "01d")
+            icon_base = raw_icon[:2]
+            icon_name = f"{icon_base}{suffix}" if icon_base in icon_codes_to_preserve else f"{icon_base}d"
             
             if units == "imperial":
                 precip_value = total_precip_mm / 25.4
@@ -380,17 +398,26 @@ class Weather(BasePlugin):
                 "time": self.format_time(dt, time_format, hour_only=True),
                 "temperature": int(hour.get("temp")),
                 "precipitation": hour.get("pop"),
-                "rain": round(precip_value, 2)
+                "rain": round(precip_value, 2),
+                "icon": self.get_plugin_dir(f'icons/{icon_name}.png')
             }
             hourly.append(hour_forecast)
         return hourly
 
-    def parse_open_meteo_hourly(self, hourly_data, tz, time_format):
+    def parse_open_meteo_hourly(self, hourly_data, tz, time_format, sunrises, sunsets):
         hourly = []
         times = hourly_data.get('time', [])
         temperatures = hourly_data.get('temperature_2m', [])
         precipitation_probabilities = hourly_data.get('precipitation_probability', [])
         rain = hourly_data.get('precipitation', [])
+        codes = hourly_data.get('weather_code', [])
+        
+        sun_map = {}
+        for sr_s, ss_s in zip(sunrises, sunsets):
+            sr_dt = datetime.fromisoformat(sr_s).astimezone(tz)
+            ss_dt = datetime.fromisoformat(ss_s).astimezone(tz)
+            sun_map[sr_dt.date()] = (sr_dt, ss_dt)
+        
         current_time_in_tz = datetime.now(tz)
         start_index = 0
         for i, time_str in enumerate(times):
@@ -409,14 +436,22 @@ class Weather(BasePlugin):
         sliced_temperatures = temperatures[start_index:]
         sliced_precipitation_probabilities = precipitation_probabilities[start_index:]
         sliced_rain = rain[start_index:]
+        sliced_codes = codes[start_index:]
 
         for i in range(min(24, len(sliced_times))):
             dt = datetime.fromisoformat(sliced_times[i]).astimezone(tz)
+            sunrise, sunset = sun_map.get(dt.date(), (None, None))
+            is_day = 0
+            if sunrise and sunset:
+                is_day = 1 if sunrise <= dt < sunset else 0
+            code = sliced_codes[i] if i < len(sliced_codes) else 0
+            icon_name = self.map_weather_code_to_icon(code, is_day)
             hour_forecast = {
                 "time": self.format_time(dt, time_format, True),
                 "temperature": int(sliced_temperatures[i]) if i < len(sliced_temperatures) else 0,
                 "precipitation": (sliced_precipitation_probabilities[i] / 100) if i < len(sliced_precipitation_probabilities) else 0,
-                "rain": (sliced_rain[i]) if i < len(sliced_rain) else 0
+                "rain": (sliced_rain[i]) if i < len(sliced_rain) else 0,
+                "icon": self.get_plugin_dir(f"icons/{icon_name}.png")
             }
             hourly.append(hour_forecast)
         return hourly
