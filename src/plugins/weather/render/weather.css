@@ -148,7 +148,8 @@
   height: 30%
 }
 
-.data-point-measurement {
+.data-point-measurement,
+.wind-arrow-symbol {
   font-size: min(46cqh, 26cqi);
   text-align: center;
   white-space: nowrap;
@@ -156,6 +157,7 @@
   height: 70%;
   font-weight: bold;
   line-height: 105%;
+  display: inline-block;
 }
 
 .data-point-unit {
@@ -281,11 +283,6 @@
   text-align: center;
   position: relative;
   line-height: 140%;
-}
-
-.wind-arrow-symbol {
-    font-weight: 900;
-    -webkit-text-stroke: 1px black;
 }
 
 @media (max-aspect-ratio: 1) {
