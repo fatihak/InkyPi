@@ -200,3 +200,30 @@ Restart the inkypi service to apply the changes:
 ```bash
 sudo systemctl restart inkypi.service
 ```
+
+### Apple devices: Can't access Web UI
+
+### Possible error messages
+```
+ERR_ADDRESS_UNREACHABLE
+THIS SITE CANNOT BE REACHED
+```
+
+This error messages on Apple operating systems are caused by a somewhat hidden system setting that only affects 3rd party browsers/applications. 
+
+#### Recommended solution
+
+Either use Safari
+or
+
+On iPhone/iPad (iOS 14+):
+1) Open the Settings app.
+2) Scroll down and tap Privacy & Security.
+3) Tap Local Network.
+4) Toggle the switch ON for each app you want to allow. 
+
+On Mac (macOS 13+):
+1) Click the Apple menu and select System Settings.
+2) Click Privacy & Security in the sidebar.
+3) Click Local Network.
+4) Toggle the switch ON next to the app to grant permission. 
