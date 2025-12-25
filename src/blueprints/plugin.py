@@ -146,9 +146,12 @@ def update_plugin_instance(instance_name):
 
         plugin_instance.settings = plugin_settings
         
+        refresh_settings_changed = False
+
         # Update refresh settings if provided
-        if refresh_settings:
+        if refresh_settings and not refresh_settings == plugin_instance.refresh:
             plugin_instance.refresh = refresh_settings
+            refresh_settings_changed = True
             
         device_config.write_config()
         
@@ -156,7 +159,8 @@ def update_plugin_instance(instance_name):
         refresh_info = device_config.get_refresh_info()
         if (refresh_info.refresh_type == "Playlist" and 
             refresh_info.plugin_id == plugin_id and 
-            refresh_info.plugin_instance == instance_name):
+            refresh_info.plugin_instance == instance_name and
+            refresh_settings_changed):
             
             refresh_task = current_app.config['REFRESH_TASK']
             from refresh_task import PlaylistRefresh
