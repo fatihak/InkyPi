@@ -516,7 +516,7 @@
             // init cropper
             try {
                 if (cropperInstance) { try { cropperInstance.destroy(); } catch (e) {} }
-                cropperInstance = new Cropper.default(els.imgEl, {
+                cropperInstance = new Cropper(els.imgEl, {
                     viewMode: 1,
                     autoCropArea: 0.8,
                     responsive: true,
