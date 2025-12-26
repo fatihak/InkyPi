@@ -519,7 +519,33 @@
             try {
                 if (cropperInstance) { try { cropperInstance.destroy(); } catch (e) {} }
                 cropperInstance = new Cropper(els.imgEl, {
+                    viewMode: 1,
                     autoCropArea: 0.8,
+                    responsive: true,
+                    background: true,
+                    movable: true,
+                    zoomable: true,
+                    rotatable: true,
+                    scalable: true,
+                    ready: function () {
+                        if (pending && pending.width && pending.height) {
+                            try {
+                                var ratio = Number(pending.width) / Number(pending.height);
+                                if (!isNaN(ratio) && isFinite(ratio)) cropperInstance.setAspectRatio(ratio);
+                                cropperInstance.setData({
+                                    x: Number(pending.x)||0,
+                                    y: Number(pending.y)||0,
+                                    width: Number(pending.width)||0,
+                                    height: Number(pending.height)||0,
+                                    rotate: Number(pending.rotate)||0,
+                                    scaleX: Number(pending.scaleX)||1,
+                                    scaleY: Number(pending.scaleY)||1
+                                });
+                            } catch (e) { console.warn('apply pending crop failed', e); }
+                        }
+                        updateCropPreviewSmall();
+                    },
+                    crop: function() { debounceUpdatePreview(); }
                 });
             } catch (e) {
                 console.error('Cropper init failed', e);
