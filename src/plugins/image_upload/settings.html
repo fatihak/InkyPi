@@ -368,8 +368,12 @@
     document.addEventListener('DOMContentLoaded', () => {    
         const hiddenFileInputs = document.getElementById("hiddenFileInputs");
         if (loadPluginSettings) {
-            document.getElementById('padImage').checked = pluginSettings.padImage;
-            document.getElementById('randomize').checked = pluginSettings.randomize;
+            let padImageCheckbox = document.getElementById('padImage');
+            padImageCheckbox.checked = pluginSettings.padImage;
+            padImageCheckbox.value = padImageCheckbox.checked ? 'true' : 'false';
+            let randomizeCheckbox = document.getElementById('randomize');
+            randomizeCheckbox.checked = pluginSettings.randomize;
+            randomizeCheckbox.value = randomizeCheckbox.checked ? 'true' : 'false';
             document.getElementById('backgroundColor').value = pluginSettings.backgroundColor;
 
             const existingFiles = pluginSettings['imageFiles[]'] || []
