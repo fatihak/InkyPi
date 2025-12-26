@@ -191,3 +191,39 @@ def format_relative_time(iso_date_string):
         return "yesterday at " + dt.strftime(time_format).lstrip("0")
     else:
         return dt.strftime(month_day_format).replace(" 0", " ")  # Removes leading zero in day
+    
+# This route should rename the current instance of a plugin within a playlist
+@playlist_bp.route('/rename_plugin', methods=['POST'])
+def rename_plugin():
+    device_config = current_app.config['DEVICE_CONFIG']
+    playlist_manager = device_config.get_playlist_manager()
+
+    data = request.get_json()
+    playlist_name = data.get("playlist_name")
+    plugin_id = data.get("plugin_id")
+    old_instance_name = data.get("old_instance_name")
+    new_instance_name = data.get("new_instance_name")
+
+    if not playlist_name or not plugin_id or not old_instance_name or not new_instance_name:
+        return jsonify({"error": "Missing required fields"}), 400
+
+    if not new_instance_name.strip():
+        return jsonify({"error": "New instance name is required"}), 400
+    if not all(char.isalpha() or char.isspace() or char.isnumeric() for char in new_instance_name):
+        return jsonify({"error": "Instance name can only contain alphanumeric characters and spaces"}), 400
+
+    playlist = playlist_manager.get_playlist(playlist_name)
+    if not playlist:
+        return jsonify({"error": f"Playlist '{playlist_name}' does not exist"}), 400
+
+    existing = next((plugin for plugin in playlist.plugins if plugin.plugin_id == plugin_id and plugin.name == new_instance_name), None)
+    if existing:
+        return jsonify({"error": f"Plugin instance '{new_instance_name}' already exists in playlist '{playlist_name}'"}), 400
+
+    result = playlist_manager.rename_plugin_instance(playlist_name, plugin_id, old_instance_name, new_instance_name)
+    if not result:
+        return jsonify({"error": "Failed to rename plugin instance"}), 500
+
+    device_config.write_config()
+
+    return jsonify({"success": True, "message": f"Renamed plugin instance to '{new_instance_name}'!"})
