@@ -1,549 +1,399 @@
-<!--
-settings.html (updated)
-Branch: image_cropping
-
-This version keeps all JavaScript and CSS inline (no bootstrap or external CSS/JS),
-and uses the provided cropper.js at /static/scripts/cropper.js.
-
-Behavior:
-- Adds a "Set Crop" button per image that opens a modal with cropper.js UI.
-- On Apply, saves crop settings (JSON) into hidden input named crop_settings[<id>].
-- Does NOT modify any image files; only saves settings for later processing.
-- Shows a small preview thumbnail if cropping can produce a canvas (may fail for cross-origin images).
-- Uses simple modal implementation (no external libraries besides cropper.js).
--->
-
-<!-- Include cropper.js (existing script in your repo) -->
-<script src="/static/scripts/cropper.js"></script>
-
-<style>
-/* Inline CSS for crop UI and modal */
-
-/* Simple modal overlay */
-.cropper-modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.6);
-  display: none;
-  align-items: center;
-  justify-content: center;
-  z-index: 1200;
-}
-
-/* Modal dialog */
-.cropper-modal {
-  width: 95%;
-  max-width: 1100px;
-  max-height: 90vh;
-  background: #fff;
-  border-radius: 6px;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-}
-
-/* Modal header/body/footer */
-.cropper-modal .cm-header,
-.cropper-modal .cm-footer {
-  padding: 10px 14px;
-  background: #f7f7f7;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-.cropper-modal .cm-body {
-  padding: 10px 14px;
-  overflow: auto;
-  display: flex;
-  gap: 12px;
-  align-items: flex-start;
-}
-
-/* Cropper image container */
-.cropper-image-wrap {
-  flex: 1 1 auto;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  min-width: 200px;
-  max-height: 70vh;
-  overflow: hidden;
-  background: #fafafa;
-}
-
-/* Controls column */
-.cropper-controls {
-  min-width: 260px;
-  max-width: 320px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-/* Buttons */
-.btn {
-  display: inline-block;
-  padding: 6px 10px;
-  border-radius: 4px;
-  border: 1px solid #bbb;
-  background: #fff;
-  cursor: pointer;
-  font-size: 13px;
-}
-.btn-primary {
-  background: #0b63d6;
-  color: #fff;
-  border-color: #084ea8;
-}
-.btn-secondary {
-  background: #f3f4f6;
-}
-.btn-group {
-  display:flex;
-  gap:6px;
-}
-
-.cropper-controls label {
-  font-size: 13px;
-  margin-bottom: 4px;
-  color: #333;
-}
-
-/* Preview thumbnail */
-.crop-preview {
-  width: 160px;
-  height: auto;
-  border: 1px solid #ddd;
-  object-fit: cover;
-  display: block;
-}
-
-/* Close button inline */
-.cm-close {
-  background: transparent;
-  border: none;
-  font-size: 20px;
-  line-height: 1;
-  cursor: pointer;
-}
-
-/* Prevent body scroll when modal open */
-body.cropper-modal-open {
-  overflow: hidden;
-}
-
-/* A few minor layout tweaks for image-list item (adjust as necessary to match your app) */
-.image-list { display: flex; flex-direction: column; gap: 10px; }
-.image-item { display:flex; gap:12px; align-items:center; padding:8px; border:1px solid #eee; border-radius:6px; }
-.image-thumb img.upload-list-img { width: 96px; height: auto; border-radius:4px; object-fit:cover; }
-.image-meta { display:flex; flex-direction:column; gap:6px; flex:1; }
-.crop-preview-wrapper { margin-top:6px; }
-</style>
-
-<!-- ... existing HTML above ... -->
-<form id="image-upload-settings-form" method="post" action="{{ save_settings_url }}">
-  <div class="image-list">
-    {% for img in images %}
-    <div class="image-item" data-image-id="{{ img.id }}">
-      <div class="image-thumb">
-        <img src="{{ img.url }}" alt="{{ img.name }}" class="upload-list-img" />
-      </div>
-
-      <div class="image-meta">
-        <div style="display:flex; align-items:center; justify-content:space-between;">
-          <div>
-            <strong class="image-name">{{ img.name }}</strong>
-            <div style="color:#666; font-size:12px;">ID: {{ img.id }}</div>
-          </div>
-
-          <!-- Set Crop button -->
-          <div style="display:flex; gap:8px; align-items:center;">
-            <button type="button"
-                    class="btn btn-secondary btn-set-crop"
-                    data-image-id="{{ img.id }}"
-                    data-image-src="{{ img.url }}">
-              Set Crop
-            </button>
-          </div>
-        </div>
-
-        <!-- Hidden input that will store the crop JSON for this image -->
-        <input type="hidden"
-               name="crop_settings[{{ img.id }}]"
-               id="crop-settings-{{ img.id }}"
-               value='{{ img.crop_settings|default("") }}' />
-
-        <!-- Small preview thumbnail of current crop (if any) -->
-        <div class="crop-preview-wrapper">
-          <img id="crop-preview-{{ img.id }}" class="crop-preview" alt="Crop preview"
-               {% if img.crop_settings %} src="{{ img.crop_preview_url|default('') }}" {% endif %}/>
-        </div>
-      </div>
+<div class="form-group">
+    <label for="padImage" class="form-label">Fit the image to the frame:</label>
+    <div class="toggle-container">
+        <input type="checkbox" id="padImage" name="padImage" class="toggle-checkbox" value="false"
+            onclick="this.value = this.checked ? 'true' : 'false'">
+        <label for="padImage" class="toggle-label"></label>
     </div>
-    {% endfor %}
-  </div>
-
-  <!-- Your existing Save/Submit buttons -->
-  <div class="form-actions" style="margin-top:12px;">
-    <button type="submit" class="btn btn-primary">Save Settings</button>
-  </div>
-</form>
-
-<!-- Cropper modal markup (single modal reused for all images) -->
-<div id="cropperModalOverlay" class="cropper-modal-overlay" aria-hidden="true">
-  <div class="cropper-modal" role="dialog" aria-modal="true" aria-labelledby="cropperModalTitle">
-    <div class="cm-header">
-      <div id="cropperModalTitle" style="font-weight:600;">Crop Image</div>
-      <div>
-        <button class="cm-close" id="cropper-close" aria-label="Close">&times;</button>
-      </div>
+    <label for="randomize" class="form-label">Randomize Order:</label>
+    <div class="toggle-container">
+        <input type="checkbox" id="randomize" name="randomize" class="toggle-checkbox" value="false"
+            onclick="this.value = this.checked ? 'true' : 'false'">
+        <label for="randomize" class="toggle-label"></label>
     </div>
-
-    <div class="cm-body">
-      <div class="cropper-image-wrap">
-        <img id="cropperImage" src="" alt="To crop" style="max-width:100%; max-height:70vh; display:block;">
-      </div>
-
-      <div class="cropper-controls">
-        <div style="display:flex; align-items:center; justify-content:space-between;">
-          <div style="font-size:13px; font-weight:600;">Controls</div>
-          <div style="font-size:12px; color:#666;">Preview</div>
-        </div>
-
-        <div class="btn-group" role="group" aria-label="Transform">
-          <button type="button" class="btn" id="crop-rotate-left" title="Rotate left">⟲</button>
-          <button type="button" class="btn" id="crop-rotate-right" title="Rotate right">⟳</button>
-          <button type="button" class="btn" id="crop-reset" title="Reset">Reset</button>
-        </div>
-
-        <div>
-          <label for="crop-aspect">Aspect</label>
-          <select id="crop-aspect" style="width:100%; padding:6px; margin-top:6px;">
-            <option value="NaN">Free</option>
-            <option value="1">1:1</option>
-            <option value="16/9">16:9</option>
-            <option value="4/3">4:3</option>
-            <option value="3/2">3:2</option>
-          </select>
-        </div>
-
-        <div>
-          <label style="display:block; font-size:13px; margin-top:8px;">Zoom</label>
-          <input id="crop-zoom" type="range" min="0.1" max="3" step="0.01" value="1" style="width:100%;">
-        </div>
-
-        <div style="margin-top:8px;">
-          <div style="font-size:13px; margin-bottom:6px;">Preview</div>
-          <img id="crop-preview-canvas" class="crop-preview" alt="Preview" src="">
-        </div>
-      </div>
-    </div>
-
-    <div class="cm-footer">
-      <div style="font-size:13px; color:#666;">Tip: use mouse or touch to move/resize crop box.</div>
-      <div style="display:flex; gap:8px;">
-        <button type="button" class="btn" id="crop-cancel">Cancel</button>
-        <button type="button" class="btn btn-primary" id="crop-apply">Apply Crop</button>
-      </div>
-    </div>
-  </div>
+    <label for="backgroundColor" class="form-label">Background Color:</label>
+    <input type="color" id="backgroundColor" name="backgroundColor" value="#ffffff"/>
 </div>
 
+<div class="form-group">
+    <label for="imageUpload" class="form-input file-upload-label">Choose Image</label>
+    <input type="file" clear-on-submit id="imageUpload" name="imageFiles[]" accept="image/*" multiple class="file-upload-input" onchange="addFiles()">
+</div>
+
+<!-- Image Gallery with Selection Controls -->
+<div class="form-group" style="margin-top: 20px;">
+    <div class="gallery-header">
+        <label class="form-label">Image Gallery</label>
+        <div class="selection-controls">
+            <span id="selectionCount" class="selection-count">0 selected</span>
+            <button type="button" class="control-btn" onclick="selectAllImages()">Select All</button>
+            <button type="button" class="control-btn" onclick="selectNoneImages()">Select None</button>
+            <button type="button" class="control-btn delete-btn" onclick="deleteSelectedImages()" disabled>Delete Selected</button>
+        </div>
+    </div>
+</div>
+<div id="imageGallery" class="image-gallery"></div>
+
+<!-- Hidden input fields to store existing file data -->
+<div id="hiddenFileInputs"></div>
+
+<style>
+    .gallery-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+    
+    .selection-controls {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+    
+    .selection-count {
+        font-size: 14px;
+        color: #666;
+        font-weight: 500;
+    }
+    
+    .control-btn {
+        padding: 5px 12px;
+        background-color: #f0f0f0;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 13px;
+        transition: all 0.2s;
+    }
+    
+    .control-btn:hover {
+        background-color: #e0e0e0;
+        border-color: #ccc;
+    }
+    
+    .control-btn.delete-btn {
+        background-color: #f44336;
+        color: white;
+        border-color: #d32f2f;
+    }
+    
+    .control-btn.delete-btn:hover:not(:disabled) {
+        background-color: #d32f2f;
+    }
+    
+    .control-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+    
+    .image-gallery {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 15px;
+        margin: 10px 0;
+        padding: 15px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        background-color: #f9f9f9;
+        width: 100%;
+        box-sizing: border-box;
+        min-height: 200px;
+    }
+    
+    .image-gallery:empty::after {
+        content: "No images uploaded yet";
+        display: block;
+        text-align: center;
+        color: #999;
+        font-style: italic;
+        grid-column: 1 / -1;
+        padding: 40px;
+    }
+    
+    .image-item {
+        position: relative;
+        width: 100%;
+        padding-bottom: 100%;
+        overflow: hidden;
+        border-radius: 5px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        transition: all 0.2s;
+        cursor: pointer;
+    }
+    
+    .image-item.selected {
+        box-shadow: 0 0 0 3px #2196F3;
+        transform: scale(0.95);
+    }
+    
+    .image-item img {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        transition: transform 0.2s;
+    }
+    
+    .image-item:hover img {
+        transform: scale(1.05);
+    }
+    
+    .image-item .image-name {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: rgba(0, 0, 0, 0.7);
+        color: white;
+        padding: 4px 8px;
+        font-size: 11px;
+        text-align: center;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    
+    .image-checkbox {
+        position: absolute;
+        top: 8px;
+        left: 8px;
+        width: 20px;
+        height: 20px;
+        background: rgba(255, 255, 255, 0.9);
+        border: 2px solid #333;
+        border-radius: 3px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10;
+        transition: all 0.2s;
+    }
+    
+    .image-checkbox.checked {
+        background: #2196F3;
+        border-color: #2196F3;
+    }
+    
+    .image-checkbox.checked::after {
+        content: '✓';
+        color: white;
+        font-weight: bold;
+        font-size: 14px;
+    }
+    
+</style>
+
 <script>
-/*
-Inline cropper integration script.
-
-- Uses cropper.js that was included above.
-- Does NOT attempt to fetch or mutate saved image files; stores crop metadata JSON in hidden input:
-  #crop-settings-<id> with name crop_settings[<id>]
-- Updates preview thumbnail if possible.
-- Preloads any existing crop JSON (if present) and applies it to the cropper when opened.
-*/
-
-(function () {
-  'use strict';
-
-  // Selectors / IDs used in markup
-  var SET_CROP_BUTTON_SEL = '.btn-set-crop';
-  var HIDDEN_INPUT_ID = function (id) { return 'crop-settings-' + id; };
-  var PREVIEW_IMG_ID = function (id) { return 'crop-preview-' + id; };
-
-  // Modal elements
-  var overlay = document.getElementById('cropperModalOverlay');
-  var cropperImage = document.getElementById('cropperImage');
-  var applyBtn = document.getElementById('crop-apply');
-  var cancelBtn = document.getElementById('crop-cancel');
-  var closeBtn = document.getElementById('cropper-close');
-  var rotateLeftBtn = document.getElementById('crop-rotate-left');
-  var rotateRightBtn = document.getElementById('crop-rotate-right');
-  var resetBtn = document.getElementById('crop-reset');
-  var aspectSelect = document.getElementById('crop-aspect');
-  var zoomRange = document.getElementById('crop-zoom');
-  var previewCanvasImg = document.getElementById('crop-preview-canvas');
-
-  var cropper = null;
-  var currentImageId = null;
-  var currentImageSrc = null;
-  var pendingInitialCrop = null;
-
-  // Utility: show modal
-  function openModal() {
-    overlay.style.display = 'flex';
-    document.body.classList.add('cropper-modal-open');
-  }
-
-  function closeModal() {
-    overlay.style.display = 'none';
-    document.body.classList.remove('cropper-modal-open');
-
-    // destroy cropper to free memory
-    if (cropper) {
-      try { cropper.destroy(); } catch (e) {}
-      cropper = null;
-    }
-
-    // clear image src to free memory
-    cropperImage.src = '';
-    previewCanvasImg.src = '';
-    currentImageId = null;
-    currentImageSrc = null;
-    pendingInitialCrop = null;
-    // reset zoom control
-    zoomRange.value = "1";
-    aspectSelect.value = "NaN";
-  }
-
-  // Initialize Cropper on the image element once loaded
-  function initCropper() {
-    if (!cropperImage) return;
-
-    // Destroy if existing
-    if (cropper) {
-      try { cropper.destroy(); } catch (e) {}
-      cropper = null;
-    }
-
-    cropper = new Cropper(cropperImage, {
-      viewMode: 1,
-      autoCropArea: 0.8,
-      responsive: true,
-      background: true,
-      movable: true,
-      zoomable: true,
-      rotatable: true,
-      scalable: true,
-      ready: function () {
-        // Apply any pending initial crop settings if present
-        if (pendingInitialCrop) {
-          try {
-            // set aspect ratio if width/height present
-            if (pendingInitialCrop.width && pendingInitialCrop.height) {
-              var ratio = pendingInitialCrop.width / pendingInitialCrop.height;
-              cropper.setAspectRatio(ratio || NaN);
-            }
-            cropper.setData(pendingInitialCrop);
-          } catch (e) {
-            // ignore invalid data
-            console.warn('Could not set initial crop data', e);
-          }
-        }
-        // update preview
-        updatePreview();
-      },
-      crop: function () {
-        // update the small preview in modal while user manipulates
-        updatePreviewDebounced();
-      }
-    });
-  }
-
-  // Update preview image element using getCroppedCanvas (small size)
-  function updatePreview() {
-    if (!cropper) return;
-    try {
-      var canvas = cropper.getCroppedCanvas({ width: 320, height: undefined });
-      if (canvas) {
-        previewCanvasImg.src = canvas.toDataURL('image/png');
-      }
-    } catch (e) {
-      // likely CORS issue; silently ignore preview
-      previewCanvasImg.src = '';
-    }
-  }
-
-  // Debounce preview updates so it is not too heavy while dragging
-  var previewUpdateTimeout = null;
-  function updatePreviewDebounced() {
-    if (previewUpdateTimeout) clearTimeout(previewUpdateTimeout);
-    previewUpdateTimeout = setTimeout(updatePreview, 120);
-  }
-
-  // Apply crop: write JSON to hidden input and update thumbnail preview in list
-  function applyCrop() {
-    if (!cropper || !currentImageId) {
-      closeModal();
-      return;
-    }
-
-    try {
-      var d = cropper.getData(true); // rounded values
-      var imageData = cropper.getImageData ? cropper.getImageData() : {};
-      var canvasData = cropper.getCanvasData ? cropper.getCanvasData() : {};
-
-      var cropSettings = {
-        x: d.x,
-        y: d.y,
-        width: d.width,
-        height: d.height,
-        rotate: d.rotate || 0,
-        scaleX: d.scaleX || 1,
-        scaleY: d.scaleY || 1,
-        imageNaturalWidth: imageData.naturalWidth || null,
-        imageNaturalHeight: imageData.naturalHeight || null,
-        canvas: {
-          width: canvasData.width || null,
-          height: canvasData.height || null,
-          left: canvasData.left || null,
-          top: canvasData.top || null
-        },
-        saved_at: new Date().toISOString()
-      };
-
-      // Write JSON into hidden input
-      var inputEl = document.getElementById(HIDDEN_INPUT_ID(currentImageId));
-      if (inputEl) {
-        inputEl.value = JSON.stringify(cropSettings);
-      } else {
-        console.warn('Hidden crop settings input not found for', currentImageId);
-      }
-
-      // Update the inline preview thumbnail for the image list
-      try {
-        var smallCanvas = cropper.getCroppedCanvas({ width: 160 });
-        if (smallCanvas) {
-          var previewEl = document.getElementById(PREVIEW_IMG_ID(currentImageId));
-          if (previewEl) {
-            previewEl.src = smallCanvas.toDataURL('image/png');
-          }
-        }
-      } catch (e) {
-        // preview may fail on cross-origin images
-      }
-
-    } catch (err) {
-      console.error('Failed to read crop data', err);
-    } finally {
-      closeModal();
-    }
-  }
-
-  // Helpers: rotate/zoom/reset/aspect
-  function rotateLeft() { if (cropper) cropper.rotate(-90); }
-  function rotateRight() { if (cropper) cropper.rotate(90); }
-  function resetCrop() { if (cropper) cropper.reset(); }
-  function setAspect(value) {
-    if (!cropper) return;
-    var a = parseFloat(value);
-    if (isNaN(a)) cropper.setAspectRatio(NaN);
-    else cropper.setAspectRatio(a);
-  }
-  function setZoom(value) {
-    if (!cropper) return;
-    try {
-      // cropper.zoomTo sets zoom relative to image; value is slider 0.1..3
-      cropper.zoomTo(parseFloat(value));
-    } catch (e) {
-      // ignore
-    }
-  }
-
-  // Event wiring: buttons etc.
-  function wireModalControls() {
-    applyBtn.addEventListener('click', applyCrop);
-    cancelBtn.addEventListener('click', function (e) { e.preventDefault(); closeModal(); });
-    closeBtn.addEventListener('click', function (e) { e.preventDefault(); closeModal(); });
-    rotateLeftBtn.addEventListener('click', function (e) { e.preventDefault(); rotateLeft(); });
-    rotateRightBtn.addEventListener('click', function (e) { e.preventDefault(); rotateRight(); });
-    resetBtn.addEventListener('click', function (e) { e.preventDefault(); resetCrop(); });
-    aspectSelect.addEventListener('change', function (e) { setAspect(e.target.value); });
-    zoomRange.addEventListener('input', function (e) { setZoom(e.target.value); });
-
-    // Close modal when clicking overlay outside the dialog
-    overlay.addEventListener('click', function (ev) {
-      if (ev.target === overlay) {
-        closeModal();
-      }
-    });
-
-    // Close on ESC
-    document.addEventListener('keydown', function (ev) {
-      if (ev.key === 'Escape' && overlay.style.display === 'flex') {
-        closeModal();
-      }
-    });
-
-    // When cropperImage has loaded, init cropper
-    cropperImage.addEventListener('load', function () {
-      initCropper();
-    });
-  }
-
-  // Attach click handler to all Set Crop buttons (delegated)
-  function wireSetCropButtons() {
-    document.addEventListener('click', function (ev) {
-      var btn = ev.target.closest && ev.target.closest(SET_CROP_BUTTON_SEL);
-      if (!btn) return;
-      ev.preventDefault();
-
-      currentImageId = btn.getAttribute('data-image-id');
-      currentImageSrc = btn.getAttribute('data-image-src');
-
-      if (!currentImageId || !currentImageSrc) {
-        console.warn('Set Crop button missing data-image-id or data-image-src', btn);
-        return;
-      }
-
-      // If there is existing crop JSON in the hidden input, try to parse and apply it after cropper init
-      pendingInitialCrop = null;
-      var existingInput = document.getElementById(HIDDEN_INPUT_ID(currentImageId));
-      if (existingInput && existingInput.value) {
-        try {
-          var parsed = JSON.parse(existingInput.value);
-          // Ensure numeric fields exist (cropper.setData expects numeric props)
-          if (parsed && typeof parsed === 'object') {
-            pendingInitialCrop = {
-              x: Number(parsed.x || 0),
-              y: Number(parsed.y || 0),
-              width: Number(parsed.width || 0),
-              height: Number(parsed.height || 0),
-              rotate: Number(parsed.rotate || 0),
-              scaleX: Number(parsed.scaleX || 1),
-              scaleY: Number(parsed.scaleY || 1)
+    let selectedImages = new Set();
+    
+    function updateImageGallery() {
+        const gallery = document.getElementById('imageGallery');
+        gallery.innerHTML = '';
+        selectedImages.clear();
+        
+        // Get all existing files from hidden inputs
+        const existingFiles = [];
+        document.querySelectorAll('#hiddenFileInputs input[name="imageFiles[]"]').forEach(input => {
+            existingFiles.push(input.value);
+        });
+        
+        // Get all newly added files
+        const newFiles = uploadedFiles["imageFiles[]"] || [];
+        
+        // Display existing files
+        existingFiles.forEach(filePath => {
+            const fileName = filePath.replace(/^.*[\\/]/, '');
+            const imageUrl = `/static/images/saved/${fileName}`;
+            createImageItem(imageUrl, fileName, filePath, 'existing');
+        });
+        
+        // Display newly added files (using FileReader for preview)
+        newFiles.forEach((file, index) => {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                createImageItem(e.target.result, file.name, index, 'new');
             };
-          }
-        } catch (e) {
-          // invalid JSON - ignore
+            reader.readAsDataURL(file);
+        });
+        
+        updateSelectionCount();
+    }
+    
+    function createImageItem(src, name, identifier, type) {
+        const gallery = document.getElementById('imageGallery');
+        const item = document.createElement('div');
+        item.className = 'image-item';
+        item.dataset.identifier = identifier;
+        item.dataset.type = type;
+        item.dataset.name = name;
+        
+        item.innerHTML = `
+            <div class="image-checkbox"></div>
+            <img src="${src}" alt="${name}">
+            <div class="image-name" title="${name}">${name}</div>
+        `;
+        
+        // Add click handler to the entire item
+        item.onclick = function(event) {
+            toggleImageSelection(event, identifier, type);
+        };
+        
+        gallery.appendChild(item);
+    }
+    
+    function toggleImageSelection(event, identifier, type) {
+        event.stopPropagation();
+        const key = `${type}-${identifier}`;
+        const item = event.currentTarget.classList.contains('image-item') 
+            ? event.currentTarget 
+            : event.currentTarget.closest('.image-item');
+        const checkbox = item.querySelector('.image-checkbox');
+        
+        if (selectedImages.has(key)) {
+            selectedImages.delete(key);
+            item.classList.remove('selected');
+            checkbox.classList.remove('checked');
+        } else {
+            selectedImages.add(key);
+            item.classList.add('selected');
+            checkbox.classList.add('checked');
         }
-      }
+        
+        updateSelectionCount();
+    }
+    
+    function selectAllImages() {
+        document.querySelectorAll('.image-item').forEach(item => {
+            const key = `${item.dataset.type}-${item.dataset.identifier}`;
+            selectedImages.add(key);
+            item.classList.add('selected');
+            item.querySelector('.image-checkbox').classList.add('checked');
+        });
+        updateSelectionCount();
+    }
+    
+    function selectNoneImages() {
+        selectedImages.clear();
+        document.querySelectorAll('.image-item').forEach(item => {
+            item.classList.remove('selected');
+            item.querySelector('.image-checkbox').classList.remove('checked');
+        });
+        updateSelectionCount();
+    }
+    
+    function updateSelectionCount() {
+        const count = selectedImages.size;
+        document.getElementById('selectionCount').textContent = `${count} selected`;
+        document.querySelector('.delete-btn').disabled = count === 0;
+    }
+    
+    function deleteSelectedImages() {
+        if (selectedImages.size === 0) return;
+        
+        if (!confirm(`Are you sure you want to delete ${selectedImages.size} selected image(s)?`)) {
+            return;
+        }
+        
+        selectedImages.forEach(key => {
+            const idx = key.indexOf('-');
+            const [type, identifier] = [key.slice(0, idx), key.slice(idx + 1)];
+            
+            if (type === 'existing') {
+                // Remove from hidden inputs
+                const fileName = identifier.replace(/^.*[\\/]/, '');
+                const hiddenInput = document.getElementById(`hidden-${fileName}`);
+                if (hiddenInput) hiddenInput.remove();
+            } else if (type === 'new') {
+                // Remove from uploadedFiles
+                const index = parseInt(identifier);
+                if (uploadedFiles["imageFiles[]"] && uploadedFiles["imageFiles[]"][index]) {
+                    uploadedFiles["imageFiles[]"].splice(index, 1);
+                }
+            }
+        });
+        
+        // Refresh the gallery
+        updateImageGallery();
+    }
+    
+    function addFiles() {
+        const fileInput = document.getElementById("imageUpload");
+        const files = Array.from(fileInput.files);
 
-      // Load the image into modal. Append timestamp to bust cache if needed.
-      var srcNoCache = currentImageSrc + (currentImageSrc.indexOf('?') === -1 ? '?_=' : '&_=' ) + Date.now();
-      cropperImage.src = srcNoCache;
+        if (!uploadedFiles["imageFiles[]"]) {
+            uploadedFiles["imageFiles[]"] = [];
+        }
 
-      // Set default controls
-      aspectSelect.value = "NaN";
-      zoomRange.value = "1";
+        // Get all existing filenames
+        const existingFileNames = [];
+        document.querySelectorAll('#hiddenFileInputs input[name="imageFiles[]"]').forEach(input => {
+            existingFileNames.push(input.value.replace(/^.*[\\/]/, ''));
+        });
 
-      // Open modal (cropper will init when image load fires)
-      openModal();
+        const duplicates = [];
+
+        files.forEach(file => {
+            const fileName = file.name;
+
+            // Check for duplicates against both uploaded files and existing files
+            const isDuplicateUpload = uploadedFiles["imageFiles[]"].some(f => f.name === fileName);
+            const isDuplicateExisting = existingFileNames.includes(fileName);
+            
+            if (isDuplicateUpload || isDuplicateExisting) {
+                duplicates.push(fileName);
+            } else {
+                uploadedFiles["imageFiles[]"].push(file);
+            }
+        });
+
+        // Show alert for duplicates
+        if (duplicates.length > 0) {
+            alert(`The following files were not added because they already exist:\n\n${duplicates.join('\n')}`);
+        }
+
+        // Clear the input to allow adding the same file again if needed
+        fileInput.value = "";
+        
+        // Update the image gallery
+        updateImageGallery();
+    }
+
+    // populate form values from plugin settings
+    document.addEventListener('DOMContentLoaded', () => {    
+        const hiddenFileInputs = document.getElementById("hiddenFileInputs");
+        if (loadPluginSettings) {
+            let padImageCheckbox = document.getElementById('padImage');
+            padImageCheckbox.checked = pluginSettings.padImage;
+            padImageCheckbox.value = padImageCheckbox.checked ? 'true' : 'false';
+            let randomizeCheckbox = document.getElementById('randomize');
+            randomizeCheckbox.checked = pluginSettings.randomize;
+            randomizeCheckbox.value = randomizeCheckbox.checked ? 'true' : 'false';
+            document.getElementById('backgroundColor').value = pluginSettings.backgroundColor;
+
+            const existingFiles = pluginSettings['imageFiles[]'] || []
+
+            // Loop through the existing files and add them to hidden inputs
+            existingFiles.forEach(filePath => {
+                const fileName = filePath.replace(/^.*[\\/]/, '');
+                
+                // Create a hidden input for the existing file
+                const hiddenInput = document.createElement("input");
+                hiddenInput.type = "hidden";
+                hiddenInput.name = "imageFiles[]";
+                hiddenInput.value = filePath;
+                hiddenInput.id = `hidden-${fileName}`;
+                hiddenInput.setAttribute('delete-on-submit', '');
+                hiddenFileInputs.appendChild(hiddenInput);
+            });
+            
+            // Update the image gallery after loading existing files
+            updateImageGallery();
+        }
     });
-  }
-
-  // Initialize on DOM ready
-  document.addEventListener('DOMContentLoaded', function () {
-    wireModalControls();
-    wireSetCropButtons();
-  });
-
-})();
 </script>
