@@ -517,14 +517,7 @@
             try {
                 if (cropperInstance) { try { cropperInstance.destroy(); } catch (e) {} }
                 cropperInstance = new Cropper(els.imgEl, {
-                    viewMode: 1,
                     autoCropArea: 0.8,
-                    responsive: true,
-                    background: true,
-                    movable: true,
-                    zoomable: true,
-                    rotatable: true,
-                    scalable: true,
                     ready: function () {
                         if (pending && pending.width && pending.height) {
                             try {
