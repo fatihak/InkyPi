@@ -289,29 +289,21 @@
         cropBtn.className = 'set-crop-btn';
         cropBtn.textContent = 'Set Crop';
         cropBtn.title = 'Set crop settings for this image';
-        cropBtn.dataset.type = type;
-        cropBtn.dataset.identifier = identifier;
+        cropBtn.dataset.name = name;
 
-        const previewImg = document.createElement('img');
-        previewImg.className = 'img-crop-preview';
-        previewImg.alt = 'crop preview';
-        previewImg.id = `crop-preview-${type}-${safeId(identifier)}`;
-        previewImg.style.display = 'none';
-
-        controls.appendChild(previewImg);
         controls.appendChild(cropBtn);
         item.appendChild(controls);
 
         // Hidden input for crop settings for this image. Use safe name keys so server receives them.
         // Ensure a container exists
         const hiddenFileInputs = document.getElementById('hiddenFileInputs');
-        const cropInputId = `crop-settings-${type}-${safeId(identifier)}`;
+        const cropInputId = `crop-settings-${safeId(name)}`;
         if (!document.getElementById(cropInputId)) {
             const hiddenCrop = document.createElement('input');
             hiddenCrop.type = 'hidden';
-            hiddenCrop.name = `crop_settings[${type}_${safeId(identifier)}]`;
+            hiddenCrop.name = `crop_settings[${safeId(name)}]`;
             hiddenCrop.id = cropInputId;
-            hiddenCrop.value = '';
+            hiddenCrop.value = '{}';
             hiddenFileInputs.appendChild(hiddenCrop);
         }
 
@@ -327,7 +319,7 @@
         // Set Crop button click opens modal (delegation also handles it but make sure data present)
         cropBtn.addEventListener('click', function(ev) {
             ev.stopPropagation();
-            openCropModalFor(type, identifier, src);
+            openCropModalFor(name, src);
         });
 
         gallery.appendChild(item);
@@ -389,27 +381,25 @@
         selectedImages.forEach(key => {
             const idx = key.indexOf('-');
             const [type, identifier] = [key.slice(0, idx), key.slice(idx + 1)];
+            let fileName;
             
             if (type === 'existing') {
                 // Remove from hidden inputs
-                const fileName = identifier.replace(/^.*[\\/]/, '');
+                fileName = identifier.replace(/^.*[\\/]/, '');
                 const hiddenInput = document.getElementById(`hidden-${fileName}`);
                 if (hiddenInput) hiddenInput.remove();
-                // remove crop settings input too
-                const cropId = `crop-settings-existing-${safeId(identifier)}`;
-                const cropInputEl = document.getElementById(cropId);
-                if (cropInputEl) cropInputEl.remove();
             } else if (type === 'new') {
                 // Remove from uploadedFiles
                 const index = parseInt(identifier);
                 if (uploadedFiles["imageFiles[]"] && uploadedFiles["imageFiles[]"][index]) {
+                    fileName = uploadedFiles["imageFiles[]"][index].name;
                     uploadedFiles["imageFiles[]"].splice(index, 1);
                 }
-                // remove crop settings input
-                const cropId = `crop-settings-new-${safeId(identifier)}`;
-                const cropInputEl = document.getElementById(cropId);
-                if (cropInputEl) cropInputEl.remove();
             }
+
+            const cropId = `crop-settings-${safeId(fileName)}`;
+            const cropInputEl = document.getElementById(cropId);
+            if (cropInputEl) cropInputEl.remove();
         });
         
         // Refresh the gallery
@@ -467,34 +457,33 @@
             overlay: document.getElementById('cropperModalOverlay'),
             imgEl: document.getElementById('cropperModalImage'),
             applyBtn: document.getElementById('cropperModalApply'),
+            exitBtn: document.getElementById('cropperModalExit'),
             cancelBtn: document.getElementById('cropperModalCancel'),
             rotateLeftBtn: document.getElementById('cropperRotateLeft'),
             rotateRightBtn: document.getElementById('cropperRotateRight'),
             resetBtn: document.getElementById('cropperReset'),
-            aspectSelect: document.getElementById('cropperAspect'),
             zoomRange: document.getElementById('cropperZoom'),
             previewImg: document.getElementById('cropperPreview')
         };
     }
 
     var cropperInstance = null;
-    var cropCurrentType = null;
     var cropCurrentIdentifier = null;
 
-    function openCropModalFor(type, identifier, src) {
+    function openCropModalFor(identifier, src) {
         const els = getCropModalElements();
         if (!els || !els.overlay) return;
 
-        cropCurrentType = type;
         cropCurrentIdentifier = identifier;
 
         // set image src (cache-bust)
-        els.imgEl.src = src + (src.indexOf('?') === -1 ? '?_=' : '&_=') + Date.now();
+        els.imgEl.src = src;
+        if (!src.startsWith('data:'))
+            els.imgEl.src += (els.imgEl.src.indexOf('?') === -1 ? '?_=' : '&_=') + Date.now();
         els.previewImg.src = '';
         els.previewImg.style.display = 'none';
 
         // reset controls
-        els.aspectSelect.value = 'NaN';
         els.zoomRange.value = 1;
 
         // show overlay
@@ -508,7 +497,7 @@
         }
 
         // Attempt to load existing crop settings for this image and apply after ready
-        const cropInput = document.getElementById(`crop-settings-${type}-${safeId(identifier)}`);
+        const cropInput = document.getElementById(`crop-settings-${safeId(identifier)}`);
         var pending = null;
         if (cropInput && cropInput.value) {
             try { pending = JSON.parse(cropInput.value); } catch (e) { pending = null; }
@@ -519,7 +508,7 @@
             try {
                 if (cropperInstance) { try { cropperInstance.destroy(); } catch (e) {} }
                 cropperInstance = new Cropper(els.imgEl, {
-                    viewMode: 1,
+                    viewMode: 0,
                     autoCropArea: 0.8,
                     responsive: true,
                     background: true,
@@ -530,6 +519,7 @@
                     ready: function () {
                         if (pending && pending.width && pending.height) {
                             try {
+                                if (pending.canvasData) cropperInstance.setCanvasData(pending.canvasData);
                                 var ratio = Number(pending.width) / Number(pending.height);
                                 if (!isNaN(ratio) && isFinite(ratio)) cropperInstance.setAspectRatio(ratio);
                                 cropperInstance.setData({
@@ -542,6 +532,8 @@
                                     scaleY: Number(pending.scaleY)||1
                                 });
                             } catch (e) { console.warn('apply pending crop failed', e); }
+                        } else {
+                            cropperInstance.setAspectRatio(800/480)
                         }
                         updateCropPreviewSmall();
                     },
@@ -560,19 +552,17 @@
         document.body.classList.remove('cropper-modal-open');
         if (cropperInstance) { try { cropperInstance.destroy(); } catch (e) {} }
         cropperInstance = null;
-        cropCurrentType = null;
         cropCurrentIdentifier = null;
     }
 
     function applyCropSettings() {
         const els = getCropModalElements();
         if (!els) return;
-        if (!cropperInstance || !cropCurrentType || cropCurrentIdentifier === null) { closeCropModal(); return; }
+        if (!cropperInstance || cropCurrentIdentifier === null) { closeCropModal(); return; }
 
         try {
             var d = cropperInstance.getData(true);
-            var imageData = cropperInstance.getImageData ? cropperInstance.getImageData() : {};
-            var canvasData = cropperInstance.getCanvasData ? cropperInstance.getCanvasData() : {};
+            var canvasData = cropperInstance.getCanvasData();
 
             var cropSettings = {
                 x: d.x,
@@ -582,32 +572,12 @@
                 rotate: d.rotate || 0,
                 scaleX: d.scaleX || 1,
                 scaleY: d.scaleY || 1,
-                imageNaturalWidth: imageData.naturalWidth || null,
-                imageNaturalHeight: imageData.naturalHeight || null,
-                canvas: {
-                    width: canvasData.width || null,
-                    height: canvasData.height || null,
-                    left: canvasData.left || null,
-                    top: canvasData.top || null
-                },
-                saved_at: new Date().toISOString()
+                canvasData
             };
 
-            const inputId = `crop-settings-${cropCurrentType}-${safeId(cropCurrentIdentifier)}`;
+            const inputId = `crop-settings-${safeId(cropCurrentIdentifier)}`;
             const inputEl = document.getElementById(inputId);
             if (inputEl) inputEl.value = JSON.stringify(cropSettings);
-
-            // update small preview inside gallery
-            try {
-                const small = cropperInstance.getCroppedCanvas({ width: 160 });
-                if (small) {
-                    const previewEl = document.getElementById(`crop-preview-${cropCurrentType}-${safeId(cropCurrentIdentifier)}`);
-                    if (previewEl) {
-                        previewEl.src = small.toDataURL('image/png');
-                        previewEl.style.display = '';
-                    }
-                }
-            } catch (e) { /* CORS may block preview */ }
         } catch (e) {
             console.error('Error applying crop', e);
         } finally {
@@ -645,16 +615,13 @@
         const els = getCropModalElements();
         if (!els) return;
         els.applyBtn.addEventListener('click', applyCropSettings);
+        els.exitBtn.addEventListener('click', function(e){ e.preventDefault(); closeCropModal(); });
         els.cancelBtn.addEventListener('click', function(e){ e.preventDefault(); closeCropModal(); });
         els.rotateLeftBtn.addEventListener('click', function(e){ e.preventDefault(); rotateCropLeft(); });
         els.rotateRightBtn.addEventListener('click', function(e){ e.preventDefault(); rotateCropRight(); });
         els.resetBtn.addEventListener('click', function(e){ e.preventDefault(); resetCrop(); });
-        els.aspectSelect.addEventListener('change', function(e){ setAspectRatio(e.target.value); });
         els.zoomRange.addEventListener('input', function(e){ setZoom(e.target.value); });
 
-        // close on overlay click
-        const overlay = document.getElementById('cropperModalOverlay');
-        overlay.addEventListener('click', function(ev){ if (ev.target === overlay) closeCropModal(); });
         // esc to close
         document.addEventListener('keydown', function(ev){ if (ev.key === 'Escape' && overlay.style.display === 'flex') closeCropModal(); });
     }
@@ -689,9 +656,9 @@
                 // Create a corresponding crop settings hidden input (empty by default)
                 const cropInput = document.createElement('input');
                 cropInput.type = 'hidden';
-                cropInput.name = `crop_settings[existing_${safeId(fileName)}]`;
-                cropInput.id = `crop-settings-existing-${safeId(filePath)}`;
-                cropInput.value = pluginSettings.crop_settings && pluginSettings.crop_settings[`existing_${safeId(fileName)}`] ? pluginSettings.crop_settings[`existing_${safeId(fileName)}`] : '';
+                cropInput.name = `crop_settings[${safeId(fileName)}]`;
+                cropInput.id = `crop-settings-${safeId(fileName)}`;
+                cropInput.value = pluginSettings[`crop_settings[${safeId(fileName)}]`] ? pluginSettings[`crop_settings[${safeId(fileName)}]`] : '';
                 hiddenFileInputs.appendChild(cropInput);
             });
             
@@ -708,16 +675,15 @@
     <div style="width:95%; max-width:1100px; max-height:90vh; background:#fff; border-radius:6px; overflow:hidden; display:flex; flex-direction:column;">
         <div style="padding:10px 14px; background:#f7f7f7; display:flex; align-items:center; justify-content:space-between;">
             <div style="font-weight:600;">Crop Image</div>
-            <div><button id="cropperModalCancel" style="background:transparent;border:none;font-size:20px;cursor:pointer;">&times;</button></div>
+            <div><button id="cropperModalExit" style="background:transparent;border:none;font-size:20px;cursor:pointer;">&times;</button></div>
         </div>
         <div style="padding:10px 14px; display:flex; gap:12px; align-items:flex-start; overflow:auto;">
             <div style="flex:1 1 auto; display:flex; align-items:center; justify-content:center; min-width:200px; max-height:70vh; overflow:hidden; background:#fafafa;">
                 <img id="cropperModalImage" src="" alt="To crop" style="max-width:100%; max-height:70vh; display:block;">
             </div>
             <div style="min-width:260px; max-width:320px; display:flex; flex-direction:column; gap:8px;">
-                <div style="display:flex; align-items:center; justify-content:space-between;"><div style="font-size:13px; font-weight:600;">Controls</div><div style="font-size:12px; color:#666;">Preview</div></div>
+                <div style="display:flex; align-items:center; justify-content:space-between;"><div style="font-size:13px; font-weight:600;">Controls</div></div>
                 <div style="display:flex; gap:6px;"><button id="cropperRotateLeft" class="set-crop-btn">⟲</button><button id="cropperRotateRight" class="set-crop-btn">⟳</button><button id="cropperReset" class="set-crop-btn">Reset</button></div>
-                <div><label for="cropperAspect">Aspect</label><select id="cropperAspect" style="width:100%; padding:6px; margin-top:6px;"><option value="NaN">Free</option><option value="1">1:1</option><option value="16/9">16:9</option><option value="4/3">4:3</option><option value="3/2">3:2</option></select></div>
                 <div><label style="display:block; font-size:13px; margin-top:8px;">Zoom</label><input id="cropperZoom" type="range" min="0.1" max="3" step="0.01" value="1" style="width:100%;"></div>
                 <div style="margin-top:8px;"><div style="font-size:13px; margin-bottom:6px;">Preview</div><img id="cropperPreview" style="width:160px;border:1px solid #ddd; background:white;"/></div>
             </div>
