@@ -19,6 +19,7 @@ This project uses various fonts and icons, each with specific licensing terms. B
 | <img src="../src/plugins/weather/icon.png" width="32" height="32"> | <a href="https://www.flaticon.com/free-icons/sunny" title="sunny icons">Sunny icons created by kosonicon - Flaticon</a>|
 | <img src="../src/static/icons/display.png" width="32" height="32"> | <a href="https://www.flaticon.com/free-icons/music-and-multimedia" title="music and multimedia icons">Music and multimedia icons created by Archival - Flaticon</a>|
 | <img src="../src/static/icons/edit.png" width="32" height="32"> | <a href="https://www.flaticon.com/free-icons/modify" title="modify icons">Modify icons created by Freepik - Flaticon</a>|
+| <img src="../src/static/icons/rename.png" width="32" height="32"> | <a href="https://www.flaticon.com/free-icons/rename" title="rename icons">Rename icons created by Freepik - Flaticon</a>|
 | <img src="../src/static/icons/playlist.png" width="32" height="32"> | <a href="https://www.flaticon.com/free-icons/picture" title="picture icons">Picture icons created by Pixel perfect - Flaticon</a>|
 | <img src="../src/static/icons/remove.png" width="32" height="32"> |<a href="https://www.flaticon.com/free-icons/delete" title="delete icons">Delete icons created by Pixel perfect - Flaticon</a>|
 | <img src="../src/static/icons/settings.png" width="32" height="32"> |<a href="https://www.flaticon.com/free-icons/settings" title="settings icons">Settings icons created by Phoenix Group - Flaticon</a>|
