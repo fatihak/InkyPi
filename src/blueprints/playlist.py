@@ -216,9 +216,9 @@ def rename_plugin():
     if not playlist:
         return jsonify({"error": f"Playlist '{playlist_name}' does not exist"}), 400
 
-    existing = next((plugin for plugin in playlist.plugins if plugin.plugin_id == plugin_id and plugin.name == new_instance_name), None)
+    existing = playlist_manager.find_plugin(plugin_id, new_instance_name)
     if existing:
-        return jsonify({"error": f"Plugin instance '{new_instance_name}' already exists in playlist '{playlist_name}'"}), 400
+        return jsonify({"error": f"Plugin instance name should be unique. There is already an instance named '{new_instance_name}' "}), 400
 
     result = playlist_manager.rename_plugin_instance(playlist_name, plugin_id, old_instance_name, new_instance_name)
     if not result:
