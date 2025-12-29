@@ -1,16 +1,19 @@
 {% extends "plugin.html" %} {% block content %}
-<div className="content">
-  <div className="homeTeam">
-    <h2>
-      Home: {{ home_team.placeName.default }} {{ home_team.commonName.default }}
-    </h2>
-    <img src=\"{{ home_team.logo }}\" height="200" />
-  </div>
-  <div className="awayTeam">
-    <h2>
-      Away: {{ away_team.placeName.default }} {{ away_team.commonName.default }}
-    </h2>
-    <img src=\"{{ away_team.logo }}\" height="200" />
+<div>
+  <h1 class="title">{{ title }}</h1>
+  <div class="content">
+    <div class="homeTeam">
+      <h2>
+        Home: {{ home_team.placeName.default }} {{ home_team.commonName.default }}
+      </h2>
+      <img src="{{ home_team.logo | safe }}" height="150" />
+    </div>
+    <div class="awayTeam">
+      <h2>
+        Away: {{ away_team.placeName.default }} {{ away_team.commonName.default }}
+      </h2>
+      <img src="{{ away_team.logo | safe }}" height="150" />
+    </div>
   </div>
 </div>
 {% endblock %}

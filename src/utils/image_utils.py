@@ -95,10 +95,12 @@ def take_screenshot_html(html_str, dimensions, timeout_ms=None):
             html_file.write(html_str.encode("utf-8"))
             html_file_path = html_file.name
 
+        logger.info(f"written html content to: {html_file_path}")
+
         image = take_screenshot(html_file_path, dimensions, timeout_ms)
 
         # Remove html file
-        os.remove(html_file_path)
+        # os.remove(html_file_path)
 
     except Exception as e:
         logger.error(f"Failed to take screenshot: {str(e)}")

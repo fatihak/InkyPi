@@ -1,13 +1,8 @@
 from plugins.base_plugin.base_plugin import BasePlugin
-from utils.app_utils import resolve_path
-from PIL import Image, ImageDraw, ImageFont
-from utils.image_utils import resize_image
-from io import BytesIO
 from datetime import datetime
 import requests
 import logging
-import textwrap
-import os
+from pytz import timezone, utc
 
 logger = logging.getLogger(__name__)
 
@@ -42,10 +37,34 @@ class NHLTeamSchedule(BasePlugin):
         if device_config.get_config("orientation") == "vertical":
             dimensions = dimensions[::-1]
 
+        todays_date = datetime.now().strftime("%Y-%m-%d")
+        todays_game = None
+        next_game = None
+
+        for game in data.get("games", []):
+            game_date = game.get("gameDate")
+            if game_date == todays_date:
+                todays_game = game
+                break
+            elif not next_game and game_date > todays_date:
+                next_game = game
+
+        if todays_game:
+            start_utc = datetime.strptime(todays_game['startTimeUTC'], "%Y-%m-%dT%H:%M:%SZ")
+            eastern = timezone('US/Eastern')
+            start_eastern = utc.localize(start_utc).astimezone(eastern)
+            title = f"Today's Game @ {start_eastern.strftime('%H:%M %Z')}"
+            selected_game = todays_game
+        elif next_game:
+            title = f"Next Game {next_game['gameDate']}"
+            selected_game = next_game
+        else:
+            raise RuntimeError("No upcoming games found.")
+
         image_template_params = {
             "title": title,
-            "home_team": data["games"][0]["homeTeam"],
-            "away_team": data["games"][0]["awayTeam"],
+            "home_team": selected_game["homeTeam"],
+            "away_team": selected_game["awayTeam"],
             "plugin_settings": settings,
         }
 
