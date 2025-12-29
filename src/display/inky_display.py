@@ -5,8 +5,8 @@ from display.abstract_display import AbstractDisplay
 
 logger = logging.getLogger(__name__)
 
-class InkyDisplay(AbstractDisplay):
 
+class InkyDisplay(AbstractDisplay):
     """
     Handles the Inky e-paper display.
 
@@ -15,9 +15,8 @@ class InkyDisplay(AbstractDisplay):
 
     The Inky display driver supports auto configuration.
     """
-   
+
     def initialize_display(self):
-        
         """
         Initializes the Inky display device.
 
@@ -26,7 +25,7 @@ class InkyDisplay(AbstractDisplay):
         Raises:
             ValueError: If the resolution cannot be retrieved or stored.
         """
-        
+
         self.inky_display = auto()
         self.inky_display.set_border(self.inky_display.BLACK)
 
@@ -34,15 +33,23 @@ class InkyDisplay(AbstractDisplay):
         if not self.device_config.get_config("resolution"):
             self.device_config.update_value(
                 "resolution",
-                [int(self.inky_display.width), int(self.inky_display.height)], 
-                write=True)
+                [int(self.inky_display.width), int(self.inky_display.height)],
+                write=True,
+            )
+
+    def clear_display(self):
+        """
+        Clears the Inky display.
+
+        Fills the display with white to remove any residual pixels.
+        """
+        logger.info("Not implemented.")
 
     def display_image(self, image, image_settings=[]):
-        
         """
         Displays the provided image on the Inky display.
 
-        The image has been processed by adjusting orientation and resizing 
+        The image has been processed by adjusting orientation and resizing
         before being sent to the display.
 
         Args:

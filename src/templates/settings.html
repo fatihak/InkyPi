@@ -72,6 +72,15 @@
             icon.textContent = content.style.display === "block" ? "▲" : "▼";
         }
 
+        async function handleClearScreen() {
+            showResponseModal('success', 'The screen is being cleared.');
+            await new Promise(resolve => setTimeout(resolve, 1000));
+
+            await fetch("{{ url_for('settings.clear_screen') }}", {
+                method: 'POST',
+            });
+        }
+
         async function handleShutdown(reboot) {
             if (reboot) {
                 showResponseModal('success', 'The system is rebooting. The UI will be unavailable until the reboot is complete.');
@@ -110,6 +119,7 @@
                 </div>
                 <div>
                     <a class="header-button" style="text-decoration: none; background-color: #2c66b1; color: #fff;" href="{{ url_for('settings.download_logs', hours=24) }}" download>Download Logs</a>
+                    <button class="header-button" style="background-color: #FFFFFF; color: #333;" onclick="handleClearScreen()">Clear Screen</button>
                     <button class="header-button" style="background-color: #FFD600; color: #333;" onclick="handleShutdown(true)">Reboot</button>
                     <button class="header-button" style="background-color: #E53935; color: #fff;" onclick="handleShutdown(false)">Shutdown</button>
                 </div>

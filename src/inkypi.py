@@ -5,10 +5,13 @@ import os, logging.config
 
 from pi_heif import register_heif_opener
 
-logging.config.fileConfig(os.path.join(os.path.dirname(__file__), 'config', 'logging.conf'))
+logging.config.fileConfig(
+    os.path.join(os.path.dirname(__file__), "config", "logging.conf")
+)
 
 # suppress warning from inky library https://github.com/pimoroni/inky/issues/205
 import warnings
+
 warnings.filterwarnings("ignore", message=".*Busy Wait: Held high.*")
 
 import os
@@ -37,8 +40,8 @@ from waitress import serve
 logger = logging.getLogger(__name__)
 
 # Parse command line arguments
-parser = argparse.ArgumentParser(description='InkyPi Display Server')
-parser.add_argument('--dev', action='store_true', help='Run in development mode')
+parser = argparse.ArgumentParser(description="InkyPi Display Server")
+parser.add_argument("--dev", action="store_true", help="Run in development mode")
 args = parser.parse_args()
 
 # Set development mode settings
@@ -51,13 +54,15 @@ else:
     DEV_MODE = False
     PORT = 80
     logger.info("Starting InkyPi in PRODUCTION mode on port 80")
-logging.getLogger('waitress.queue').setLevel(logging.ERROR)
+logging.getLogger("waitress.queue").setLevel(logging.ERROR)
 app = Flask(__name__)
 template_dirs = [
-   os.path.join(os.path.dirname(__file__), "templates"),    # Default template folder
-   os.path.join(os.path.dirname(__file__), "plugins"),      # Plugin templates
+    os.path.join(os.path.dirname(__file__), "templates"),  # Default template folder
+    os.path.join(os.path.dirname(__file__), "plugins"),  # Plugin templates
 ]
-app.jinja_loader = ChoiceLoader([FileSystemLoader(directory) for directory in template_dirs])
+app.jinja_loader = ChoiceLoader(
+    [FileSystemLoader(directory) for directory in template_dirs]
+)
 
 device_config = Config()
 display_manager = DisplayManager(device_config)
@@ -66,12 +71,12 @@ refresh_task = RefreshTask(device_config, display_manager)
 load_plugins(device_config.get_plugins())
 
 # Store dependencies
-app.config['DEVICE_CONFIG'] = device_config
-app.config['DISPLAY_MANAGER'] = display_manager
-app.config['REFRESH_TASK'] = refresh_task
+app.config["DEVICE_CONFIG"] = device_config
+app.config["DISPLAY_MANAGER"] = display_manager
+app.config["REFRESH_TASK"] = refresh_task
 
 # Set additional parameters
-app.config['MAX_FORM_PARTS'] = 10_000
+app.config["MAX_FORM_PARTS"] = 10_000
 
 # Register Blueprints
 app.register_blueprint(main_bp)
@@ -82,8 +87,7 @@ app.register_blueprint(playlist_bp)
 # Register opener for HEIF/HEIC images
 register_heif_opener()
 
-if __name__ == '__main__':
-
+if __name__ == "__main__":
     # start the background refresh task
     refresh_task.start()
 
@@ -96,11 +100,12 @@ if __name__ == '__main__':
 
     try:
         # Run the Flask app
-        app.secret_key = str(random.randint(100000,999999))
-        
+        app.secret_key = str(random.randint(100000, 999999))
+
         # Get local IP address for display (only in dev mode when running on non-Pi)
         if DEV_MODE:
             import socket
+
             try:
                 s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
                 s.connect(("8.8.8.8", 80))
@@ -109,7 +114,7 @@ if __name__ == '__main__':
                 logger.info(f"Serving on http://{local_ip}:{PORT}")
             except:
                 pass  # Ignore if we can't get the IP
-            
+
         serve(app, host="0.0.0.0", port=PORT, threads=1)
     finally:
         refresh_task.stop()
