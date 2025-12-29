@@ -1,0 +1,16 @@
+{% extends "plugin.html" %} {% block content %}
+<div className="content">
+  <div className="homeTeam">
+    <h2>
+      Home: {{ home_team.placeName.default }} {{ home_team.commonName.default }}
+    </h2>
+    <img src=\"{{ home_team.logo }}\" height="200" />
+  </div>
+  <div className="awayTeam">
+    <h2>
+      Away: {{ away_team.placeName.default }} {{ away_team.commonName.default }}
+    </h2>
+    <img src=\"{{ away_team.logo }}\" height="200" />
+  </div>
+</div>
+{% endblock %}
