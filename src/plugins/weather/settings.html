@@ -64,11 +64,25 @@
         <input type="checkbox" id="displayRain" name="displayRain" onclick="this.value=this.checked ? 'true' : 'false';">
         <span>Rain Amount</span>
     </div>
+	
 
     <div class="form-group">
         <input type="checkbox" id="moonPhase" name="moonPhase" onclick="this.value=this.checked ? 'true' : 'false';">
         <span>Moon Phase</span>
     </div>
+	
+	<div class="form-group">
+		<input type="checkbox" id="displayGraphIcons" name="displayGraphIcons" onclick="this.value=this.checked ? 'true' : 'false';">
+		<span>Graph icons every</span>
+		<select id="graphIconStep" name="graphIconStep" class="form-input">
+			<option value="1">1</option>
+			<option value="2" selected>2</option>
+			<option value="4">4</option>
+			<option value="6">6</option>
+			<option value="12">12</option>
+		</select>
+		<span>hours</span>
+	</div>
 
     <div class="form-group">
         <input type="checkbox" id="displayForecast" name="displayForecast" onclick="this.value=this.checked ? 'true' : 'false';">
@@ -203,6 +217,9 @@
 			document.getElementById('displayRain').checked = pluginSettings.displayRain;
             document.getElementById('displayRain').value = pluginSettings.displayRain;
 			
+			document.getElementById('displayGraphIcons').checked = pluginSettings.displayGraphIcons;
+            document.getElementById('displayGraphIcons').value = pluginSettings.displayGraphIcons;
+			
             document.getElementById('displayForecast').checked = pluginSettings.displayForecast;
             document.getElementById('displayForecast').value = pluginSettings.displayForecast;
 
@@ -228,10 +245,13 @@
             document.getElementById('displayGraph').value = "true";
 			document.getElementById('displayRain').checked = false;
             document.getElementById('displayRain').value = "false";
+			document.getElementById('displayGraphIcons').checked = true;
+			document.getElementById('displayGraphIcons').value = "true";
             document.getElementById('displayForecast').checked = true;
             document.getElementById('displayForecast').value = "true";
             document.getElementById('forecastDays').value = 7;
             document.getElementById('moonPhase').checked = false;
+			document.getElementById('moonPhase').value = "false";
             document.getElementById('weatherTimeZone').value = "locationTimeZone";
         }
 

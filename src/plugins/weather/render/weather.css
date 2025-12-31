@@ -148,7 +148,8 @@
   height: 30%
 }
 
-.data-point-measurement {
+.data-point-measurement,
+.wind-arrow-symbol {
   font-size: min(46cqh, 26cqi);
   text-align: center;
   white-space: nowrap;
@@ -156,6 +157,7 @@
   height: 70%;
   font-weight: bold;
   line-height: 105%;
+  display: inline-block;
 }
 
 .data-point-unit {
@@ -240,7 +242,7 @@
 
 .chart-container {
   width: 100%;
-  height: 16dvh;
+  height: 24dvh;
 }
 
 .separator {
@@ -282,7 +284,6 @@
   position: relative;
   line-height: 140%;
 }
-
 
 @media (max-aspect-ratio: 1) {
   .today-container {
