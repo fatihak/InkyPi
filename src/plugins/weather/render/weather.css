@@ -283,6 +283,39 @@
   line-height: 140%;
 }
 
+/* Indoor Sensor */
+.indoor-sensor {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1dvh 2dvw;
+  border-left: 1px solid;
+}
+
+.indoor-label {
+  font-size: min(2.5dvh, 2.5vw);
+  font-weight: lighter;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.indoor-values {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3dvh;
+}
+
+.indoor-temp {
+  font-size: min(5dvh, 5vw);
+  font-weight: bold;
+}
+
+.indoor-humidity {
+  font-size: min(3dvh, 3vw);
+}
+
 
 @media (max-aspect-ratio: 1) {
   .today-container {

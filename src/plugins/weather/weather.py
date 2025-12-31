@@ -8,6 +8,13 @@ from astral import moon
 import pytz
 from io import BytesIO
 import math
+import asyncio
+
+try:
+    from bleak import BleakScanner
+    BLEAK_AVAILABLE = True
+except ImportError:
+    BLEAK_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
         
@@ -110,10 +117,24 @@ class Weather(BasePlugin):
                 raise RuntimeError(f"Unknown weather provider: {weather_provider}")
 
             template_params['title'] = title
+
+            # Fetch indoor sensor data from Xiaomi BLE sensor
+            indoor_sensor_mac = "A4:C1:38:00:00:00"  # TODO: Replace with your sensor MAC address
+            indoor_data = self.get_xiaomi_sensor_data(indoor_sensor_mac)
+            if indoor_data:
+                indoor_temp = indoor_data.get('temperature')
+                if indoor_temp is not None:
+                    indoor_temp = self.convert_sensor_temperature(indoor_temp, units)
+                template_params['indoor_temperature'] = indoor_temp
+                template_params['indoor_humidity'] = indoor_data.get('humidity')
+            else:
+                template_params['indoor_temperature'] = None
+                template_params['indoor_humidity'] = None
+
         except Exception as e:
             logger.error(f"{weather_provider} request failed: {str(e)}")
             raise RuntimeError(f"{weather_provider} request failure, please check logs.")
-       
+
         dimensions = device_config.get_resolution()
         if device_config.get_config("orientation") == "vertical":
             dimensions = dimensions[::-1]
@@ -732,3 +753,170 @@ class Weather(BasePlugin):
         else:
             logger.error("Failed to retrieve Timezone from weather data")
             raise RuntimeError("Timezone not found in weather data.")
+
+    def get_xiaomi_sensor_data(self, mac_address, timeout=10.0):
+        """
+        Read temperature and humidity from Xiaomi Bluetooth sensor.
+        Supports LYWSD03MMC and similar sensors that broadcast via BLE advertisements.
+
+        Args:
+            mac_address: The MAC address of the Xiaomi sensor (e.g., "A4:C1:38:XX:XX:XX")
+            timeout: Scan timeout in seconds
+
+        Returns:
+            dict with 'temperature' and 'humidity' keys, or None if not found
+        """
+        if not BLEAK_AVAILABLE:
+            logger.error("bleak library not available. Install with: pip install bleak")
+            return None
+
+        if not mac_address:
+            logger.error("No MAC address provided for Xiaomi sensor")
+            return None
+
+        mac_address = mac_address.upper().replace("-", ":")
+
+        async def scan_for_sensor():
+            sensor_data = None
+
+            def detection_callback(device, advertisement_data):
+                nonlocal sensor_data
+                if device.address.upper() == mac_address:
+                    logger.debug(f"Found Xiaomi sensor: {device.address}")
+
+                    # Try to parse service data (common for LYWSD03MMC with custom firmware)
+                    if advertisement_data.service_data:
+                        for uuid, data in advertisement_data.service_data.items():
+                            parsed = self._parse_xiaomi_service_data(data, uuid)
+                            if parsed:
+                                sensor_data = parsed
+                                return
+
+                    # Try to parse manufacturer data (ATC/PVVX firmware format)
+                    if advertisement_data.manufacturer_data:
+                        for manufacturer_id, data in advertisement_data.manufacturer_data.items():
+                            parsed = self._parse_xiaomi_manufacturer_data(data)
+                            if parsed:
+                                sensor_data = parsed
+                                return
+
+            scanner = BleakScanner(detection_callback=detection_callback)
+            await scanner.start()
+
+            # Wait for sensor data or timeout
+            start_time = asyncio.get_event_loop().time()
+            while sensor_data is None:
+                await asyncio.sleep(0.1)
+                if asyncio.get_event_loop().time() - start_time > timeout:
+                    break
+
+            await scanner.stop()
+            return sensor_data
+
+        try:
+            # Run the async scan
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            result = loop.run_until_complete(scan_for_sensor())
+            loop.close()
+
+            if result:
+                logger.info(f"Xiaomi sensor data: temp={result.get('temperature')}°C, humidity={result.get('humidity')}%")
+            else:
+                logger.warning(f"Could not read data from Xiaomi sensor {mac_address}")
+            return result
+
+        except Exception as e:
+            logger.error(f"Error reading Xiaomi sensor: {str(e)}")
+            return None
+
+    def _parse_xiaomi_service_data(self, data, uuid):
+        """Parse Xiaomi sensor service data from BLE advertisement."""
+        try:
+            # ATC/PVVX custom firmware format (UUID 0x181A - Environmental Sensing)
+            # Format: MAC(6) + Temp(2) + Humidity(2) + Battery(1) + BatteryMV(2) + Counter(1) + Flags(1)
+            if "181a" in str(uuid).lower() and len(data) >= 13:
+                temp = int.from_bytes(data[6:8], byteorder='little', signed=True) / 100.0
+                humidity = int.from_bytes(data[8:10], byteorder='little') / 100.0
+                battery = data[10]
+                return {
+                    'temperature': round(temp, 1),
+                    'humidity': round(humidity, 1),
+                    'battery': battery
+                }
+
+            # Standard Xiaomi format (UUID 0xFE95)
+            if "fe95" in str(uuid).lower() and len(data) >= 5:
+                return self._parse_xiaomi_fe95_data(data)
+
+        except Exception as e:
+            logger.debug(f"Failed to parse service data: {e}")
+        return None
+
+    def _parse_xiaomi_manufacturer_data(self, data):
+        """Parse Xiaomi sensor manufacturer data (ATC/PVVX format)."""
+        try:
+            # PVVX format with manufacturer data
+            # Temp(2) + Humidity(2) + Battery(1) at different offsets depending on format
+            if len(data) >= 6:
+                # Try common PVVX offset
+                temp = int.from_bytes(data[0:2], byteorder='little', signed=True) / 100.0
+                humidity = int.from_bytes(data[2:4], byteorder='little') / 100.0
+
+                # Sanity check
+                if -40 <= temp <= 60 and 0 <= humidity <= 100:
+                    return {
+                        'temperature': round(temp, 1),
+                        'humidity': round(humidity, 1)
+                    }
+        except Exception as e:
+            logger.debug(f"Failed to parse manufacturer data: {e}")
+        return None
+
+    def _parse_xiaomi_fe95_data(self, data):
+        """Parse standard Xiaomi FE95 service data format."""
+        try:
+            # Standard Xiaomi Mi Home format
+            # This format has variable structure with type-length-value encoding
+            if len(data) < 11:
+                return None
+
+            result = {}
+            idx = 11  # Skip header
+
+            while idx < len(data) - 2:
+                data_type = data[idx]
+                data_len = data[idx + 1]
+
+                if idx + 2 + data_len > len(data):
+                    break
+
+                value_data = data[idx + 2:idx + 2 + data_len]
+
+                # Temperature (type 0x04)
+                if data_type == 0x04 and data_len == 2:
+                    result['temperature'] = round(int.from_bytes(value_data, 'little', signed=True) / 10.0, 1)
+                # Humidity (type 0x06)
+                elif data_type == 0x06 and data_len == 2:
+                    result['humidity'] = round(int.from_bytes(value_data, 'little') / 10.0, 1)
+                # Combined temp + humidity (type 0x0D)
+                elif data_type == 0x0D and data_len == 4:
+                    result['temperature'] = round(int.from_bytes(value_data[0:2], 'little', signed=True) / 10.0, 1)
+                    result['humidity'] = round(int.from_bytes(value_data[2:4], 'little') / 10.0, 1)
+
+                idx += 2 + data_len
+
+            if 'temperature' in result or 'humidity' in result:
+                return result
+
+        except Exception as e:
+            logger.debug(f"Failed to parse FE95 data: {e}")
+        return None
+
+    def convert_sensor_temperature(self, temp_celsius, units):
+        """Convert temperature from Celsius to the specified unit."""
+        if units == "imperial":
+            return round(temp_celsius * 9/5 + 32, 1)
+        elif units == "standard":
+            return round(temp_celsius + 273.15, 1)
+        return temp_celsius
