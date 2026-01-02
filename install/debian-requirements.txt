@@ -10,3 +10,4 @@ libfreetype6-dev
 fonts-noto-color-emoji
 swig
 liblgpio-dev
+libheif-dev
