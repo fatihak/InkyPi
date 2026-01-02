@@ -10,6 +10,25 @@ from plugins.plugin_registry import get_plugin_instance
 
 logger = logging.getLogger(__name__)
 
+
+def split_image_for_bi_color_epd(image):
+    """
+    Convert image into two 1-bit layers for bi-color (black and red) e-paper displays.
+    """
+    black = (0, 0, 0)
+    white = (255, 255, 255)
+    red = (255, 0, 0)
+
+    palette_data = [*black, *white, *red]
+    palette_img = Image.new('P', (1, 1))
+    palette_img.putpalette(palette_data)
+
+    indexed_img = image.quantize(palette=palette_img, dither=Image.Dither.FLOYDSTEINBERG)
+    black_layer = indexed_img.point(lambda p: 0 if p == 0 else 1, mode='1')
+    red_layer = indexed_img.point(lambda p: 0 if p == 2 else 1, mode='1')
+    return black_layer, red_layer
+
+
 class WaveshareDisplay(AbstractDisplay):
     """
     Handles Waveshare e-paper display dynamically based on device type.
@@ -112,10 +131,11 @@ class WaveshareDisplay(AbstractDisplay):
         if not self.bi_color_display:
             self.epd_display.display(self.epd_display.getbuffer(image))
         else:
-            color_image = Image.new('1', image.size, 255)
+            black_layer, red_layer = split_image_for_bi_color_epd(image)
+
             self.epd_display.display(
-                self.epd_display.getbuffer(image),
-                self.epd_display.getbuffer(color_image)
+                self.epd_display.getbuffer(black_layer),
+                self.epd_display.getbuffer(red_layer),
             )
 
         # Put device into low power mode (EPD displays maintain image when powered off)
