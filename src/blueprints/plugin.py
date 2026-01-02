@@ -9,6 +9,26 @@ import logging
 logger = logging.getLogger(__name__)
 plugin_bp = Blueprint("plugin", __name__)
 
+def _delete_plugin_instance_images(device_config, plugin_instance_obj):
+    """Delete all images associated with a plugin instance."""
+    # Delete the plugin instance's generated image
+    plugin_image_path = os.path.join(device_config.plugin_image_dir, plugin_instance_obj.get_image_path())
+    if os.path.exists(plugin_image_path):
+        try:
+            os.remove(plugin_image_path)
+            logger.info(f"Deleted plugin instance image: {plugin_image_path}")
+        except Exception as e:
+            logger.warning(f"Failed to delete plugin instance image {plugin_image_path}: {e}")
+
+    # Call the plugin's cleanup method to handle plugin-specific resource cleanup
+    try:
+        plugin_config = device_config.get_plugin(plugin_instance_obj.plugin_id)
+        if plugin_config:
+            plugin = get_plugin_instance(plugin_config)
+            plugin.cleanup(plugin_instance_obj.settings)
+    except Exception as e:
+        logger.warning(f"Error during plugin cleanup for {plugin_instance_obj.plugin_id}: {e}")
+
 # Removed module-level PLUGINS_DIR - will resolve dynamically in route handlers
 
 @plugin_bp.route('/plugin/<plugin_id>')
@@ -46,29 +66,56 @@ def plugin_page(plugin_id):
 def image(plugin_id, filename):
     # Resolve plugins directory dynamically
     plugins_dir = resolve_path("plugins")
-    
+
     # Construct the full path to the plugin's file
     plugin_dir = os.path.join(plugins_dir, plugin_id)
-    
+
     # Security check to prevent directory traversal
     safe_path = os.path.abspath(os.path.join(plugin_dir, filename))
     if not safe_path.startswith(os.path.abspath(plugin_dir)):
         return "Invalid path", 403
-    
+
     # Convert to absolute path for send_from_directory
     abs_plugin_dir = os.path.abspath(plugin_dir)
-    
+
     # Check if the directory and file exist
     if not os.path.isdir(abs_plugin_dir):
         logger.error(f"Plugin directory not found: {abs_plugin_dir}")
         return "Plugin directory not found", 404
-        
+
     if not os.path.isfile(safe_path):
         logger.error(f"File not found: {safe_path}")
         return "File not found", 404
-    
+
     # Serve the file from the plugin directory
     return send_from_directory(abs_plugin_dir, filename)
+
+@plugin_bp.route('/plugin_instance_image/<path:playlist_name>/<path:plugin_id>/<path:instance_name>')
+def plugin_instance_image(playlist_name, plugin_id, instance_name):
+    """Serve the generated image for a plugin instance."""
+    device_config = current_app.config['DEVICE_CONFIG']
+    playlist_manager = device_config.get_playlist_manager()
+
+    # Find the plugin instance
+    playlist = playlist_manager.get_playlist(playlist_name)
+    if not playlist:
+        return "Playlist not found", 404
+
+    plugin_instance = playlist.find_plugin(plugin_id, instance_name)
+    if not plugin_instance:
+        return "Plugin instance not found", 404
+
+    # Get the image path
+    image_filename = plugin_instance.get_image_path()
+    image_path = os.path.join(device_config.plugin_image_dir, image_filename)
+
+    # Check if the image exists
+    if not os.path.exists(image_path):
+        # Return a placeholder or 404
+        return "Image not yet generated", 404
+
+    # Serve the image
+    return send_from_directory(device_config.plugin_image_dir, image_filename)
 
 @plugin_bp.route('/delete_plugin_instance', methods=['POST'])
 def delete_plugin_instance():
@@ -84,6 +131,14 @@ def delete_plugin_instance():
         playlist = playlist_manager.get_playlist(playlist_name)
         if not playlist:
             return jsonify({"success": False, "message": "Playlist not found"}), 400
+
+        # Get the plugin instance to find associated images
+        plugin_instance_obj = playlist.find_plugin(plugin_id, plugin_instance)
+        if not plugin_instance_obj:
+            return jsonify({"success": False, "message": "Plugin instance not found"}), 400
+
+        # Delete associated images before removing from playlist
+        _delete_plugin_instance_images(device_config, plugin_instance_obj)
 
         result = playlist.delete_plugin(plugin_id, plugin_instance)
         if not result:
@@ -168,11 +223,11 @@ def update_now():
             plugin_config = device_config.get_plugin(plugin_id)
             if not plugin_config:
                 return jsonify({"error": f"Plugin '{plugin_id}' not found"}), 404
-                
+
             plugin = get_plugin_instance(plugin_config)
             image = plugin.generate_image(plugin_settings, device_config)
             display_manager.display_image(image, image_settings=plugin_config.get("image_settings", []))
-            
+
     except Exception as e:
         logger.exception(f"Error in update_now: {str(e)}")
         return jsonify({"error": f"An error occurred: {str(e)}"}), 500

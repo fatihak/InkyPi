@@ -63,3 +63,7 @@
 .rss-item:nth-child(even) {
   flex-direction: row-reverse;
 }
+
+.item-description img {
+    display: none;
+}

@@ -9,6 +9,7 @@ import base64
 
 logger = logging.getLogger(__name__)
 
+STATIC_DIR = resolve_path("static")
 PLUGINS_DIR = resolve_path("plugins")
 BASE_PLUGIN_DIR =  os.path.join(PLUGINS_DIR, "base_plugin")
 BASE_PLUGIN_RENDER_DIR = os.path.join(BASE_PLUGIN_DIR, "render")
@@ -49,6 +50,17 @@ class BasePlugin:
     def generate_image(self, settings, device_config):
         raise NotImplementedError("generate_image must be implemented by subclasses")
 
+    def cleanup(self, settings):
+        """Optional cleanup method that plugins can override to delete associated resources.
+
+        Called when a plugin instance is deleted. Plugins should override this to clean up
+        any files, external resources, or other data associated with the plugin instance.
+
+        Args:
+            settings: The plugin instance's settings dict, which may contain file paths or other resources
+        """
+        pass  # Default implementation does nothing
+
     def get_plugin_id(self):
         return self.config.get("id")
 
@@ -64,7 +76,7 @@ class BasePlugin:
         settings_path = self.get_plugin_dir("settings.html")
         if Path(settings_path).is_file():
             template_params["settings_template"] = f"{self.get_plugin_id()}/settings.html"
-        
+
         template_params['frame_styles'] = FRAME_STYLES
         return template_params
 
@@ -79,6 +91,7 @@ class BasePlugin:
         template_params["width"] = dimensions[0]
         template_params["height"] = dimensions[1]
         template_params["font_faces"] = get_fonts()
+        template_params["static_dir"] = STATIC_DIR
 
         # load and render the given html template
         template = self.env.get_template(html_file)

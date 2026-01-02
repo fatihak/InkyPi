@@ -10,6 +10,7 @@
         <div class="button-group" id="viewSelector">
             <button type="button" data-value="timeGridDay" onclick="selectView(this)">Day</button>
             <button type="button" data-value="timeGridWeek" onclick="selectView(this)">Week</button>
+            <button type="button" data-value="dayGrid" onclick="selectView(this)">Multi-Week</button>
             <button type="button" data-value="dayGridMonth" onclick="selectView(this)">Month</button>
             <button type="button" data-value="listMonth" onclick="selectView(this)">List</button>
         </div>
@@ -56,7 +57,7 @@
 </div>
 
 <div class="form-group">
-    <div class="form-group nowrap" data-visible-modes="timeGridWeek,dayGridMonth">
+    <div class="form-group nowrap" data-visible-modes="timeGridWeek,dayGridMonth,dayGrid">
         <label for="weekStartDay" class="form-label">Week Start Day:</label>
         <select id="weekStartDay" name="weekStartDay" class="form-input">
             <option value="0">Sunday</option>
@@ -74,6 +75,11 @@
         <input type="number" id="startTimeInterval" name="startTimeInterval" class="form-input" min="0" max="24" placeholder="00">
         -
         <input type="number" id="endTimeInterval" name="endTimeInterval" class="form-input" min="0" max="24" placeholder="24">
+    </div>
+
+    <div class="form-group nowrap" data-visible-modes="dayGrid">
+        <label for="interval">Display Weeks:</label>
+        <input type="number" id="displayWeeks" name="displayWeeks" class="form-input" min="1" max="52" placeholder="4">
     </div>
 
     <div class="form-group nowrap">
@@ -193,6 +199,8 @@
 
             document.getElementById("startTimeInterval").value = pluginSettings.startTimeInterval;
             document.getElementById("endTimeInterval").value = pluginSettings.endTimeInterval;
+
+            document.getElementById("displayWeeks").value = pluginSettings.displayWeeks;
             
             if (pluginSettings["calendarURLs[]"]) {
                 calendars = pluginSettings["calendarURLs[]"].map((url, i) => ({

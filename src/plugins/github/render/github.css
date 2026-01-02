@@ -67,3 +67,16 @@
       gap: 2dvh;
     }
 }
+
+.stars {
+    font-size: 500%;
+    text-align: center;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.2em;
+}
+
+.github-stars {
+    fill: currentColor;
+}

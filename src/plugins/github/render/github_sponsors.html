@@ -8,36 +8,8 @@
         </svg>
         GitHub/{{ username }}
     </div>
-    <div class="metric-container">
-        {% for metric in metrics %}
-        <div class="metric">
-            <div class="metric-title">{{ metric.title }}</div>
-            <div class="metric-value">{{ metric.value }}</div>
-        </div>
-        {% endfor %}
+    <div class="title">
+        Earnings this month ${{ total_per_month }}
     </div>
-
-    <div class="calendar-grid">
-      <!-- Month labels -->
-      {% for label in month_positions %}
-        <div class="month-label"
-            style="grid-column-start: {{ label.index + 2 }}; grid-row-start: 1;">
-          {{ label.name }}
-        </div>
-      {% endfor %}
-      <!-- Contribution squares -->
-      {% for week in grid %}
-        {% set week_idx = loop.index0 %}
-        {% for day in week %}
-          {% set day_idx = loop.index0 %}
-          {% set count = day['contributionCount'] %}
-          <div class="day" style="background-color: {{day['color']}}; grid-column-start: {{ week_idx + 2 }}; grid-row-start: {{ day_idx + 2 }};"
-              title="{{ day['date'] }}: {{ count }}">
-          </div>
-        {% endfor %}
-      {% endfor %}
-    </div>
-</div>  
-
+</div>
 {% endblock %}
-

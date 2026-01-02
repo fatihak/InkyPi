@@ -4,6 +4,7 @@ from io import BytesIO
 import feedparser
 import requests
 import logging
+import html
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +23,6 @@ class Rss(BasePlugin):
         return template_params
 
     def generate_image(self, settings, device_config):
-        
         title = settings.get("title")
         feed_url = settings.get("feedUrl")
         if not feed_url:
@@ -36,7 +36,7 @@ class Rss(BasePlugin):
 
         template_params = {
             "title": title,
-            "include_images": settings.get("includeImages", False),
+            "include_images": settings.get("includeImages") == "true",
             "items": items[:10],
             "font_scale": FONT_SIZES.get(settings.get('fontSize', 'normal'), 1),
             "plugin_settings": settings
@@ -55,8 +55,8 @@ class Rss(BasePlugin):
 
         for entry in feed.entries:
             item = {
-                "title": entry.get("title", ""),
-                "description": entry.get("description", ""),
+                "title": html.unescape(entry.get("title", "")),
+                "description": html.unescape(entry.get("description", "")),
                 "published": entry.get("published", ""),
                 "link": entry.get("link", ""),
                 "image": None
