@@ -1,9 +1,34 @@
 #!/usr/bin/env python3
 
 """
-Stock Tracker Plugin for InkyPi - Enhanced Dashboard
+Stock Tracker Plugin for InkyPi – Enhanced Dashboard
 
-This file should be saved as: src/plugins/stocktracker/stocktracker.py
+File: src/plugins/stocktracker/stocktracker.py
+Author: MEAN-GAIN
+Description:
+    A portfolio tracking plugin for InkyPi that retrieves market data using
+    yfinance and renders a visual dashboard showing stock performance,
+    portfolio value, and historical trends.
+
+DISCLAIMER:
+    This software is provided for informational and educational purposes only.
+    It is NOT intended to be financial, investment, trading, or legal advice.
+    Market data is obtained from third-party sources and may be delayed,
+    inaccurate, or incomplete.
+
+    The authors and contributors make no representations or warranties of any
+    kind regarding the accuracy, reliability, or suitability of the information
+    displayed and accept no liability for any losses or damages arising from
+    its use. Use this software entirely at your own risk.
+
+Dependencies:
+    - yfinance
+    - matplotlib
+    - numpy
+    - Pillow (PIL)
+
+Compatible with:
+    InkyPi plugin architecture
 """
 
 from plugins.base_plugin.base_plugin import BasePlugin
