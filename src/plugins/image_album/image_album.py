@@ -20,44 +20,29 @@ class ImmichProvider:
         self.orientation = orientation
         self.headers = {"x-api-key": self.key}
 
-    def get_album_id(self, album: str) -> str:
+    def get_album_data(self, album_name: str) -> dict:
         r = requests.get(f"{self.base_url}/api/albums", headers=self.headers)
         r.raise_for_status()
         albums = r.json()
-        album = [a for a in albums if a["albumName"] == album][0]
+        album_summary = [a for a in albums if a["albumName"] == album_name][0]
 
-        if album is None:
-            raise RuntimeError(f"Album {album} not found.")
+        if album_summary is None:
+            raise RuntimeError(f"Album {album_name} not found.")
 
-        return album["id"]
+        album_id = album_summary["id"]
+        r2 = requests.get(f"{self.base_url}/api/albums/{album_id}", headers=self.headers)
+        r2.raise_for_status()
+        
+        return r2.json()
 
-    def get_asset_ids(self, album_id: str) -> list[str]:
-        all_items = []
-        page_items = [1]
-        page = 1
-
-        while page_items:
-            body = {
-                "albumIds": [album_id],
-                "size": 1000,
-                "page": page
-            }
-            r2 = requests.post(f"{self.base_url}/api/search/metadata", json=body, headers=self.headers)
-            r2.raise_for_status()
-            assets_data = r2.json()
-
-            page_items = assets_data.get("assets", {}).get("items", [])
-            all_items.extend(page_items)
-            page += 1
-
-        return [asset["id"] for asset in all_items]
+    def get_asset_ids(self, album_name: str) -> list[str]:
+        album = self.get_album_data(album_name)
+        return [asset["id"] for asset in album.get("assets", [])]
 
     def get_image(self, album: str) -> ImageFile | None:
         try:
-            logger.info(f"Getting id for album {album}")
-            album_id = self.get_album_id(album)
-            logger.info(f"Getting ids from album id {album_id}")
-            asset_ids = self.get_asset_ids(album_id)
+            logger.info(f"Getting asset IDs for album {album}")
+            asset_ids = self.get_asset_ids(album)
         except Exception as e:
             logger.error(f"Error grabbing image from {self.base_url}: {e}")
             return None
