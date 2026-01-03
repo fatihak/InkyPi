@@ -733,6 +733,10 @@ html[data-theme="dark"] .settings-button.dark-mode-toggle::before {
     background-color: var(--failure-color);
 }
 
+.success-failure-modal.warning {
+    background-color: #f39c12; /* Warning color */
+}
+
 /* Loading Indicator Styles */
 .loading-indicator {
     display: none;
