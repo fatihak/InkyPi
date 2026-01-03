@@ -45,6 +45,25 @@ class RefreshTask:
         if self.thread:
             logger.info("Stopping refresh task")
             self.thread.join()
+            
+    def _get_sleep_time(self):
+        """Gets the sleep time from the last refreshed plugin config, or falls back to device default."""
+        default_sleep_time = self.device_config.get_config("plugin_cycle_interval_seconds", default=60*60)
+        
+        # Try to get the plugin config from the last refresh
+        latest_refresh = self.device_config.get_refresh_info()
+        if latest_refresh and latest_refresh.plugin_id:
+            plugin_config = self.device_config.get_plugin(latest_refresh.plugin_id)
+            if plugin_config:
+                # Check if plugin has a sleep_time attribute
+                sleep_time = plugin_config.get("sleep_time")
+                if sleep_time is not None:
+                    logger.info(f"Using plugin-specific sleep_time: {sleep_time}s for plugin '{latest_refresh.plugin_id}'")
+                    return sleep_time
+                else:
+                    logger.info(plugin_config)
+        logger.info(f"Using default sleep_time: {default_sleep_time}s")
+        return default_sleep_time
 
     def _run(self):
         """Background task that manages the periodic refresh of the display.
@@ -73,7 +92,7 @@ class RefreshTask:
         while True:
             try:
                 with self.condition:
-                    sleep_time = self.device_config.get_config("plugin_cycle_interval_seconds", default=60*60)
+                    sleep_time = self._get_sleep_time()
 
                     # Wait for sleep_time or until notified
                     self.condition.wait(timeout=sleep_time)
@@ -174,7 +193,7 @@ class RefreshTask:
             return None, None
 
         latest_refresh_dt = latest_refresh_info.get_refresh_datetime()
-        plugin_cycle_interval = self.device_config.get_config("plugin_cycle_interval_seconds", default=3600)
+        plugin_cycle_interval = self._get_sleep_time()
         should_refresh = PlaylistManager.should_refresh(latest_refresh_dt, plugin_cycle_interval, current_dt)
 
         if not should_refresh:
