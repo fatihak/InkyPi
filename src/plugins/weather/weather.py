@@ -407,7 +407,9 @@ class Weather(BasePlugin):
         sliced_rain = rain[start_index:]
 
         for i in range(min(24, len(sliced_times))):
-            dt = datetime.fromisoformat(sliced_times[i]).astimezone(tz)
+            # Open-Meteo returns times already in local timezone (via timezone=auto),
+            # so we should NOT call .astimezone() which would incorrectly re-convert
+            dt = datetime.fromisoformat(sliced_times[i])
             hour_forecast = {
                 "time": self.format_time(dt, time_format, True),
                 "temperature": int(sliced_temperatures[i]) if i < len(sliced_temperatures) else 0,
@@ -504,9 +506,11 @@ class Weather(BasePlugin):
         current_time = datetime.now(tz)
 
         # Sunrise
+        # Open-Meteo returns times already in local timezone (via timezone=auto),
+        # so we should NOT call .astimezone() which would incorrectly re-convert
         sunrise_times = daily_data.get('sunrise', [])
         if sunrise_times:
-            sunrise_dt = datetime.fromisoformat(sunrise_times[0]).astimezone(tz)
+            sunrise_dt = datetime.fromisoformat(sunrise_times[0])
             data_points.append({
                 "label": "Sunrise",
                 "measurement": self.format_time(sunrise_dt, time_format, include_am_pm=False),
@@ -517,9 +521,11 @@ class Weather(BasePlugin):
             logging.error(f"Sunrise not found in Open-Meteo response, this is expected for polar areas in midnight sun and polar night periods.")
 
         # Sunset
+        # Open-Meteo returns times already in local timezone (via timezone=auto),
+        # so we should NOT call .astimezone() which would incorrectly re-convert
         sunset_times = daily_data.get('sunset', [])
         if sunset_times:
-            sunset_dt = datetime.fromisoformat(sunset_times[0]).astimezone(tz)
+            sunset_dt = datetime.fromisoformat(sunset_times[0])
             data_points.append({
                 "label": "Sunset",
                 "measurement": self.format_time(sunset_dt, time_format, include_am_pm=False),
