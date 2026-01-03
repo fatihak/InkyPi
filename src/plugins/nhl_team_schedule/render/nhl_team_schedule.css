@@ -8,6 +8,7 @@
   width: 100%;
   display: flex;
   justify-content: space-between;
+  align-items: center;
   margin-top: 10px;
 }
 
@@ -15,5 +16,22 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+}
+
+.dayTime { 
+  font-size: 25px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.teamLogo {
+  width: 175px;
+  height: auto;
+}
+
+.at {
+  font-size: 40px;
 }
 
