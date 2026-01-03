@@ -1,0 +1,68 @@
+<!-- Refresh Settings Form - Reusable Component -->
+<div class="form-group">
+    <label>Refresh</label>
+    <span title="Determines how often the data and image should be refreshed.">ⓘ</span>
+</div>
+<div class="form-group nowrap" id="{{ prefix }}-group-interval">
+  <input type="radio" name="refreshType" id="{{ prefix }}-refresh-interval" value="interval" checked>
+  <label for="{{ prefix }}-refresh-interval">Every</label>
+  <input type="number" id="{{ prefix }}-interval" name="interval" class="form-input" required min="1" placeholder="Enter a number">
+  <select id="{{ prefix }}-unit" name="unit" class="form-input" required>
+    <option value="minute">Minute</option>
+    <option value="hour">Hour</option>
+    <option value="day">Day</option>
+  </select>
+</div>
+
+<div class="form-group nowrap" id="{{ prefix }}-group-scheduled">
+  <input type="radio" name="refreshType" id="{{ prefix }}-refresh-scheduled" value="scheduled">
+  <label for="{{ prefix }}-refresh-scheduled">Daily at</label>
+  <input id="{{ prefix }}-scheduled" class="time-input" type="time" name="refreshTime" step="900">
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    // Interval group
+    const groupInterval = document.getElementById('{{ prefix }}-group-interval');
+    const radioInterval = document.getElementById('{{ prefix }}-refresh-interval');
+    const inputInterval = document.getElementById('{{ prefix }}-interval');
+
+    // Scheduled group
+    const groupScheduled = document.getElementById('{{ prefix }}-group-scheduled');
+    const radioScheduled = document.getElementById('{{ prefix }}-refresh-scheduled');
+    const inputScheduled = document.getElementById('{{ prefix }}-scheduled');
+    const selectUnit = document.getElementById('{{ prefix }}-unit');
+
+    if (groupInterval && groupScheduled) {
+      // Helper to activate a group
+      const activateGroup = (radio, input) => {
+        radio.checked = true;
+        // Focus after a short delay to ensure radio updates visually
+        setTimeout(() => input.focus(), 0);
+      };
+
+      // Click anywhere inside group → activate
+      groupInterval.addEventListener('click', (e) => {
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+        activateGroup(radioInterval, inputInterval);
+      });
+
+      groupScheduled.addEventListener('click', (e) => {
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+        activateGroup(radioScheduled, inputScheduled);
+      });
+
+      // Clicking the radio itself → focus the input
+      radioInterval.addEventListener('click', () => activateGroup(radioInterval, inputInterval));
+      radioScheduled.addEventListener('click', () => activateGroup(radioScheduled, inputScheduled));
+
+      // Focusing inputs → auto-select their radio
+      inputInterval.addEventListener('focus', () => (radioInterval.checked = true));
+      inputScheduled.addEventListener('focus', () => (radioScheduled.checked = true));
+      if (selectUnit) {
+        selectUnit.addEventListener('focus', () => (radioInterval.checked = true));
+      }
+    }
+  });
+</script>
+
