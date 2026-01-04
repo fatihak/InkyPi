@@ -52,7 +52,7 @@ GEOCODING_URL = "http://api.openweathermap.org/geo/1.0/reverse?lat={lat}&lon={lo
 OPEN_METEO_FORECAST_URL = "https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={long}&hourly=temperature_2m,precipitation,precipitation_probability,relative_humidity_2m,surface_pressure,visibility&daily=weathercode,temperature_2m_max,temperature_2m_min,sunrise,sunset&current_weather=true&timezone=auto&models=best_match&forecast_days={forecast_days}"
 OPEN_METEO_AIR_QUALITY_URL = "https://air-quality-api.open-meteo.com/v1/air-quality?latitude={lat}&longitude={long}&hourly=european_aqi,uv_index,uv_index_clear_sky&timezone=auto"
 OPEN_METEO_UNIT_PARAMS = {
-    "standard": "temperature_unit=kelvin&wind_speed_unit=ms&precipitation_unit=mm",
+    "standard": "temperature_unit=celsius&wind_speed_unit=ms&precipitation_unit=mm",  # temperature is converted to Kelvin later
     "metric":   "temperature_unit=celsius&wind_speed_unit=ms&precipitation_unit=mm",
     "imperial": "temperature_unit=fahrenheit&wind_speed_unit=mph&precipitation_unit=inch"
 }
@@ -166,21 +166,23 @@ class Weather(BasePlugin):
         weather_code = current.get("weathercode", 0)
         is_day = current.get("is_day", 1)
         current_icon = self.map_weather_code_to_icon(weather_code, is_day)
+        
+        temperature_conversion = 273.15 if units == "standard" else 0.
 
         data = {
             "current_date": dt.strftime("%A, %B %d"),
             "current_day_icon": self.get_plugin_dir(f'icons/{current_icon}.png'),
-            "current_temperature": str(round(current.get("temperature", 0))),
-            "feels_like": str(round(current.get("apparent_temperature", current.get("temperature", 0)))),
+            "current_temperature": str(round(current.get("temperature", 0) + temperature_conversion)),
+            "feels_like": str(round(current.get("apparent_temperature", current.get("temperature", 0)) + temperature_conversion)),
             "temperature_unit": UNITS[units]["temperature"],
             "units": units,
             "time_format": time_format
         }
 
-        data['forecast'] = self.parse_open_meteo_forecast(weather_data.get('daily', {}), tz, is_day, lat)
-        data['data_points'] = self.parse_open_meteo_data_points(weather_data, aqi_data, tz, units, time_format)
+        data['forecast'] = self.parse_open_meteo_forecast(weather_data.get('daily', {}), units, tz, is_day, lat)
+        data['data_points'] = self.parse_open_meteo_data_points(weather_data, aqi_data, units, tz, time_format)
         
-        data['hourly_forecast'] = self.parse_open_meteo_hourly(weather_data.get('hourly', {}), tz, time_format)
+        data['hourly_forecast'] = self.parse_open_meteo_hourly(weather_data.get('hourly', {}), units, tz, time_format)
         return data
 
     def map_weather_code_to_icon(self, weather_code, is_day):
@@ -318,7 +320,7 @@ class Weather(BasePlugin):
 
         return forecast
         
-    def parse_open_meteo_forecast(self, daily_data, tz, is_day, lat):
+    def parse_open_meteo_forecast(self, daily_data, units, tz, is_day, lat):
         """
         Parse the daily forecast from Open-Meteo API and calculate moon phase and illumination using the local 'astral' library.
         """
@@ -326,6 +328,9 @@ class Weather(BasePlugin):
         weather_codes = daily_data.get('weathercode', [])
         temp_max = daily_data.get('temperature_2m_max', [])
         temp_min = daily_data.get('temperature_2m_min', [])
+        if units == "standard":
+            temp_max = [T + 273.15 for T in temp_max]
+            temp_min = [T + 273.15 for T in temp_min]
 
         forecast = []
 
@@ -381,10 +386,12 @@ class Weather(BasePlugin):
             hourly.append(hour_forecast)
         return hourly
 
-    def parse_open_meteo_hourly(self, hourly_data, tz, time_format):
+    def parse_open_meteo_hourly(self, hourly_data, units, tz, time_format):
         hourly = []
         times = hourly_data.get('time', [])
         temperatures = hourly_data.get('temperature_2m', [])
+        if units == "standard":
+            temperatures = [temperature + 273.15 for temperature in temperatures]
         precipitation_probabilities = hourly_data.get('precipitation_probability', [])
         rain = hourly_data.get('precipitation', [])
         current_time_in_tz = datetime.now(tz)
@@ -494,7 +501,7 @@ class Weather(BasePlugin):
 
         return data_points
 
-    def parse_open_meteo_data_points(self, weather_data, aqi_data, tz, units, time_format):
+    def parse_open_meteo_data_points(self, weather_data, aqi_data, units, tz, time_format):
         """Parses current data points from Open-Meteo API response."""
         data_points = []
         daily_data = weather_data.get('daily', {})
