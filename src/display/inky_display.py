@@ -57,6 +57,7 @@ class InkyDisplay(AbstractDisplay):
         if not image:
             raise ValueError(f"No image provided.")
 
-        # Display the image on the Inky display
-        self.inky_display.set_image(image)
+        # Display the image on the Inky display - saturation set to 0 as it's not really saturation:
+        # https://github.com/pimoroni/inky/issues/225#issuecomment-3213935144
+        self.inky_display.set_image(image,saturation=0)
         self.inky_display.show()
