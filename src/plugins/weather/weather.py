@@ -165,7 +165,7 @@ class Weather(BasePlugin):
         current = weather_data.get("current", {})
         daily = weather_data.get('daily', {})
         dt = datetime.fromisoformat(current.get('time')).astimezone(tz) if current.get('time') else datetime.now(tz)
-        weather_code = current.get("weathercode", 0)
+        weather_code = current.get("weather_code", 0)
         is_day = current.get("is_day", 1)
         current_icon = self.map_weather_code_to_icon(weather_code, is_day)
 
