@@ -1,0 +1,178 @@
+.crypto-dashboard {
+  font-family: var(--font-family, Arial, sans-serif);
+  padding: 20px;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+}
+
+.last-refresh {
+  font-size: 12px;
+  color: #000;
+  text-align: right;
+  margin-bottom: 10px;
+  opacity: 0.7;
+}
+
+.header {
+  text-align: center;
+  margin-bottom: 30px;
+  border-bottom: 2px solid var(--primary-color, #000);
+  padding-bottom: 15px;
+}
+
+.title {
+  font-size: 28px;
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+
+.subtitle {
+  font-size: 16px;
+  color: #000;
+  font-weight: 500;
+  opacity: 0.7;
+}
+
+.crypto-list {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  align-content: center;
+}
+
+.crypto-item {
+  border: 2px solid var(--primary-color, #000);
+  border-radius: 10px;
+  padding: 15px;
+  background: white;
+  transition: transform 0.2s;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.crypto-header {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.crypto-symbol {
+  font-size: 26px;
+  font-weight: bold;
+  color: var(--primary-color, #000);
+}
+
+.crypto-name {
+  font-size: 14px;
+  color: #000;
+  font-weight: 500;
+  opacity: 0.7;
+}
+
+.crypto-details {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.crypto-price {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.currency-symbol {
+  font-size: 16px;
+  color: #000;
+  opacity: 0.6;
+}
+
+.price-value {
+  font-size: 28px;
+  font-weight: bold;
+  font-family: 'Courier New', monospace;
+}
+
+.crypto-change {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-weight: bold;
+  font-size: 14px;
+  border: 2px solid #000;
+  background-color: white;
+  color: #000;
+}
+
+.crypto-change.up {
+  border-style: solid;
+  background-color: white;
+}
+
+.crypto-change.down {
+  border-style: dashed;
+  background-color: white;
+}
+
+.crypto-change.neutral {
+  border-style: dotted;
+  background-color: white;
+}
+
+.change-arrow {
+  font-size: 14px;
+}
+
+.change-value {
+  font-family: 'Courier New', monospace;
+}
+
+/* Responsive adjustments for smaller screens */
+@media (max-height: 400px) {
+  .title {
+    font-size: 20px;
+  }
+
+  .crypto-symbol {
+    font-size: 20px;
+  }
+
+  .crypto-name {
+    font-size: 12px;
+  }
+
+  .price-value {
+    font-size: 22px;
+  }
+
+  .currency-symbol {
+    font-size: 14px;
+  }
+
+  .crypto-change {
+    font-size: 12px;
+    padding: 4px 8px;
+  }
+
+  .crypto-item {
+    padding: 12px;
+  }
+
+  .crypto-list {
+    gap: 15px;
+  }
+
+  .header {
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+  }
+}

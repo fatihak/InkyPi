@@ -1,0 +1,99 @@
+{% extends "base_plugin/settings.html" %}
+
+{% block settings %}
+<div class="form-group">
+    <label class="form-label">Cryptocurrency Selection:</label>
+    <div class="crypto-grid">
+        {% for key, crypto in cryptos.items() %}
+        <div class="crypto-item">
+            <input type="checkbox" id="crypto-{{ crypto.symbol|lower }}" name="selectedCryptos" value="{{ key }}"
+                   {% if not plugin_instance_settings.selectedCryptos or key in plugin_instance_settings.selectedCryptos %}checked{% endif %}>
+            <label for="crypto-{{ crypto.symbol|lower }}">{{ crypto.name }} ({{ crypto.symbol }})</label>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<div class="form-group">
+    <div class="form-group">
+        <label for="currency" class="form-label">Currency:</label>
+        <select id="currency" name="currency" class="form-input" required>
+            {% for key, curr in currencies.items() %}
+            <option value="{{ key }}" {% if plugin_instance_settings.currency == key or (not plugin_instance_settings.currency and key == 'usd') %}selected{% endif %}>
+                {{ curr.name }} ({{ curr.symbol }})
+            </option>
+            {% endfor %}
+        </select>
+    </div>
+</div>
+
+<div class="form-group">
+    <label class="form-label">Display Options:</label>
+
+    <div class="form-group">
+        <input type="checkbox" id="displayChange" name="displayChange" value="true"
+               {% if plugin_instance_settings.displayChange == "true" or not plugin_instance_settings.displayChange %}checked{% endif %}
+               onclick="this.value=this.checked ? 'true' : 'false';">
+        <span>24h Price Change</span>
+    </div>
+
+    <div class="form-group">
+        <input type="checkbox" id="displayRefreshTime" name="displayRefreshTime" value="true"
+               {% if plugin_instance_settings.displayRefreshTime == "true" or not plugin_instance_settings.displayRefreshTime %}checked{% endif %}
+               onclick="this.value=this.checked ? 'true' : 'false';">
+        <span>Refresh Time</span>
+    </div>
+</div>
+
+<style>
+    .crypto-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 12px;
+        margin-top: 8px;
+    }
+
+    .crypto-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .crypto-item input[type="checkbox"] {
+        width: auto;
+        margin: 0;
+    }
+
+    .crypto-item label {
+        margin: 0;
+        font-weight: normal;
+        cursor: pointer;
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        if (loadPluginSettings) {
+            document.getElementById('currency').value = pluginSettings.currency || 'usd';
+            document.getElementById('displayChange').checked = pluginSettings.displayChange === "true" || !pluginSettings.displayChange;
+            document.getElementById('displayChange').value = pluginSettings.displayChange || "true";
+            document.getElementById('displayRefreshTime').checked = pluginSettings.displayRefreshTime === "true" || !pluginSettings.displayRefreshTime;
+            document.getElementById('displayRefreshTime').value = pluginSettings.displayRefreshTime || "true";
+
+            // Handle selectedCryptos
+            if (pluginSettings.selectedCryptos) {
+                document.querySelectorAll('input[name="selectedCryptos"]').forEach(checkbox => {
+                    checkbox.checked = pluginSettings.selectedCryptos.includes(checkbox.value);
+                });
+            }
+        } else {
+            // Set default values
+            document.getElementById('currency').value = 'usd';
+            document.getElementById('displayChange').checked = true;
+            document.getElementById('displayChange').value = "true";
+            document.getElementById('displayRefreshTime').checked = true;
+            document.getElementById('displayRefreshTime').value = "true";
+        }
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,45 @@
+{% extends "plugin.html" %}
+
+{% block content %}
+<div class="crypto-dashboard">
+  {% if display_refresh_time %}
+  <div class="last-refresh">Last refresh: {{ last_refresh_time }}</div>
+  {% endif %}
+
+  <div class="header">
+    <div class="title">Cryptocurrency Prices</div>
+    <div class="subtitle">{{ currency }}</div>
+  </div>
+
+  <div class="crypto-list">
+    {% for crypto in crypto_data %}
+    <div class="crypto-item">
+      <div class="crypto-header">
+        <div class="crypto-symbol">{{ crypto.symbol }}</div>
+        <div class="crypto-name">{{ crypto.name }}</div>
+      </div>
+
+      <div class="crypto-details">
+        <div class="crypto-price">
+          <span class="currency-symbol">{{ currency_symbol }}</span>
+          <span class="price-value">{{ crypto.price }}</span>
+        </div>
+
+        {% if display_change %}
+        <div class="crypto-change {{ crypto.change_direction }}">
+          {% if crypto.change_direction == 'up' %}
+            <span class="change-arrow">▲</span>
+          {% elif crypto.change_direction == 'down' %}
+            <span class="change-arrow">▼</span>
+          {% else %}
+            <span class="change-arrow">—</span>
+          {% endif %}
+          <span class="change-value">{{ crypto.change_24h }}%</span>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}
