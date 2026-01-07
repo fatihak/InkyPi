@@ -59,4 +59,15 @@ class InkyDisplay(AbstractDisplay):
 
         # Display the image on the Inky display
         self.inky_display.set_image(image)
-        self.inky_display.show()
+        
+        # Get saturation setting (0.0-1.0)
+        # Lower = faster but less accurate colors
+        # Higher = slower but better colors  
+        # Default 0.5 is balanced
+        saturation = self.device_config.get_config("display_saturation", default=0.5)
+        
+        try:
+            self.inky_display.show(saturation=saturation)
+        except TypeError:
+            # Some Inky models don't support saturation parameter
+            self.inky_display.show()

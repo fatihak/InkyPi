@@ -122,17 +122,18 @@ body {
 /* Current image styling */
 .image-container {
     position: relative;
-    width: 300px;
-    margin: 0 auto;
     cursor: pointer;
     transition: opacity 0.3s ease;
+    padding: 8px;
+    background-color: #1a1a1a;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px var(--shadow-medium);
 }
 
 .image-container img {
     height: auto;
     display: block;
-    margin: auto;
-    border-radius: 6px;
+    border-radius: 4px;
     max-width: 20rem;
     max-height: 15rem;
     /* Do NOT apply filter to image-container images */
@@ -1070,4 +1071,68 @@ html[data-theme="dark"] .settings-button.dark-mode-toggle::before {
 
 .font-weight-normal {
     font-weight: normal;
+}
+
+/* Hardware button controls */
+.display-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    margin: 0 auto;
+}
+
+.button-panel {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+.button-panel-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.button-panel-buttons {
+    display: flex;
+    flex-direction: row;
+    gap: 12px;
+}
+
+.hw-button {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    border: 2px solid var(--border-color);
+    background-color: var(--button-bg);
+    color: var(--text-primary);
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: manipulation;
+}
+
+.hw-button:hover {
+    background-color: var(--button-hover);
+    border-color: var(--accent-primary);
+}
+
+.hw-button.pressed {
+    transform: scale(0.95);
+    background-color: var(--accent-primary);
+    border-color: var(--accent-primary);
+    color: white;
+}
+
+.hw-button.long-pressed {
+    background-color: var(--accent-warn);
+    border-color: var(--accent-warn);
+    color: white;
 }

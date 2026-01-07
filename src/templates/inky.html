@@ -14,6 +14,12 @@
         })();
         let lastModified = null;
         const refreshIntervalMs = 3 * 1000;
+        const statusPollIntervalMs = 500;
+        const LONG_PRESS_MS = 1000;
+        let buttonPressTimer = null;
+        let buttonPressStart = null;
+        let statusPollTimer = null;
+        let isCurrentlyRefreshing = false;
 
         async function refreshImage() {
             const img = document.querySelector('.image-container img');
@@ -28,7 +34,6 @@
                 const response = await fetch('{{ url_for("main.get_current_image") }}', { headers });
                 
                 if (response.status === 304) {
-                    // Image hasn't changed, no need to update
                     return;
                 }
 
@@ -40,24 +45,273 @@
                 const blob = await response.blob();
                 const objectUrl = URL.createObjectURL(blob);
                 
-                // Update the image source
                 img.src = objectUrl;
-                
-                // Store the Last-Modified header for next request
                 lastModified = response.headers.get('Last-Modified');
             } catch (error) {
                 console.error('Error refreshing image:', error);
             }
         }
 
+        async function checkStatus() {
+            try {
+                const response = await fetch('{{ url_for("main.get_status") }}');
+                if (!response.ok) return;
+                
+                const status = await response.json();
+                const loader = document.getElementById('refresh-loader');
+                const loaderText = document.getElementById('loader-duration');
+                
+                if (status.is_refreshing) {
+                    if (!isCurrentlyRefreshing) {
+                        isCurrentlyRefreshing = true;
+                        loader.classList.add('visible');
+                    }
+                    if (status.refresh_duration !== null) {
+                        loaderText.textContent = `${status.refresh_duration}s`;
+                    }
+                } else {
+                    if (isCurrentlyRefreshing) {
+                        isCurrentlyRefreshing = false;
+                        loader.classList.remove('visible');
+                        // Refresh image after display update completes
+                        setTimeout(refreshImage, 500);
+                    }
+                }
+                
+                // Update current plugin info
+                const pluginInfo = document.getElementById('current-plugin-info');
+                if (pluginInfo && status.current_plugin) {
+                    pluginInfo.textContent = status.current_instance || status.current_plugin;
+                }
+            } catch (error) {
+                console.error('Error checking status:', error);
+            }
+        }
+
+        async function sendButtonPress(button, pressType) {
+            try {
+                // Show loader immediately for button presses
+                const loader = document.getElementById('refresh-loader');
+                loader.classList.add('visible');
+                isCurrentlyRefreshing = true;
+                
+                const response = await fetch('{{ url_for("settings.button_press") }}', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ button: button, press_type: pressType })
+                });
+                if (response.ok) {
+                    // Start polling for status
+                    startStatusPolling();
+                }
+            } catch (error) {
+                console.error('Button press error:', error);
+                document.getElementById('refresh-loader').classList.remove('visible');
+                isCurrentlyRefreshing = false;
+            }
+        }
+
+        function startStatusPolling() {
+            if (statusPollTimer) return;
+            statusPollTimer = setInterval(async () => {
+                await checkStatus();
+                if (!isCurrentlyRefreshing) {
+                    clearInterval(statusPollTimer);
+                    statusPollTimer = null;
+                }
+            }, statusPollIntervalMs);
+        }
+
+        function setupButtonHandlers() {
+            document.querySelectorAll('.hw-button').forEach(btn => {
+                const buttonId = btn.dataset.button;
+                const actionType = btn.dataset.action || 'short';
+                
+                if (actionType === 'short') {
+                    // Short press only button (A) - trigger on click
+                    btn.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        btn.classList.add('pressed');
+                        sendButtonPress(buttonId, 'short');
+                        setTimeout(() => btn.classList.remove('pressed'), 150);
+                    });
+                } else if (actionType === 'both') {
+                    // Both short and long press (B, C) - short on quick click, long on hold
+                    let longPressTriggered = false;
+                    
+                    const startPress = () => {
+                        longPressTriggered = false;
+                        buttonPressStart = Date.now();
+                        btn.classList.add('pressed');
+                        buttonPressTimer = setTimeout(() => {
+                            longPressTriggered = true;
+                            sendButtonPress(buttonId, 'long');
+                            btn.classList.add('long-pressed');
+                        }, LONG_PRESS_MS);
+                    };
+                    
+                    const endPress = () => {
+                        clearTimeout(buttonPressTimer);
+                        btn.classList.remove('pressed', 'long-pressed');
+                        
+                        // If not long press and was a valid press, trigger short
+                        if (!longPressTriggered && buttonPressStart) {
+                            const duration = Date.now() - buttonPressStart;
+                            if (duration < LONG_PRESS_MS) {
+                                sendButtonPress(buttonId, 'short');
+                            }
+                        }
+                        buttonPressStart = null;
+                    };
+                    
+                    const cancelPress = () => {
+                        clearTimeout(buttonPressTimer);
+                        btn.classList.remove('pressed', 'long-pressed');
+                        buttonPressStart = null;
+                    };
+                    
+                    btn.addEventListener('mousedown', (e) => { e.preventDefault(); startPress(); });
+                    btn.addEventListener('mouseup', endPress);
+                    btn.addEventListener('mouseleave', cancelPress);
+                    btn.addEventListener('touchstart', (e) => { e.preventDefault(); startPress(); });
+                    btn.addEventListener('touchend', endPress);
+                    btn.addEventListener('touchcancel', cancelPress);
+                } else {
+                    // Long press only button (D) - trigger after hold
+                    btn.addEventListener('mousedown', (e) => {
+                        e.preventDefault();
+                        buttonPressStart = Date.now();
+                        btn.classList.add('pressed');
+                        buttonPressTimer = setTimeout(() => {
+                            sendButtonPress(buttonId, 'long');
+                            btn.classList.add('long-pressed');
+                        }, LONG_PRESS_MS);
+                    });
+                    
+                    btn.addEventListener('mouseup', () => {
+                        clearTimeout(buttonPressTimer);
+                        btn.classList.remove('pressed', 'long-pressed');
+                        buttonPressStart = null;
+                    });
+                    
+                    btn.addEventListener('mouseleave', () => {
+                        clearTimeout(buttonPressTimer);
+                        btn.classList.remove('pressed', 'long-pressed');
+                        buttonPressStart = null;
+                    });
+                    
+                    btn.addEventListener('touchstart', (e) => {
+                        e.preventDefault();
+                        buttonPressStart = Date.now();
+                        btn.classList.add('pressed');
+                        buttonPressTimer = setTimeout(() => {
+                            sendButtonPress(buttonId, 'long');
+                            btn.classList.add('long-pressed');
+                        }, LONG_PRESS_MS);
+                    });
+                    
+                    btn.addEventListener('touchend', () => {
+                        clearTimeout(buttonPressTimer);
+                        btn.classList.remove('pressed', 'long-pressed');
+                        buttonPressStart = null;
+                    });
+                }
+            });
+        }
+
         document.addEventListener('DOMContentLoaded', function() {
-            // Refresh image immediately on page load
             refreshImage();
-            
-            // Set up auto-refresh based on plugin cycle interval
             setInterval(refreshImage, refreshIntervalMs);
+            setupButtonHandlers();
+            
+            // Check initial status
+            checkStatus();
         });
     </script>
+    <style>
+        /* Refresh Loader Overlay */
+        .refresh-loader {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.6);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.2s, visibility 0.2s;
+            border-radius: 8px;
+            z-index: 10;
+        }
+        
+        .refresh-loader.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .loader-spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .loader-text {
+            color: #fff;
+            margin-top: 15px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        .loader-duration {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 13px;
+            margin-top: 5px;
+            font-family: monospace;
+        }
+        
+        /* E-ink animation hint */
+        .loader-hint {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 11px;
+            margin-top: 10px;
+            text-align: center;
+            max-width: 200px;
+        }
+        
+        /* Make image container relative for loader positioning */
+        .image-container {
+            position: relative;
+        }
+        
+        /* Current plugin badge */
+        .current-plugin-badge {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.6);
+            color: #fff;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        
+        .image-container:hover .current-plugin-badge {
+            opacity: 1;
+        }
+    </style>
 </head>
 <link rel= "stylesheet" type= "text/css" href= "{{ url_for('static',filename='styles/main.css') }}">
 <script src="{{ url_for('static', filename='scripts/image_modal.js') }}"></script>
@@ -77,14 +331,50 @@
             </a>
         </header>
 
-        <!-- Display the current image -->
-        <div class="image-container">
-            <img src="{{ url_for('static', filename='images/current_image.png') }}" alt="Current Image">
+        <!-- Display area with buttons -->
+        <div class="display-area">
+            <!-- Display the current image -->
+            <div class="image-container">
+                <img src="{{ url_for('static', filename='images/current_image.png') }}" 
+                     alt="Current Image"
+                     onerror="this.src='{{ url_for('static', filename='icons/placeholder.svg') }}'">
+                
+                <!-- Refresh Loader Overlay -->
+                <div id="refresh-loader" class="refresh-loader">
+                    <div class="loader-spinner"></div>
+                    <div class="loader-text">Updating display...</div>
+                    <div id="loader-duration" class="loader-duration"></div>
+                    <div class="loader-hint">E-ink refresh in progress</div>
+                </div>
+                
+                <!-- Current plugin badge (shown on hover) -->
+                <div id="current-plugin-badge" class="current-plugin-badge">
+                    <span id="current-plugin-info">-</span>
+                </div>
+            </div>
+            
+            {% if show_buttons %}
+            <!-- Hardware buttons -->
+            <div class="button-panel">
+                <div class="button-panel-buttons">
+                    <button class="hw-button" data-button="A" data-action="short" title="Refresh display">A</button>
+                    <button class="hw-button" data-button="B" data-action="both" title="Click: Plugin action | Hold: Previous plugin">B</button>
+                    <button class="hw-button" data-button="C" data-action="both" title="Click: Plugin action | Hold: Next plugin">C</button>
+                    <button class="hw-button" data-button="D" data-action="long" title="Hold: Shutdown">D</button>
+                </div>
+                <span class="button-panel-label">Hardware Buttons</span>
+            </div>
+            {% endif %}
         </div>
 
         <!-- Separator -->
         <div class="separator"></div>
-        <h2 class="plugins-title">Plugins</h2>
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px;">
+            <h2 class="plugins-title" style="margin: 0;">Plugins</h2>
+            <a href="{{ url_for('apikeys.apikeys_page') }}" class="settings-button" title="API Keys" style="padding: 6px 10px;">
+                🔑
+            </a>
+        </div>
         <div class="button-grid">
             {% for plugin in plugins %}
             <a href="{{ url_for('plugin.plugin_page', plugin_id=plugin.id) }}" class="icon-button" title="{{ plugin.display_name }}" >

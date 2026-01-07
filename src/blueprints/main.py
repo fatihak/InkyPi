@@ -7,7 +7,16 @@ main_bp = Blueprint("main", __name__)
 @main_bp.route('/')
 def main_page():
     device_config = current_app.config['DEVICE_CONFIG']
-    return render_template('inky.html', config=device_config.get_config(), plugins=device_config.get_plugins())
+    display_type = device_config.get_config("display_type", default="inky")
+    # Inky and mock displays support hardware buttons
+    has_buttons = display_type in ("inky", "mock")
+    show_buttons = has_buttons and device_config.get_config("show_buttons", default=True)
+    return render_template(
+        'inky.html', 
+        config=device_config.get_config(), 
+        plugins=device_config.get_plugins(),
+        show_buttons=show_buttons
+    )
 
 @main_bp.route('/api/current_image')
 def get_current_image():
@@ -40,3 +49,21 @@ def get_current_image():
     response.headers['Last-Modified'] = last_modified.strftime('%a, %d %b %Y %H:%M:%S GMT')
     response.headers['Cache-Control'] = 'no-cache'
     return response
+
+
+@main_bp.route('/api/status')
+def get_status():
+    """Get current system status including refresh state."""
+    refresh_task = current_app.config['REFRESH_TASK']
+    device_config = current_app.config['DEVICE_CONFIG']
+    
+    refresh_info = device_config.get_refresh_info()
+    refresh_status = refresh_task.get_status()
+    
+    return jsonify({
+        "is_refreshing": refresh_status["is_refreshing"],
+        "refresh_duration": refresh_status["refresh_duration"],
+        "current_plugin": refresh_info.plugin_id,
+        "current_instance": refresh_info.plugin_instance,
+        "playlist": refresh_info.playlist
+    })

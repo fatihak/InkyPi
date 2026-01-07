@@ -16,6 +16,193 @@
     <link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='styles/main.css') }}">
     <script src="{{ url_for('static', filename='scripts/dark_mode.js') }}"></script>
     <script src="{{ url_for('static', filename='scripts/response_modal.js') }}"></script>
+    <style>
+        /* Collapsible Sections */
+        .settings-section {
+            margin: 20px 0;
+            border: 1px solid var(--border-color, #ddd);
+            border-radius: 8px;
+            overflow: hidden;
+            background: var(--card-bg, #fff);
+        }
+        
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 18px;
+            background: var(--section-header-bg, #f5f5f5);
+            cursor: pointer;
+            user-select: none;
+            transition: background 0.2s;
+            border: none;
+            width: 100%;
+            text-align: left;
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text-color, #333);
+        }
+        
+        .section-header:hover {
+            background: var(--section-header-hover, #eee);
+        }
+        
+        .section-header-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .section-icon {
+            font-size: 18px;
+        }
+        
+        .section-chevron {
+            font-size: 12px;
+            transition: transform 0.3s ease;
+            color: var(--text-muted, #666);
+        }
+        
+        .section-header.active .section-chevron {
+            transform: rotate(180deg);
+        }
+        
+        .section-content {
+            display: none;
+            padding: 18px;
+            border-top: 1px solid var(--border-color, #ddd);
+        }
+        
+        .section-content.open {
+            display: block;
+        }
+        
+        /* Slider styles */
+        .slider-group {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 12px 0;
+        }
+        
+        .slider-label {
+            min-width: 90px;
+            font-weight: 500;
+        }
+        
+        .slider-value {
+            min-width: 40px;
+            text-align: center;
+            font-family: monospace;
+            font-size: 14px;
+            background: var(--input-bg, #f0f0f0);
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+        
+        .slider-input {
+            flex: 1;
+            max-width: 300px;
+            height: 6px;
+            -webkit-appearance: none;
+            appearance: none;
+            background: var(--slider-track, #ddd);
+            border-radius: 3px;
+            outline: none;
+        }
+        
+        .slider-input::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            background: var(--primary-color, #2c66b1);
+            border-radius: 50%;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+        
+        .slider-input::-webkit-slider-thumb:hover {
+            transform: scale(1.1);
+        }
+        
+        .slider-input::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            background: var(--primary-color, #2c66b1);
+            border-radius: 50%;
+            cursor: pointer;
+            border: none;
+        }
+        
+        /* GPIO Pin inputs */
+        .gpio-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 15px;
+            margin-top: 10px;
+        }
+        
+        .gpio-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .gpio-label {
+            font-weight: 600;
+            min-width: 70px;
+        }
+        
+        .gpio-input {
+            width: 70px;
+            padding: 6px 10px;
+            border: 1px solid var(--border-color, #ddd);
+            border-radius: 4px;
+            text-align: center;
+            font-family: monospace;
+        }
+        
+        .gpio-hint {
+            font-size: 12px;
+            color: var(--text-muted, #666);
+            margin-top: 10px;
+        }
+        
+        /* Dark mode */
+        [data-theme="dark"] .settings-section {
+            border-color: #444;
+            background: #2a2a2a;
+        }
+        
+        [data-theme="dark"] .section-header {
+            background: #333;
+            color: #eee;
+        }
+        
+        [data-theme="dark"] .section-header:hover {
+            background: #3a3a3a;
+        }
+        
+        [data-theme="dark"] .section-content {
+            border-top-color: #444;
+        }
+        
+        [data-theme="dark"] .slider-value {
+            background: #444;
+            color: #eee;
+        }
+        
+        [data-theme="dark"] .slider-input {
+            background: #444;
+        }
+        
+        [data-theme="dark"] .gpio-input {
+            background: #333;
+            border-color: #555;
+            color: #eee;
+        }
+    </style>
     <script>
         async function handleAction() {
             const form = document.querySelector('.settings-form');
@@ -42,18 +229,14 @@
 
         let pluginCycleIntervalSeconds = {{ device_settings.plugin_cycle_interval_seconds | default(3600) | tojson }};
     
-        // Function to populate the fields
         function populateIntervalFields() {
             const intervalInput = document.getElementById('interval');
             const unitSelect = document.getElementById('unit');
 
-            // Check if pluginCycleIntervalSeconds is valid
             if (pluginCycleIntervalSeconds !== null && pluginCycleIntervalSeconds !== undefined) {
-                // Convert seconds to minutes and hours
                 let intervalInMinutes = Math.floor(pluginCycleIntervalSeconds / 60);
                 let intervalInHours = Math.floor(pluginCycleIntervalSeconds / 3600);
 
-                // Determine which unit to use (minute or hour) based on the interval
                 if (intervalInHours > 0) {
                     intervalInput.value = intervalInHours;
                     unitSelect.value = "hour";
@@ -64,12 +247,10 @@
             }
         }
 
-        function toggleCollapsible(button) {
-            const content = button.nextElementSibling;
-            const icon = button.querySelector(".collapsible-icon");
-            button.classList.toggle("active");
-            content.style.display = content.style.display === "block" ? "none" : "block";
-            icon.textContent = content.style.display === "block" ? "▲" : "▼";
+        function toggleSection(header) {
+            const content = header.nextElementSibling;
+            header.classList.toggle("active");
+            content.classList.toggle("open");
         }
 
         async function handleShutdown(reboot) {
@@ -79,7 +260,6 @@
                 showResponseModal('success', 'The system is shutting down. The UI will remain unavailable until it is manually restarted.');
             }
             await new Promise(resolve => setTimeout(resolve, 1000));
-            // we cannot await a response here
             await fetch("{{ url_for('settings.shutdown') }}", {
                 method: 'POST',
                 headers: {
@@ -89,11 +269,17 @@
             });
         }
 
-
         function updateSliderValue(slider) {
             const valueDisplay = document.getElementById(`${slider.id}-value`);
             valueDisplay.textContent = parseFloat(slider.value).toFixed(1);
         }
+        
+        function resetSlider(sliderId, defaultValue) {
+            const slider = document.getElementById(sliderId);
+            slider.value = defaultValue;
+            updateSliderValue(slider);
+        }
+
         document.addEventListener('DOMContentLoaded', populateIntervalFields);
     </script>
 </head>
@@ -116,6 +302,7 @@
             </div>
         </div>
         <div class="separator"></div>
+        
         <!-- Settings Content -->
         <form class="settings-form">
             <div id="settings-container">
@@ -143,7 +330,6 @@
                         <!-- Invert Image Checkbox -->
                         <label class="form-label" for="invertImage">Invert Image</label>
                         <input type="checkbox" id="invertImage" name="invertImage" {% if device_settings.inverted_image %}checked{% endif %}>
-                        </label>
                     </div>
                 </div>
                 <div class="form-group">
@@ -189,74 +375,120 @@
 
                     <div class="form-group nowrap">
                         <label class="form-label" for="logSystemStats">Log System Stats</label>
-                            <input type="checkbox" id="logSystemStats" name="logSystemStats" {% if device_settings.log_system_stats %}checked{% endif %}>
-                        </label>
+                        <input type="checkbox" id="logSystemStats" name="logSystemStats" {% if device_settings.log_system_stats %}checked{% endif %}>
                     </div>
                 </div>
 
-                <div class="collapsible">
-                    <button type="button" class="collapsible-header" onclick="toggleCollapsible(this)">
-                        Image Settings <span class="collapsible-icon">▼</span>
+                <!-- Image Settings Section -->
+                <div class="settings-section">
+                    <button type="button" class="section-header" onclick="toggleSection(this)">
+                        <span class="section-header-left">
+                            <span class="section-icon">🎨</span>
+                            <span>Image Settings</span>
+                        </span>
+                        <span class="section-chevron">▼</span>
                     </button>
-                    <div class="settings-container collapsible-content">
-                        <div class="form-group">
-                            <label for="saturation" class="form-label" style="min-width: 100px;">Saturation:</label>
-                            <span id="saturation-value">{{ device_settings.get('image_settings', {}).get('saturation', 1.0) }}</span>
-                            <input
-                                type="range"
-                                id="saturation"
-                                name="saturation"
-                                class="form-input"
-                                min="0" max="2" step="0.1"
-                                value="{{ device_settings.get('image_settings', {}).get('saturation', 1.0) }}"
-                                style="max-width: 400px;"
-                                oninput="updateSliderValue(this)"
-                            />
+                    <div class="section-content">
+                        <p style="margin: 0 0 15px 0; color: var(--text-muted, #666); font-size: 13px;">
+                            Adjust image enhancement settings. Values of 1.0 mean no change.
+                        </p>
+                        
+                        <div class="slider-group">
+                            <span class="slider-label">Saturation</span>
+                            <input type="range" id="saturation" name="saturation" class="slider-input"
+                                   min="0" max="2" step="0.1"
+                                   value="{{ device_settings.get('image_settings', {}).get('saturation', 1.0) }}"
+                                   oninput="updateSliderValue(this)" />
+                            <span id="saturation-value" class="slider-value">{{ device_settings.get('image_settings', {}).get('saturation', 1.0) }}</span>
+                            <button type="button" onclick="resetSlider('saturation', 1.0)" style="padding: 4px 8px; font-size: 12px;">Reset</button>
                         </div>
-                        <div class="form-group">
-                            <label for="contrast" class="form-label" style="min-width: 100px;">Contrast:</label>
-                            <span id="contrast-value">{{ device_settings.get('image_settings', {}).get('contrast', 1.0) }}</span>
-                            <input
-                                type="range"
-                                id="contrast"
-                                name="contrast"
-                                class="form-input"
-                                min="0" max="2" step="0.1"
-                                value="{{ device_settings.get('image_settings', {}).get('contrast', 1.0) }}"
-                                style="max-width: 400px;"
-                                oninput="updateSliderValue(this)"
-                            />
-                         </div>
-                        <div class="form-group">
-                            <label for="sharpness" class="form-label" style="min-width: 100px;">Sharpness:</label>
-                            <span id="sharpness-value">{{ device_settings.get('image_settings', {}).get('sharpness', 1.0) }}</span>
-                            <input
-                                type="range"
-                                id="sharpness"
-                                name="sharpness"
-                                class="form-input"
-                                min="0" max="2" step="0.1"
-                                value="{{ device_settings.get('image_settings', {}).get('sharpness', 1.0) }}"
-                                style="max-width: 400px;"
-                                oninput="updateSliderValue(this)"
-                            />
+                        
+                        <div class="slider-group">
+                            <span class="slider-label">Contrast</span>
+                            <input type="range" id="contrast" name="contrast" class="slider-input"
+                                   min="0" max="2" step="0.1"
+                                   value="{{ device_settings.get('image_settings', {}).get('contrast', 1.0) }}"
+                                   oninput="updateSliderValue(this)" />
+                            <span id="contrast-value" class="slider-value">{{ device_settings.get('image_settings', {}).get('contrast', 1.0) }}</span>
+                            <button type="button" onclick="resetSlider('contrast', 1.0)" style="padding: 4px 8px; font-size: 12px;">Reset</button>
                         </div>
-                        <div class="form-group">
-                            <label for="brightness" class="form-label" style="min-width: 100px;">Brightness:</label>
-                            <span id="brightness-value">{{ device_settings.get('image_settings', {}).get('brightness', 1.0) }}</span>
-                            <input
-                                type="range"
-                                id="brightness"
-                                name="brightness"
-                                class="form-input"
-                                min="0" max="2" step="0.1"
-                                value="{{ device_settings.get('image_settings', {}).get('brightness', 1.0) }}"
-                                style="max-width: 400px;"
-                                oninput="updateSliderValue(this)"
-                            />
+                        
+                        <div class="slider-group">
+                            <span class="slider-label">Sharpness</span>
+                            <input type="range" id="sharpness" name="sharpness" class="slider-input"
+                                   min="0" max="2" step="0.1"
+                                   value="{{ device_settings.get('image_settings', {}).get('sharpness', 1.0) }}"
+                                   oninput="updateSliderValue(this)" />
+                            <span id="sharpness-value" class="slider-value">{{ device_settings.get('image_settings', {}).get('sharpness', 1.0) }}</span>
+                            <button type="button" onclick="resetSlider('sharpness', 1.0)" style="padding: 4px 8px; font-size: 12px;">Reset</button>
+                        </div>
+                        
+                        <div class="slider-group">
+                            <span class="slider-label">Brightness</span>
+                            <input type="range" id="brightness" name="brightness" class="slider-input"
+                                   min="0" max="2" step="0.1"
+                                   value="{{ device_settings.get('image_settings', {}).get('brightness', 1.0) }}"
+                                   oninput="updateSliderValue(this)" />
+                            <span id="brightness-value" class="slider-value">{{ device_settings.get('image_settings', {}).get('brightness', 1.0) }}</span>
+                            <button type="button" onclick="resetSlider('brightness', 1.0)" style="padding: 4px 8px; font-size: 12px;">Reset</button>
                         </div>
                     </div>
                 </div>
+
+                {% if has_buttons %}
+                <!-- Hardware Settings Section -->
+                <div class="settings-section">
+                    <button type="button" class="section-header" onclick="toggleSection(this)">
+                        <span class="section-header-left">
+                            <span class="section-icon">⚙️</span>
+                            <span>Hardware Settings</span>
+                        </span>
+                        <span class="section-chevron">▼</span>
+                    </button>
+                    <div class="section-content">
+                        <div class="form-group nowrap" style="margin-bottom: 20px;">
+                            <label class="form-label" for="showButtons">Show Hardware Buttons in UI</label>
+                            <input type="checkbox" id="showButtons" name="showButtons" {% if device_settings.get('show_buttons', true) %}checked{% endif %}>
+                            <span title="Display virtual hardware buttons (A, B, C, D) on the main screen for remote control.">ⓘ</span>
+                        </div>
+                        
+                        <div style="margin-top: 20px;">
+                            <label class="form-label" style="margin-bottom: 10px; display: block;">
+                                GPIO Button Pins
+                                <span title="BCM GPIO pin numbers for each hardware button. Default: A=5, B=6, C=16, D=24">ⓘ</span>
+                            </label>
+                            
+                            <div class="gpio-grid">
+                                {% set button_pins = device_settings.get('button_pins', {}) %}
+                                <div class="gpio-item">
+                                    <span class="gpio-label">Button A:</span>
+                                    <input type="number" id="gpio_a" name="gpio_a" class="gpio-input" 
+                                           value="{{ button_pins.get('A', 5) }}" min="0" max="27">
+                                </div>
+                                <div class="gpio-item">
+                                    <span class="gpio-label">Button B:</span>
+                                    <input type="number" id="gpio_b" name="gpio_b" class="gpio-input" 
+                                           value="{{ button_pins.get('B', 6) }}" min="0" max="27">
+                                </div>
+                                <div class="gpio-item">
+                                    <span class="gpio-label">Button C:</span>
+                                    <input type="number" id="gpio_c" name="gpio_c" class="gpio-input" 
+                                           value="{{ button_pins.get('C', 16) }}" min="0" max="27">
+                                </div>
+                                <div class="gpio-item">
+                                    <span class="gpio-label">Button D:</span>
+                                    <input type="number" id="gpio_d" name="gpio_d" class="gpio-input" 
+                                           value="{{ button_pins.get('D', 24) }}" min="0" max="27">
+                                </div>
+                            </div>
+                            <p class="gpio-hint">
+                                BCM GPIO pin numbers (0-27). Changes require restart. 
+                                <a href="https://pinout.xyz/" target="_blank" rel="noopener">Pinout reference →</a>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
             </div>
         </form>
  

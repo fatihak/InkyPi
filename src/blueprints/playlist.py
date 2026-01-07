@@ -51,7 +51,7 @@ def add_plugin():
                 return jsonify({"error": "Refresh time is required"}), 400
             refresh_config = {"scheduled": refresh_time}
 
-        plugin_settings.update(handle_request_files(request.files))
+        plugin_settings.update(handle_request_files(request.files, request.form))
         plugin_dict = {
             "plugin_id": plugin_id,
             "refresh": refresh_config,

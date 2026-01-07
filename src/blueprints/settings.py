@@ -5,6 +5,7 @@ import os
 import pytz
 import logging
 import io
+from buttons import ButtonID, PressType
 
 # Try to import cysystemd for journal reading (Linux only)
 try:
@@ -29,7 +30,15 @@ settings_bp = Blueprint("settings", __name__)
 def settings_page():
     device_config = current_app.config['DEVICE_CONFIG']
     timezones = sorted(pytz.all_timezones_set)
-    return render_template('settings.html', device_settings=device_config.get_config(), timezones = timezones)
+    display_type = device_config.get_config("display_type", default="inky")
+    # Inky and mock displays support hardware buttons
+    has_buttons = display_type in ("inky", "mock")
+    return render_template(
+        'settings.html', 
+        device_settings=device_config.get_config(), 
+        timezones=timezones,
+        has_buttons=has_buttons
+    )
 
 @settings_bp.route('/save_settings', methods=['POST'])
 def save_settings():
@@ -57,6 +66,7 @@ def save_settings():
             "orientation": form_data.get("orientation"),
             "inverted_image": form_data.get("invertImage"),
             "log_system_stats": form_data.get("logSystemStats"),
+            "show_buttons": form_data.get("showButtons") == "on",
             "timezone": form_data.get("timezoneName"),
             "time_format": form_data.get("timeFormat"),
             "plugin_cycle_interval_seconds": plugin_cycle_interval_seconds,
@@ -67,6 +77,24 @@ def save_settings():
                 "contrast": float(form_data.get("contrast", "1.0"))
             }
         }
+        
+        # Handle GPIO button pins if provided
+        gpio_a = form_data.get("gpio_a")
+        gpio_b = form_data.get("gpio_b")
+        gpio_c = form_data.get("gpio_c")
+        gpio_d = form_data.get("gpio_d")
+        
+        if gpio_a and gpio_b and gpio_c and gpio_d:
+            try:
+                settings["button_pins"] = {
+                    "A": int(gpio_a),
+                    "B": int(gpio_b),
+                    "C": int(gpio_c),
+                    "D": int(gpio_d)
+                }
+            except ValueError:
+                pass  # Keep existing pins if invalid values
+        
         device_config.update_config(settings)
 
         if plugin_cycle_interval_seconds != previous_interval_seconds:
@@ -143,4 +171,27 @@ def download_logs():
     except Exception as e:
         logger.error(f"Error reading logs: {e}")
         return Response(f"Error reading logs: {e}", status=500, mimetype="text/plain")
+
+
+@settings_bp.route('/button_press', methods=['POST'])
+def button_press():
+    """Handle button press from web UI. Works on both dev and real device."""
+    button_manager = current_app.config['BUTTON_MANAGER']
+    
+    data = request.get_json() or {}
+    
+    try:
+        button_id = ButtonID(data.get("button", "A"))
+        press_type = PressType(data.get("press_type", "short"))
+    except ValueError as e:
+        return jsonify({"error": f"Invalid button or press_type: {e}"}), 400
+    
+    # Call button manager directly (same logic as physical buttons)
+    button_manager._on_button_press(button_id, press_type)
+    
+    return jsonify({
+        "success": True, 
+        "button": button_id.value, 
+        "press_type": press_type.value
+    })
 

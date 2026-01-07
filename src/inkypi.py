@@ -29,9 +29,11 @@ from blueprints.main import main_bp
 from blueprints.settings import settings_bp
 from blueprints.plugin import plugin_bp
 from blueprints.playlist import playlist_bp
+from blueprints.apikeys import apikeys_bp
 from jinja2 import ChoiceLoader, FileSystemLoader
 from plugins.plugin_registry import load_plugins
 from waitress import serve
+from buttons import ButtonManager
 
 
 logger = logging.getLogger(__name__)
@@ -63,12 +65,24 @@ device_config = Config()
 display_manager = DisplayManager(device_config)
 refresh_task = RefreshTask(device_config, display_manager)
 
+# Initialize button handler based on mode
+if DEV_MODE:
+    from buttons.mock_button_handler import MockButtonHandler
+    button_handler = MockButtonHandler()
+else:
+    from buttons.inky_button_handler import InkyButtonHandler
+    button_pins = device_config.get_config("button_pins")
+    button_handler = InkyButtonHandler(button_pins)
+
+button_manager = ButtonManager(button_handler, refresh_task, device_config)
+
 load_plugins(device_config.get_plugins())
 
 # Store dependencies
 app.config['DEVICE_CONFIG'] = device_config
 app.config['DISPLAY_MANAGER'] = display_manager
 app.config['REFRESH_TASK'] = refresh_task
+app.config['BUTTON_MANAGER'] = button_manager
 
 # Set additional parameters
 app.config['MAX_FORM_PARTS'] = 10_000
@@ -78,14 +92,16 @@ app.register_blueprint(main_bp)
 app.register_blueprint(settings_bp)
 app.register_blueprint(plugin_bp)
 app.register_blueprint(playlist_bp)
+app.register_blueprint(apikeys_bp)
 
 # Register opener for HEIF/HEIC images
 register_heif_opener()
 
 if __name__ == '__main__':
 
-    # start the background refresh task
+    # start the background refresh task and button handler
     refresh_task.start()
+    button_manager.start()
 
     # display default inkypi image on startup
     if device_config.get_config("startup") is True:
@@ -112,4 +128,5 @@ if __name__ == '__main__':
             
         serve(app, host="0.0.0.0", port=PORT, threads=1)
     finally:
+        button_manager.stop()
         refresh_task.stop()
