@@ -29,6 +29,34 @@ def split_image_for_bi_color_epd(image):
     return black_layer, red_layer
 
 
+def quantize_for_color_epd(image):
+    """
+    Quantize image with extended palette for full-color e-paper displays.
+
+    Uses an extended palette to better map colors like orange, yellow, and pink,
+    reducing dithering artifacts and blotchy text that occur when these colors are
+    dithered between available display colors.
+    """
+    black = (0, 0, 0)
+    white = (255, 255, 255)
+    red = (255, 0, 0)
+    orange = (255, 165, 0)
+    yellow = (255, 255, 0)
+    green = (0, 255, 0)
+    blue = (0, 0, 255)
+    pink = (255, 192, 203)
+
+    # Extended palette for 7-color ACeP displays (black, white, red, orange, yellow, green, blue)
+    # Including pink helps quantizer make better color choices before hardware mapping
+    palette_data = [*black, *white, *red, *orange, *yellow, *green, *blue, *pink]
+    palette_img = Image.new('P', (1, 1))
+    palette_img.putpalette(palette_data)
+
+    # Quantize with extended palette - reduces dithering for warm colors
+    return image.quantize(palette=palette_img, dither=Image.Dither.FLOYDSTEINBERG).convert('RGB')
+
+
+
 class WaveshareDisplay(AbstractDisplay):
     """
     Handles Waveshare e-paper display dynamically based on device type.
@@ -129,7 +157,9 @@ class WaveshareDisplay(AbstractDisplay):
 
         # Display the image on the WS display.
         if not self.bi_color_display:
-            self.epd_display.display(self.epd_display.getbuffer(image))
+            # Apply extended palette quantization for full-color displays
+            quantized_image = quantize_for_color_epd(image)
+            self.epd_display.display(self.epd_display.getbuffer(quantized_image))
         else:
             black_layer, red_layer = split_image_for_bi_color_epd(image)
 
