@@ -31,28 +31,24 @@ def split_image_for_bi_color_epd(image):
 
 def quantize_for_color_epd(image):
     """
-    Quantize image with extended palette for full-color e-paper displays.
+    Quantize image with correct palette for E6 (Spectra 6) full-color e-paper displays.
 
-    Uses an extended palette to better map colors like orange, yellow, and pink,
-    reducing dithering artifacts and blotchy text that occur when these colors are
-    dithered between available display colors.
+    E6 displays support 6 colors: black, white, red, yellow, green, blue (no orange).
+    Using the exact hardware color palette reduces dithering artifacts and blotchy text.
     """
     black = (0, 0, 0)
     white = (255, 255, 255)
     red = (255, 0, 0)
-    orange = (255, 165, 0)
     yellow = (255, 255, 0)
     green = (0, 255, 0)
     blue = (0, 0, 255)
-    pink = (255, 192, 203)
 
-    # Extended palette for 7-color ACeP displays (black, white, red, orange, yellow, green, blue)
-    # Including pink helps quantizer make better color choices before hardware mapping
-    palette_data = [*black, *white, *red, *orange, *yellow, *green, *blue, *pink]
+    # E6/Spectra 6 palette: 6 colors (black, white, red, yellow, green, blue)
+    palette_data = [*black, *white, *red, *yellow, *green, *blue]
     palette_img = Image.new('P', (1, 1))
     palette_img.putpalette(palette_data)
 
-    # Quantize with extended palette - reduces dithering for warm colors
+    # Quantize to hardware-supported colors - reduces dithering
     return image.quantize(palette=palette_img, dither=Image.Dither.FLOYDSTEINBERG).convert('RGB')
 
 
