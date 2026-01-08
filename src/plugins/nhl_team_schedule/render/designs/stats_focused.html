@@ -1,0 +1,80 @@
+{% extends "plugin.html" %} {% block content %}
+<div class="stats-container">
+  <header class="game-header">
+    <h1 class="title">{{ title }}</h1>
+    <div class="game-day-time">{{ day }} at {{ time }}</div>
+  </header>
+
+  <main class="stats-content">
+    <section class="matchup-section">
+      <div class="teams-container">
+        <div class="team-card away-team-card">
+          <img class="team-logo" src="{{ away_team.logo | safe }}" alt="{{ away_team.commonName.default }}" />
+          <h3 class="team-name">{{ away_team.commonName.default }}</h3>
+          <div class="team-record">{{ away_team_stats.get('wins', '0') }}-{{ away_team_stats.get('losses', '0') }}-{{ away_team_stats.get('otLosses', '0') }}</div>
+        </div>
+        
+        <div class="vs-indicator">VS</div>
+        
+        <div class="team-card home-team-card">
+          <img class="team-logo" src="{{ home_team.logo | safe }}" alt="{{ home_team.commonName.default }}" />
+          <h3 class="team-name">{{ home_team.commonName.default }}</h3>
+          <div class="team-record">{{ home_team_stats.get('wins', '0') }}-{{ home_team_stats.get('losses', '0') }}-{{ home_team_stats.get('otLosses', '0') }}</div>
+        </div>
+      </div>
+      
+      <div class="game-info">
+        <div class="venue">{{ home_team.placeName.default }}</div>
+        <div class="broadcast">{{ " / ".join(networks) }}</div>
+      </div>
+    </section>
+
+    <section class="standings-section">
+      <div class="stats-header">Conference Standings</div>
+      <div class="standings-grid">
+        <div class="standing-item">
+          <div class="standing-label">Away</div>
+          <div class="standing-value">{{ away_team_stats.get('conferenceRank', '-') }}/{{ away_team_stats.get('conferenceTeams', '-') }}</div>
+        </div>
+        <div class="standing-item">
+          <div class="standing-label">Home</div>
+          <div class="standing-value">{{ home_team_stats.get('conferenceRank', '-') }}/{{ home_team_stats.get('conferenceTeams', '-') }}</div>
+        </div>
+      </div>
+      
+      <div class="stats-comparison">
+        <div class="stat-row">
+          <span class="stat-label">Points</span>
+          <span class="away-stat">{{ away_team_stats.get('points', '0') }}</span>
+          <span class="divider">-</span>
+          <span class="home-stat">{{ home_team_stats.get('points', '0') }}</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">GF</span>
+          <span class="away-stat">{{ away_team_stats.get('goalFor', '0') }}</span>
+          <span class="divider">-</span>
+          <span class="home-stat">{{ home_team_stats.get('goalFor', '0') }}</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">GA</span>
+          <span class="away-stat">{{ away_team_stats.get('goalAgainst', '0') }}</span>
+          <span class="divider">-</span>
+          <span class="home-stat">{{ home_team_stats.get('goalAgainst', '0') }}</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">PP%</span>
+          <span class="away-stat">{{ "%.1f"|format(away_team_stats.get('powerPlayPercentage', 0)) }}%</span>
+          <span class="divider">-</span>
+          <span class="home-stat">{{ "%.1f"|format(home_team_stats.get('powerPlayPercentage', 0)) }}%</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">PK%</span>
+          <span class="away-stat">{{ "%.1f"|format(away_team_stats.get('penaltyKillPercentage', 0)) }}%</span>
+          <span class="divider">-</span>
+          <span class="home-stat">{{ "%.1f"|format(home_team_stats.get('penaltyKillPercentage', 0)) }}%</span>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+{% endblock %}

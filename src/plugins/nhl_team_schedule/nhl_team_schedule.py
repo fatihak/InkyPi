@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 class NHLTeamSchedule(BasePlugin):
     def generate_settings_template(self):
         template_params = super().generate_settings_template()
-        template_params["style_settings"] = True
+        template_params["style_settings"] = "enabled"
         return template_params
 
     def generate_image(self, settings, device_config):
@@ -29,6 +29,24 @@ class NHLTeamSchedule(BasePlugin):
         logger.info(f"Home Team Stats: {home_team_stats}")
         logger.info(f"Away Team Stats: {away_team_stats}")
 
+        # Get design choice from settings, default to original
+        design_choice = settings.get("design", "original")
+        
+        # Map design choices to template files
+        design_templates = {
+            "original": ("nhl_team_schedule.html", "nhl_team_schedule.css"),
+            "enhanced": ("designs/enhanced_layout.html", "designs/enhanced_layout.css"),
+            "stats_focused": ("designs/stats_focused.html", "designs/stats_focused.css"),
+            "card_style": ("designs/card_style.html", "designs/card_style.css"),
+            "minimalist": ("designs/minimalist.html", "designs/minimalist.css"),
+            "dashboard": ("designs/dashboard.html", "designs/dashboard.css"),
+            "timeline": ("designs/timeline.html", "designs/timeline.css"),
+            "bracket": ("designs/bracket.html", "designs/bracket.css")
+        }
+        
+        # Use original if invalid design choice
+        html_template, css_template = design_templates.get(design_choice, design_templates["original"])
+
         image_template_params = {
             "day": day,
             "time": time,
@@ -36,6 +54,9 @@ class NHLTeamSchedule(BasePlugin):
             "away_team": away_team,
             "networks": networks,
             "plugin_settings": settings,
+            "title": f"{home_team.get('commonName', {}).get('default', '')} vs {away_team.get('commonName', {}).get('default', '')}",
+            "home_team_stats": home_team_stats,
+            "away_team_stats": away_team_stats,
         }
 
         dimensions = device_config.get_resolution()
@@ -44,8 +65,8 @@ class NHLTeamSchedule(BasePlugin):
 
         image = self.render_image(
             dimensions,
-            "nhl_team_schedule.html",
-            "nhl_team_schedule.css",
+            html_template,
+            css_template,
             image_template_params,
         )
 

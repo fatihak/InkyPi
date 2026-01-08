@@ -1,0 +1,88 @@
+{% extends "plugin.html" %} {% block content %}
+<div class="bracket-container">
+  <header class="bracket-header">
+    <h1 class="title">{{ title }}</h1>
+    <div class="game-info">{{ day }} • {{ time }}</div>
+  </header>
+
+  <main class="bracket-content">
+    <section class="tournament-bracket">
+      <div class="match-header">Today's Matchup</div>
+      
+      <div class="bracket-match">
+        <div class="match-away">
+          <div class="team-seed">{{ away_team_stats.get('conferenceRank', '-') }}</div>
+          <img class="team-logo" src="{{ away_team.logo | safe }}" alt="{{ away_team.abbrev }}" />
+          <div class="team-info">
+            <div class="team-name">{{ away_team.commonName.default }}</div>
+            <div class="team-record">{{ away_team_stats.get('wins', '0') }}-{{ away_team_stats.get('losses', '0') }}-{{ away_team_stats.get('otLosses', '0') }}</div>
+            <div class="team-points">{{ away_team_stats.get('points', '0') }} pts</div>
+          </div>
+        </div>
+
+        <div class="match-center">
+          <div class="venue">{{ home_team.placeName.default }}</div>
+          <div class="networks">{{ " / ".join(networks) }}</div>
+          <div class="vs-line">━━━━━ @ ━━━━━</div>
+        </div>
+
+        <div class="match-home">
+          <div class="team-seed">{{ home_team_stats.get('conferenceRank', '-') }}</div>
+          <img class="team-logo" src="{{ home_team.logo | safe }}" alt="{{ home_team.abbrev }}" />
+          <div class="team-info">
+            <div class="team-name">{{ home_team.commonName.default }}</div>
+            <div class="team-record">{{ home_team_stats.get('wins', '0') }}-{{ home_team_stats.get('losses', '0') }}-{{ home_team_stats.get('otLosses', '0') }}</div>
+            <div class="team-points">{{ home_team_stats.get('points', '0') }} pts</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="series-stats">
+      <div class="stats-header">Season Series</div>
+      <div class="series-grid">
+        <div class="team-series away-series">
+          <img class="series-logo" src="{{ away_team.logo | safe }}" alt="{{ away_team.abbrev }}" />
+          <div class="series-record">2-1</div>
+        </div>
+        
+        <div class="series-details">
+          <div class="detail-item">Last 5: 3-2</div>
+          <div class="detail-item">Streak: W2</div>
+        </div>
+        
+        <div class="team-series home-series">
+          <img class="series-logo" src="{{ home_team.logo | safe }}" alt="{{ home_team.abbrev }}" />
+          <div class="series-record">1-2</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="conference-standings">
+      <div class="conference-header">Conference Picture</div>
+      <div class="standings-bracket">
+        <div class="standing-item">
+          <span class="rank">1</span>
+          <span class="team-name">Boston</span>
+          <span class="points">95</span>
+        </div>
+        <div class="standing-item current">
+          <span class="rank">{{ away_team_stats.get('conferenceRank', '-') }}</span>
+          <span class="team-name">{{ away_team.commonName.default }}</span>
+          <span class="points">{{ away_team_stats.get('points', '0') }}</span>
+        </div>
+        <div class="standing-item current">
+          <span class="rank">{{ home_team_stats.get('conferenceRank', '-') }}</span>
+          <span class="team-name">{{ home_team.commonName.default }}</span>
+          <span class="points">{{ home_team_stats.get('points', '0') }}</span>
+        </div>
+        <div class="standing-item">
+          <span class="rank">8</span>
+          <span class="team-name">Pittsburgh</span>
+          <span class="points">78</span>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+{% endblock %}

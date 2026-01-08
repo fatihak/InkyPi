@@ -1,0 +1,238 @@
+.timeline-container {
+  width: 800px;
+  height: 480px;
+  display: flex;
+  flex-direction: column;
+  font-family: 'Arial', sans-serif;
+  background: #1a1a1a;
+  color: #ffffff;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.timeline-header {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.title {
+  font-size: 28px;
+  font-weight: bold;
+  margin: 0;
+  color: #ffffff;
+}
+
+.current-game {
+  font-size: 18px;
+  color: #00ff88;
+  margin-top: 5px;
+  font-weight: 600;
+}
+
+.timeline-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  flex: 1;
+}
+
+.current-matchup {
+  background: linear-gradient(135deg, #2d3748, #4a5568);
+  border-radius: 12px;
+  padding: 20px;
+  text-align: center;
+  border: 2px solid #00ff88;
+}
+
+.game-now {
+  position: relative;
+}
+
+.indicator {
+  position: absolute;
+  top: -15px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #00ff88;
+  color: #1a1a1a;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: bold;
+  letter-spacing: 1px;
+}
+
+.teams {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 30px;
+  margin: 20px 0;
+}
+
+.team {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.logo {
+  width: 80px;
+  height: 80px;
+  object-fit: contain;
+  margin-bottom: 10px;
+}
+
+.team-name {
+  font-size: 16px;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.vs {
+  font-size: 36px;
+  font-weight: bold;
+  color: #00ff88;
+  align-self: center;
+}
+
+.game-details {
+  margin-top: 15px;
+}
+
+.venue {
+  font-size: 14px;
+  color: #a0aec0;
+  margin-bottom: 5px;
+}
+
+.networks {
+  font-size: 12px;
+  color: #718096;
+}
+
+.upcoming-games {
+  flex: 1;
+}
+
+.section-title {
+  font-size: 16px;
+  font-weight: bold;
+  margin-bottom: 15px;
+  color: #a0aec0;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.timeline-track {
+  display: flex;
+  justify-content: space-between;
+  gap: 15px;
+  padding: 0 10px;
+}
+
+.timeline-game {
+  flex: 1;
+  background: #2d3748;
+  border-radius: 8px;
+  padding: 12px;
+  text-align: center;
+  border: 1px solid #4a5568;
+}
+
+.date {
+  font-size: 14px;
+  font-weight: bold;
+  color: #00ff88;
+  margin-bottom: 8px;
+}
+
+.teams-mini {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.mini-logo {
+  width: 30px;
+  height: 30px;
+  object-fit: contain;
+}
+
+.vs-mini {
+  font-size: 16px;
+  color: #a0aec0;
+}
+
+.time {
+  font-size: 12px;
+  color: #718096;
+}
+
+.team-form {
+  background: #2d3748;
+  border-radius: 8px;
+  padding: 15px;
+  border: 1px solid #4a5568;
+}
+
+.form-container {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.team-form {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.team-header-form {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.form-logo {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+}
+
+.team-abbrev {
+  font-size: 16px;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+.form-results {
+  display: flex;
+  gap: 5px;
+}
+
+.result {
+  width: 25px;
+  height: 25px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.result.win {
+  background: #48bb78;
+  color: #ffffff;
+}
+
+.result.loss {
+  background: #f56565;
+  color: #ffffff;
+}

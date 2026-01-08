@@ -1,0 +1,85 @@
+.minimal-container {
+  width: 800px;
+  height: 480px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+  background: #ffffff;
+  color: #000000;
+  padding: 60px 40px;
+  box-sizing: border-box;
+}
+
+.game-info {
+  text-align: center;
+}
+
+.day {
+  font-size: 48px;
+  font-weight: 300;
+  margin-bottom: 10px;
+  letter-spacing: 1px;
+}
+
+.time {
+  font-size: 36px;
+  font-weight: 200;
+  color: #666666;
+}
+
+.matchup {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 40px;
+  margin: 40px 0;
+}
+
+.team {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.logo {
+  width: 180px;
+  height: 180px;
+  object-fit: contain;
+  margin-bottom: 20px;
+}
+
+.team-abbrev {
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.vs {
+  font-size: 48px;
+  font-weight: 100;
+  color: #cccccc;
+  align-self: flex-end;
+  margin-bottom: 60px;
+}
+
+.details {
+  text-align: center;
+  margin-top: 20px;
+}
+
+.venue {
+  font-size: 18px;
+  font-weight: 300;
+  margin-bottom: 8px;
+  color: #666666;
+}
+
+.broadcast {
+  font-size: 16px;
+  font-weight: 400;
+  color: #999999;
+}

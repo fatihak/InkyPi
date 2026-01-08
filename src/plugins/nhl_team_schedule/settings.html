@@ -48,6 +48,20 @@
       <option value="UTA">Utah Mammoth</option>
     </select>
   </div>
+
+  <div class="form-group nowrap">
+    <label for="design" class="form-label">Design Style:</label>
+    <select id="design" name="design" class="form-input">
+      <option value="original">Original Layout</option>
+      <option value="enhanced">Enhanced Layout</option>
+      <option value="stats_focused">Stats Focused</option>
+      <option value="card_style">Card Style</option>
+      <option value="minimalist">Minimalist</option>
+      <option value="dashboard">Dashboard</option>
+      <option value="timeline">Timeline</option>
+      <option value="bracket">Bracket/Tournament</option>
+    </select>
+  </div>
 </div>
 
 <script>
@@ -55,6 +69,7 @@
     if (loadPluginSettings) {
       document.getElementById("title").value = pluginSettings.title || "";
       document.getElementById("nhlTeam").value = pluginSettings.nhlTeam;
+      document.getElementById("design").value = pluginSettings.design || 'original';
     }
   });
 </script>

@@ -1,0 +1,275 @@
+.dashboard-container {
+  width: 800px;
+  height: 480px;
+  display: flex;
+  flex-direction: column;
+  font-family: 'Arial', sans-serif;
+  background: #f5f7fa;
+  color: #1a1a1a;
+  padding: 15px;
+  box-sizing: border-box;
+}
+
+.dashboard-header {
+  text-align: center;
+  margin-bottom: 15px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #e1e8ed;
+}
+
+.title {
+  font-size: 24px;
+  font-weight: bold;
+  margin: 0;
+  color: #1a1a1a;
+}
+
+.date-time {
+  font-size: 14px;
+  color: #666666;
+  margin-top: 3px;
+}
+
+.dashboard-content {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  flex: 1;
+}
+
+.primary-game {
+  background: #ffffff;
+  border-radius: 10px;
+  padding: 15px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.game-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.team {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.team-logo {
+  width: 60px;
+  height: 60px;
+  object-fit: contain;
+  margin-bottom: 8px;
+}
+
+.team-info {
+  min-width: 120px;
+}
+
+.team-name {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 3px;
+  color: #1a1a1a;
+}
+
+.team-record {
+  font-size: 12px;
+  color: #666666;
+  background: #f8f9fa;
+  padding: 2px 6px;
+  border-radius: 8px;
+}
+
+.game-details {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  flex: 0 0 100px;
+}
+
+.vs {
+  font-size: 24px;
+  font-weight: bold;
+  color: #1a1a1a;
+  margin-bottom: 5px;
+}
+
+.venue {
+  font-size: 12px;
+  color: #666666;
+  margin-bottom: 3px;
+  font-style: italic;
+}
+
+.networks {
+  font-size: 11px;
+  color: #888888;
+}
+
+.stats-panel {
+  flex: 1;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 10px;
+  height: 100%;
+}
+
+.stat-card {
+  background: #ffffff;
+  border-radius: 8px;
+  padding: 10px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+}
+
+.stat-header {
+  font-size: 12px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-bottom: 8px;
+  text-align: center;
+  border-bottom: 1px solid #e1e8ed;
+  padding-bottom: 4px;
+}
+
+.stat-content {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.team-stat {
+  text-align: center;
+  flex: 1;
+}
+
+.rank {
+  font-size: 20px;
+  font-weight: bold;
+  color: #1a1a1a;
+  margin-bottom: 2px;
+}
+
+.team {
+  font-size: 12px;
+  color: #666666;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.divider {
+  font-size: 14px;
+  font-weight: bold;
+  color: #cccccc;
+  margin: 0 15px;
+}
+
+.points-comparison {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.away-points, .home-points {
+  font-size: 24px;
+  font-weight: bold;
+}
+
+.away-points {
+  color: #dc3545;
+}
+
+.home-points {
+  color: #28a745;
+}
+
+.separator {
+  font-size: 18px;
+  color: #666666;
+}
+
+.special-teams {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  width: 100%;
+}
+
+.power-play, .penalty-kill {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+}
+
+.label {
+  flex: 0 0 20px;
+  font-weight: 600;
+  color: #666666;
+}
+
+.away-value, .home-value {
+  flex: 0 0 35px;
+  text-align: center;
+  font-weight: 600;
+}
+
+.away-value {
+  color: #dc3545;
+}
+
+.home-value {
+  color: #28a745;
+}
+
+.dash {
+  flex: 0 0 10px;
+  text-align: center;
+  color: #999999;
+}
+
+.goals-comparison {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  width: 100%;
+}
+
+.goals-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+}
+
+.goals-row .label {
+  flex: 0 0 20px;
+  font-weight: 600;
+  color: #666666;
+}
+
+.away-goals, .home-goals {
+  flex: 0 0 25px;
+  text-align: center;
+  font-weight: 600;
+}
+
+.away-goals {
+  color: #dc3545;
+}
+
+.home-goals {
+  color: #28a745;
+}

@@ -1,0 +1,143 @@
+.enhanced-container {
+  width: 800px;
+  height: 480px;
+  display: flex;
+  flex-direction: column;
+  font-family: 'Arial', sans-serif;
+  background: #ffffff;
+  color: #000000;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.game-header {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.title {
+  font-size: 32px;
+  font-weight: bold;
+  margin: 0;
+  color: #1a1a1a;
+}
+
+.game-status {
+  font-size: 24px;
+  font-weight: 600;
+  color: #333333;
+  margin-top: 5px;
+}
+
+.game-matchup {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex: 1;
+  margin: 20px 0;
+}
+
+.team {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.team-info {
+  text-align: center;
+}
+
+.team-logo {
+  width: 120px;
+  height: 120px;
+  object-fit: contain;
+  margin-bottom: 15px;
+}
+
+.team-name {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0 0 8px 0;
+  color: #1a1a1a;
+}
+
+.team-record {
+  font-size: 14px;
+  color: #666666;
+  background: #f5f5f5;
+  padding: 4px 8px;
+  border-radius: 12px;
+}
+
+.game-center {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.versus {
+  font-size: 48px;
+  font-weight: bold;
+  color: #333333;
+  margin-bottom: 15px;
+}
+
+.game-time {
+  font-size: 28px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-bottom: 10px;
+}
+
+.broadcast {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.broadcast-label {
+  font-size: 12px;
+  color: #666666;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.broadcast-networks {
+  font-size: 16px;
+  font-weight: 500;
+  color: #333333;
+}
+
+.venue {
+  font-size: 14px;
+  color: #666666;
+  font-style: italic;
+}
+
+.game-footer {
+  text-align: center;
+  margin-top: 15px;
+}
+
+.conference-info {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 15px;
+  font-size: 14px;
+  color: #666666;
+}
+
+.away-conference, .home-conference {
+  font-weight: 500;
+}
+
+.divider {
+  color: #999999;
+  font-weight: 400;
+}
