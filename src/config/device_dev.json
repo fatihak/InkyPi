@@ -1,63 +1,6 @@
 {
     "name": "InkyPi Development",
     "display_type": "mock",
-    "resolution": [
-        800,
-        480
-    ],
-    "orientation": "horizontal",
-    "playlist_config": {
-        "playlists": [
-            {
-                "name": "Default",
-                "start_time": "00:00",
-                "end_time": "24:00",
-                "plugins": [
-                    {
-                        "plugin_id": "nhl_team_schedule",
-                        "name": "Ottawa Senators Schedule",
-                        "plugin_settings": {
-                            "title": "Ottawa Senators Schedule",
-                            "nhlTeam": "OTT",
-                            "selectedFrame": "None",
-                            "topMargin": "",
-                            "bottomMargin": "",
-                            "leftMargin": "",
-                            "rightMargin": "",
-                            "backgroundOption": "color",
-                            "backgroundColor": "#ffffff",
-                            "textColor": "#000000"
-                        },
-                        "refresh": {
-                            "scheduled": "10:00"
-                        },
-                        "latest_refresh_time": "2025-12-29T19:59:46.411582+00:00"
-                    },
-                    {
-                        "plugin_id": "clock",
-                        "name": "Time",
-                        "plugin_settings": {
-                            "selectedClockFace": "Digital Clock",
-                            "primaryColor": "#ffffff",
-                            "secondaryColor": "#000000"
-                        },
-                        "refresh": {
-                            "interval": 60
-                        },
-                        "latest_refresh_time": "2025-12-29T19:59:45.483818+00:00"
-                    }
-                ],
-                "current_plugin_index": null
-            }
-        ],
-        "active_playlist": null
-    },
-    "refresh_info": {
-        "refresh_time": "2025-12-29T19:59:46.411582+00:00",
-        "image_hash": "1f9423e7d2fe0240e74c254d026c06810285167e3ba3a853fede5ada3032a33e",
-        "refresh_type": "Playlist",
-        "plugin_id": "nhl_team_schedule",
-        "playlist": "Default",
-        "plugin_instance": "Ottawa Senators Schedule"
-    }
+    "resolution": [800, 480],
+    "orientation": "horizontal"
 }
