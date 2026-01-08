@@ -87,7 +87,27 @@ class BasePlugin:
             plugin_css = os.path.join(self.render_dir, css_file)
             css_files.append(plugin_css)
 
-        template_params["style_sheets"] = css_files
+        # Check if we should serve HTML instead of taking screenshot
+        try:
+            from flask import current_app
+            if current_app.config.get('SERVE_HTML_MODE', False):
+                # Convert CSS file paths to web URLs for browser access
+                css_urls = []
+                for css_file in css_files:
+                    if 'base_plugin' in css_file:
+                        # Base plugin CSS - use CSS route for base plugin
+                        css_urls.append(f"/css/base_plugin/{os.path.basename(css_file)}")
+                    else:
+                        # Plugin-specific CSS - use plugin CSS route
+                        css_urls.append(f"/css/{self.get_plugin_id()}/{os.path.basename(css_file)}")
+                
+                template_params["style_sheets"] = css_urls
+            else:
+                template_params["style_sheets"] = css_files
+        except (RuntimeError, ImportError):
+            # Not in Flask context or Flask not available
+            template_params["style_sheets"] = css_files
+        
         template_params["width"] = dimensions[0]
         template_params["height"] = dimensions[1]
         template_params["font_faces"] = get_fonts()
@@ -96,5 +116,18 @@ class BasePlugin:
         # load and render the given html template
         template = self.env.get_template(html_file)
         rendered_html = template.render(template_params)
+
+        # Check if we should serve HTML instead of taking screenshot
+        try:
+            from flask import current_app
+            if current_app.config.get('SERVE_HTML_MODE', False):
+                return {
+                    'html': rendered_html,
+                    'css_files': template_params["style_sheets"],  # Already converted to URLs
+                    'template_params': template_params
+                }
+        except (RuntimeError, ImportError):
+            # Not in Flask context or Flask not available
+            pass
 
         return take_screenshot_html(rendered_html, dimensions)

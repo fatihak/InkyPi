@@ -32,6 +32,7 @@ from blueprints.main import main_bp
 from blueprints.settings import settings_bp
 from blueprints.plugin import plugin_bp
 from blueprints.playlist import playlist_bp
+from blueprints.dev import dev_bp
 from jinja2 import ChoiceLoader, FileSystemLoader
 from plugins.plugin_registry import load_plugins
 from waitress import serve
@@ -42,6 +43,7 @@ logger = logging.getLogger(__name__)
 # Parse command line arguments
 parser = argparse.ArgumentParser(description="InkyPi Display Server")
 parser.add_argument("--dev", action="store_true", help="Run in development mode")
+parser.add_argument("--serve-html", action="store_true", help="Serve HTML instead of rendering images (requires --dev)")
 args = parser.parse_args()
 
 # Set development mode settings
@@ -49,10 +51,20 @@ if args.dev:
     Config.config_file = os.path.join(Config.BASE_DIR, "config", "device_dev.json")
     DEV_MODE = True
     PORT = 8080
-    logger.info("Starting InkyPi in DEVELOPMENT mode on port 8080")
+    
+    if args.serve_html:
+        SERVE_HTML_MODE = True
+        logger.info("Starting InkyPi in DEVELOPMENT mode with HTML serving on port 8080")
+    else:
+        SERVE_HTML_MODE = False
+        logger.info("Starting InkyPi in DEVELOPMENT mode on port 8080")
 else:
     DEV_MODE = False
+    SERVE_HTML_MODE = False
     PORT = 80
+    if args.serve_html:
+        logger.error("--serve-html requires --dev mode")
+        sys.exit(1)
     logger.info("Starting InkyPi in PRODUCTION mode on port 80")
 logging.getLogger("waitress.queue").setLevel(logging.ERROR)
 app = Flask(__name__)
@@ -74,6 +86,8 @@ load_plugins(device_config.get_plugins())
 app.config["DEVICE_CONFIG"] = device_config
 app.config["DISPLAY_MANAGER"] = display_manager
 app.config["REFRESH_TASK"] = refresh_task
+app.config["DEV_MODE"] = DEV_MODE
+app.config["SERVE_HTML_MODE"] = SERVE_HTML_MODE
 
 # Set additional parameters
 app.config["MAX_FORM_PARTS"] = 10_000
@@ -83,6 +97,7 @@ app.register_blueprint(main_bp)
 app.register_blueprint(settings_bp)
 app.register_blueprint(plugin_bp)
 app.register_blueprint(playlist_bp)
+app.register_blueprint(dev_bp)
 
 # Register opener for HEIF/HEIC images
 register_heif_opener()

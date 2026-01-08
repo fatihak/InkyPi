@@ -114,6 +114,62 @@ def image(plugin_id, filename):
     return send_from_directory(abs_plugin_dir, filename)
 
 
+@plugin_bp.route("/css/<plugin_id>/<path:filename>")
+def plugin_css(plugin_id, filename):
+    # Resolve plugins directory dynamically
+    plugins_dir = resolve_path("plugins")
+
+    # Construct the full path to the plugin's render directory
+    plugin_dir = os.path.join(plugins_dir, plugin_id, "render")
+
+    # Security check to prevent directory traversal
+    safe_path = os.path.abspath(os.path.join(plugin_dir, filename))
+    if not safe_path.startswith(os.path.abspath(plugin_dir)):
+        return "Invalid path", 403
+
+    # Convert to absolute path for send_from_directory
+    abs_plugin_dir = os.path.abspath(plugin_dir)
+
+    # Check if the directory and file exist
+    if not os.path.isdir(abs_plugin_dir):
+        logger.error(f"Plugin render directory not found: {abs_plugin_dir}")
+        return "Plugin render directory not found", 404
+
+    if not os.path.isfile(safe_path):
+        logger.error(f"CSS file not found: {safe_path}")
+        return "CSS file not found", 404
+
+    # Serve the CSS file from the plugin's render directory
+    return send_from_directory(abs_plugin_dir, filename)
+
+
+@plugin_bp.route("/css/base_plugin/<path:filename>")
+def base_plugin_css(filename):
+    # Resolve base plugin directory dynamically
+    plugins_dir = resolve_path("plugins")
+    base_plugin_dir = os.path.join(plugins_dir, "base_plugin", "render")
+
+    # Security check to prevent directory traversal
+    safe_path = os.path.abspath(os.path.join(base_plugin_dir, filename))
+    if not safe_path.startswith(os.path.abspath(base_plugin_dir)):
+        return "Invalid path", 403
+
+    # Convert to absolute path for send_from_directory
+    abs_base_plugin_dir = os.path.abspath(base_plugin_dir)
+
+    # Check if the directory and file exist
+    if not os.path.isdir(abs_base_plugin_dir):
+        logger.error(f"Base plugin render directory not found: {abs_base_plugin_dir}")
+        return "Base plugin render directory not found", 404
+
+    if not os.path.isfile(safe_path):
+        logger.error(f"Base plugin CSS file not found: {safe_path}")
+        return "Base plugin CSS file not found", 404
+
+    # Serve the CSS file from the base plugin's render directory
+    return send_from_directory(abs_base_plugin_dir, filename)
+
+
 @plugin_bp.route(
     "/plugin_instance_image/<path:playlist_name>/<path:plugin_id>/<path:instance_name>"
 )

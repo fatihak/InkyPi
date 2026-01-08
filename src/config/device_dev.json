@@ -1,6 +1,63 @@
 {
     "name": "InkyPi Development",
     "display_type": "mock",
-    "resolution": [800, 480],
-    "orientation": "horizontal"
+    "resolution": [
+        800,
+        480
+    ],
+    "orientation": "horizontal",
+    "playlist_config": {
+        "playlists": [
+            {
+                "name": "Default",
+                "start_time": "00:00",
+                "end_time": "24:00",
+                "plugins": [
+                    {
+                        "plugin_id": "nhl_team_schedule",
+                        "name": "ottawa sens schedule",
+                        "plugin_settings": {
+                            "title": "ottawa sens schedule",
+                            "nhlTeam": "OTT",
+                            "selectedFrame": "None",
+                            "topMargin": "",
+                            "bottomMargin": "",
+                            "leftMargin": "",
+                            "rightMargin": "",
+                            "backgroundOption": "color",
+                            "backgroundColor": "#ffffff",
+                            "textColor": "#000000"
+                        },
+                        "refresh": {
+                            "interval": 600
+                        },
+                        "latest_refresh_time": "2026-01-08T04:14:30.584397+00:00"
+                    },
+                    {
+                        "plugin_id": "clock",
+                        "name": "clock",
+                        "plugin_settings": {
+                            "selectedClockFace": "Digital Clock",
+                            "primaryColor": "#ffffff",
+                            "secondaryColor": "#000000"
+                        },
+                        "refresh": {
+                            "interval": 60
+                        },
+                        "latest_refresh_time": null
+                    }
+                ],
+                "current_plugin_index": null
+            }
+        ],
+        "active_playlist": null
+    },
+    "refresh_info": {
+        "refresh_time": "2026-01-08T04:14:30.584397+00:00",
+        "image_hash": "f3914d808ac908edf44af05d41c34c7fb27ade87a2eee62b8bb9fd1feb2356cf",
+        "refresh_type": "Playlist",
+        "plugin_id": "nhl_team_schedule",
+        "playlist": "Default",
+        "plugin_instance": "ottawa sens schedule"
+    }
 }
