@@ -37,6 +37,18 @@ from jinja2 import ChoiceLoader, FileSystemLoader
 from plugins.plugin_registry import load_plugins
 from waitress import serve
 
+# Development-only imports (only available when requirements-dev.txt is used)
+try:
+    from flask_socketio import SocketIO
+    from utils.file_watcher import LiveReloadManager
+    from blueprints.dev import register_socketio_events
+    DEV_DEPS_AVAILABLE = True
+except ImportError:
+    DEV_DEPS_AVAILABLE = False
+    SocketIO = None
+    LiveReloadManager = None
+    register_socketio_events = None
+
 
 logger = logging.getLogger(__name__)
 
@@ -68,6 +80,18 @@ else:
     logger.info("Starting InkyPi in PRODUCTION mode on port 80")
 logging.getLogger("waitress.queue").setLevel(logging.ERROR)
 app = Flask(__name__)
+
+# Initialize SocketIO for live reload (development dependencies required)
+if SERVE_HTML_MODE and DEV_DEPS_AVAILABLE:
+    socketio = SocketIO(app, cors_allowed_origins="*")
+    live_reload_manager = None
+elif SERVE_HTML_MODE and not DEV_DEPS_AVAILABLE:
+    logger.error("HTML serving mode requires development dependencies. Please install with: pip install -r install/requirements-dev.txt")
+    sys.exit(1)
+else:
+    socketio = None
+    live_reload_manager = None
+
 template_dirs = [
     os.path.join(os.path.dirname(__file__), "templates"),  # Default template folder
     os.path.join(os.path.dirname(__file__), "plugins"),  # Plugin templates
@@ -98,6 +122,10 @@ app.register_blueprint(settings_bp)
 app.register_blueprint(plugin_bp)
 app.register_blueprint(playlist_bp)
 app.register_blueprint(dev_bp)
+
+# Register SocketIO events if in HTML serving mode and development deps available
+if SERVE_HTML_MODE and socketio and register_socketio_events:
+    register_socketio_events(socketio)
 
 # Register opener for HEIF/HEIC images
 register_heif_opener()
@@ -130,6 +158,20 @@ if __name__ == "__main__":
             except:
                 pass  # Ignore if we can't get the IP
 
-        serve(app, host="0.0.0.0", port=PORT, threads=1)
+        # Start live reload manager if in HTML serving mode and dependencies available
+        if SERVE_HTML_MODE and socketio and LiveReloadManager:
+            live_reload_manager = LiveReloadManager(socketio)
+            live_reload_manager.start_watching()
+            logger.info("Live reload file watching started")
+            
+            # Run with SocketIO instead of waitress for live reload support
+            try:
+                socketio.run(app, host="0.0.0.0", port=PORT, debug=False, use_reloader=False, allow_unsafe_werkzeug=True)
+            finally:
+                if live_reload_manager:
+                    live_reload_manager.stop_watching()
+        else:
+            # Use waitress for production or non-HTML serving modes
+            serve(app, host="0.0.0.0", port=PORT, threads=1)
     finally:
         refresh_task.stop()

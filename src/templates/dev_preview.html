@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ plugin_name }} - Development Preview</title>
+    
+    <!-- Socket.IO Client Library -->
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -148,9 +151,19 @@
             </div>
             
             <div class="reload-hint">
-                <strong>💡 Tip:</strong> Edit HTML/CSS files to see changes. Refresh the page to update plugin data.
+                <strong>💡 Live Reload Active:</strong> Changes to plugin files will automatically reload the preview.
+            </div>
+            
+            <div class="reload-hint" style="background-color: #fff3cd; border-color: #ffeaa7; color: #856404; margin-top: 10px;">
+                <strong>🔧 Manual Actions:</strong><br>
+                • Click the "Live Reload" indicator to force refresh<br>
+                • Changes to Python files require server restart<br>
+                • CSS/HTML changes update automatically
             </div>
         </div>
     </div>
+    
+    <!-- Live Reload Script -->
+    <script src="{{ url_for('static', filename='js/live_reload.js') }}"></script>
 </body>
 </html>
