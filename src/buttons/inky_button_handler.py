@@ -1,5 +1,6 @@
 import logging
 import time
+import threading
 from buttons.abstract_button_handler import (
     AbstractButtonHandler, 
     ButtonID, 
@@ -9,15 +10,15 @@ from buttons.abstract_button_handler import (
 logger = logging.getLogger(__name__)
 
 # Default GPIO pins for Inky Impression buttons
-# Can be overridden via device config for different models
 DEFAULT_BUTTON_PINS = {
     ButtonID.A: 5,
     ButtonID.B: 6,
-    ButtonID.C: 16,  # GPIO 25 on 13.3" model
+    ButtonID.C: 16,
     ButtonID.D: 24,
 }
 
 LONG_PRESS_THRESHOLD = 1.0  # seconds
+DOUBLE_CLICK_THRESHOLD = 0.4  # seconds between clicks
 
 
 class InkyButtonHandler(AbstractButtonHandler):
@@ -25,7 +26,7 @@ class InkyButtonHandler(AbstractButtonHandler):
     Button handler for Inky Impression hardware.
     
     Uses gpiozero library for GPIO pin access on Raspberry Pi.
-    Supports both short and long press detection.
+    Supports short, double, and long press detection.
     """
     
     def __init__(self, button_pins: dict = None):
@@ -34,6 +35,8 @@ class InkyButtonHandler(AbstractButtonHandler):
         self._buttons = {}
         self._press_times = {}
         self._long_press_fired = set()
+        self._click_counts = {}
+        self._click_timers = {}
     
     def _parse_button_pins(self, config_pins: dict) -> dict:
         """Convert config pins (string keys) to ButtonID keys."""
@@ -42,13 +45,11 @@ class InkyButtonHandler(AbstractButtonHandler):
         
         result = {}
         for button_id in ButtonID:
-            # Check both ButtonID and string key
             if button_id in config_pins:
                 result[button_id] = config_pins[button_id]
             elif button_id.value in config_pins:
                 result[button_id] = config_pins[button_id.value]
             else:
-                # Use default if not specified
                 result[button_id] = DEFAULT_BUTTON_PINS.get(button_id)
         
         return result
@@ -68,12 +69,12 @@ class InkyButtonHandler(AbstractButtonHandler):
                     bounce_time=0.05
                 )
                 
-                # Bind events using closures to capture button_id
                 button.when_pressed = self._make_pressed_handler(button_id)
                 button.when_released = self._make_released_handler(button_id)
                 button.when_held = self._make_held_handler(button_id)
                 
                 self._buttons[button_id] = button
+                self._click_counts[button_id] = 0
                 logger.info(f"Button {button_id.value} initialized on GPIO {pin}")
             
             self._running = True
@@ -87,13 +88,19 @@ class InkyButtonHandler(AbstractButtonHandler):
     def stop(self):
         if not self._running:
             return
-            
+        
+        # Cancel any pending timers
+        for timer in self._click_timers.values():
+            timer.cancel()
+        
         for button in self._buttons.values():
             button.close()
         
         self._buttons.clear()
         self._press_times.clear()
         self._long_press_fired.clear()
+        self._click_counts.clear()
+        self._click_timers.clear()
         self._running = False
         logger.info("InkyButtonHandler stopped")
     
@@ -117,12 +124,47 @@ class InkyButtonHandler(AbstractButtonHandler):
             
             duration = time.time() - press_start
             if duration < LONG_PRESS_THRESHOLD:
-                logger.info(f"Button {button_id.value} short press")
-                self._notify(button_id, PressType.SHORT)
+                # This is a click - check for double click
+                self._handle_click(button_id)
         return handler
+    
+    def _handle_click(self, button_id: ButtonID):
+        """Handle click and detect single vs double click."""
+        # Cancel existing timer if any
+        if button_id in self._click_timers:
+            self._click_timers[button_id].cancel()
+        
+        self._click_counts[button_id] = self._click_counts.get(button_id, 0) + 1
+        
+        if self._click_counts[button_id] == 2:
+            # Double click detected
+            logger.info(f"Button {button_id.value} double press")
+            self._click_counts[button_id] = 0
+            self._notify(button_id, PressType.DOUBLE)
+        else:
+            # Wait for potential second click
+            timer = threading.Timer(
+                DOUBLE_CLICK_THRESHOLD,
+                self._single_click_timeout,
+                args=[button_id]
+            )
+            self._click_timers[button_id] = timer
+            timer.start()
+    
+    def _single_click_timeout(self, button_id: ButtonID):
+        """Called when double-click window expires - fire single click."""
+        if self._click_counts.get(button_id, 0) == 1:
+            logger.info(f"Button {button_id.value} short press")
+            self._click_counts[button_id] = 0
+            self._notify(button_id, PressType.SHORT)
     
     def _make_held_handler(self, button_id: ButtonID):
         def handler():
+            # Cancel double-click detection on long press
+            if button_id in self._click_timers:
+                self._click_timers[button_id].cancel()
+            self._click_counts[button_id] = 0
+            
             logger.info(f"Button {button_id.value} long press")
             self._long_press_fired.add(button_id)
             self._notify(button_id, PressType.LONG)

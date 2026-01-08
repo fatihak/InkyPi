@@ -95,6 +95,17 @@ def save_settings():
             except ValueError:
                 pass  # Keep existing pins if invalid values
         
+        # Handle button actions
+        button_actions = {}
+        for btn in ['A', 'B', 'C', 'D']:
+            for press_type in ['short', 'double', 'long']:
+                key = f"action_{btn}_{press_type}"
+                value = form_data.get(key, "")
+                if value:  # Only store non-empty values
+                    button_actions[f"{btn}_{press_type}"] = value
+        
+        settings["button_actions"] = button_actions
+        
         device_config.update_config(settings)
 
         if plugin_cycle_interval_seconds != previous_interval_seconds:
@@ -194,4 +205,93 @@ def button_press():
         "button": button_id.value, 
         "press_type": press_type.value
     })
+
+
+# Display type friendly names
+DISPLAY_NAMES = {
+    "mock": "Mock Display",
+    "inky": "Inky Impression",
+}
+
+
+def format_display_type(display_type: str) -> str:
+    """Format display type to be more readable."""
+    if display_type in DISPLAY_NAMES:
+        return DISPLAY_NAMES[display_type]
+    # Waveshare displays (epd5in83_V2 -> EPD 5in83 V2)
+    if display_type.startswith("epd"):
+        return display_type.upper().replace("_", " ")
+    # Fallback: capitalize and replace underscores
+    return display_type.replace("_", " ").title()
+
+
+@settings_bp.route('/system_info')
+def system_info():
+    """Return system information for the info popover."""
+    import platform
+    import socket
+    
+    device_config = current_app.config['DEVICE_CONFIG']
+    
+    # Basic info
+    display_type = device_config.get_config("display_type", default="unknown")
+    info = {
+        "hostname": socket.gethostname(),
+        "python_version": platform.python_version(),
+        "platform": platform.system(),
+        "platform_version": platform.release(),
+        "architecture": platform.machine(),
+        "display_type": format_display_type(display_type),
+    }
+    
+    # Get IP address
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        info["ip_address"] = s.getsockname()[0]
+        s.close()
+    except Exception:
+        info["ip_address"] = "Unknown"
+    
+    # Raspberry Pi model (Linux only)
+    try:
+        with open("/proc/device-tree/model", "r") as f:
+            info["device_model"] = f.read().strip().rstrip('\x00')
+    except Exception:
+        info["device_model"] = f"{platform.system()} {platform.machine()}"
+    
+    # OS info (Linux)
+    try:
+        with open("/etc/os-release", "r") as f:
+            for line in f:
+                if line.startswith("PRETTY_NAME="):
+                    info["os_name"] = line.split("=", 1)[1].strip().strip('"')
+                    break
+    except Exception:
+        info["os_name"] = f"{platform.system()} {platform.release()}"
+    
+    # Uptime (Linux only)
+    try:
+        with open("/proc/uptime", "r") as f:
+            uptime_seconds = float(f.read().split()[0])
+            days = int(uptime_seconds // 86400)
+            hours = int((uptime_seconds % 86400) // 3600)
+            minutes = int((uptime_seconds % 3600) // 60)
+            if days > 0:
+                info["uptime"] = f"{days}d {hours}h {minutes}m"
+            elif hours > 0:
+                info["uptime"] = f"{hours}h {minutes}m"
+            else:
+                info["uptime"] = f"{minutes}m"
+    except Exception:
+        info["uptime"] = "Unknown"
+    
+    # Display resolution
+    try:
+        resolution = device_config.get_resolution()
+        info["display_resolution"] = f"{resolution[0]}x{resolution[1]}"
+    except Exception:
+        info["display_resolution"] = "Unknown"
+    
+    return jsonify(info)
 

@@ -1,6 +1,5 @@
 {
     "id": "colors",
-    "name": "Colors",
-    "description": "Display solid colors. Use B/C buttons to cycle through colors.",
+    "display_name": "Colors Frame",
     "class": "Colors"
 }

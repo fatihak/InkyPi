@@ -1,6 +1,76 @@
 {
     "name": "InkyPi Development",
     "display_type": "mock",
-    "resolution": [800, 480],
-    "orientation": "horizontal"
+    "resolution": [
+        800,
+        480
+    ],
+    "orientation": "horizontal",
+    "inverted_image": null,
+    "log_system_stats": null,
+    "show_buttons": true,
+    "timezone": "Africa/Addis_Ababa",
+    "time_format": "12h",
+    "plugin_cycle_interval_seconds": 60,
+    "image_settings": {
+        "saturation": 1.0,
+        "brightness": 1.0,
+        "sharpness": 1.0,
+        "contrast": 1.0
+    },
+    "button_pins": {
+        "A": 5,
+        "B": 6,
+        "C": 16,
+        "D": 24
+    },
+    "playlist_config": {
+        "playlists": [
+            {
+                "name": "Default",
+                "start_time": "00:00",
+                "end_time": "24:00",
+                "plugins": [],
+                "current_plugin_index": null
+            }
+        ],
+        "active_playlist": "Default"
+    },
+    "refresh_info": {
+        "refresh_time": null,
+        "image_hash": null,
+        "refresh_type": null,
+        "plugin_id": null
+    },
+    "button_actions": {
+        "A_short": "refresh",
+        "B_long": "prev_plugin",
+        "C_long": "next_plugin",
+        "D_long": "reboot"
+    },
+    "plugin_order": [
+        "comic",
+        "colors",
+        "github",
+        "ai_text",
+        "ai_image",
+        "screenshot",
+        "apod",
+        "newspaper",
+        "calendar",
+        "clock",
+        "countdown",
+        "image_album",
+        "image_folder",
+        "image_upload",
+        "image_url",
+        "photo_frame",
+        "rss",
+        "year_progress",
+        "spotify",
+        "todo_list",
+        "unsplash",
+        "weather",
+        "wpotd"
+    ]
 }

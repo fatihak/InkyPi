@@ -4,6 +4,7 @@
     --bg-secondary: #ffffff;
     --text-primary: #333333;
     --text-secondary: #555555;
+    --text-muted: #888888;
     --border-color: #e0e0e0;
     --border-light: #dddddd;
     --border-subtle: #ddd;
@@ -39,6 +40,7 @@ html[data-theme="dark"] {
     --bg-secondary: #2d2d2d;
     --text-primary: #e0e0e0;
     --text-secondary: #b0b0b0;
+    --text-muted: #777777;
     --border-color: #444444;
     --border-light: #555555;
     --border-subtle: #555555;

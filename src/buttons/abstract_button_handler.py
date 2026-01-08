@@ -13,8 +13,9 @@ class ButtonID(Enum):
 
 class PressType(Enum):
     """Button press type."""
-    SHORT = "short"  # < 1 second
-    LONG = "long"    # >= 1 second
+    SHORT = "short"   # Single quick press (< 500ms)
+    DOUBLE = "double" # Two quick presses (< 500ms between)
+    LONG = "long"     # Press and hold (>= 1 second)
 
 
 # Callback type: function receives (button_id, press_type)
