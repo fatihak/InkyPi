@@ -67,18 +67,17 @@ python src/inkypi.py --dev
 
 - **Live HTML preview**: View plugin HTML directly in your browser
 - **Instance-specific preview**: Test specific plugin configurations
-- **Plugin listing**: Browse all available plugins at `/dev/plugins`
+- **Plugin listing**: Browse all available plugins at `/dev/dashboard`
 
 ### Available Endpoints
 
-- `/dev/plugins` - List all available plugins
-- `/dev/preview/<plugin_id>` - Preview any plugin (e.g., `/dev/preview/nhl_team_schedule`)
-- `/dev/preview/<plugin_id>/<instance_name>` - Preview specific plugin instances (e.g., `/dev/preview/nhl_team_schedule/ottawa%20sens%20schedule`)
+- `/dev/dashboard` - List all available plugins
+- `/dev/enhanced-preview/nhl_team_schedule` - Preview any plugin (e.g., `/dev/enhanced-preview/nhl_team_schedule`)
 
 ### Development Workflow
 
 1. Start with `python src/inkypi.py --dev`
-2. Navigate to `http://localhost:8080/dev/preview/<plugin_id>`
+2. Navigate to `http://localhost:8080/dev/dashboard`
 3. Edit HTML/CSS files in your plugin's `render/` directory
 4. Refresh browser to see changes
 5. Edit plugin settings → data refreshes on page reload
@@ -90,10 +89,7 @@ python src/inkypi.py --dev
 python src/inkypi.py --dev
 
 # Open in browser
-http://localhost:8080/dev/preview/nhl_team_schedule
-
-# View specific instance
-http://localhost:8080/dev/preview/nhl_team_schedule/ottawa%20sens%20schedule
+http://localhost:8080/dev/enhanced-preview/nhl_team_schedule
 ```
 
 ## Testing Your Changes
@@ -108,7 +104,7 @@ http://localhost:8080/dev/preview/nhl_team_schedule/ottawa%20sens%20schedule
 ### HTML Preview Mode
 
 1. Start with `--dev` flag (HTML serving is automatically enabled)
-2. Navigate to `/dev/preview/<plugin_id>`
+2. Navigate to `/dev/enhanced_preview/<plugin_id>`
 3. Edit HTML/CSS files and refresh browser
 4. Changes to plugin settings require page reload
 

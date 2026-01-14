@@ -1,6 +1,6 @@
 .progress-container {
   display: flex;
-  align-items: center; 
+  align-items: center;
   justify-content: center;
   font-family: "Jost";
   height: 100%;
@@ -49,3 +49,4 @@
   justify-content: space-between;
   margin-top: 8px;
   font-size: min(5dvh, 4vw);
+}
