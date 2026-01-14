@@ -52,8 +52,7 @@ logger = logging.getLogger(__name__)
 
 # Parse command line arguments
 parser = argparse.ArgumentParser(description="InkyPi Display Server")
-parser.add_argument("--dev", action="store_true", help="Run in development mode")
-parser.add_argument("--serve-html", action="store_true", help="Serve HTML instead of rendering images (requires --dev)")
+parser.add_argument("--dev", action="store_true", help="Run in development mode with HTML serving enabled")
 args = parser.parse_args()
 
 # Set development mode settings
@@ -61,20 +60,10 @@ if args.dev:
     Config.config_file = os.path.join(Config.BASE_DIR, "config", "device_dev.json")
     DEV_MODE = True
     PORT = 8080
-    
-    if args.serve_html:
-        SERVE_HTML_MODE = True
-        logger.info("Starting InkyPi in DEVELOPMENT mode with HTML serving on port 8080")
-    else:
-        SERVE_HTML_MODE = False
-        logger.info("Starting InkyPi in DEVELOPMENT mode on port 8080")
+    logger.info("Starting InkyPi in DEVELOPMENT mode with HTML serving on port 8080")
 else:
     DEV_MODE = False
-    SERVE_HTML_MODE = False
     PORT = 80
-    if args.serve_html:
-        logger.error("--serve-html requires --dev mode")
-        sys.exit(1)
     logger.info("Starting InkyPi in PRODUCTION mode on port 80")
 logging.getLogger("waitress.queue").setLevel(logging.ERROR)
 app = Flask(__name__)
@@ -87,18 +76,12 @@ app.debug = DEV_MODE
 socketio = None
 live_reload_manager = None
 
-if SERVE_HTML_MODE:
+if DEV_MODE:
     if DEV_DEPS_AVAILABLE:
         socketio = SocketIO(app, cors_allowed_origins="*")
     else:
         logger.error("HTML serving mode requires development dependencies. Please install with: pip install -r install/requirements-dev.txt")
         sys.exit(1)
-
-if SERVE_HTML_MODE and DEV_DEPS_AVAILABLE:
-    socketio = SocketIO(app, cors_allowed_origins="*")
-elif SERVE_HTML_MODE and not DEV_DEPS_AVAILABLE:
-    logger.error("HTML serving mode requires development dependencies. Please install with: pip install -r install/requirements-dev.txt")
-    sys.exit(1)
 
 template_dirs = [
     os.path.join(os.path.dirname(__file__), "templates"),  # Default template folder
@@ -120,7 +103,7 @@ app.config["DEVICE_CONFIG"] = device_config
 app.config["DISPLAY_MANAGER"] = display_manager
 app.config["REFRESH_TASK"] = refresh_task
 app.config["DEV_MODE"] = DEV_MODE
-app.config["SERVE_HTML_MODE"] = SERVE_HTML_MODE
+app.config["SERVE_HTML_MODE"] = DEV_MODE
 
 # Set additional parameters
 app.config["MAX_FORM_PARTS"] = 10_000
@@ -142,7 +125,7 @@ if DEV_DEPS_AVAILABLE and DEV_MODE:
         logger.warning(f"Could not register dev blueprint: {e}")
 
 # Register SocketIO events if in HTML serving mode and development deps available
-if SERVE_HTML_MODE and socketio and register_socketio_events:
+if DEV_MODE and socketio and register_socketio_events:
     register_socketio_events(socketio)
 
 # Register opener for HEIF/HEIC images
@@ -177,7 +160,7 @@ if __name__ == "__main__":
                 pass  # Ignore if we can't get the IP
 
         # Start live reload manager if in HTML serving mode and dependencies available
-        if SERVE_HTML_MODE and socketio and LiveReloadManager:
+        if DEV_MODE and socketio and LiveReloadManager:
             live_reload_manager = LiveReloadManager(socketio)
             live_reload_manager.start_watching()
             logger.info("Live reload file watching started")

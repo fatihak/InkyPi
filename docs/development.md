@@ -37,14 +37,13 @@ python src/inkypi.py --dev
 - **Debug issues** - Full error messages in terminal
 - **Verify rendering** - Check output in `mock_display_output/latest.png`
 - **Cross-platform development** - Works on macOS, Linux, Windows
-- **Live HTML preview** - Edit HTML/CSS in real-time with the `--serve-html` flag
+- **Live HTML preview** - Edit HTML/CSS in real-time with HTML serving enabled in dev mode
 
 ## Essential Commands
 
 ```bash
 source venv/bin/activate             # Activate virtual environment
-python src/inkypi.py --dev           # Start development server
-python src/inkypi.py --dev --serve-html  # Start with HTML preview mode
+python src/inkypi.py --dev           # Start development server with HTML preview mode
 deactivate                           # Exit virtual environment
 ```
 
@@ -54,14 +53,14 @@ deactivate                           # Exit virtual environment
 2. **Plugin development**: Copy an existing plugin as template (e.g., `clock/`)
 3. **Configuration**: Edit `src/config/device_dev.json` for display settings
 4. **Hot reload**: Restart server to see code changes
-5. **HTML preview mode**: Use `--serve-html` for rapid UI development - see HTML preview section below
+5. **HTML preview mode**: HTML serving is automatically enabled in dev mode for rapid UI development - see HTML preview section below
 
 ## HTML Preview Mode
 
-The `--serve-html` flag enables rapid plugin development by serving HTML instead of rendering images:
+HTML serving is automatically enabled in development mode for rapid plugin development by serving HTML instead of rendering images:
 
 ```bash
-python src/inkypi.py --dev --serve-html
+python src/inkypi.py --dev
 ```
 
 ### Features
@@ -78,7 +77,7 @@ python src/inkypi.py --dev --serve-html
 
 ### Development Workflow
 
-1. Start with `python src/inkypi.py --dev --serve-html`
+1. Start with `python src/inkypi.py --dev`
 2. Navigate to `http://localhost:8080/dev/preview/<plugin_id>`
 3. Edit HTML/CSS files in your plugin's `render/` directory
 4. Refresh browser to see changes
@@ -87,8 +86,8 @@ python src/inkypi.py --dev --serve-html
 ### Example
 
 ```bash
-# Start HTML preview mode
-python src/inkypi.py --dev --serve-html
+# Start development mode with HTML preview
+python src/inkypi.py --dev
 
 # Open in browser
 http://localhost:8080/dev/preview/nhl_team_schedule
@@ -108,7 +107,7 @@ http://localhost:8080/dev/preview/nhl_team_schedule/ottawa%20sens%20schedule
 
 ### HTML Preview Mode
 
-1. Start with `--serve-html` flag
+1. Start with `--dev` flag (HTML serving is automatically enabled)
 2. Navigate to `/dev/preview/<plugin_id>`
 3. Edit HTML/CSS files and refresh browser
 4. Changes to plugin settings require page reload
