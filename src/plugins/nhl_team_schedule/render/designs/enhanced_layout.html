@@ -1,0 +1,44 @@
+{% extends "plugin.html" %} {% block content %}
+<div class="enhanced-container">
+  <header class="game-header">
+    <h1 class="title">{{ title }}</h1>
+    <div class="game-status">{{ day }}</div>
+  </header>
+  
+  <main class="game-matchup">
+    <section class="team away-team">
+      <div class="team-info">
+        <img class="team-logo" src="{{ away_team.logo | safe }}" alt="{{ away_team.commonName.default }}" />
+        <h2 class="team-name">{{ away_team.commonName.default }}</h2>
+        <div class="team-record">{{ away_team_stats.get('wins', '0') }}-{{ away_team_stats.get('losses', '0') }}-{{ away_team_stats.get('otLosses', '0') }}</div>
+      </div>
+    </section>
+
+    <section class="game-center">
+      <div class="versus">@</div>
+      <div class="game-time">{{ time }}</div>
+      <div class="broadcast">
+        <span class="broadcast-label">TV:</span>
+        <span class="broadcast-networks">{{ " / ".join(networks) }}</span>
+      </div>
+      <div class="venue">{{ home_team.placeName.default }}</div>
+    </section>
+
+    <section class="team home-team">
+      <div class="team-info">
+        <img class="team-logo" src="{{ home_team.logo | safe }}" alt="{{ home_team.commonName.default }}" />
+        <h2 class="team-name">{{ home_team.commonName.default }}</h2>
+        <div class="team-record">{{ home_team_stats.get('wins', '0') }}-{{ home_team_stats.get('losses', '0') }}-{{ home_team_stats.get('otLosses', '0') }}</div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="game-footer">
+    <div class="conference-info">
+      <span class="away-conference">{{ away_team_stats.get('conferenceName', '') }}</span>
+      <span class="divider">vs</span>
+      <span class="home-conference">{{ home_team_stats.get('conferenceName', '') }}</span>
+    </div>
+  </footer>
+</div>
+{% endblock %}

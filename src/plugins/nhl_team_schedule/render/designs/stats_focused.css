@@ -1,0 +1,183 @@
+.stats-container {
+  width: 800px;
+  height: 480px;
+  display: flex;
+  flex-direction: column;
+  font-family: 'Arial', sans-serif;
+  background: #ffffff;
+  color: #000000;
+  padding: 15px;
+  box-sizing: border-box;
+}
+
+.game-header {
+  text-align: center;
+  margin-bottom: 15px;
+}
+
+.title {
+  font-size: 28px;
+  font-weight: bold;
+  margin: 0;
+  color: #1a1a1a;
+}
+
+.game-day-time {
+  font-size: 16px;
+  color: #333333;
+  margin-top: 5px;
+}
+
+.stats-content {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  flex: 1;
+}
+
+.matchup-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.teams-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.team-card {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: #f8f8f8;
+  border-radius: 8px;
+  padding: 10px;
+  max-width: 200px;
+}
+
+.team-logo {
+  width: 80px;
+  height: 80px;
+  object-fit: contain;
+  margin-bottom: 8px;
+}
+
+.team-name {
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0 0 5px 0;
+  text-align: center;
+  color: #1a1a1a;
+}
+
+.team-record {
+  font-size: 12px;
+  color: #666666;
+  background: #ffffff;
+  padding: 3px 6px;
+  border-radius: 10px;
+  border: 1px solid #e0e0e0;
+}
+
+.vs-indicator {
+  font-size: 24px;
+  font-weight: bold;
+  color: #333333;
+  margin: 0 15px;
+}
+
+.game-info {
+  text-align: center;
+  font-size: 14px;
+  color: #666666;
+}
+
+.venue {
+  font-style: italic;
+  margin-bottom: 3px;
+}
+
+.broadcast {
+  font-weight: 500;
+}
+
+.standings-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: #f5f5f5;
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.stats-header {
+  font-size: 16px;
+  font-weight: bold;
+  text-align: center;
+  margin-bottom: 10px;
+  color: #1a1a1a;
+  border-bottom: 2px solid #ddd;
+  padding-bottom: 5px;
+}
+
+.standings-grid {
+  display: flex;
+  justify-content: space-around;
+  margin-bottom: 10px;
+}
+
+.standing-item {
+  text-align: center;
+}
+
+.standing-label {
+  font-size: 12px;
+  color: #666666;
+  margin-bottom: 3px;
+}
+
+.standing-value {
+  font-size: 18px;
+  font-weight: bold;
+  color: #1a1a1a;
+}
+
+.stats-comparison {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.stat-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #ffffff;
+  padding: 5px 8px;
+  border-radius: 4px;
+  border: 1px solid #e0e0e0;
+}
+
+.stat-label {
+  font-size: 12px;
+  color: #666666;
+  font-weight: 500;
+  flex: 0 0 40px;
+}
+
+.away-stat, .home-stat {
+  font-size: 12px;
+  font-weight: 600;
+  flex: 0 0 45px;
+  text-align: center;
+}
+
+.divider {
+  font-size: 12px;
+  color: #999999;
+  flex: 0 0 15px;
+  text-align: center;
+}

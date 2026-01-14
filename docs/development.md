@@ -37,12 +37,13 @@ python src/inkypi.py --dev
 - **Debug issues** - Full error messages in terminal
 - **Verify rendering** - Check output in `mock_display_output/latest.png`
 - **Cross-platform development** - Works on macOS, Linux, Windows
+- **Live HTML preview** - Edit HTML/CSS in real-time with HTML serving enabled in dev mode
 
 ## Essential Commands
 
 ```bash
 source venv/bin/activate             # Activate virtual environment
-python src/inkypi.py --dev           # Start development server
+python src/inkypi.py --dev           # Start development server with HTML preview mode
 deactivate                           # Exit virtual environment
 ```
 
@@ -52,13 +53,60 @@ deactivate                           # Exit virtual environment
 2. **Plugin development**: Copy an existing plugin as template (e.g., `clock/`)
 3. **Configuration**: Edit `src/config/device_dev.json` for display settings
 4. **Hot reload**: Restart server to see code changes
+5. **HTML preview mode**: HTML serving is automatically enabled in dev mode for rapid UI development - see HTML preview section below
+
+## HTML Preview Mode
+
+HTML serving is automatically enabled in development mode for rapid plugin development by serving HTML instead of rendering images:
+
+```bash
+python src/inkypi.py --dev
+```
+
+### Features
+
+- **Live HTML preview**: View plugin HTML directly in your browser
+- **Instance-specific preview**: Test specific plugin configurations
+- **Plugin listing**: Browse all available plugins at `/dev/dashboard`
+
+### Available Endpoints
+
+- `/dev/dashboard` - List all available plugins
+- `/dev/enhanced-preview/nhl_team_schedule` - Preview any plugin (e.g., `/dev/enhanced-preview/nhl_team_schedule`)
+
+### Development Workflow
+
+1. Start with `python src/inkypi.py --dev`
+2. Navigate to `http://localhost:8080/dev/dashboard`
+3. Edit HTML/CSS files in your plugin's `render/` directory
+4. Refresh browser to see changes
+5. Edit plugin settings → data refreshes on page reload
+
+### Example
+
+```bash
+# Start development mode with HTML preview
+python src/inkypi.py --dev
+
+# Open in browser
+http://localhost:8080/dev/enhanced-preview/nhl_team_schedule
+```
 
 ## Testing Your Changes
+
+### Image Rendering (Default)
 
 1. Configure a plugin through the web UI
 2. Click "Display" button
 3. Check `mock_display_output/latest.png` for result
 4. Iterate quickly without deployment
+
+### HTML Preview Mode
+
+1. Start with `--dev` flag (HTML serving is automatically enabled)
+2. Navigate to `/dev/enhanced_preview/<plugin_id>`
+3. Edit HTML/CSS files and refresh browser
+4. Changes to plugin settings require page reload
 
 ## Other Requirements 
 InkyPi relies on system packages for some features, which are normally installed via the `install.sh` script. 

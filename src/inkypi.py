@@ -16,11 +16,9 @@ warnings.filterwarnings("ignore", message=".*Busy Wait: Held high.*")
 
 import os
 import random
-import time
+
 import sys
-import json
 import logging
-import threading
 import argparse
 from utils.app_utils import generate_startup_image
 from flask import Flask, request
@@ -32,16 +30,29 @@ from blueprints.main import main_bp
 from blueprints.settings import settings_bp
 from blueprints.plugin import plugin_bp
 from blueprints.playlist import playlist_bp
+from blueprints.dev_dashboard import dev_dashboard_bp  # Temporarily disabled
 from jinja2 import ChoiceLoader, FileSystemLoader
 from plugins.plugin_registry import load_plugins
 from waitress import serve
+
+# Development-only imports (only available when requirements-dev.txt is used)
+try:
+    from flask_socketio import SocketIO
+    from utils.file_watcher import LiveReloadManager
+    from blueprints.dev import register_socketio_events
+    DEV_DEPS_AVAILABLE = True
+except ImportError:
+    DEV_DEPS_AVAILABLE = False
+    SocketIO = None
+    LiveReloadManager = None
+    register_socketio_events = None
 
 
 logger = logging.getLogger(__name__)
 
 # Parse command line arguments
 parser = argparse.ArgumentParser(description="InkyPi Display Server")
-parser.add_argument("--dev", action="store_true", help="Run in development mode")
+parser.add_argument("--dev", action="store_true", help="Run in development mode with HTML serving enabled")
 args = parser.parse_args()
 
 # Set development mode settings
@@ -49,17 +60,34 @@ if args.dev:
     Config.config_file = os.path.join(Config.BASE_DIR, "config", "device_dev.json")
     DEV_MODE = True
     PORT = 8080
-    logger.info("Starting InkyPi in DEVELOPMENT mode on port 8080")
+    logger.info("Starting InkyPi in DEVELOPMENT mode with HTML serving on port 8080")
 else:
     DEV_MODE = False
     PORT = 80
     logger.info("Starting InkyPi in PRODUCTION mode on port 80")
 logging.getLogger("waitress.queue").setLevel(logging.ERROR)
 app = Flask(__name__)
+
+# Enable Flask DEBUG mode in development
+app.config['DEBUG'] = DEV_MODE
+app.debug = DEV_MODE
+
+# Initialize SocketIO for live reload (development dependencies required)
+socketio = None
+live_reload_manager = None
+
+if DEV_MODE:
+    if DEV_DEPS_AVAILABLE:
+        socketio = SocketIO(app, cors_allowed_origins="*")
+    else:
+        logger.error("HTML serving mode requires development dependencies. Please install with: pip install -r install/requirements-dev.txt")
+        sys.exit(1)
+
 template_dirs = [
     os.path.join(os.path.dirname(__file__), "templates"),  # Default template folder
     os.path.join(os.path.dirname(__file__), "plugins"),  # Plugin templates
 ]
+from jinja2 import ChoiceLoader, FileSystemLoader
 app.jinja_loader = ChoiceLoader(
     [FileSystemLoader(directory) for directory in template_dirs]
 )
@@ -74,6 +102,8 @@ load_plugins(device_config.get_plugins())
 app.config["DEVICE_CONFIG"] = device_config
 app.config["DISPLAY_MANAGER"] = display_manager
 app.config["REFRESH_TASK"] = refresh_task
+app.config["DEV_MODE"] = DEV_MODE
+app.config["SERVE_HTML_MODE"] = DEV_MODE
 
 # Set additional parameters
 app.config["MAX_FORM_PARTS"] = 10_000
@@ -83,6 +113,20 @@ app.register_blueprint(main_bp)
 app.register_blueprint(settings_bp)
 app.register_blueprint(plugin_bp)
 app.register_blueprint(playlist_bp)
+app.register_blueprint(dev_dashboard_bp)
+
+# Register dev blueprint if in development mode and dependencies are available
+if DEV_DEPS_AVAILABLE and DEV_MODE:
+    try:
+        from blueprints.dev import dev_bp
+        app.register_blueprint(dev_bp)
+        logger.info("Development blueprint registered")
+    except ImportError as e:
+        logger.warning(f"Could not register dev blueprint: {e}")
+
+# Register SocketIO events if in HTML serving mode and development deps available
+if DEV_MODE and socketio and register_socketio_events:
+    register_socketio_events(socketio)
 
 # Register opener for HEIF/HEIC images
 register_heif_opener()
@@ -115,6 +159,20 @@ if __name__ == "__main__":
             except:
                 pass  # Ignore if we can't get the IP
 
-        serve(app, host="0.0.0.0", port=PORT, threads=1)
+        # Start live reload manager if in HTML serving mode and dependencies available
+        if DEV_MODE and socketio and LiveReloadManager:
+            live_reload_manager = LiveReloadManager(socketio)
+            live_reload_manager.start_watching()
+            logger.info("Live reload file watching started")
+            
+            # Run with SocketIO instead of waitress for live reload support
+            try:
+                socketio.run(app, host="0.0.0.0", port=PORT, debug=DEV_MODE, use_reloader=False, allow_unsafe_werkzeug=True)
+            finally:
+                if live_reload_manager:
+                    live_reload_manager.stop_watching()
+        else:
+            # Use waitress for production or non-HTML serving modes
+            serve(app, host="0.0.0.0", port=PORT, threads=1)
     finally:
         refresh_task.stop()

@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>InkyPi Development Dashboard</title>
+
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/dev_dashboard.css') }}"
+    />
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js" defer/></script>
+    <script
+      src="{{ url_for('static', filename='js/live_reload.js') }}"
+      defer
+    ></script>
+  </head>
+  <body>
+    <div class="header">
+      <div class="header-content">
+        <h1>🔧 InkyPi Development Dashboard</h1>
+        <div class="header-stats">
+          <div class="stat">
+            <div class="stat-value">{{ plugins|length }}</div>
+            <div class="stat-label">Plugins</div>
+          </div>
+          <div class="stat">
+            <div class="stat-value">{{ device_width }}x{{ device_height }}</div>
+            <div class="stat-label">Resolution</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="main-container">
+      <div class="quick-actions">
+        <h2>🚀 Quick Actions</h2>
+        <div class="action-grid">
+          <a class="quick-action-link" href="/plugin">
+            <span class="action-icon">📂</span>
+            <div class="action-title">Plugin Manager</div>
+            <div class="action-desc">Manage all plugins</div>
+          </a>
+          <a class="quick-action-link" href="/settings">
+            <span class="action-icon">⚙️</span>
+            <div class="action-title">Settings</div>
+            <div class="action-desc">Global configuration</div>
+          </a>
+          <a class="quick-action-link" href="/playlist">
+            <span class="action-icon">📋</span>
+            <div class="action-title">Playlists</div>
+            <div class="action-desc">Manage display playlists</div>
+          </a>
+          <a
+            class="quick-action-link"
+            href="https://github.com/charle692/InkyPi/tree/main/docs"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <span class="action-icon">📚</span>
+            <div class="action-title">Documentation</div>
+            <div class="action-desc">Dev guide & API</div>
+          </a>
+        </div>
+      </div>
+
+      <h2 style="color: white; margin-bottom: 25px">
+        🔌 Available Plugins
+      </h2>
+
+      <div class="dashboard-grid">
+        {% for plugin in plugins %}
+        <div class="plugin-card">
+          <div class="plugin-header">
+            <div>
+              <div class="plugin-title">{{ plugin.name }}</div>
+              <div class="plugin-id">{{ plugin.id }}</div>
+            </div>
+          </div>
+
+          <div class="plugin-description">
+            {% if plugin.description %} {{ plugin.description }} {% else %}
+            Plugin for displaying {{ plugin.name }} content on InkyPi display.
+            {% endif %}
+          </div>
+
+          <div class="plugin-actions">
+            <a
+              href="/dev/enhanced-preview/{{ plugin.id }}"
+              class="plugin-btn primary"
+            >
+              🖼️ Enhanced Preview
+            </a>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </body>
+</html>

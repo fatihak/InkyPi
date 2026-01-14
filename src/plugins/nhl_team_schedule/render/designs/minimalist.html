@@ -1,0 +1,27 @@
+{% extends "plugin.html" %} {% block content %}
+<div class="minimal-container">
+  <div class="game-info">
+    <div class="day">{{ day }}</div>
+    <div class="time">{{ time }}</div>
+  </div>
+
+  <div class="matchup">
+    <div class="team away">
+      <img class="logo" src="{{ away_team.logo | safe }}" alt="{{ away_team.abbrev }}" />
+      <div class="team-abbrev">{{ away_team.abbrev }}</div>
+    </div>
+    
+    <div class="vs">@</div>
+    
+    <div class="team home">
+      <img class="logo" src="{{ home_team.logo | safe }}" alt="{{ home_team.abbrev }}" />
+      <div class="team-abbrev">{{ home_team.abbrev }}</div>
+    </div>
+  </div>
+
+  <div class="details">
+    <div class="venue">{{ home_team.placeName.default }}</div>
+    <div class="broadcast">{{ " / ".join(networks) }}</div>
+  </div>
+</div>
+{% endblock %}

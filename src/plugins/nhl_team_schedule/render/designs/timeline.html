@@ -1,0 +1,99 @@
+{% extends "plugin.html" %} {% block content %}
+<div class="timeline-container">
+  <header class="timeline-header">
+    <h1 class="title">{{ title }}</h1>
+    <div class="current-game">{{ day }} • {{ time }}</div>
+  </header>
+
+  <main class="timeline-content">
+    <section class="current-matchup">
+      <div class="game-now">
+        <div class="indicator">NOW</div>
+        <div class="teams">
+          <div class="team away">
+            <img class="logo" src="{{ away_team.logo | safe }}" alt="{{ away_team.abbrev }}" />
+            <div class="team-name">{{ away_team.abbrev }}</div>
+          </div>
+          <div class="vs">@</div>
+          <div class="team home">
+            <img class="logo" src="{{ home_team.logo | safe }}" alt="{{ home_team.abbrev }}" />
+            <div class="team-name">{{ home_team.abbrev }}</div>
+          </div>
+        </div>
+        <div class="game-details">
+          <div class="venue">{{ home_team.placeName.default }}</div>
+          <div class="networks">{{ " / ".join(networks) }}</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="upcoming-games">
+      <div class="section-title">Next 3 Games</div>
+      <div class="timeline-track">
+        <div class="timeline-game">
+          <div class="date">Dec 15</div>
+          <div class="teams-mini">
+            <img class="mini-logo" src="{{ away_team.logo | safe }}" alt="{{ away_team.abbrev }}" />
+            <span class="vs-mini">@</span>
+            <img class="mini-logo" src="{{ home_team.logo | safe }}" alt="{{ home_team.abbrev }}" />
+          </div>
+          <div class="time">7:00 PM</div>
+        </div>
+        
+        <div class="timeline-game">
+          <div class="date">Dec 17</div>
+          <div class="teams-mini">
+            <img class="mini-logo" src="{{ away_team.logo | safe }}" alt="{{ away_team.abbrev }}" />
+            <span class="vs-mini">@</span>
+            <img class="mini-logo" src="{{ home_team.logo | safe }}" alt="{{ home_team.abbrev }}" />
+          </div>
+          <div class="time">8:30 PM</div>
+        </div>
+        
+        <div class="timeline-game">
+          <div class="date">Dec 19</div>
+          <div class="teams-mini">
+            <img class="mini-logo" src="{{ away_team.logo | safe }}" alt="{{ away_team.abbrev }}" />
+            <span class="vs-mini">@</span>
+            <img class="mini-logo" src="{{ home_team.logo | safe }}" alt="{{ home_team.abbrev }}" />
+          </div>
+          <div class="time">7:00 PM</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="team-form">
+      <div class="section-title">Recent Form</div>
+      <div class="form-container">
+        <div class="team-form away-form">
+          <div class="team-header-form">
+            <img class="form-logo" src="{{ away_team.logo | safe }}" alt="{{ away_team.abbrev }}" />
+            <div class="team-abbrev">{{ away_team.abbrev }}</div>
+          </div>
+          <div class="form-results">
+            <div class="result win">W</div>
+            <div class="result loss">L</div>
+            <div class="result win">W</div>
+            <div class="result win">W</div>
+            <div class="result loss">L</div>
+          </div>
+        </div>
+        
+        <div class="team-form home-form">
+          <div class="team-header-form">
+            <img class="form-logo" src="{{ home_team.logo | safe }}" alt="{{ home_team.abbrev }}" />
+            <div class="team-abbrev">{{ home_team.abbrev }}</div>
+          </div>
+          <div class="form-results">
+            <div class="result win">W</div>
+            <div class="result win">W</div>
+            <div class="result loss">L</div>
+            <div class="result win">W</div>
+            <div class="result win">W</div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+{% endblock %}

@@ -1,0 +1,231 @@
+.card-container {
+  width: 800px;
+  height: 480px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-family: 'Arial', sans-serif;
+  background: #f0f2f5;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.game-card {
+  width: 100%;
+  max-width: 750px;
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.card-header {
+  background: linear-gradient(135deg, #1e3c72, #2a5298);
+  color: white;
+  padding: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.title-section {
+  flex: 1;
+}
+
+.title {
+  font-size: 24px;
+  font-weight: bold;
+  margin: 0 0 5px 0;
+}
+
+.game-status {
+  font-size: 16px;
+  opacity: 0.9;
+}
+
+.time-section {
+  text-align: right;
+}
+
+.game-time {
+  font-size: 20px;
+  font-weight: bold;
+  margin-bottom: 3px;
+}
+
+.broadcast {
+  font-size: 14px;
+  opacity: 0.8;
+}
+
+.card-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 25px;
+}
+
+.matchup-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.team-section {
+  flex: 1;
+  text-align: center;
+  max-width: 250px;
+}
+
+.team-header {
+  margin-bottom: 15px;
+}
+
+.team-logo {
+  width: 100px;
+  height: 100px;
+  object-fit: contain;
+  margin-bottom: 10px;
+}
+
+.team-name {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0;
+  color: #1a1a1a;
+}
+
+.team-stats {
+  background: #f8f9fa;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+}
+
+.stat {
+  font-size: 20px;
+  font-weight: bold;
+  color: #1a1a1a;
+  margin-bottom: 3px;
+}
+
+.stat-label {
+  font-size: 12px;
+  color: #666666;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.versus-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin: 0 20px;
+}
+
+.vs-circle {
+  width: 50px;
+  height: 50px;
+  background: #007bff;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  font-weight: bold;
+  margin-bottom: 10px;
+}
+
+.venue {
+  font-size: 14px;
+  color: #666666;
+  font-style: italic;
+  text-align: center;
+  max-width: 120px;
+}
+
+.quick-stats {
+  border-top: 1px solid #e9ecef;
+  padding-top: 20px;
+}
+
+.stat-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.stat-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #f8f9fa;
+  padding: 10px 15px;
+  border-radius: 6px;
+}
+
+.team-abbr {
+  font-size: 12px;
+  font-weight: bold;
+  flex: 0 0 40px;
+  text-align: center;
+}
+
+.team-abbr.away {
+  color: #dc3545;
+}
+
+.team-abbr.home {
+  color: #28a745;
+}
+
+.stat-points, .stat-goals {
+  font-size: 16px;
+  font-weight: bold;
+  flex: 0 0 30px;
+  text-align: center;
+}
+
+.stat-points.away, .stat-goals.away {
+  color: #dc3545;
+}
+
+.stat-points.home, .stat-goals.home {
+  color: #28a745;
+}
+
+.vs-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #666666;
+  flex: 0 0 40px;
+  text-align: center;
+}
+
+.card-footer {
+  background: #f8f9fa;
+  padding: 15px;
+  border-top: 1px solid #e9ecef;
+}
+
+.conference-info {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 15px;
+  font-size: 14px;
+}
+
+.conference {
+  font-weight: 500;
+  color: #495057;
+}
+
+.divider {
+  color: #adb5bd;
+}

@@ -1,0 +1,19 @@
+{% extends "plugin.html" %} {% block content %}
+<div>
+  <h1 class="title">{{ title }}</h1>
+  <div class="content">
+    <div class="awayTeam">
+      <img class="teamLogo" src="{{ away_team.logo | safe }}" />
+    </div>
+    <div class="dayTime">
+      <span>{{ day }}</span>
+      <span class="at">@</span>
+      <span class="time">{{ time }}</span>
+      <span>{{ " / ".join(networks) }}</span>
+    </div>
+    <div class="homeTeam">
+      <img class="teamLogo" src="{{ home_team.logo | safe }}" />
+    </div>
+  </div>
+</div>
+{% endblock %}

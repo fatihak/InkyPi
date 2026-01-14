@@ -1,0 +1,210 @@
+{
+    "name": "InkyPi Development",
+    "display_type": "mock",
+    "resolution": [
+        800,
+        480
+    ],
+    "orientation": "horizontal",
+    "playlist_config": {
+        "playlists": [
+            {
+                "name": "Default",
+                "start_time": "00:00",
+                "end_time": "24:00",
+                "plugins": [
+                    {
+                        "plugin_id": "nhl_team_schedule",
+                        "name": "ottawa sens schedule",
+                        "plugin_settings": {
+                            "title": "ottawa sens schedule",
+                            "nhlTeam": "OTT",
+                            "selectedFrame": "None",
+                            "topMargin": "",
+                            "bottomMargin": "",
+                            "leftMargin": "",
+                            "rightMargin": "",
+                            "backgroundOption": "color",
+                            "backgroundColor": "#ffffff",
+                            "textColor": "#000000"
+                        },
+                        "refresh": {
+                            "interval": 600
+                        },
+                        "latest_refresh_time": "2026-01-14T01:18:07.080571+00:00"
+                    },
+                    {
+                        "plugin_id": "clock",
+                        "name": "clock",
+                        "plugin_settings": {
+                            "selectedClockFace": "Digital Clock",
+                            "primaryColor": "#ffffff",
+                            "secondaryColor": "#000000"
+                        },
+                        "refresh": {
+                            "interval": 60
+                        },
+                        "latest_refresh_time": "2026-01-13T17:17:59.259015+00:00"
+                    },
+                    {
+                        "plugin_id": "nhl_team_schedule",
+                        "name": "ottawa enhanced layout",
+                        "plugin_settings": {
+                            "title": "ottawa enhanced layout",
+                            "nhlTeam": "OTT",
+                            "design": "enhanced",
+                            "selectedFrame": "None",
+                            "topMargin": "",
+                            "bottomMargin": "",
+                            "leftMargin": "",
+                            "rightMargin": "",
+                            "backgroundOption": "color",
+                            "backgroundColor": "#ffffff",
+                            "textColor": "#000000"
+                        },
+                        "refresh": {
+                            "interval": 900
+                        },
+                        "latest_refresh_time": "2026-01-13T18:17:59.302761+00:00"
+                    },
+                    {
+                        "plugin_id": "nhl_team_schedule",
+                        "name": "ottawa stats focused",
+                        "plugin_settings": {
+                            "title": "ottawa stats focused",
+                            "nhlTeam": "OTT",
+                            "design": "stats_focused",
+                            "selectedFrame": "None",
+                            "topMargin": "",
+                            "bottomMargin": "",
+                            "leftMargin": "",
+                            "rightMargin": "",
+                            "backgroundOption": "color",
+                            "backgroundColor": "#ffffff",
+                            "textColor": "#000000"
+                        },
+                        "refresh": {
+                            "interval": 900
+                        },
+                        "latest_refresh_time": "2026-01-13T19:18:00.221567+00:00"
+                    },
+                    {
+                        "plugin_id": "nhl_team_schedule",
+                        "name": "ottawa card style",
+                        "plugin_settings": {
+                            "title": "ottawa card style",
+                            "nhlTeam": "OTT",
+                            "design": "card_style",
+                            "selectedFrame": "None",
+                            "topMargin": "",
+                            "bottomMargin": "",
+                            "leftMargin": "",
+                            "rightMargin": "",
+                            "backgroundOption": "color",
+                            "backgroundColor": "#ffffff",
+                            "textColor": "#000000"
+                        },
+                        "refresh": {
+                            "interval": 900
+                        },
+                        "latest_refresh_time": "2026-01-13T20:18:01.744720+00:00"
+                    },
+                    {
+                        "plugin_id": "nhl_team_schedule",
+                        "name": "ottawa minimalist",
+                        "plugin_settings": {
+                            "title": "ottawa minimalist",
+                            "nhlTeam": "OTT",
+                            "design": "minimalist",
+                            "selectedFrame": "None",
+                            "topMargin": "",
+                            "bottomMargin": "",
+                            "leftMargin": "",
+                            "rightMargin": "",
+                            "backgroundOption": "color",
+                            "backgroundColor": "#ffffff",
+                            "textColor": "#000000"
+                        },
+                        "refresh": {
+                            "interval": 900
+                        },
+                        "latest_refresh_time": "2026-01-13T21:18:03.206136+00:00"
+                    },
+                    {
+                        "plugin_id": "nhl_team_schedule",
+                        "name": "ottawa dashboard",
+                        "plugin_settings": {
+                            "title": "ottawa dashboard",
+                            "nhlTeam": "OTT",
+                            "design": "dashboard",
+                            "selectedFrame": "None",
+                            "topMargin": "",
+                            "bottomMargin": "",
+                            "leftMargin": "",
+                            "rightMargin": "",
+                            "backgroundOption": "color",
+                            "backgroundColor": "#ffffff",
+                            "textColor": "#000000"
+                        },
+                        "refresh": {
+                            "interval": 900
+                        },
+                        "latest_refresh_time": "2026-01-13T22:18:04.354559+00:00"
+                    },
+                    {
+                        "plugin_id": "nhl_team_schedule",
+                        "name": "ottawa timeline",
+                        "plugin_settings": {
+                            "title": "ottawa timeline",
+                            "nhlTeam": "OTT",
+                            "design": "timeline",
+                            "selectedFrame": "None",
+                            "topMargin": "",
+                            "bottomMargin": "",
+                            "leftMargin": "",
+                            "rightMargin": "",
+                            "backgroundOption": "color",
+                            "backgroundColor": "#ffffff",
+                            "textColor": "#000000"
+                        },
+                        "refresh": {
+                            "interval": 900
+                        },
+                        "latest_refresh_time": "2026-01-13T23:18:05.278272+00:00"
+                    },
+                    {
+                        "plugin_id": "nhl_team_schedule",
+                        "name": "ottawa bracket",
+                        "plugin_settings": {
+                            "title": "ottawa bracket",
+                            "nhlTeam": "OTT",
+                            "design": "bracket",
+                            "selectedFrame": "None",
+                            "topMargin": "",
+                            "bottomMargin": "",
+                            "leftMargin": "",
+                            "rightMargin": "",
+                            "backgroundOption": "color",
+                            "backgroundColor": "#ffffff",
+                            "textColor": "#000000"
+                        },
+                        "refresh": {
+                            "interval": 900
+                        },
+                        "latest_refresh_time": "2026-01-14T00:18:06.210988+00:00"
+                    }
+                ],
+                "current_plugin_index": 0
+            }
+        ],
+        "active_playlist": "Default"
+    },
+    "refresh_info": {
+        "refresh_time": "2026-01-14T01:18:07.080571+00:00",
+        "image_hash": "e2f30dcf600d8e49286359b221a7b8cab6d9911f413d6f2ba3d967e6b4debbc3",
+        "refresh_type": "Playlist",
+        "plugin_id": "nhl_team_schedule",
+        "playlist": "Default",
+        "plugin_instance": "ottawa sens schedule"
+    }
+}
