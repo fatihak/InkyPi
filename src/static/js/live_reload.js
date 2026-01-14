@@ -1,5 +1,7 @@
 // Live Reload JavaScript for Development Mode
 
+const LIVE_RELOAD_PATHS = ["/dev/enhanced-preview/", "/dev/dashboard"];
+
 class LiveReloadManager {
   constructor() {
     this.socket = null;
@@ -10,15 +12,15 @@ class LiveReloadManager {
     this.pingInterval = null;
     this.reloadNotification = null;
 
-    // Only initialize in development mode
-    if (this.isDevelopmentMode()) {
+    if (this.isLiveReloadEnabled()) {
       this.init();
     }
   }
 
-  isDevelopmentMode() {
-    // Check if we're in development enhanced preview
-    return window.location.pathname.includes("/dev/enhanced-preview/");
+  isLiveReloadEnabled() {
+    return LIVE_RELOAD_PATHS.some((path) =>
+      window.location.pathname.includes(path)
+    );
   }
 
   init() {

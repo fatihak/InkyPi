@@ -1,368 +1,481 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{{ plugin.display_name }} Settings</title>
     <script>
-        (function() {
-            const theme = localStorage.getItem('inkypi-theme') || 
-                         (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-            if (theme === 'dark') {
-                document.documentElement.setAttribute('data-theme', 'dark');
-            }
-        })();
+      (function () {
+        const theme =
+          localStorage.getItem("inkypi-theme") ||
+          (window.matchMedia("(prefers-color-scheme: dark)").matches
+            ? "dark"
+            : "light");
+        if (theme === "dark") {
+          document.documentElement.setAttribute("data-theme", "dark");
+        }
+      })();
     </script>
-    <link rel= "stylesheet" type= "text/css" href= "{{ url_for('static',filename='styles/main.css') }}">
+    <link
+      rel="stylesheet"
+      type="text/css"
+      href="{{ url_for('static',filename='css/main.css') }}"
+    />
     <script src="{{ url_for('static', filename='scripts/dark_mode.js') }}"></script>
     <script src="{{ url_for('static', filename='scripts/response_modal.js') }}"></script>
     <!-- Select2 CSS -->
-    <link href="{{ url_for('static', filename='styles/select2.min.css') }}" rel="stylesheet" />
+    <link
+      href="{{ url_for('static', filename='styles/select2.min.css') }}"
+      rel="stylesheet"
+    />
     <!-- jQuery -->
     <script src="{{ url_for('static', filename='scripts/jquery.min.js') }}"></script>
     <!-- Select2 JS -->
     <script src="{{ url_for('static', filename='scripts/select2.min.js') }}"></script>
 
     <script>
-        const pluginSettings = {{ plugin_settings | tojson if plugin_settings else {} }};
-        const pluginInstanceName ='{{ plugin_instance }}';
-        const loadPluginSettings = pluginInstanceName != '';
-        const styleSettings = {{ style_settings | default(false) | tojson }};
+      const pluginSettings = {{ plugin_settings | tojson if plugin_settings else {} }};
+      const pluginInstanceName ='{{ plugin_instance }}';
+      const loadPluginSettings = pluginInstanceName != '';
+      const styleSettings = {{ style_settings | default(false) | tojson }};
 
-        let uploadedFiles = {};
+      let uploadedFiles = {};
 
-        async function handleAction(action) {
-            const loadingIndicator = document.getElementById('loadingIndicator');
-            loadingIndicator.style.display = 'block';
+      async function handleAction(action) {
+          const loadingIndicator = document.getElementById('loadingIndicator');
+          loadingIndicator.style.display = 'block';
 
-            // Gather plugin settings form data
-            const form = document.getElementById('settingsForm');
-            const scheduleForm = document.getElementById('scheduleForm');
+          // Gather plugin settings form data
+          const form = document.getElementById('settingsForm');
+          const scheduleForm = document.getElementById('scheduleForm');
 
-            const formData = new FormData(form);
-            let url = '{{ url_for("plugin.update_now") }}';
-            let method = 'POST';
-            let clearFormOnSubmit = false;
-            
-            // Add uploaded files to the form under its key
-            Object.keys(uploadedFiles).forEach(key => {
-                if (uploadedFiles[key].length > 0) {
-                    uploadedFiles[key].forEach(file => {
-                        formData.append(key, file);
-                    });
-                }
-            });
+          const formData = new FormData(form);
+          let url = '{{ url_for("plugin.update_now") }}';
+          let method = 'POST';
+          let clearFormOnSubmit = false;
 
-            if (action == "add_to_playlist"){
-                url = '{{ url_for("playlist.add_plugin") }}';
-                const scheduleFormData = new FormData(scheduleForm);
-                const scheduleData = {};
-                for (const [key, value] of scheduleFormData.entries()) {
-                    scheduleData[key] = value;
-                }
-                formData.append("refresh_settings", JSON.stringify(scheduleData));
-                clearFormOnSubmit = true
-            } else if (action == "update_instance") {
-                url = "{{ url_for('plugin.update_plugin_instance', instance_name='') }}" + pluginInstanceName,
-                method = 'PUT'
-            }
+          // Add uploaded files to the form under its key
+          Object.keys(uploadedFiles).forEach(key => {
+              if (uploadedFiles[key].length > 0) {
+                  uploadedFiles[key].forEach(file => {
+                      formData.append(key, file);
+                  });
+              }
+          });
 
-            // Send data to the server
-            try {
-                const response = await fetch(url, {method: method, body: formData});
-                const result = await response.json();
-                // Handle the response
-                if (response.ok) {
-                    showResponseModal('success', `Success! ${result.message}`);
-                } else {
-                    showResponseModal('failure', `Error!  ${result.error}`);
-                }
-                closeModal('scheduleModal');
+          if (action == "add_to_playlist"){
+              url = '{{ url_for("playlist.add_plugin") }}';
+              const scheduleFormData = new FormData(scheduleForm);
+              const scheduleData = {};
+              for (const [key, value] of scheduleFormData.entries()) {
+                  scheduleData[key] = value;
+              }
+              formData.append("refresh_settings", JSON.stringify(scheduleData));
+              clearFormOnSubmit = true
+          } else if (action == "update_instance") {
+              url = "{{ url_for('plugin.update_plugin_instance', instance_name='') }}" + pluginInstanceName,
+              method = 'PUT'
+          }
 
-                if (clearFormOnSubmit) {
-                    form.reset()
-                    uploadedFiles = {};
-                    document.querySelectorAll('input[clear-on-submit]').forEach(input => {
-                        input.value = '';
-                        input.dispatchEvent(new Event('change'));
-                    });
-                    document.querySelectorAll('[delete-on-submit]').forEach(div => {
-                        div.remove();
-                    });
-                    if (action == "add_to_playlist"){
-                        scheduleForm.reset()
-                    }
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                alert('An error occurred while processing your request.');
-            } finally {
-                // Hide loading indicator after the action is complete
-                loadingIndicator.style.display = 'none';
-            }
-        }
+          // Send data to the server
+          try {
+              const response = await fetch(url, {method: method, body: formData});
+              const result = await response.json();
+              // Handle the response
+              if (response.ok) {
+                  showResponseModal('success', `Success! ${result.message}`);
+              } else {
+                  showResponseModal('failure', `Error!  ${result.error}`);
+              }
+              closeModal('scheduleModal');
 
-        function openModal(modal_id) {
-            const modal = document.getElementById(modal_id);
-            modal.style.display = 'block';
-        }
-    
-        function closeModal(modal_id) {
-            const modal = document.getElementById(modal_id);
-            modal.style.display = 'none';
-        }
-    
-        // Close modal if the user clicks outside the modal content
-        window.onclick = function (event) {
-            const modal = document.getElementById('scheduleModal');
-            if (event.target === modal) {
-                modal.style.display = 'none';
-            }
-        };
+              if (clearFormOnSubmit) {
+                  form.reset()
+                  uploadedFiles = {};
+                  document.querySelectorAll('input[clear-on-submit]').forEach(input => {
+                      input.value = '';
+                      input.dispatchEvent(new Event('change'));
+                  });
+                  document.querySelectorAll('[delete-on-submit]').forEach(div => {
+                      div.remove();
+                  });
+                  if (action == "add_to_playlist"){
+                      scheduleForm.reset()
+                  }
+              }
+          } catch (error) {
+              console.error('Error:', error);
+              alert('An error occurred while processing your request.');
+          } finally {
+              // Hide loading indicator after the action is complete
+              loadingIndicator.style.display = 'none';
+          }
+      }
 
-        function toggleCollapsible(button) {
-            const content = button.nextElementSibling;
-            const icon = button.querySelector(".collapsible-icon");
-            button.classList.toggle("active");
-            content.style.display = content.style.display === "block" ? "none" : "block";
-            icon.textContent = content.style.display === "block" ? "▲" : "▼";
-        }
+      function openModal(modal_id) {
+          const modal = document.getElementById(modal_id);
+          modal.style.display = 'block';
+      }
 
-        function selectedFrame(element) {
-            // Remove the selected class from any previously selected option
-            const previousSelection = document.querySelector('.image-option.selected');
-            if (previousSelection) {
-                previousSelection.classList.remove('selected');
-            }
+      function closeModal(modal_id) {
+          const modal = document.getElementById(modal_id);
+          modal.style.display = 'none';
+      }
 
-            // Add the selected class to the clicked option
-            element.classList.add('selected');
+      // Close modal if the user clicks outside the modal content
+      window.onclick = function (event) {
+          const modal = document.getElementById('scheduleModal');
+          if (event.target === modal) {
+              modal.style.display = 'none';
+          }
+      };
 
-            // Update the hidden input with the selected frame
-            const selectedFaceName = element.getAttribute('data-face-name');
-            document.getElementById('selected-frame').value = selectedFaceName;
-        }
+      function toggleCollapsible(button) {
+          const content = button.nextElementSibling;
+          const icon = button.querySelector(".collapsible-icon");
+          button.classList.toggle("active");
+          content.style.display = content.style.display === "block" ? "none" : "block";
+          icon.textContent = content.style.display === "block" ? "▲" : "▼";
+      }
 
-        function showFileName() {
-            const fileInput = document.getElementById('imageUpload');
-            const fileNameDisplay = document.getElementById('fileName');
-            const fileNameText = document.getElementById('fileNameText');
-            const uploadButtonLabel = document.getElementById('uploadButtonLabel');
-            const removeFileButton = document.getElementById('removeFileButton');
-            const file = fileInput.files[0];
+      function selectedFrame(element) {
+          // Remove the selected class from any previously selected option
+          const previousSelection = document.querySelector('.image-option.selected');
+          if (previousSelection) {
+              previousSelection.classList.remove('selected');
+          }
 
-            if (file) {
-                fileNameText.textContent = `${file.name}`;
-                fileNameDisplay.style.display = 'flex';  // Show the file name and remove button
-                uploadButtonLabel.style.display = 'none';  // Hide the upload button label
-            } else {
-                fileNameDisplay.style.display = 'none';  // Hide if no file is selected
-                uploadButtonLabel.style.display = 'block';  // Show the upload button label
-            }
-        }
+          // Add the selected class to the clicked option
+          element.classList.add('selected');
 
-        function removeFile() {
-            const fileInput = document.getElementById('imageUpload');
-            const fileNameDisplay = document.getElementById('fileName');
-            const uploadButtonLabel = document.getElementById('uploadButtonLabel');
+          // Update the hidden input with the selected frame
+          const selectedFaceName = element.getAttribute('data-face-name');
+          document.getElementById('selected-frame').value = selectedFaceName;
+      }
 
-            fileInput.value = '';  // Clear the file input
-            fileNameDisplay.style.display = 'none';  // Hide the file name and remove button
-            uploadButtonLabel.style.display = 'block';  // Show the upload button label
+      function showFileName() {
+          const fileInput = document.getElementById('imageUpload');
+          const fileNameDisplay = document.getElementById('fileName');
+          const fileNameText = document.getElementById('fileNameText');
+          const uploadButtonLabel = document.getElementById('uploadButtonLabel');
+          const removeFileButton = document.getElementById('removeFileButton');
+          const file = fileInput.files[0];
 
-            const hiddenElement = document.getElementById(`hidden-file-name`);
-            if (hiddenElement) {
-                hiddenElement.remove();
-            }
-        }
+          if (file) {
+              fileNameText.textContent = `${file.name}`;
+              fileNameDisplay.style.display = 'flex';  // Show the file name and remove button
+              uploadButtonLabel.style.display = 'none';  // Hide the upload button label
+          } else {
+              fileNameDisplay.style.display = 'none';  // Hide if no file is selected
+              uploadButtonLabel.style.display = 'block';  // Show the upload button label
+          }
+      }
 
-        // populate form values from plugin settings
-        document.addEventListener('DOMContentLoaded', () => {
-            if (!styleSettings){
-                return;
-            }
-            if (loadPluginSettings) {
-                if (pluginSettings.topMargin) {
-                    document.getElementById('topMargin').value = pluginSettings.topMargin;
-                }
-                if (pluginSettings.bottomMargin) {
-                    document.getElementById('bottomMargin').value = pluginSettings.bottomMargin;
-                }
-                if (pluginSettings.leftMargin) {
-                    document.getElementById('leftMargin').value = pluginSettings.leftMargin;
-                }
-                if (pluginSettings.rightMargin) {
-                    document.getElementById('rightMargin').value = pluginSettings.rightMargin;
-                }
-                // Populate background options (color or image)
-                if (pluginSettings.backgroundOption) {
-                    document.querySelector(`input[name="backgroundOption"][value="${pluginSettings.backgroundOption}"]`).checked = true;
-                }
+      function removeFile() {
+          const fileInput = document.getElementById('imageUpload');
+          const fileNameDisplay = document.getElementById('fileName');
+          const uploadButtonLabel = document.getElementById('uploadButtonLabel');
 
-                // Set background color
-                if (pluginSettings.backgroundColor) {
-                    document.getElementById('backgroundColor').value = pluginSettings.backgroundColor;
-                }
+          fileInput.value = '';  // Clear the file input
+          fileNameDisplay.style.display = 'none';  // Hide the file name and remove button
+          uploadButtonLabel.style.display = 'block';  // Show the upload button label
 
-                // Populate text color
-                if (pluginSettings.textColor) {
-                    document.getElementById('textColor').value = pluginSettings.textColor;
-                }
+          const hiddenElement = document.getElementById(`hidden-file-name`);
+          if (hiddenElement) {
+              hiddenElement.remove();
+          }
+      }
 
-                // Handle background image selection
-                const fileNameDisplay = document.getElementById('fileName');
-                const fileNameText = document.getElementById('fileNameText');
-                const uploadButtonLabel = document.getElementById('uploadButtonLabel');
+      // populate form values from plugin settings
+      document.addEventListener('DOMContentLoaded', () => {
+          if (!styleSettings){
+              return;
+          }
+          if (loadPluginSettings) {
+              if (pluginSettings.topMargin) {
+                  document.getElementById('topMargin').value = pluginSettings.topMargin;
+              }
+              if (pluginSettings.bottomMargin) {
+                  document.getElementById('bottomMargin').value = pluginSettings.bottomMargin;
+              }
+              if (pluginSettings.leftMargin) {
+                  document.getElementById('leftMargin').value = pluginSettings.leftMargin;
+              }
+              if (pluginSettings.rightMargin) {
+                  document.getElementById('rightMargin').value = pluginSettings.rightMargin;
+              }
+              // Populate background options (color or image)
+              if (pluginSettings.backgroundOption) {
+                  document.querySelector(`input[name="backgroundOption"][value="${pluginSettings.backgroundOption}"]`).checked = true;
+              }
 
-                if (pluginSettings.backgroundImageFile) {
-                    const filePath = pluginSettings.backgroundImageFile
-                    const fileName = filePath.split('/').pop();
+              // Set background color
+              if (pluginSettings.backgroundColor) {
+                  document.getElementById('backgroundColor').value = pluginSettings.backgroundColor;
+              }
 
-                    // display the file name
-                    fileNameText.textContent = fileName;
-                    fileNameDisplay.style.display = 'flex';
-                    uploadButtonLabel.style.display = 'none';
+              // Populate text color
+              if (pluginSettings.textColor) {
+                  document.getElementById('textColor').value = pluginSettings.textColor;
+              }
 
-                    // create a hidden input for the existing file
-                    const hiddenInput = document.createElement("input");
-                    hiddenInput.type = "hidden";
-                    hiddenInput.name = "backgroundImageFile";
-                    hiddenInput.value = filePath;
-                    hiddenInput.id = `hidden-file-name`;
-                    hiddenInput.setAttribute('delete-on-submit', '');
-                    document.getElementById("hiddenFileInput").appendChild(hiddenInput);
-                } else {
-                    fileNameDisplay.style.display = 'none';
-                    uploadButtonLabel.style.display = 'block';
-                }
+              // Handle background image selection
+              const fileNameDisplay = document.getElementById('fileName');
+              const fileNameText = document.getElementById('fileNameText');
+              const uploadButtonLabel = document.getElementById('uploadButtonLabel');
 
-                let selectedFrameOption = document.querySelector(`.image-option[data-face-name="${pluginSettings.selectedFrame}"]`);
-                selectedFrame(selectedFrameOption);
-            } else {
-                // set default values
-                let selectedFrameOption = document.querySelector('.image-option');
-                selectedFrame(selectedFrameOption);
-            }
-        });
+              if (pluginSettings.backgroundImageFile) {
+                  const filePath = pluginSettings.backgroundImageFile
+                  const fileName = filePath.split('/').pop();
+
+                  // display the file name
+                  fileNameText.textContent = fileName;
+                  fileNameDisplay.style.display = 'flex';
+                  uploadButtonLabel.style.display = 'none';
+
+                  // create a hidden input for the existing file
+                  const hiddenInput = document.createElement("input");
+                  hiddenInput.type = "hidden";
+                  hiddenInput.name = "backgroundImageFile";
+                  hiddenInput.value = filePath;
+                  hiddenInput.id = `hidden-file-name`;
+                  hiddenInput.setAttribute('delete-on-submit', '');
+                  document.getElementById("hiddenFileInput").appendChild(hiddenInput);
+              } else {
+                  fileNameDisplay.style.display = 'none';
+                  uploadButtonLabel.style.display = 'block';
+              }
+
+              let selectedFrameOption = document.querySelector(`.image-option[data-face-name="${pluginSettings.selectedFrame}"]`);
+              selectedFrame(selectedFrameOption);
+          } else {
+              // set default values
+              let selectedFrameOption = document.querySelector('.image-option');
+              selectedFrame(selectedFrameOption);
+          }
+      });
     </script>
-</head>
-<body>
+  </head>
+  <body>
     <div class="frame">
-        <!-- Back Button -->
-        <button onclick="history.back()" class="back-button">← Back</button>
+      <!-- Back Button -->
+      <button onclick="history.back()" class="back-button">← Back</button>
 
-        <!-- Plugin Title and Icon -->
-        <div class="app-header">
-            <img src="{{ url_for('plugin.image', plugin_id=plugin.id, filename='icon.png') }}" alt="{{ plugin.display_name }} icon" class="app-icon">
-            <h1 class="app-title">{{ plugin.display_name }}</h1>
-            {% if api_key and api_key.required %}<span class="api-key-label" title="{{api_key.service}} (Set {{api_key.expected_key}} in .env)">Requires API Key</span>{% endif %}
-            <div id="loadingIndicator" class="loading-indicator"></div>
-        </div>
-        <div class="separator"></div>
+      <!-- Plugin Title and Icon -->
+      <div class="app-header">
+        <img
+          src="{{ url_for('plugin.image', plugin_id=plugin.id, filename='icon.png') }}"
+          alt="{{ plugin.display_name }} icon"
+          class="app-icon"
+        />
+        <h1 class="app-title">{{ plugin.display_name }}</h1>
+        {% if api_key and api_key.required %}<span
+          class="api-key-label"
+          title="{{api_key.service}} (Set {{api_key.expected_key}} in .env)"
+          >Requires API Key</span
+        >{% endif %}
+        <div id="loadingIndicator" class="loading-indicator"></div>
+      </div>
+      <div class="separator"></div>
 
-        <!-- Include plugin settings -->
-        <form id = "settingsForm" class="settings-form" onsubmit="return false;">
-            <div class="settings-container">
-                {% include settings_template %}
+      <!-- Include plugin settings -->
+      <form id="settingsForm" class="settings-form" onsubmit="return false;">
+        <div class="settings-container">
+          {% include settings_template %}
 
-                <!-- Collapsible Style Settings Section -->
-                {% if style_settings %}
-                <div class="collapsible">
-                    <button type="button" class="collapsible-header" onclick="toggleCollapsible(this)">
-                        Style <span class="collapsible-icon">▼</span>
-                    </button>
-                    <div class="settings-container collapsible-content">
-                        <div class="form-group">
-                            
-                            <div class="form-group nowrap">
-                                <label for="selected-frame" class="form-label">Frame:</label>
-                                <div id="frame-selection" class="image-grid">
-                                    {% for frame in frame_styles %}
-                                    <div
-                                        class="image-option"
-                                        data-face-name="{{ frame.name }}"
-                                        onclick="selectedFrame(this)"
-                                    >
-                                        <img
-                                            src="{{ url_for('plugin.image', plugin_id='base_plugin', filename=frame.icon) }}"
-                                            alt="{{ frame.name }}"
-                                        />
-                                    </div>
-                                    {% endfor %}
-                                </div>
-                                <input type="hidden" id="selected-frame" name="selectedFrame" value="{{ frame_styles[0].Name }}" />
-                            </div>
-
-                            <div class="form-group">
-                                <label for="margin" class="form-label">Margins:</label>
-                                <div class="form-group nowrap">
-                                    <label for="topMargin" class="form-label">Top</label>
-                                    <input type="number" class="form-input" id="topMargin" name="topMargin" min="0" max="100" step="5"><span>px</span>
-                                </div>
-                                <div class="form-group nowrap">
-                                    <label for="bottomMargin" class="form-label">Bottom</label>
-                                    <input type="number" class="form-input" id="bottomMargin" name="bottomMargin" min="0" max="100" step="5"><span>px</span>
-                                </div>
-                                <div class="form-group nowrap">
-                                    <label for="leftMargin" class="form-label">Left</label>
-                                    <input type="number" class="form-input" id="leftMargin" name="leftMargin" min="0" max="100" step="5"><span>px</span>
-                                </div>
-                                <div class="form-group nowrap">
-                                    <label for="rightMargin" class="form-label">Right</label>
-                                    <input type="number" class="form-input" id="rightMargin" name="rightMargin" min="0" max="100" step="5"><span>px</span>
-                                </div>
-                            </div>
-                        </div>    
-                        
-                        <!-- Background Color Option -->
-                        <div class="form-group">
-                            <label class="form-label">Background:</label>
-                            <div class="form-group nowrap">
-                                <label>
-                                    <input type="radio" name="backgroundOption" value="color" checked>
-                                    Color
-                                </label>
-                                <input type="color" id="backgroundColor" name="backgroundColor" class="color-picker" value="#ffffff">
-                            </div>
-                            <div class="form-group nowrap">
-                                <label>
-                                    <input type="radio" name="backgroundOption" value="image">
-                                    Image
-                                </label>
-                                <label for="imageUpload" class="form-input file-upload-label" id="uploadButtonLabel">Upload Image</label>
-                                <input type="file" clear-on-submit id="imageUpload" name="backgroundImageFile" accept="image/*" class="file-upload-input" onchange="showFileName()">
-                                <div id="fileName" class="file-name" style="display: none;">
-                                    <span id="fileNameText"></span>
-                                    <button type="button" id="removeFileButton" class="remove-btn" onclick="removeFile()">X</button>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Hidden input fields to store existing file data -->
-                        <div id="hiddenFileInput"></div>
-                        
-                        <!-- Text Color Picker -->
-                        <div class="form-group">
-                            <label for="textColor" class="form-label">Text Color:</label>
-                            <input type="color" id="textColor" name="textColor" class="color-picker" value="#000000">
-                        </div>
+          <!-- Collapsible Style Settings Section -->
+          {% if style_settings %}
+          <div class="collapsible">
+            <button
+              type="button"
+              class="collapsible-header"
+              onclick="toggleCollapsible(this)"
+            >
+              Style <span class="collapsible-icon">▼</span>
+            </button>
+            <div class="settings-container collapsible-content">
+              <div class="form-group">
+                <div class="form-group nowrap">
+                  <label for="selected-frame" class="form-label">Frame:</label>
+                  <div id="frame-selection" class="image-grid">
+                    {% for frame in frame_styles %}
+                    <div
+                      class="image-option"
+                      data-face-name="{{ frame.name }}"
+                      onclick="selectedFrame(this)"
+                    >
+                      <img
+                        src="{{ url_for('plugin.image', plugin_id='base_plugin', filename=frame.icon) }}"
+                        alt="{{ frame.name }}"
+                      />
                     </div>
+                    {% endfor %}
+                  </div>
+                  <input
+                    type="hidden"
+                    id="selected-frame"
+                    name="selectedFrame"
+                    value="{{ frame_styles[0].Name }}"
+                  />
                 </div>
-                {% endif %}
-            </div>
 
-            <!-- Hidden input to pass plugin id -->
-            <input type="hidden" name="plugin_id" value="{{ plugin.id }}">
+                <div class="form-group">
+                  <label for="margin" class="form-label">Margins:</label>
+                  <div class="form-group nowrap">
+                    <label for="topMargin" class="form-label">Top</label>
+                    <input
+                      type="number"
+                      class="form-input"
+                      id="topMargin"
+                      name="topMargin"
+                      min="0"
+                      max="100"
+                      step="5"
+                    /><span>px</span>
+                  </div>
+                  <div class="form-group nowrap">
+                    <label for="bottomMargin" class="form-label">Bottom</label>
+                    <input
+                      type="number"
+                      class="form-input"
+                      id="bottomMargin"
+                      name="bottomMargin"
+                      min="0"
+                      max="100"
+                      step="5"
+                    /><span>px</span>
+                  </div>
+                  <div class="form-group nowrap">
+                    <label for="leftMargin" class="form-label">Left</label>
+                    <input
+                      type="number"
+                      class="form-input"
+                      id="leftMargin"
+                      name="leftMargin"
+                      min="0"
+                      max="100"
+                      step="5"
+                    /><span>px</span>
+                  </div>
+                  <div class="form-group nowrap">
+                    <label for="rightMargin" class="form-label">Right</label>
+                    <input
+                      type="number"
+                      class="form-input"
+                      id="rightMargin"
+                      name="rightMargin"
+                      min="0"
+                      max="100"
+                      step="5"
+                    /><span>px</span>
+                  </div>
+                </div>
+              </div>
 
-            <div class="buttons-container">
-                {% if plugin_instance %}
-                    <button type="button" onclick="handleAction('update_instance')" class="action-button">Save</button>
-                {% else %}
-                    <button type="button" onclick="handleAction()" class="action-button left">Update Now</button>
-                    <button type="button" onclick="openModal('scheduleModal')" class="action-button right">Add to Playlist</button>
-                {% endif %}
+              <!-- Background Color Option -->
+              <div class="form-group">
+                <label class="form-label">Background:</label>
+                <div class="form-group nowrap">
+                  <label>
+                    <input
+                      type="radio"
+                      name="backgroundOption"
+                      value="color"
+                      checked
+                    />
+                    Color
+                  </label>
+                  <input
+                    type="color"
+                    id="backgroundColor"
+                    name="backgroundColor"
+                    class="color-picker"
+                    value="#ffffff"
+                  />
+                </div>
+                <div class="form-group nowrap">
+                  <label>
+                    <input type="radio" name="backgroundOption" value="image" />
+                    Image
+                  </label>
+                  <label
+                    for="imageUpload"
+                    class="form-input file-upload-label"
+                    id="uploadButtonLabel"
+                    >Upload Image</label
+                  >
+                  <input
+                    type="file"
+                    clear-on-submit
+                    id="imageUpload"
+                    name="backgroundImageFile"
+                    accept="image/*"
+                    class="file-upload-input"
+                    onchange="showFileName()"
+                  />
+                  <div id="fileName" class="file-name" style="display: none">
+                    <span id="fileNameText"></span>
+                    <button
+                      type="button"
+                      id="removeFileButton"
+                      class="remove-btn"
+                      onclick="removeFile()"
+                    >
+                      X
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Hidden input fields to store existing file data -->
+              <div id="hiddenFileInput"></div>
+
+              <!-- Text Color Picker -->
+              <div class="form-group">
+                <label for="textColor" class="form-label">Text Color:</label>
+                <input
+                  type="color"
+                  id="textColor"
+                  name="textColor"
+                  class="color-picker"
+                  value="#000000"
+                />
+              </div>
             </div>
-        </form>
+          </div>
+          {% endif %}
+        </div>
+
+        <!-- Hidden input to pass plugin id -->
+        <input type="hidden" name="plugin_id" value="{{ plugin.id }}" />
+
+        <div class="buttons-container">
+          {% if plugin_instance %}
+          <button
+            type="button"
+            onclick="handleAction('update_instance')"
+            class="action-button"
+          >
+            Save
+          </button>
+          {% else %}
+          <button
+            type="button"
+            onclick="handleAction()"
+            class="action-button left"
+          >
+            Update Now
+          </button>
+          <button
+            type="button"
+            onclick="openModal('scheduleModal')"
+            class="action-button right"
+          >
+            Add to Playlist
+          </button>
+          {% endif %}
+        </div>
+      </form>
     </div>
 
     <!-- Success/Error Modal -->
@@ -370,89 +483,150 @@
 
     <!-- Schedule Configuration Modal -->
     <div id="scheduleModal" class="modal">
-        <div class="modal-content">
-            <span class="close-button" onclick="closeModal('scheduleModal')">×</span>
-            <h2>Add to Playlist</h2>
-            <div class="separator"></div>
-            <form id="scheduleForm" class="settings-form">
-                <div class="form-group">
-                    <label for="playlist" class="form-label">Playlist:</label>
-                    <select id="playlist" name="playlist" class="form-input">
-                        {% for playlist_name in playlists %}
-                        <option value="{{playlist_name}}">{{playlist_name}}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="instance" class="form-label">Instance Name:</label>
-                    <input type="text" id="instance" name="instance_name" placeholder="Type something..." required class="form-input">
-                </div>
-                <div class="form-group">
-                    <label>Refresh</label>
-                    <span title="Determines how often the data and image should be refreshed.">ⓘ</span>
-                </div>
-                <div class="form-group nowrap" id="group-interval">
-                  <input type="radio" name="refreshType" id="refresh-interval" value="interval" checked>
-                  <label for="refresh-interval">Every</label>
-                  <input type="number" id="interval" name="interval" class="form-input" required min="1" placeholder="Enter a number">
-                  <select id="unit" name="unit" class="form-input" required>
-                    <option value="minute">Minute</option>
-                    <option value="hour">Hour</option>
-                    <option value="day">Day</option>
-                  </select>
-                </div>
+      <div class="modal-content">
+        <span class="close-button" onclick="closeModal('scheduleModal')"
+          >×</span
+        >
+        <h2>Add to Playlist</h2>
+        <div class="separator"></div>
+        <form id="scheduleForm" class="settings-form">
+          <div class="form-group">
+            <label for="playlist" class="form-label">Playlist:</label>
+            <select id="playlist" name="playlist" class="form-input">
+              {% for playlist_name in playlists %}
+              <option value="{{playlist_name}}">{{playlist_name}}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="instance" class="form-label">Instance Name:</label>
+            <input
+              type="text"
+              id="instance"
+              name="instance_name"
+              placeholder="Type something..."
+              required
+              class="form-input"
+            />
+          </div>
+          <div class="form-group">
+            <label>Refresh</label>
+            <span
+              title="Determines how often the data and image should be refreshed."
+              >ⓘ</span
+            >
+          </div>
+          <div class="form-group nowrap" id="group-interval">
+            <input
+              type="radio"
+              name="refreshType"
+              id="refresh-interval"
+              value="interval"
+              checked
+            />
+            <label for="refresh-interval">Every</label>
+            <input
+              type="number"
+              id="interval"
+              name="interval"
+              class="form-input"
+              required
+              min="1"
+              placeholder="Enter a number"
+            />
+            <select id="unit" name="unit" class="form-input" required>
+              <option value="minute">Minute</option>
+              <option value="hour">Hour</option>
+              <option value="day">Day</option>
+            </select>
+          </div>
 
-                <div class="form-group nowrap" id="group-scheduled">
-                  <input type="radio" name="refreshType" id="refresh-scheduled" value="scheduled">
-                  <label for="refresh-scheduled">Daily at</label>
-                  <input id="scheduled" class="time-input" type="time" name="refreshTime" step="900">
-                </div>
+          <div class="form-group nowrap" id="group-scheduled">
+            <input
+              type="radio"
+              name="refreshType"
+              id="refresh-scheduled"
+              value="scheduled"
+            />
+            <label for="refresh-scheduled">Daily at</label>
+            <input
+              id="scheduled"
+              class="time-input"
+              type="time"
+              name="refreshTime"
+              step="900"
+            />
+          </div>
 
-                <script>
-                  document.addEventListener('DOMContentLoaded', () => {
-                    // Interval group
-                    const groupInterval = document.getElementById('group-interval');
-                    const radioInterval = document.getElementById('refresh-interval');
-                    const inputInterval = document.getElementById('interval');
+          <script>
+            document.addEventListener("DOMContentLoaded", () => {
+              // Interval group
+              const groupInterval = document.getElementById("group-interval");
+              const radioInterval = document.getElementById("refresh-interval");
+              const inputInterval = document.getElementById("interval");
 
-                    // Scheduled group
-                    const groupScheduled = document.getElementById('group-scheduled');
-                    const radioScheduled = document.getElementById('refresh-scheduled');
-                    const inputScheduled = document.getElementById('scheduled');
+              // Scheduled group
+              const groupScheduled = document.getElementById("group-scheduled");
+              const radioScheduled =
+                document.getElementById("refresh-scheduled");
+              const inputScheduled = document.getElementById("scheduled");
 
-                    // Helper to activate a group
-                    const activateGroup = (radio, input) => {
-                      radio.checked = true;
-                      // Focus after a short delay to ensure radio updates visually
-                      setTimeout(() => input.focus(), 0);
-                    };
+              // Helper to activate a group
+              const activateGroup = (radio, input) => {
+                radio.checked = true;
+                // Focus after a short delay to ensure radio updates visually
+                setTimeout(() => input.focus(), 0);
+              };
 
-                    // Click anywhere inside group → activate
-                    groupInterval.addEventListener('click', (e) => {
-                      if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
-                      activateGroup(radioInterval, inputInterval);
-                    });
+              // Click anywhere inside group → activate
+              groupInterval.addEventListener("click", (e) => {
+                if (
+                  e.target.tagName === "INPUT" ||
+                  e.target.tagName === "SELECT"
+                )
+                  return;
+                activateGroup(radioInterval, inputInterval);
+              });
 
-                    groupScheduled.addEventListener('click', (e) => {
-                      if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
-                      activateGroup(radioScheduled, inputScheduled);
-                    });
+              groupScheduled.addEventListener("click", (e) => {
+                if (
+                  e.target.tagName === "INPUT" ||
+                  e.target.tagName === "SELECT"
+                )
+                  return;
+                activateGroup(radioScheduled, inputScheduled);
+              });
 
-                    // Clicking the radio itself → focus the input
-                    radioInterval.addEventListener('click', () => activateGroup(radioInterval, inputInterval));
-                    radioScheduled.addEventListener('click', () => activateGroup(radioScheduled, inputScheduled));
+              // Clicking the radio itself → focus the input
+              radioInterval.addEventListener("click", () =>
+                activateGroup(radioInterval, inputInterval)
+              );
+              radioScheduled.addEventListener("click", () =>
+                activateGroup(radioScheduled, inputScheduled)
+              );
 
-                    // Focusing inputs → auto-select their radio
-                    inputInterval.addEventListener('focus', () => (radioInterval.checked = true));
-                    inputScheduled.addEventListener('focus', () => (radioScheduled.checked = true));
-                  });
-                </script>
-
-            </form>
-            <div class="buttons-container">
-                <button type="button" onclick="handleAction('add_to_playlist')" class="action-button">Save</button>
-            </div>
+              // Focusing inputs → auto-select their radio
+              inputInterval.addEventListener(
+                "focus",
+                () => (radioInterval.checked = true)
+              );
+              inputScheduled.addEventListener(
+                "focus",
+                () => (radioScheduled.checked = true)
+              );
+            });
+          </script>
+        </form>
+        <div class="buttons-container">
+          <button
+            type="button"
+            onclick="handleAction('add_to_playlist')"
+            class="action-button"
+          >
+            Save
+          </button>
         </div>
+      </div>
     </div>
-</body>
+  </body>
 </html>
