@@ -82,7 +82,11 @@ class PluginFileWatcher(FileSystemEventHandler):
         # Configuration files
         if '/src/config/' in abs_path:
             return True
-            
+
+        # Static files (CSS, JS, images, etc.)
+        if '/src/static/' in abs_path:
+            return True
+
         return False
     
     def _process_pending_changes(self):
@@ -132,7 +136,8 @@ class LiveReloadManager:
             watch_paths = [
                 'src/plugins',
                 'src/templates', 
-                'src/config'
+                'src/config',
+                'src/static'
             ]
         
         # Create event handler

@@ -79,6 +79,10 @@ else:
 logging.getLogger("waitress.queue").setLevel(logging.ERROR)
 app = Flask(__name__)
 
+# Enable Flask DEBUG mode in development
+app.config['DEBUG'] = DEV_MODE
+app.debug = DEV_MODE
+
 # Initialize SocketIO for live reload (development dependencies required)
 socketio = None
 live_reload_manager = None
@@ -180,7 +184,7 @@ if __name__ == "__main__":
             
             # Run with SocketIO instead of waitress for live reload support
             try:
-                socketio.run(app, host="0.0.0.0", port=PORT, debug=False, use_reloader=False, allow_unsafe_werkzeug=True)
+                socketio.run(app, host="0.0.0.0", port=PORT, debug=DEV_MODE, use_reloader=False, allow_unsafe_werkzeug=True)
             finally:
                 if live_reload_manager:
                     live_reload_manager.stop_watching()
