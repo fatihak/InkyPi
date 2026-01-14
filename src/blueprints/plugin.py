@@ -338,3 +338,40 @@ def update_now():
         return jsonify({"error": f"An error occurred: {str(e)}"}), 500
 
     return jsonify({"success": True, "message": "Display updated"}), 200
+
+@plugin_bp.route("/plugin_settings/<plugin_id>")
+def plugin_settings_page(plugin_id):
+    """Show plugin settings page."""
+    device_config = current_app.config["DEVICE_CONFIG"]
+    
+    # Find the plugin configuration
+    plugin_config = device_config.get_plugin(plugin_id)
+    if not plugin_config:
+        return jsonify({"error": f"Plugin '{plugin_id}' not found"}), 404
+    
+    try:
+        # Get plugin instance and settings
+        plugin = get_plugin_instance(plugin_config)
+        playlist_manager = device_config.get_playlist_manager()
+        
+        # Find plugin instances
+        instances = []
+        for playlist in playlist_manager.playlists:
+            for instance in playlist.plugins:
+                if instance.plugin_id == plugin_id:
+                    instances.append({
+                        'name': instance.instance_name,
+                        'settings': instance.settings
+                    })
+        
+        # Get settings template
+        settings_template = plugin.generate_settings_template()
+        
+        return render_template("plugin_settings.html",
+                         plugin_id=plugin_id,
+                         plugin_config=plugin_config,
+                         instances=instances,
+                         settings_template=settings_template)
+        
+    except Exception as e:
+        logger.exception(f"Error loading plugin settings for {plugin_id}: {str(e)}")

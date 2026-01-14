@@ -16,11 +16,9 @@ warnings.filterwarnings("ignore", message=".*Busy Wait: Held high.*")
 
 import os
 import random
-import time
+
 import sys
-import json
 import logging
-import threading
 import argparse
 from utils.app_utils import generate_startup_image
 from flask import Flask, request
@@ -32,7 +30,7 @@ from blueprints.main import main_bp
 from blueprints.settings import settings_bp
 from blueprints.plugin import plugin_bp
 from blueprints.playlist import playlist_bp
-from blueprints.dev import dev_bp
+from blueprints.dev_dashboard import dev_dashboard_bp  # Temporarily disabled
 from jinja2 import ChoiceLoader, FileSystemLoader
 from plugins.plugin_registry import load_plugins
 from waitress import serve
@@ -82,20 +80,27 @@ logging.getLogger("waitress.queue").setLevel(logging.ERROR)
 app = Flask(__name__)
 
 # Initialize SocketIO for live reload (development dependencies required)
+socketio = None
+live_reload_manager = None
+
+if SERVE_HTML_MODE:
+    if DEV_DEPS_AVAILABLE:
+        socketio = SocketIO(app, cors_allowed_origins="*")
+    else:
+        logger.error("HTML serving mode requires development dependencies. Please install with: pip install -r install/requirements-dev.txt")
+        sys.exit(1)
+
 if SERVE_HTML_MODE and DEV_DEPS_AVAILABLE:
     socketio = SocketIO(app, cors_allowed_origins="*")
-    live_reload_manager = None
 elif SERVE_HTML_MODE and not DEV_DEPS_AVAILABLE:
     logger.error("HTML serving mode requires development dependencies. Please install with: pip install -r install/requirements-dev.txt")
     sys.exit(1)
-else:
-    socketio = None
-    live_reload_manager = None
 
 template_dirs = [
     os.path.join(os.path.dirname(__file__), "templates"),  # Default template folder
     os.path.join(os.path.dirname(__file__), "plugins"),  # Plugin templates
 ]
+from jinja2 import ChoiceLoader, FileSystemLoader
 app.jinja_loader = ChoiceLoader(
     [FileSystemLoader(directory) for directory in template_dirs]
 )
@@ -121,7 +126,16 @@ app.register_blueprint(main_bp)
 app.register_blueprint(settings_bp)
 app.register_blueprint(plugin_bp)
 app.register_blueprint(playlist_bp)
-app.register_blueprint(dev_bp)
+app.register_blueprint(dev_dashboard_bp)
+
+# Register dev blueprint if in development mode and dependencies are available
+if DEV_DEPS_AVAILABLE and DEV_MODE:
+    try:
+        from blueprints.dev import dev_bp
+        app.register_blueprint(dev_bp)
+        logger.info("Development blueprint registered")
+    except ImportError as e:
+        logger.warning(f"Could not register dev blueprint: {e}")
 
 # Register SocketIO events if in HTML serving mode and development deps available
 if SERVE_HTML_MODE and socketio and register_socketio_events:

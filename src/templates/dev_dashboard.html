@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>InkyPi Development Dashboard</title>
+
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        color: #2d3748;
+      }
+
+      .header {
+        background: rgba(0, 0, 0, 0.8);
+        color: white;
+        padding: 20px;
+        backdrop-filter: blur(10px);
+        border-bottom: 2px solid #4a5568;
+      }
+
+      .header-content {
+        max-width: 1200px;
+        margin: 0 auto;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .header h1 {
+        font-size: 28px;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+      }
+
+      .dev-badge {
+        background: linear-gradient(45deg, #f093fb 0%, #f5576c 100%);
+        color: white;
+        padding: 8px 16px;
+        border-radius: 25px;
+        font-size: 12px;
+        font-weight: bold;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        animation: pulse 2s infinite;
+      }
+
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.8;
+        }
+      }
+
+      .header-stats {
+        display: flex;
+        gap: 20px;
+        align-items: center;
+      }
+
+      .stat {
+        text-align: center;
+        padding: 8px 16px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        backdrop-filter: blur(5px);
+      }
+
+      .stat-value {
+        font-size: 20px;
+        font-weight: bold;
+        color: #48bb78;
+      }
+
+      .stat-label {
+        font-size: 11px;
+        opacity: 0.8;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .main-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 30px 20px;
+      }
+
+      .dashboard-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 25px;
+        margin-bottom: 30px;
+      }
+
+      .plugin-card {
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 16px;
+        padding: 25px;
+        backdrop-filter: blur(10px);
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1),
+          0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        transition: all 0.3s ease;
+        border: 2px solid transparent;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .plugin-card::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, #4299e1, #48bb78, #ed8936, #9f7aea);
+        transform: translateX(-100%);
+        transition: transform 0.3s ease;
+      }
+
+      .plugin-card:hover::before {
+        transform: translateX(0);
+      }
+
+      .plugin-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        border-color: #4299e1;
+      }
+
+      .plugin-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 15px;
+      }
+
+      .plugin-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #2d3748;
+        margin-bottom: 5px;
+      }
+
+      .plugin-id {
+        font-size: 12px;
+        color: #718096;
+        font-family: "Courier New", monospace;
+        background: #f7fafc;
+        padding: 2px 6px;
+        border-radius: 4px;
+      }
+
+      .plugin-description {
+        font-size: 14px;
+        color: #4a5568;
+        line-height: 1.6;
+        margin-bottom: 20px;
+        min-height: 48px;
+      }
+
+      .plugin-actions {
+        display: flex;
+        gap: 10px;
+      }
+
+      .plugin-btn {
+        flex: 1;
+        padding: 10px 16px;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 13px;
+        font-weight: 500;
+        transition: all 0.2s ease;
+        text-decoration: none;
+        text-align: center;
+        display: inline-block;
+      }
+
+      .plugin-btn.primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+      }
+
+      .plugin-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      }
+
+      .quick-actions {
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 16px;
+        padding: 30px;
+        backdrop-filter: blur(10px);
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
+          0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        margin-bottom: 30px;
+      }
+
+      .quick-actions h2 {
+        font-size: 20px;
+        margin-bottom: 20px;
+        color: #2d3748;
+      }
+
+      .action-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+      }
+
+      .quick-action-link {
+        padding: 15px 20px;
+        background: linear-gradient(135deg, #f6f8fb 0%, #e9ecef 100%);
+        border: 1px solid #dee2e6;
+        border-radius: 10px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-align: left;
+        font-size: 14px;
+        color: #495057;
+        text-decoration: none;
+      }
+
+      .quick-action-link:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+      }
+
+      .action-icon {
+        font-size: 20px;
+        margin-bottom: 8px;
+        display: block;
+      }
+
+      .action-title {
+        font-weight: 600;
+        margin-bottom: 4px;
+      }
+
+      .action-desc {
+        font-size: 12px;
+        opacity: 0.7;
+      }
+
+      .info-section {
+        background: rgba(255, 255, 255, 0.9);
+        border-radius: 12px;
+        padding: 20px;
+        backdrop-filter: blur(10px);
+        margin-bottom: 20px;
+      }
+
+      .info-section h3 {
+        font-size: 16px;
+        margin-bottom: 15px;
+        color: #2d3748;
+      }
+
+      .feature-list {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 10px;
+      }
+
+      .feature-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px;
+        background: #f8f9fa;
+        border-radius: 6px;
+        font-size: 14px;
+      }
+
+      .feature-icon {
+        font-size: 18px;
+      }
+
+      .keyboard-shortcuts {
+        display: flex;
+        gap: 20px;
+        flex-wrap: wrap;
+      }
+
+      .shortcut {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        background: #f8f9fa;
+        border-radius: 6px;
+        font-size: 13px;
+      }
+
+      .key {
+        background: #495057;
+        color: white;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-family: "Courier New", monospace;
+        font-size: 11px;
+        font-weight: bold;
+      }
+
+      @media (max-width: 768px) {
+        .header-content {
+          flex-direction: column;
+          gap: 15px;
+          text-align: center;
+        }
+
+        .header-stats {
+          flex-wrap: wrap;
+          justify-content: center;
+        }
+
+        .dashboard-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .action-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="header">
+      <div class="header-content">
+        <h1>
+          🔧 InkyPi Development Dashboard
+          <span class="dev-badge">LIVE</span>
+        </h1>
+        <div class="header-stats">
+          <div class="stat">
+            <div class="stat-value">{{ plugins|length }}</div>
+            <div class="stat-label">Plugins</div>
+          </div>
+          <div class="stat">
+            <div class="stat-value">{{ device_width }}x{{ device_height }}</div>
+            <div class="stat-label">Resolution</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="main-container">
+      <div class="quick-actions">
+        <h2>🚀 Quick Actions</h2>
+        <div class="action-grid">
+          <a class="quick-action-link" href="/plugin">
+            <span class="action-icon">📂</span>
+            <div class="action-title">Plugin Manager</div>
+            <div class="action-desc">Manage all plugins</div>
+          </a>
+          <a class="quick-action-link" href="/settings">
+            <span class="action-icon">⚙️</span>
+            <div class="action-title">Settings</div>
+            <div class="action-desc">Global configuration</div>
+          </a>
+          <a class="quick-action-link" href="/playlist">
+            <span class="action-icon">📋</span>
+            <div class="action-title">Playlists</div>
+            <div class="action-desc">Manage display playlists</div>
+          </a>
+          <a
+            class="quick-action-link"
+            href="https://github.com/charle692/InkyPi/tree/main/docs"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <span class="action-icon">📚</span>
+            <div class="action-title">Documentation</div>
+            <div class="action-desc">Dev guide & API</div>
+          </a>
+        </div>
+      </div>
+
+      <div class="info-section">
+        <h3>⌨️ Keyboard Shortcuts</h3>
+        <div class="keyboard-shortcuts">
+          <div class="shortcut">
+            <span class="key">Ctrl+R</span>
+            <span>Refresh plugin</span>
+          </div>
+          <div class="shortcut">
+            <span class="key">Ctrl+S</span>
+            <span>Toggle side-by-side</span>
+          </div>
+          <div class="shortcut">
+            <span class="key">Ctrl+D</span>
+            <span>Toggle dev tools</span>
+          </div>
+        </div>
+      </div>
+
+      <h2 style="color: white; margin-bottom: 25px">🔌 Available Plugins</h2>
+
+      <div class="dashboard-grid">
+        {% for plugin in plugins %}
+        <div class="plugin-card">
+          <div class="plugin-header">
+            <div>
+              <div class="plugin-title">{{ plugin.name }}</div>
+              <div class="plugin-id">{{ plugin.id }}</div>
+            </div>
+          </div>
+
+          <div class="plugin-description">
+            {% if plugin.description %} {{ plugin.description }} {% else %}
+            Plugin for displaying {{ plugin.name }} content on InkyPi display.
+            {% endif %}
+          </div>
+
+          <div class="plugin-actions">
+            <a
+              href="/dev/enhanced-preview/{{ plugin.id }}"
+              class="plugin-btn primary"
+            >
+              🖼️ Enhanced Preview
+            </a>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <script>
+      // Add keyboard shortcuts
+      document.addEventListener("keydown", (e) => {
+        if (e.ctrlKey || e.metaKey) {
+          switch (e.key) {
+            case "h":
+              e.preventDefault();
+              window.location.href = "/dev/dashboard";
+              break;
+            case "m":
+              e.preventDefault();
+              openAllPlugins();
+              break;
+          }
+        }
+      });
+
+      // Add smooth scroll behavior
+      document.querySelectorAll(".plugin-btn").forEach((btn) => {
+        btn.addEventListener("click", function (e) {
+          if (this.classList.contains("primary")) {
+            // Enhanced preview - smooth transition
+            this.style.transform = "scale(0.95)";
+            setTimeout(() => {
+              this.style.transform = "";
+            }, 150);
+          }
+        });
+      });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{{ plugin_name }} - Enhanced Development Preview</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles/enhanced_preview.css') }}" />
+
+    <script src="{{ url_for('static', filename='js/enhanced_preview.js') }}" defer></script>
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js" defer/></script>
+    <script src="{{ url_for('static', filename='js/live_reload.js') }}" defer></script>
+  </head>
+  <body>
+    <div class="header">
+      <div class="header-content">
+        <h1>
+          {{ plugin_name }}
+        </h1>
+      </div>
+    </div>
+
+    <div class="main-container">
+      <div class="sidebar">
+        <div class="info-section">
+          <h3>📋 Plugin Information</h3>
+          <div class="info-item">
+            <span class="info-label">Plugin ID:</span>
+            <span class="info-value">{{ plugin_id }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Dimensions:</span>
+            <span class="info-value"
+              >{{ device_width }}x{{ device_height }}</span
+            >
+          </div>
+          <div class="info-item">
+            <span class="info-label">CSS Files:</span>
+            <span class="info-value">{{ css_files|length }}</span>
+          </div>
+        </div>
+
+        <div class="info-section">
+          <h3>🎨 Preview Controls</h3>
+          <div class="view-toggle">
+            <button class="toggle-btn active" id="html-view-btn">
+              HTML
+            </button>
+            <button class="toggle-btn" id="side-by-side-btn">
+              Side by Side
+            </button>
+            <a class="action-link secondary" href="/plugin/{{ plugin_id }}">
+              ⚙️ Settings
+            </a>
+          </div>
+        </div>
+
+        <div class="info-section">
+          <h3>💡 Development Tips</h3>
+          <div style="font-size: 13px; color: #718096; line-height: 1.6">
+            • Edit HTML/CSS files for instant reload<br />
+            • Use Side by Side to compare with screenshot<br />
+            • Changes to Python files need server restart
+          </div>
+        </div>
+      </div>
+
+        <div class="preview-content">
+          <h2>🖼️ Plugin Preview</h2>
+
+          <!-- HTML Preview View -->
+          <div class="preview-device" id="html-preview">
+            <div class="device-frame" style="width: {{ device_width or 800 }}px; height: {{ device_height or 480 }}px;">
+              {{ rendered_html | safe }}
+            </div>
+          </div>
+
+          <!-- Side-by-Side Comparison View -->
+          <div class="side-by-side" id="side-by-side-view">
+            <div class="comparison-panel">
+              <h3>🌐 HTML Preview</h3>
+              <div class="device-frame" style="width: {{ device_width or 800 }}px; height: {{ device_height or 480 }}px;">
+                {{ rendered_html | safe }}
+              </div>
+            </div>
+
+            <div class="comparison-panel">
+              <h3>📸 Screenshot</h3>
+              <div class="screenshot-container" id="screenshot-container" style="width: {{ device_width or 800 }}px; height: {{ device_height or 480 }}px;">
+                <div class="loading-spinner"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

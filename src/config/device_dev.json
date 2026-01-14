@@ -31,7 +31,7 @@
                         "refresh": {
                             "interval": 600
                         },
-                        "latest_refresh_time": "2026-01-08T21:11:45.015407+00:00"
+                        "latest_refresh_time": "2026-01-14T01:18:07.080571+00:00"
                     },
                     {
                         "plugin_id": "clock",
@@ -44,7 +44,7 @@
                         "refresh": {
                             "interval": 60
                         },
-                        "latest_refresh_time": "2026-01-08T21:11:43.623482+00:00"
+                        "latest_refresh_time": "2026-01-13T17:17:59.259015+00:00"
                     },
                     {
                         "plugin_id": "nhl_team_schedule",
@@ -65,7 +65,7 @@
                         "refresh": {
                             "interval": 900
                         },
-                        "latest_refresh_time": "2026-01-08T21:48:12.393062+00:00"
+                        "latest_refresh_time": "2026-01-13T18:17:59.302761+00:00"
                     },
                     {
                         "plugin_id": "nhl_team_schedule",
@@ -86,7 +86,7 @@
                         "refresh": {
                             "interval": 900
                         },
-                        "latest_refresh_time": "2026-01-08T21:48:22.069131+00:00"
+                        "latest_refresh_time": "2026-01-13T19:18:00.221567+00:00"
                     },
                     {
                         "plugin_id": "nhl_team_schedule",
@@ -107,7 +107,7 @@
                         "refresh": {
                             "interval": 900
                         },
-                        "latest_refresh_time": "2026-01-08T21:48:37.506071+00:00"
+                        "latest_refresh_time": "2026-01-13T20:18:01.744720+00:00"
                     },
                     {
                         "plugin_id": "nhl_team_schedule",
@@ -128,7 +128,7 @@
                         "refresh": {
                             "interval": 900
                         },
-                        "latest_refresh_time": "2026-01-08T21:48:50.193044+00:00"
+                        "latest_refresh_time": "2026-01-13T21:18:03.206136+00:00"
                     },
                     {
                         "plugin_id": "nhl_team_schedule",
@@ -149,7 +149,7 @@
                         "refresh": {
                             "interval": 900
                         },
-                        "latest_refresh_time": "2026-01-08T21:48:55.388779+00:00"
+                        "latest_refresh_time": "2026-01-13T22:18:04.354559+00:00"
                     },
                     {
                         "plugin_id": "nhl_team_schedule",
@@ -170,7 +170,7 @@
                         "refresh": {
                             "interval": 900
                         },
-                        "latest_refresh_time": "2026-01-08T21:49:08.491109+00:00"
+                        "latest_refresh_time": "2026-01-13T23:18:05.278272+00:00"
                     },
                     {
                         "plugin_id": "nhl_team_schedule",
@@ -191,20 +191,20 @@
                         "refresh": {
                             "interval": 900
                         },
-                        "latest_refresh_time": "2026-01-08T21:49:15.226672+00:00"
+                        "latest_refresh_time": "2026-01-14T00:18:06.210988+00:00"
                     }
                 ],
-                "current_plugin_index": null
+                "current_plugin_index": 0
             }
         ],
-        "active_playlist": null
+        "active_playlist": "Default"
     },
     "refresh_info": {
-        "refresh_time": "2026-01-08T21:49:15.226672+00:00",
-        "image_hash": "ea554abb990b1b8affc11de1bf649c750fd0241b5364fb4032fe048dee4b1959",
+        "refresh_time": "2026-01-14T01:18:07.080571+00:00",
+        "image_hash": "e2f30dcf600d8e49286359b221a7b8cab6d9911f413d6f2ba3d967e6b4debbc3",
         "refresh_type": "Playlist",
         "plugin_id": "nhl_team_schedule",
         "playlist": "Default",
-        "plugin_instance": "ottawa bracket"
+        "plugin_instance": "ottawa sens schedule"
     }
 }

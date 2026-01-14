@@ -26,9 +26,6 @@ class NHLTeamSchedule(BasePlugin):
 
         home_team_stats, away_team_stats = self.get_team_stats(home_team, away_team)
 
-        logger.info(f"Home Team Stats: {home_team_stats}")
-        logger.info(f"Away Team Stats: {away_team_stats}")
-
         # Get design choice from settings, default to original
         design_choice = settings.get("design", "original")
         
