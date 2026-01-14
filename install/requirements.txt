@@ -1,13 +1,13 @@
-flask==3.1.1
-python-dotenv==1.0.1
+flask==3.1.2
+python-dotenv==1.2.1
 inky==2.2.1
 requests==2.32.4
-urllib3==2.5.0
+urllib3==2.6.2
 werkzeug==3.1.3
 pillow==12.0.0
 pi-heif==1.1.1
 pytz==2025.2
-openai==1.58.1
+openai==2.14.0
 numpy==2.2.1
 icalendar==6.3.1
 recurring-ical-events==3.7.0
