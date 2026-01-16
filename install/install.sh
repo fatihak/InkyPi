@@ -107,13 +107,13 @@ fetch_waveshare_driver() {
 enable_interfaces(){
   echo "Enabling interfaces required for $APPNAME"
   #enable spi
-  sudo sed -i 's/^dtparam=spi=.*/dtparam=spi=on/' /boot/config.txt
-  sudo sed -i 's/^#dtparam=spi=.*/dtparam=spi=on/' /boot/config.txt
+  sudo sed -i 's/^dtparam=spi=.*/dtparam=spi=on/' /boot/firmware/config.txt
+  sudo sed -i 's/^#dtparam=spi=.*/dtparam=spi=on/' /boot/firmware/config.txt
   sudo raspi-config nonint do_spi 0
   echo_success "\tSPI Interface has been enabled."
   #enable i2c
-  sudo sed -i 's/^dtparam=i2c_arm=.*/dtparam=i2c_arm=on/' /boot/config.txt
-  sudo sed -i 's/^#dtparam=i2c_arm=.*/dtparam=i2c_arm=on/' /boot/config.txt
+  sudo sed -i 's/^dtparam=i2c_arm=.*/dtparam=i2c_arm=on/' /boot/firmware/config.txt
+  sudo sed -i 's/^#dtparam=i2c_arm=.*/dtparam=i2c_arm=on/' /boot/firmware/config.txt
   sudo raspi-config nonint do_i2c 0
   echo_success "\tI2C Interface has been enabled."
 
