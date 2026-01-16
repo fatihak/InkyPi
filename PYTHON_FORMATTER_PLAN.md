@@ -13,9 +13,22 @@ This plan adds comprehensive Python formatting to the InkyPi project using Black
 
 ## 📋 Implementation Plan
 
-### Phase 1: Core Configuration Files
+### ✅ Phase 1: Core Configuration Files - COMPLETED
 
-#### 1.1 Create `pyproject.toml`
+#### 1.1 Leverage existing `.editorconfig`
+The project already has comprehensive EditorConfig settings that align with our formatting goals:
+```ini
+[*.py]
+indent_style = space
+indent_size = 4
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+```
+This ensures consistency across all editors and IDEs.
+
+#### 1.2 Created `pyproject.toml`
 ```toml
 [tool.black]
 line-length = 100
@@ -48,9 +61,10 @@ use_parentheses = true
 ensure_newline_before_comments = true
 ```
 
-### Phase 2: VS Code Integration
+### ✅ Phase 2: VS Code Integration - COMPLETED
 
-#### 2.1 Create `.vscode/settings.json`
+#### 2.1 Enhanced `.vscode/settings.json` and created `.flake8`
+Updated VS Code settings to work seamlessly with existing `.editorconfig` and new formatting tools:
 ```json
 {
     "[python]": {
@@ -63,18 +77,25 @@ ensure_newline_before_comments = true
     "black-formatter.args": ["--line-length=100"],
     "isort.args": ["--profile", "black", "--line-length", "100"],
     "python.linting.enabled": true,
-    "python.linting.flake8Enabled": true,
-    "python.linting.flake8Args": ["--max-line-length=100", "--extend-ignore=E203,W503"]
+    "python.linting.flake8Enabled": true
 }
 ```
 
-#### 2.2 Create `.vscode/extensions.json`
+Created `.flake8` for centralized flake8 configuration:
+```ini
+[flake8]
+max-line-length = 100
+extend-ignore = E203,W503
+```
+
+#### 2.2 Created `.vscode/extensions.json`
 ```json
 {
     "recommendations": [
         "ms-python.black-formatter",
         "ms-python.isort",
-        "ms-python.flake8"
+        "ms-python.flake8",
+        "editorconfig.editorconfig"
     ]
 }
 ```
@@ -116,7 +137,7 @@ jobs:
       run: isort --check-only --profile black --line-length 100 .
       
     - name: Run flake8
-      run: flake8 --max-line-length=100 --extend-ignore=E203,W503 .
+      run: flake8 .
 ```
 
 ### Phase 4: Documentation Updates
@@ -125,18 +146,20 @@ jobs:
 Add new section under Code Quality:
 ```markdown
 ### Code Quality Tools
+The project uses EditorConfig for basic formatting consistency, plus Black, isort, and flake8 for Python-specific formatting.
+
 ```bash
-# Format code with Black
+# Format code with Black (respects EditorConfig indentation)
 black .
 
 # Sort imports with isort
 isort .
 
-# Lint with flake8
+# Lint with flake8 (reads from .flake8 config)
 flake8 .
 
 # Run all formatting tools
-black --line-length 100 . && isort --profile black --line-length 100 . && flake8 --max-line-length=100 --extend-ignore=E203,W503 .
+black --line-length 100 . && isort --profile black --line-length 100 . && flake8 .
 ```
 
 ### Phase 5: Initial Codebase Formatting
@@ -159,7 +182,7 @@ flake8 --max-line-length=100 --extend-ignore=E203,W503 .
 ### Impact Analysis
 - **High Impact**: Import reorganization (currently inconsistent)
 - **Medium Impact**: Line length changes (current max ~141 chars → 100 chars)
-- **Low Impact**: Code formatting (already follows 4-space indentation)
+- **Low Impact**: Code formatting (already follows 4-space indentation, matches EditorConfig)
 
 ### Rollout Plan
 1. **Setup Phase**: Add configuration files (no code changes)
@@ -168,12 +191,29 @@ flake8 --max-line-length=100 --extend-ignore=E203,W503 .
 4. **Integration Phase**: Enable CI checks and VS Code settings
 5. **Documentation Phase**: Update development documentation
 
+## 🔗 EditorConfig Integration
+
+The existing `.editorconfig` file provides the foundation for consistent formatting across all editors:
+
+- **Python files**: 4-space indentation (matches Black's default)
+- **Charset**: UTF-8 (project standard)
+- **Line endings**: LF (Unix style)
+- **Trailing whitespace**: Automatically trimmed
+- **Final newline**: Always inserted
+
+This integration means:
+✅ Black will respect the 4-space indentation from EditorConfig
+✅ All editors (VS Code, PyCharm, Vim, etc.) get consistent basic formatting
+✅ No conflicts between EditorConfig and Black settings
+✅ Works for team members not using VS Code
+
 ## 🛠 Required Extensions
 
 ### VS Code Extensions
 - **Black Formatter** (`ms-python.black-formatter`) - Official Microsoft Black extension
 - **isort** (`ms-python.isort`) - Import sorting
 - **Flake8** (`ms-python.flake8`) - Linting (optional but recommended)
+- **EditorConfig** (`editorconfig.editorconfig`) - Basic formatting consistency across editors
 
 ### Installation Commands
 ```bash
@@ -181,6 +221,7 @@ flake8 --max-line-length=100 --extend-ignore=E203,W503 .
 code --install-extension ms-python.black-formatter
 code --install-extension ms-python.isort
 code --install-extension ms-python.flake8
+code --install-extension editorconfig.editorconfig
 ```
 
 ## 📊 Expected Benefits
@@ -190,6 +231,7 @@ code --install-extension ms-python.flake8
 3. **Quality**: CI checks prevent poorly formatted code from merging
 4. **Collaboration**: Standardized style reduces code review discussions
 5. **Simplicity**: No git hooks = easier onboarding and maintenance
+6. **Editor Compatibility**: EditorConfig ensures basic consistency across all editors
 
 ## ⚠️ Potential Challenges
 
@@ -207,6 +249,22 @@ code --install-extension ms-python.flake8
 | GitHub Actions | 0.5 day | High |
 | Code Formatting | 1 day | Medium |
 | Documentation | 0.5 day | Low |
+
+## 💡 Development Tips
+
+### EditorConfig Best Practices
+- **Install EditorConfig extension** in your editor for automatic basic formatting
+- **VS Code**: Extension "EditorConfig for VS Code" (already included in recommendations)
+- **PyCharm**: Built-in support (no extension needed)
+- **Vim/Neovim**: Install editorconfig-vim plugin
+- **Sublime Text**: Install EditorConfig package
+
+### Common Pitfalls
+1. **Display Hardware**: Always test with `--dev` flag first
+2. **Plugin IDs**: Must match folder names and be unique
+3. **Image Formats**: Ensure compatibility with e-ink displays (black/white/red)
+4. **API Rate Limits**: Implement caching and rate limiting
+5. **Time Zones**: Always use timezone-aware datetime objects
 
 ## 📝 Developer Workflow
 
