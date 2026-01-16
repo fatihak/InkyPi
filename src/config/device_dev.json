@@ -65,7 +65,7 @@
                         "refresh": {
                             "interval": 900
                         },
-                        "latest_refresh_time": "2026-01-13T18:17:59.302761+00:00"
+                        "latest_refresh_time": "2026-01-16T01:48:47.253810+00:00"
                     },
                     {
                         "plugin_id": "nhl_team_schedule",
@@ -86,7 +86,7 @@
                         "refresh": {
                             "interval": 900
                         },
-                        "latest_refresh_time": "2026-01-13T19:18:00.221567+00:00"
+                        "latest_refresh_time": "2026-01-16T01:48:53.623123+00:00"
                     },
                     {
                         "plugin_id": "nhl_team_schedule",
@@ -107,7 +107,7 @@
                         "refresh": {
                             "interval": 900
                         },
-                        "latest_refresh_time": "2026-01-13T20:18:01.744720+00:00"
+                        "latest_refresh_time": "2026-01-16T01:48:59.545404+00:00"
                     },
                     {
                         "plugin_id": "nhl_team_schedule",
@@ -200,11 +200,11 @@
         "active_playlist": "Default"
     },
     "refresh_info": {
-        "refresh_time": "2026-01-14T01:18:07.080571+00:00",
-        "image_hash": "e2f30dcf600d8e49286359b221a7b8cab6d9911f413d6f2ba3d967e6b4debbc3",
+        "refresh_time": "2026-01-16T01:48:59.545404+00:00",
+        "image_hash": "64d32c0a89483fd637eb91f744d15c2d56196c64077f89d8b648ecd25bc1f080",
         "refresh_type": "Playlist",
         "plugin_id": "nhl_team_schedule",
         "playlist": "Default",
-        "plugin_instance": "ottawa sens schedule"
+        "plugin_instance": "ottawa card style"
     }
 }

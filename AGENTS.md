@@ -123,12 +123,9 @@ class MyPlugin(BasePlugin):
 Each plugin requires a `plugin-info.json`:
 ```json
 {
-    "id": "my_plugin",
-    "name": "My Plugin",
-    "description": "Description of what the plugin does",
-    "author": "Author Name",
-    "version": "1.0.0",
-    "icon": "fa-solid fa-icon-name"
+  "display_name": "Display name for the plugin",
+  "id": "plugin_id",
+  "class": "PluginClassName"
 }
 ```
 
