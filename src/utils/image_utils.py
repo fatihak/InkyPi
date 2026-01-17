@@ -146,7 +146,12 @@ def take_screenshot(target, dimensions, timeout_ms=None):
             "--disable-gpu-memory-buffer-compositor-resources",
             "--disable-extensions",
             "--disable-plugins",
-            "--mute-audio",
+            "--disable-default-apps",
+            "--disable-audio-input",
+            "--disable-audio-output",
+            "--disable-crash-reporter",
+            "--disable-login-animations",
+            "--disable-default-browser-promo",
             "--renderer-process-limit=1",
             "--no-zygote",
             "--no-sandbox"
