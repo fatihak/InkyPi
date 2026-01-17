@@ -100,6 +100,7 @@ if __name__ == '__main__':
         
         # Get local IP address for display (only in dev mode when running on non-Pi)
         if DEV_MODE:
+            app.debug = True # Enable Flask debug mode in development
             import socket
             try:
                 s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)

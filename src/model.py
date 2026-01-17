@@ -118,6 +118,17 @@ class PlaylistManager:
         else:
             logger.warning(f"Playlist '{playlist_name}' not found.")
         return False
+    
+    def rename_plugin_instance(self, playlist_name, plugin_id, old_name, new_name):
+        """Renames a plugin instance on a specific playlist."""
+        playlist = self.get_playlist(playlist_name)
+        if playlist:
+            for plugin in playlist.plugins:
+                if plugin.plugin_id == plugin_id and plugin.name == old_name:
+                    plugin.name = new_name
+                    return True
+        logger.warning(f"Plugin instance with name '{old_name}' not found.")
+        return False
 
     def add_playlist(self, name, start_time=None, end_time=None):
         """Creates and adds a new playlist with the given start and end times."""

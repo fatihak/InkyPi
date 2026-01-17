@@ -205,14 +205,24 @@
             document.getElementById("playlistModal").style.display = "block";
         }
 
-        function openModal() {
-            const modal = document.getElementById('playlistModal');
+        function openModal(modal_id = 'playlistModal') {
+            const modal = document.getElementById(modal_id);
             modal.style.display = 'block';
         }
 
-        function closeModal() {
-            const modal = document.getElementById('playlistModal');
+        function closeModal(modal_id = 'playlistModal') {
+            const modal = document.getElementById(modal_id);
             modal.style.display = 'none';
+        }
+
+        function openRenameModal(playlistName, pluginId, oldInstanceName) {
+            document.getElementById("new_instance_name").value = oldInstanceName;
+            document.getElementById("renameButton").setAttribute("onclick", `renamePluginInstance('${playlistName}', '${pluginId}', '${oldInstanceName}')`);
+
+            document.getElementById("RenameModal").style.display = "block";
+            
+            // Focus on the input field
+            setTimeout(() => document.getElementById("new_instance_name").focus(), 100);
         }
 
         async function createPlaylist() {
@@ -291,6 +301,43 @@
                 console.error("Error:", error);
                 alert('An error occurred while processing your request.');
             }
+        }
+
+        async function renamePluginInstance(playlistName, pluginId, oldName) {
+            let newName = document.getElementById("new_instance_name").value.trim();
+
+            if (newName === oldName) {
+                closeModal('RenameModal');
+                return;
+            }
+            
+            try {
+                const response = await fetch("{{ url_for('playlist.rename_plugin') }}", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        playlist_name: playlistName,
+                        plugin_id: pluginId,
+                        old_instance_name: oldName,
+                        new_instance_name: newName
+                    })
+                });
+
+                const result = await response.json();
+                if (response.ok) {
+                    closeModal('RenameModal');
+                    sessionStorage.setItem("storedMessage", JSON.stringify({ type: "success", text: `Success! ${result.message}` }));
+                    location.reload();
+                } else {
+                    showResponseModal('failure', `Error!  ${result.error}`);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('An error occurred while processing your request.');
+            }
+            
         }
 
         function populateTimeOptions() {
@@ -386,6 +433,9 @@
                                 <a href="{{ url_for('plugin.plugin_page', plugin_id=plugin_instance.plugin_id) }}?instance={{ plugin_instance.name }}" class="edit-button">
                                     <img src="{{ url_for('static', filename='icons/edit.png') }}" alt="edit plugin" class="action-icon">
                                 </a>
+                                <button class="edit-button" title="Rename Plugin Instance" onclick="openRenameModal('{{ playlist.name }}', '{{ plugin_instance.plugin_id }}', '{{ plugin_instance.name }}')">
+                                    <img src="{{ url_for('static', filename='icons/rename.png') }}" alt="rename plugin" class="action-icon">
+                                </button>
                                 <button class="edit-button" title="Display Now" onclick="displayPluginInstance('{{ playlist.name }}', '{{ plugin_instance.plugin_id }}','{{ plugin_instance.name }}')">
                                     <img src="{{ url_for('static', filename='icons/display.png') }}" alt="display now" class="action-icon">
                                 </button>
@@ -424,6 +474,28 @@
             <div class="buttons-container">
                 <button type="button" class="action-button" id="saveButton">Save</button>
                 <button type="button" class="action-button warn hidden" id="deleteButton" onclick="deletePlaylist()">Delete</button>
+            </div>
+        </div>
+    </div>
+
+        <!-- Schedule Configuration Modal -->
+    <div id="RenameModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" onclick="closeModal('RenameModal')">×</span>
+            <h2 id="modalTitle">Rename Plugin Instance</h2>
+            <div class="separator"></div>
+            <form id="renameForm" class="settings-form" onsubmit="event.preventDefault(); document.getElementById('renameButton').click();">
+                <input type="hidden" id="playlistName" value="">  <!-- Track existing playlist -->
+                <input type="hidden" id="pluginId" value="">  <!-- Track existing plugin ID -->
+
+                <div class="form-group">
+                    <label for="new_instance_name" class="form-label">Plugin Name:</label>
+                    <input type="text" id="new_instance_name" name="new_instance_name" placeholder="Type something..." required class="form-input" value="">
+                </div>
+            </form>
+            <div class="buttons-container">
+                <button type="button" class="action-button" id="renameButton">Save</button>
+                <button type="button" class="action-button warn hidden" id="deleteButton" onclick="closeModal('RenameModal')">Cancel</button>
             </div>
         </div>
     </div>
