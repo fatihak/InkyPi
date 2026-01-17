@@ -1,0 +1,41 @@
+{
+  "$schema": "https://raw.githubusercontent.com/jetify-com/devbox/0.16.0/.schema/devbox.schema.json",
+  "packages": {
+    "python": "3.13",
+    "ninja":  "latest",
+    "chromium": {
+      "version":   "142.0.7444.59", // Normally latest is in the nix cache, but for whatever reason, chromium latest is not currently cached, so pinning to a version that is cached to avoid long build times.
+      "platforms": ["aarch64-linux", "x86_64-linux"], // Chromium is unstable on MacOS, use system's Google Chrome there.
+    },
+    "git": { // Devbox on MacOS cannot find system git
+      "version":   "latest",
+      "platforms": ["aarch64-darwin", "x86_64-darwin"],
+    },
+  },
+  "shell": {
+    "init_hook": [
+      "echo 'To acivate this environment, run ''devbox shell'' (install: curl -fsSL https://get.jetify.com/devbox | bash)' >/dev/null",
+      "echo 'OR better still, install devbox w/ direnv and run ''direnv allow'' in this directory!' >/dev/null",
+      ". scripts/venv.sh",
+      "(shopt -s nullglob; files=(src/static/scripts/calendar*); [ ${#files[@]} -eq 0 ]) || (shopt -s nullglob; files=(src/static/styles/select2*); [ ${#files[@]} -eq 0 ]) && ./install/update_vendors.sh",
+      "uname -s | grep -q Darwin && ! command -v chrome >/dev/null && ([ -d /Applications/Google\\ Chrome.app ] && (echo -e '[ Using System Chrome for browser (MacOS) ]' && echo -e '#!/usr/bin/env bash\nexec /Applications/Google\\ Chrome.app/Contents/MacOS/Google\\ Chrome \"$@\"' > ${DEVBOX_PROJECT_ROOT}/.devbox/virtenv/runx/bin/chrome && chmod +x ${DEVBOX_PROJECT_ROOT}/.devbox/virtenv/runx/bin/chrome) || (echo -e '\\033[93mGoogle Chrome is required on MacOS, please install it in /Applications'))", // NOTE: this runs every devbox reload as .devbox/virtenv/runx/bin gets reset
+      "echo -e '\\n\\033[0;31m-- 🖼️ InkyPi Development Environment 🖼️ --\\033[0m'",
+      "echo -e '\\n\\033[0;34m--- 🛠️ Build / Setup Instructions 🛠️ ---\\033[0m'",
+      "echo -e '\\033[0;32mDevbox has installed all build dependencies & enabled and built your python virtal env automatically. ✅'",
+      "echo -e '\\033[0;32mPrior to first run in devloper mode be sure configure details of your InkyPi development device by editing: '",
+      "echo -e '\\033[0msrc/config/device_dev.json 📝\\033[0m'",
+      "echo -e '\\n\\033[0;34m--- ▶️ Run Instructions ▶️ ---\\033[0m'",
+      "echo -e '\\033[0;32mTo run in developer (--dev) mode:\\033[0m devbox run dev 🚀'",
+      "echo -e '\\033[0;32mThen open \\033[0mhttp://localhost:8080 🌐\\033[0;32m in your browser.\\033[0m'",
+      "echo",
+    ],
+    "scripts": {
+      "dev": [
+        "python src/inkypi.py --dev",
+      ],
+      "test": [
+        "pytest",
+      ],
+    },
+  },
+}
