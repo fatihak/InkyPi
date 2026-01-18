@@ -64,4 +64,6 @@ class Apod(BasePlugin):
             logger.error(f"Failed to load APOD image: {str(e)}")
             raise RuntimeError("Failed to load APOD image.")
 
+        # Add debug overlay if enabled
+        image = self.add_debug_overlay(image, settings, device_config)
         return image

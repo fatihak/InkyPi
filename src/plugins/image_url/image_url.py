@@ -35,4 +35,6 @@ class ImageURL(BasePlugin):
         if not image:
             raise RuntimeError("Failed to load image, please check logs.")
 
+        # Add debug overlay if enabled
+        image = self.add_debug_overlay(image, settings, device_config)
         return image

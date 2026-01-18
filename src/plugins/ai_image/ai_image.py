@@ -52,6 +52,9 @@ class AIImage(BasePlugin):
         except Exception as e:
             logger.error(f"Failed to make Open AI request: {str(e)}")
             raise RuntimeError("Open AI request failure, please check logs.")
+
+        # Add debug overlay if enabled
+        image = self.add_debug_overlay(image, settings, device_config)
         return image
 
     @staticmethod

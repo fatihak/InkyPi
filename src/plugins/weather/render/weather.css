@@ -25,20 +25,6 @@
   container-type: size;
 }
 
-.last-refresh {
-  position: absolute;
-  top: 0.5dvh;
-  right: 0.5dvw;
-  font-size: min(2dvh, 2vw);
-  text-align: right;
-  font-weight: bold;
-  padding: 0.3dvh 0.5dvw;
-}
-
-.weather-dashboard {
-  position: relative;
-}
-
 .title {
   font-size: min(50cqh, 8cqi);
   text-align: center;

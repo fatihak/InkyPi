@@ -50,9 +50,11 @@ class Newspaper(BasePlugin):
                 image = new_image
         else:
             raise RuntimeError("Newspaper front cover not found.")
-    
+
+        # Add debug overlay if enabled
+        image = self.add_debug_overlay(image, settings, device_config)
         return image
-    
+
     def generate_settings_template(self):
         template_params = super().generate_settings_template()
         template_params['newspapers'] = sorted(NEWSPAPERS, key=lambda n: n['name'])

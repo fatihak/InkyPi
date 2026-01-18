@@ -52,7 +52,8 @@ def contributions_generate_image(plugin_instance, settings, device_config):
         dimensions,
         "github_contributions.html",
         "github.css",
-        template_params
+        template_params,
+        device_config=device_config
     )
 
 # -------------------------
