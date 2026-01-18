@@ -12,6 +12,36 @@
     </div>
 </div>
 
+<div class="form-group">
+    <label for="autoResize" class="form-label">Fit image to screen size</label>
+    <div class="toggle-container">
+        <input
+            type="checkbox"
+            id="autoResize"
+            name="autoResize"
+            class="toggle-checkbox"
+            value="false"
+            onclick="this.value = this.checked ? 'true' : 'false';"
+        >
+        <label for="autoResize" class="toggle-label"></label>
+    </div>
+</div>
+
+<div class="form-group">
+    <label for="autoBgColor" class="form-label">Automatic background color</label>
+    <div class="toggle-container">
+        <input
+            type="checkbox"
+            id="autoBgColor"
+            name="autoBgColor"
+            class="toggle-checkbox"
+            value="false"
+            onclick="this.value = this.checked ? 'true' : 'false';"
+        >
+        <label for="autoBgColor" class="toggle-label"></label>
+    </div>
+</div>
+
 <script>
     function toggleDateField(toggle) {
         const $date = document.getElementById('customDate');
@@ -21,17 +51,37 @@
     document.addEventListener('DOMContentLoaded', () => {
         const $toggle = document.getElementById('randomizeApod');
         const $date = document.getElementById('customDate');
+        const $autoResize = document.getElementById('autoResize');
+        const $autoBgColor = document.getElementById('autoBgColor');
 
         const today = new Date().toISOString().split('T')[0];
 
         if (loadPluginSettings) {
+            // Randomize
             $toggle.checked = pluginSettings.randomizeApod === 'true';
             $toggle.value = pluginSettings.randomizeApod;
+
+            // Auto resize
+            $autoResize.checked = pluginSettings.autoResize === 'true';
+            $autoResize.value = pluginSettings.autoResize ?? 'false';
+
+            // Auto background color
+            $autoBgColor.checked = pluginSettings.$autoBgColor === 'true';
+            $autoBgColor.value = pluginSettings.$autoBgColor ?? 'false';
+
+            // Custom Date
             $date.value = pluginSettings.customDate || today;
             $date.disabled = $toggle.checked;
         } else {
             $toggle.checked = false;
             $toggle.value = "false";
+
+            $autoBgColor.checked = false;
+            $autoBgColor.value = "false";
+
+            $autoResize.checked = false;
+            $autoResize.value = "false";
+
             $date.value = today;
         }
     });
