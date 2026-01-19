@@ -255,6 +255,22 @@
                                 oninput="updateSliderValue(this)"
                             />
                         </div>
+                        {% if device_settings.get('display_type', 'inky') == 'inky' %}
+                        <div class="form-group">
+                            <label for="inky_saturation" class="form-label" style="min-width: 100px;">Inky Driver Saturation:</label>
+                            <span id="inky_saturation-value">{{ device_settings.get('image_settings', {}).get('inky_saturation', 0.5) }}</span>
+                            <input
+                                type="range"
+                                id="inky_saturation"
+                                name="inky_saturation"
+                                class="form-input"
+                                min="0" max="1" step="0.05"
+                                value="{{ device_settings.get('image_settings', {}).get('inky_saturation', 0.5) }}"
+                                style="max-width: 400px;"
+                                oninput="updateSliderValue(this)"
+                            />
+                        </div>
+                        {% endif %}
                     </div>
                 </div>
             </div>

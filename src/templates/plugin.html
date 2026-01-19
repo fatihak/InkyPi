@@ -6,7 +6,7 @@
     <title>{{ plugin.display_name }} Settings</title>
     <script>
         (function() {
-            const theme = localStorage.getItem('inkypi-theme') || 
+            const theme = localStorage.getItem('inkypi-theme') ||
                          (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
             if (theme === 'dark') {
                 document.documentElement.setAttribute('data-theme', 'dark');
@@ -16,6 +16,7 @@
     <link rel= "stylesheet" type= "text/css" href= "{{ url_for('static',filename='styles/main.css') }}">
     <script src="{{ url_for('static', filename='scripts/dark_mode.js') }}"></script>
     <script src="{{ url_for('static', filename='scripts/response_modal.js') }}"></script>
+    <script src="{{ url_for('static', filename='scripts/refresh_settings_manager.js') }}"></script>
     <!-- Select2 CSS -->
     <link href="{{ url_for('static', filename='styles/select2.min.css') }}" rel="stylesheet" />
     <!-- jQuery -->
@@ -28,8 +29,37 @@
         const pluginInstanceName ='{{ plugin_instance }}';
         const loadPluginSettings = pluginInstanceName != '';
         const styleSettings = {{ style_settings | default(false) | tojson }};
+        const refreshSettings = {{ refresh_settings | tojson if refresh_settings else {} }};
 
         let uploadedFiles = {};
+
+        // Initialize refresh settings managers
+        let editRefreshManager = null;
+        {% if plugin_instance %}
+        editRefreshManager = createRefreshSettingsManager('refreshSettingsModal', 'edit');
+        {% endif %}
+
+        async function saveRefreshSettings() {
+            if (!editRefreshManager) return;
+
+            await editRefreshManager.submit(async (formData) => {
+                const data = new FormData();
+                data.append("plugin_id", "{{ plugin.id }}");
+                data.append("refresh_settings", JSON.stringify(formData));
+
+                const response = await fetch("{{ url_for('plugin.update_plugin_instance', instance_name='') }}" + pluginInstanceName, {
+                    method: 'PUT',
+                    body: data
+                });
+
+                const result = await response.json();
+                if (response.ok) {
+                    showResponseModal('success', `Success! ${result.message}`);
+                } else {
+                    throw new Error(result.error || 'Failed to update refresh settings');
+                }
+            });
+        }
 
         async function handleAction(action) {
             const loadingIndicator = document.getElementById('loadingIndicator');
@@ -43,7 +73,7 @@
             let url = '{{ url_for("plugin.update_now") }}';
             let method = 'POST';
             let clearFormOnSubmit = false;
-            
+
             // Add uploaded files to the form under its key
             Object.keys(uploadedFiles).forEach(key => {
                 if (uploadedFiles[key].length > 0) {
@@ -103,15 +133,22 @@
         }
 
         function openModal(modal_id) {
+            // Handle refresh settings modal specially with the manager
+            if (modal_id === 'refreshSettingsModal' && editRefreshManager) {
+                editRefreshManager.open({ refreshSettings });
+                return;
+            }
+
+            // Generic modal opening for other modals
             const modal = document.getElementById(modal_id);
-            modal.style.display = 'block';
+            if (modal) modal.style.display = 'block';
         }
-    
+
         function closeModal(modal_id) {
             const modal = document.getElementById(modal_id);
-            modal.style.display = 'none';
+            if (modal) modal.style.display = 'none';
         }
-    
+
         // Close modal if the user clicks outside the modal content
         window.onclick = function (event) {
             const modal = document.getElementById('scheduleModal');
@@ -129,6 +166,8 @@
         }
 
         function selectedFrame(element) {
+            if (!element) return; // Guard clause for null element
+
             // Remove the selected class from any previously selected option
             const previousSelection = document.querySelector('.image-option.selected');
             if (previousSelection) {
@@ -243,6 +282,8 @@
                 let selectedFrameOption = document.querySelector('.image-option');
                 selectedFrame(selectedFrameOption);
             }
+
+            // Setup interactive refresh settings for edit mode (removed - now handled in openModal)
         });
     </script>
 </head>
@@ -253,9 +294,16 @@
 
         <!-- Plugin Title and Icon -->
         <div class="app-header">
-            <img src="{{ url_for('plugin.image', plugin_id=plugin.id, filename='icon.png') }}" alt="{{ plugin.display_name }} icon" class="app-icon">
-            <h1 class="app-title">{{ plugin.display_name }}</h1>
-            {% if api_key and api_key.required %}<span class="api-key-label" title="{{api_key.service}} (Set {{api_key.expected_key}} in .env)">Requires API Key</span>{% endif %}
+            <div class="header-content">
+                <div class="title-container">
+                    <img src="{{ url_for('plugin.image', plugin_id=plugin.id, filename='icon.png') }}" alt="{{ plugin.display_name }} icon" class="app-icon">
+                    <h1 class="app-title">{{ plugin.display_name }}</h1>
+                    {% if api_key and api_key.required %}<span class="api-key-label" title="{{api_key.service}} (Set {{api_key.expected_key}} in .env)">Requires API Key</span>{% endif %}
+                </div>
+                {% if plugin_instance %}
+                    <button class="header-button" onclick="openModal('refreshSettingsModal')">Refresh Settings</button>
+                {% endif %}
+            </div>
             <div id="loadingIndicator" class="loading-indicator"></div>
         </div>
         <div class="separator"></div>
@@ -273,7 +321,7 @@
                     </button>
                     <div class="settings-container collapsible-content">
                         <div class="form-group">
-                            
+
                             <div class="form-group nowrap">
                                 <label for="selected-frame" class="form-label">Frame:</label>
                                 <div id="frame-selection" class="image-grid">
@@ -312,8 +360,8 @@
                                     <input type="number" class="form-input" id="rightMargin" name="rightMargin" min="0" max="100" step="5"><span>px</span>
                                 </div>
                             </div>
-                        </div>    
-                        
+                        </div>
+
                         <!-- Background Color Option -->
                         <div class="form-group">
                             <label class="form-label">Background:</label>
@@ -337,10 +385,10 @@
                                 </div>
                             </div>
                         </div>
-                        
+
                         <!-- Hidden input fields to store existing file data -->
                         <div id="hiddenFileInput"></div>
-                        
+
                         <!-- Text Color Picker -->
                         <div class="form-group">
                             <label for="textColor" class="form-label">Text Color:</label>
@@ -357,6 +405,7 @@
             <div class="buttons-container">
                 {% if plugin_instance %}
                     <button type="button" onclick="handleAction('update_instance')" class="action-button">Save</button>
+                    <button type="button" onclick="openModal('scheduleModal')" class="action-button right">Save As...</button>
                 {% else %}
                     <button type="button" onclick="handleAction()" class="action-button left">Update Now</button>
                     <button type="button" onclick="openModal('scheduleModal')" class="action-button right">Add to Playlist</button>
@@ -367,6 +416,24 @@
 
     <!-- Success/Error Modal -->
     {% include 'response_modal.html' %}
+
+    <!-- Refresh Settings Modal (for editing existing instances) -->
+    {% if plugin_instance %}
+    <div id="refreshSettingsModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" onclick="closeModal('refreshSettingsModal')">×</span>
+            <h2>Refresh Settings</h2>
+            <div class="separator"></div>
+            <form id="refreshSettingsForm" class="settings-form">
+                {% set prefix = "edit" %}
+                {% include 'refresh_settings_form.html' %}
+            </form>
+            <div class="buttons-container">
+                <button type="button" onclick="saveRefreshSettings()" class="action-button">Save</button>
+            </div>
+        </div>
+    </div>
+    {% endif %}
 
     <!-- Schedule Configuration Modal -->
     <div id="scheduleModal" class="modal">
@@ -387,66 +454,9 @@
                     <label for="instance" class="form-label">Instance Name:</label>
                     <input type="text" id="instance" name="instance_name" placeholder="Type something..." required class="form-input">
                 </div>
-                <div class="form-group">
-                    <label>Refresh</label>
-                    <span title="Determines how often the data and image should be refreshed.">ⓘ</span>
-                </div>
-                <div class="form-group nowrap" id="group-interval">
-                  <input type="radio" name="refreshType" id="refresh-interval" value="interval" checked>
-                  <label for="refresh-interval">Every</label>
-                  <input type="number" id="interval" name="interval" class="form-input" required min="1" placeholder="Enter a number">
-                  <select id="unit" name="unit" class="form-input" required>
-                    <option value="minute">Minute</option>
-                    <option value="hour">Hour</option>
-                    <option value="day">Day</option>
-                  </select>
-                </div>
 
-                <div class="form-group nowrap" id="group-scheduled">
-                  <input type="radio" name="refreshType" id="refresh-scheduled" value="scheduled">
-                  <label for="refresh-scheduled">Daily at</label>
-                  <input id="scheduled" class="time-input" type="time" name="refreshTime" step="900">
-                </div>
-
-                <script>
-                  document.addEventListener('DOMContentLoaded', () => {
-                    // Interval group
-                    const groupInterval = document.getElementById('group-interval');
-                    const radioInterval = document.getElementById('refresh-interval');
-                    const inputInterval = document.getElementById('interval');
-
-                    // Scheduled group
-                    const groupScheduled = document.getElementById('group-scheduled');
-                    const radioScheduled = document.getElementById('refresh-scheduled');
-                    const inputScheduled = document.getElementById('scheduled');
-
-                    // Helper to activate a group
-                    const activateGroup = (radio, input) => {
-                      radio.checked = true;
-                      // Focus after a short delay to ensure radio updates visually
-                      setTimeout(() => input.focus(), 0);
-                    };
-
-                    // Click anywhere inside group → activate
-                    groupInterval.addEventListener('click', (e) => {
-                      if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
-                      activateGroup(radioInterval, inputInterval);
-                    });
-
-                    groupScheduled.addEventListener('click', (e) => {
-                      if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
-                      activateGroup(radioScheduled, inputScheduled);
-                    });
-
-                    // Clicking the radio itself → focus the input
-                    radioInterval.addEventListener('click', () => activateGroup(radioInterval, inputInterval));
-                    radioScheduled.addEventListener('click', () => activateGroup(radioScheduled, inputScheduled));
-
-                    // Focusing inputs → auto-select their radio
-                    inputInterval.addEventListener('focus', () => (radioInterval.checked = true));
-                    inputScheduled.addEventListener('focus', () => (radioScheduled.checked = true));
-                  });
-                </script>
+                {% set prefix = "add" %}
+                {% include 'refresh_settings_form.html' %}
 
             </form>
             <div class="buttons-container">

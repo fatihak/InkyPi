@@ -20,7 +20,7 @@ import logging
 import threading
 import argparse
 from utils.app_utils import generate_startup_image
-from flask import Flask, request
+from flask import Flask, request, send_from_directory
 from werkzeug.serving import is_running_from_reloader
 from config import Config
 from display.display_manager import DisplayManager
@@ -97,7 +97,7 @@ if __name__ == '__main__':
     try:
         # Run the Flask app
         app.secret_key = str(random.randint(100000,999999))
-        
+
         # Get local IP address for display (only in dev mode when running on non-Pi)
         if DEV_MODE:
             import socket
@@ -109,7 +109,7 @@ if __name__ == '__main__':
                 logger.info(f"Serving on http://{local_ip}:{PORT}")
             except:
                 pass  # Ignore if we can't get the IP
-            
+
         serve(app, host="0.0.0.0", port=PORT, threads=1)
     finally:
         refresh_task.stop()
