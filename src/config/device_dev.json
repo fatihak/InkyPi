@@ -38,12 +38,37 @@
                 "current_plugin_index": null
             }
         ],
-        "active_playlist": null
+        "active_playlist": "Default"
     },
     "refresh_info": {
-        "refresh_time": null,
-        "image_hash": null,
-        "refresh_type": null,
-        "plugin_id": null
+        "refresh_time": "2026-01-19T15:32:41.215161+01:00",
+        "image_hash": "d5098e646b3b9cb9b59c195b6dfab2f179358001c0015c5a862c59538c194f7b",
+        "refresh_type": "Manual Update",
+        "plugin_id": "photo_frame"
+    },
+    "inverted_image": null,
+    "log_system_stats": null,
+    "buttons_enabled": false,
+    "show_buttons": false,
+    "timezone": "Africa/Algiers",
+    "time_format": "12h",
+    "plugin_cycle_interval_seconds": 60,
+    "image_settings": {
+        "saturation": 1.0,
+        "brightness": 1.0,
+        "sharpness": 1.0,
+        "contrast": 1.0
+    },
+    "button_pins": {
+        "A": 5,
+        "B": 6,
+        "C": 16,
+        "D": 24
+    },
+    "button_actions": {
+        "A_short": "refresh",
+        "B_long": "prev_plugin",
+        "C_long": "next_plugin",
+        "D_long": "shutdown"
     }
 }
