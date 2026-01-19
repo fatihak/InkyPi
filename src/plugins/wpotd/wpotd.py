@@ -1,7 +1,7 @@
 """
 Wpotd Plugin for InkyPi
 This plugin fetches the Wikipedia Picture of the Day (Wpotd) from Wikipedia's API
-and displays it on the InkyPi device. 
+and displays it on the InkyPi device.
 
 It supports optional manual date selection or random dates and can resize the image to fit the device's dimensions.
 
@@ -63,20 +63,22 @@ class Wpotd(BasePlugin):
         dimensions = (max_width, max_height)
 
         # Use adaptive loader if shrink-to-fit is enabled
-        if settings.get("shrinkToFitWpotd") == "true":
-            logger.debug("Shrink-to-fit enabled, using adaptive loader")
-            image = self._download_image(picurl, dimensions=dimensions, resize=True)
-            if image is None:
-                logger.error("Failed to download WPOTD image")
-                raise RuntimeError("Failed to download WPOTD image.")
+        shrink_to_fit = settings.get("shrinkToFitWpotd") == "true"
+        logger.debug(
+            f"Shrink-to-fit={'enabled' if shrink_to_fit else 'disabled'}; "
+            f"{'using adaptive loader' if shrink_to_fit else 'downloading original size'}"
+        )
+
+        image = self._download_image(
+            picurl,
+            dimensions=dimensions,
+            resize=shrink_to_fit,
+        )
+        if image is None:
+            logger.error("Failed to download WPOTD image")
+            raise RuntimeError("Failed to download WPOTD image.")
+        if shrink_to_fit:
             logger.info(f"Image resized to fit device dimensions: {max_width}x{max_height}")
-        else:
-            # Original behavior: download without resizing
-            logger.debug("Shrink-to-fit disabled, downloading original size")
-            image = self._download_image(picurl, resize=False)
-            if image is None:
-                logger.error("Failed to download WPOTD image")
-                raise RuntimeError("Failed to download WPOTD image.")
 
         logger.info("=== Wikipedia POTD Plugin: Image generation complete ===")
         return image
@@ -173,4 +175,3 @@ class Wpotd(BasePlugin):
         except Exception as e:
             logger.error(f"Wikipedia API request failed with params {params}: {str(e)}")
             raise RuntimeError("Wikipedia API request failed.")
-        
