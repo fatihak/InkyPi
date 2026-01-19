@@ -20,7 +20,7 @@ import logging
 import threading
 import argparse
 from utils.app_utils import generate_startup_image
-from flask import Flask, request, send_from_directory
+from flask import Flask, request
 from werkzeug.serving import is_running_from_reloader
 from config import Config
 from display.display_manager import DisplayManager
@@ -32,6 +32,7 @@ from blueprints.playlist import playlist_bp
 from jinja2 import ChoiceLoader, FileSystemLoader
 from plugins.plugin_registry import load_plugins
 from waitress import serve
+from buttons import ButtonManager
 
 
 logger = logging.getLogger(__name__)
@@ -63,12 +64,30 @@ device_config = Config()
 display_manager = DisplayManager(device_config)
 refresh_task = RefreshTask(device_config, display_manager)
 
+# Initialize button handler based on mode and settings
+buttons_enabled = device_config.get_config("buttons_enabled", default=True)
+
+if buttons_enabled:
+    if DEV_MODE:
+        from buttons.mock_button_handler import MockButtonHandler
+        button_handler = MockButtonHandler()
+    else:
+        from buttons.gpio_button_handler import GPIOButtonHandler
+        button_pins = device_config.get_config("button_pins")
+        button_handler = GPIOButtonHandler(button_pins)
+    
+    button_manager = ButtonManager(button_handler, refresh_task, device_config)
+else:
+    button_manager = None
+    logger.info("Hardware buttons disabled in settings")
+
 load_plugins(device_config.get_plugins())
 
 # Store dependencies
 app.config['DEVICE_CONFIG'] = device_config
 app.config['DISPLAY_MANAGER'] = display_manager
 app.config['REFRESH_TASK'] = refresh_task
+app.config['BUTTON_MANAGER'] = button_manager
 
 # Set additional parameters
 app.config['MAX_FORM_PARTS'] = 10_000
@@ -84,8 +103,10 @@ register_heif_opener()
 
 if __name__ == '__main__':
 
-    # start the background refresh task
+    # start the background refresh task and button handler
     refresh_task.start()
+    if button_manager:
+        button_manager.start()
 
     # display default inkypi image on startup
     if device_config.get_config("startup") is True:
@@ -97,7 +118,7 @@ if __name__ == '__main__':
     try:
         # Run the Flask app
         app.secret_key = str(random.randint(100000,999999))
-
+        
         # Get local IP address for display (only in dev mode when running on non-Pi)
         if DEV_MODE:
             import socket
@@ -109,7 +130,9 @@ if __name__ == '__main__':
                 logger.info(f"Serving on http://{local_ip}:{PORT}")
             except:
                 pass  # Ignore if we can't get the IP
-
+            
         serve(app, host="0.0.0.0", port=PORT, threads=1)
     finally:
+        if button_manager:
+            button_manager.stop()
         refresh_task.stop()

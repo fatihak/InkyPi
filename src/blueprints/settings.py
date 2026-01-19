@@ -5,6 +5,7 @@ import os
 import pytz
 import logging
 import io
+from buttons import ButtonID, PressType
 
 # Try to import cysystemd for journal reading (Linux only)
 try:
@@ -29,7 +30,15 @@ settings_bp = Blueprint("settings", __name__)
 def settings_page():
     device_config = current_app.config['DEVICE_CONFIG']
     timezones = sorted(pytz.all_timezones_set)
-    return render_template('settings.html', device_settings=device_config.get_config(), timezones = timezones)
+    display_type = device_config.get_config("display_type", default="inky")
+    # Check if display has known default button pins
+    is_inky_display = display_type in ("inky", "mock")
+    return render_template(
+        'settings.html', 
+        device_settings=device_config.get_config(), 
+        timezones=timezones,
+        is_inky_display=is_inky_display
+    )
 
 @settings_bp.route('/save_settings', methods=['POST'])
 def save_settings():
@@ -57,6 +66,8 @@ def save_settings():
             "orientation": form_data.get("orientation"),
             "inverted_image": form_data.get("invertImage"),
             "log_system_stats": form_data.get("logSystemStats"),
+            "buttons_enabled": form_data.get("buttonsEnabled") == "on",
+            "show_buttons": form_data.get("showButtons") == "on",
             "timezone": form_data.get("timezoneName"),
             "time_format": form_data.get("timeFormat"),
             "plugin_cycle_interval_seconds": plugin_cycle_interval_seconds,
@@ -67,8 +78,35 @@ def save_settings():
                 "contrast": float(form_data.get("contrast", "1.0"))
             }
         }
-        if "inky_saturation" in form_data:
-            settings["image_settings"]["inky_saturation"] = float(form_data.get("inky_saturation", "0.5"))
+        
+        # Handle GPIO button pins if provided
+        gpio_a = form_data.get("gpio_a")
+        gpio_b = form_data.get("gpio_b")
+        gpio_c = form_data.get("gpio_c")
+        gpio_d = form_data.get("gpio_d")
+        
+        if gpio_a and gpio_b and gpio_c and gpio_d:
+            try:
+                settings["button_pins"] = {
+                    "A": int(gpio_a),
+                    "B": int(gpio_b),
+                    "C": int(gpio_c),
+                    "D": int(gpio_d)
+                }
+            except ValueError:
+                pass  # Keep existing pins if invalid values
+        
+        # Handle button actions
+        button_actions = {}
+        for btn in ['A', 'B', 'C', 'D']:
+            for press_type in ['short', 'double', 'long']:
+                key = f"action_{btn}_{press_type}"
+                value = form_data.get(key, "")
+                if value:  # Only store non-empty values
+                    button_actions[f"{btn}_{press_type}"] = value
+        
+        settings["button_actions"] = button_actions
+        
         device_config.update_config(settings)
 
         if plugin_cycle_interval_seconds != previous_interval_seconds:
@@ -145,4 +183,119 @@ def download_logs():
     except Exception as e:
         logger.error(f"Error reading logs: {e}")
         return Response(f"Error reading logs: {e}", status=500, mimetype="text/plain")
+
+
+@settings_bp.route('/button_press', methods=['POST'])
+def button_press():
+    """Handle button press from web UI. Works on both dev and real device."""
+    button_manager = current_app.config.get('BUTTON_MANAGER')
+    
+    if not button_manager:
+        return jsonify({"error": "Hardware buttons are disabled"}), 400
+    
+    data = request.get_json() or {}
+    
+    try:
+        button_id = ButtonID(data.get("button", "A"))
+        press_type = PressType(data.get("press_type", "short"))
+    except ValueError as e:
+        return jsonify({"error": f"Invalid button or press_type: {e}"}), 400
+    
+    # Call button manager directly (same logic as physical buttons)
+    button_manager._on_button_press(button_id, press_type)
+    
+    return jsonify({
+        "success": True, 
+        "button": button_id.value, 
+        "press_type": press_type.value
+    })
+
+
+# Display type friendly names
+DISPLAY_NAMES = {
+    "mock": "Mock Display",
+    "inky": "Inky Impression",
+}
+
+
+def format_display_type(display_type: str) -> str:
+    """Format display type to be more readable."""
+    if display_type in DISPLAY_NAMES:
+        return DISPLAY_NAMES[display_type]
+    # Waveshare displays (epd5in83_V2 -> EPD 5in83 V2)
+    if display_type.startswith("epd"):
+        return display_type.upper().replace("_", " ")
+    # Fallback: capitalize and replace underscores
+    return display_type.replace("_", " ").title()
+
+
+@settings_bp.route('/system_info')
+def system_info():
+    """Return system information for the info popover."""
+    import platform
+    import socket
+    
+    device_config = current_app.config['DEVICE_CONFIG']
+    
+    # Basic info
+    display_type = device_config.get_config("display_type", default="unknown")
+    info = {
+        "hostname": socket.gethostname(),
+        "python_version": platform.python_version(),
+        "platform": platform.system(),
+        "platform_version": platform.release(),
+        "architecture": platform.machine(),
+        "display_type": format_display_type(display_type),
+    }
+    
+    # Get IP address
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        info["ip_address"] = s.getsockname()[0]
+        s.close()
+    except Exception:
+        info["ip_address"] = "Unknown"
+    
+    # Raspberry Pi model (Linux only)
+    try:
+        with open("/proc/device-tree/model", "r") as f:
+            info["device_model"] = f.read().strip().rstrip('\x00')
+    except Exception:
+        info["device_model"] = f"{platform.system()} {platform.machine()}"
+    
+    # OS info (Linux)
+    try:
+        with open("/etc/os-release", "r") as f:
+            for line in f:
+                if line.startswith("PRETTY_NAME="):
+                    info["os_name"] = line.split("=", 1)[1].strip().strip('"')
+                    break
+    except Exception:
+        info["os_name"] = f"{platform.system()} {platform.release()}"
+    
+    # Uptime (Linux only)
+    try:
+        with open("/proc/uptime", "r") as f:
+            uptime_seconds = float(f.read().split()[0])
+            days = int(uptime_seconds // 86400)
+            hours = int((uptime_seconds % 86400) // 3600)
+            minutes = int((uptime_seconds % 3600) // 60)
+            if days > 0:
+                info["uptime"] = f"{days}d {hours}h {minutes}m"
+            elif hours > 0:
+                info["uptime"] = f"{hours}h {minutes}m"
+            else:
+                info["uptime"] = f"{minutes}m"
+    except Exception:
+        info["uptime"] = "Unknown"
+    
+    # Display resolution
+    try:
+        resolution = device_config.get_resolution()
+        info["display_resolution"] = f"{resolution[0]}x{resolution[1]}"
+    except Exception:
+        info["display_resolution"] = "Unknown"
+    
+    return jsonify(info)
 
