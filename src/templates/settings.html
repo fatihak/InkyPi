@@ -755,16 +755,14 @@
                             'next_plugin': 'Next Plugin',
                             'prev_plugin': 'Previous Plugin',
                             'next_playlist': 'Next Playlist',
-                            'toggle_cycle': 'Toggle Auto-Cycle',
-                            'show_info': 'Show System Info',
                             'reboot': 'Reboot',
                             'shutdown': 'Shutdown',
                             'none': 'Do Nothing'
                         } %}
                         {# All available actions per press type #}
-                        {% set short_actions = ['refresh', 'refresh_regenerate', 'next_plugin', 'prev_plugin', 'next_playlist', 'toggle_cycle', 'show_info', 'none'] %}
-                        {% set double_actions = ['refresh', 'refresh_regenerate', 'next_plugin', 'prev_plugin', 'next_playlist', 'toggle_cycle', 'show_info', 'reboot', 'shutdown', 'none'] %}
-                        {% set long_actions = ['refresh', 'refresh_regenerate', 'next_plugin', 'prev_plugin', 'next_playlist', 'toggle_cycle', 'show_info', 'reboot', 'shutdown', 'none'] %}
+                        {% set short_actions = ['refresh', 'refresh_regenerate', 'next_plugin', 'prev_plugin', 'next_playlist', 'none'] %}
+                        {% set double_actions = ['refresh', 'refresh_regenerate', 'next_plugin', 'prev_plugin', 'next_playlist', 'reboot', 'shutdown', 'none'] %}
+                        {% set long_actions = ['refresh', 'refresh_regenerate', 'next_plugin', 'prev_plugin', 'next_playlist', 'reboot', 'shutdown', 'none'] %}
                         
                         <div class="button-actions-grid">
                             {% for btn in ['A', 'B', 'C', 'D'] %}

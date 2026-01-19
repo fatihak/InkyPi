@@ -37,7 +37,6 @@ class ButtonManager:
         self._handler = button_handler
         self._refresh_task = refresh_task
         self._device_config = device_config
-        self._auto_cycle_enabled = True
         self._handler.set_callback(self._on_button_press)
     
     def start(self):
@@ -100,8 +99,6 @@ class ButtonManager:
             "next_plugin": self._next_plugin,
             "prev_plugin": self._prev_plugin,
             "next_playlist": self._next_playlist,
-            "toggle_cycle": self._toggle_cycle,
-            "show_info": self._show_info,
             "none": lambda: None,
         }
         
@@ -268,67 +265,3 @@ class ButtonManager:
         
         logger.info(f"Switched to playlist: {next_name}")
         self._refresh_task.signal_config_change()
-    
-    def _toggle_cycle(self):
-        """Toggle automatic plugin cycling."""
-        self._auto_cycle_enabled = not self._auto_cycle_enabled
-        status = "enabled" if self._auto_cycle_enabled else "disabled"
-        logger.info(f"Auto-cycle {status}")
-    
-    def _show_info(self):
-        """Display system info overlay."""
-        logger.info("Show info requested")
-        
-        try:
-            from PIL import Image, ImageDraw, ImageFont
-            from utils.app_utils import get_font
-            import socket
-            
-            dimensions = self._device_config.get_resolution()
-            if self._device_config.get_config("orientation") == "vertical":
-                dimensions = dimensions[::-1]
-            
-            width, height = dimensions
-            img = Image.new("RGB", dimensions, (30, 30, 30))
-            draw = ImageDraw.Draw(img)
-            
-            try:
-                font = get_font("DejaVuSans", 24)
-                font_small = get_font("DejaVuSans", 18)
-            except:
-                font = ImageFont.load_default()
-                font_small = font
-            
-            hostname = socket.gethostname()
-            try:
-                s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-                s.connect(("8.8.8.8", 80))
-                ip = s.getsockname()[0]
-                s.close()
-            except:
-                ip = "Unknown"
-            
-            refresh_info = self._device_config.get_refresh_info()
-            
-            lines = [
-                f"🖥  {hostname}",
-                f"📡  {ip}",
-                f"🎨  {refresh_info.plugin_id or 'None'}",
-                f"📋  {refresh_info.playlist or 'None'}",
-                f"🕐  {refresh_info.refresh_time[:19] if refresh_info.refresh_time else 'Never'}",
-            ]
-            
-            y = 50
-            for line in lines:
-                draw.text((40, y), line, font=font, fill=(255, 255, 255))
-                y += 45
-            
-            draw.text((40, height - 50), "Press any button to return", 
-                     font=font_small, fill=(120, 120, 120))
-            
-            from display.display_manager import DisplayManager
-            display_manager = DisplayManager(self._device_config)
-            display_manager.display_image(img)
-            
-        except Exception as e:
-            logger.error(f"Failed to show info: {e}")
