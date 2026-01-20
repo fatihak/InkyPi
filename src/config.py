@@ -67,8 +67,29 @@ class Config:
         return self.config
 
     def get_plugins(self):
-        """Returns the list of plugin configurations."""
-        return self.plugins_list
+        """Returns the list of plugin configurations, sorted by custom order if set."""
+        plugin_order = self.config.get('plugin_order', [])
+
+        if not plugin_order:
+            return self.plugins_list
+
+        # Create a dict for quick lookup
+        plugins_dict = {p['id']: p for p in self.plugins_list}
+
+        # Build ordered list
+        ordered = []
+        for plugin_id in plugin_order:
+            if plugin_id in plugins_dict:
+                ordered.append(plugins_dict.pop(plugin_id))
+
+        # Append any remaining plugins not in the order (new plugins)
+        ordered.extend(plugins_dict.values())
+
+        return ordered
+
+    def set_plugin_order(self, order):
+        """Sets the custom plugin display order."""
+        self.update_value('plugin_order', order, write=True)
 
     def get_plugin(self, plugin_id):
         """Finds and returns a plugin config by its ID."""
