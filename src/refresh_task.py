@@ -13,7 +13,7 @@ from PIL import Image
 logger = logging.getLogger(__name__)
 
 class RefreshTask:
-    """Handles the logic for refreshing the display using a backgroud thread."""
+    """Handles the logic for refreshing the display using a background thread."""
 
     def __init__(self, device_config, display_manager):
         self.device_config = device_config
@@ -50,7 +50,7 @@ class RefreshTask:
         """Background task that manages the periodic refresh of the display.
 
         This function runs in a loop, sleeping for a configured duration (`plugin_cycle_interval_seconds`) or until
-        manually triggered via `manual_update()`. Detrmines the next plugin to refresh based on active playlists and 
+        manually triggered via `manual_update()`. Determines the next plugin to refresh based on active playlists and
         updates the display accordingly.
 
         Workflow:

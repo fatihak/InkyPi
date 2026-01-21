@@ -2,11 +2,11 @@
 
 # =============================================================================
 # Script Name: install.sh
-# Description: This script automates the installatin of InkyPI and creation of
+# Description: This script automates the installation of InkyPI and creation of
 #              the InkyPI service.
 #
 # Usage: ./install.sh [-W <waveshare_device>]
-#        -W <waveshare_device> (optional) Install for a Waveshare device, 
+#        -W <waveshare_device> (optional) Install for a Waveshare device,
 #                               specifying the device model type, e.g. epd7in3e.
 #
 #                               If not specified then the Pimoroni Inky display
@@ -40,7 +40,7 @@ SERVICE_FILE_TARGET="/etc/systemd/system/$SERVICE_FILE"
 APT_REQUIREMENTS_FILE="$SCRIPT_DIR/debian-requirements.txt"
 PIP_REQUIREMENTS_FILE="$SCRIPT_DIR/requirements.txt"
 
-# 
+#
 # Additional requirements for Waveshare support.
 #
 # empty means no WS support required, otherwise we expect the type of display
@@ -48,7 +48,7 @@ PIP_REQUIREMENTS_FILE="$SCRIPT_DIR/requirements.txt"
 WS_TYPE=""
 WS_REQUIREMENTS_FILE="$SCRIPT_DIR/ws-requirements.txt"
 
-# Parse the agumments, looking for the -W option.
+# Parse the arguments, looking for the -W option.
 parse_arguments() {
     while getopts ":W:" opt; do
         case $opt in

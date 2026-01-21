@@ -110,7 +110,7 @@ When a plugin is added to a playlist, a "Plugin Instance" is created, and its se
     document.addEventListener('DOMContentLoaded', () => {     
         if (loadPluginSettings) {
             # Text Input
-            document.getElementById('{textInputElementId}').value = pluginSettings.textInpuElementName || '';
+            document.getElementById('{textInputElementId}').value = pluginSettings.textInputElementName || '';
 
             # Radio
             document.querySelector(`input[name="radioElementName"][value="${pluginSettings.radioElementName}"]`).checked = true;
