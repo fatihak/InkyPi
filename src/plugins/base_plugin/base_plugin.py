@@ -81,6 +81,8 @@ class BasePlugin:
         return template_params
 
     def render_image(self, dimensions, html_file, css_file=None, template_params={}):
+        logger.info(f"BasePlugin.render_image called with template_params: {template_params.get('plugin_settings', {})}")
+        
         # load the base plugin and current plugin css files
         css_files = [os.path.join(BASE_PLUGIN_RENDER_DIR, "plugin.css")]
         if css_file:

@@ -55,6 +55,8 @@ class TextRender(BasePlugin):
             "plugin_settings": settings_for_template
         }
         
+        logger.info(f"Template params: {image_template_params}")
+        
         image = self.render_image(dimensions, "text_render.html", "text_render.css", image_template_params)
 
         return image
