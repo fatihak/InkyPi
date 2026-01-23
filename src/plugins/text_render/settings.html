@@ -7,15 +7,8 @@
 
 <div class="form-group">
     <label for="text_content" class="form-label">Text Content (200 characters max):</label>
-    <textarea 
-        id="text_content" 
-        name="text_content" 
-        placeholder="Enter your text here..." 
-        required 
-        class="form-input" 
-        maxlength="200"
-        rows="4"
-        style="resize: vertical; font-family: monospace;"></textarea>
+    <textarea id="text_content" name="text_content" placeholder="Enter your text here..." required class="form-input"
+        maxlength="200" rows="4" style="resize: vertical; font-family: monospace;"></textarea>
     <div style="text-align: right; font-size: 0.9em; color: #666; margin-top: 4px;">
         <span id="charCount">0</span>/200 characters
     </div>
@@ -46,12 +39,14 @@
 <div class="form-group">
     <div class="form-group nowrap">
         <label for="text_color" class="form-label">Text Color:</label>
-        <input type="color" id="text_color" name="text_color" value="#000000" class="form-input" style="width: 80px; height: 40px;">
+        <input type="color" id="text_color" name="text_color" value="#000000" class="form-input"
+            style="width: 80px; height: 40px;">
     </div>
 
     <div class="form-group nowrap">
         <label for="background_color" class="form-label">Background Color:</label>
-        <input type="color" id="background_color" name="background_color" value="#FFFFFF" class="form-input" style="width: 80px; height: 40px;">
+        <input type="color" id="background_color" name="background_color" value="#FFFFFF" class="form-input"
+            style="width: 80px; height: 40px;">
     </div>
 
     <div class="form-group nowrap">
@@ -70,10 +65,12 @@
     </button>
 </div>
 
-<div id="previewContainer" style="display: none; margin-top: 20px; border: 2px solid #ddd; padding: 10px; border-radius: 8px; background-color: #f9f9f9;">
+<div id="previewContainer"
+    style="display: none; margin-top: 20px; border: 2px solid #ddd; padding: 10px; border-radius: 8px; background-color: #f9f9f9;">
     <h4 style="margin-top: 0;">Preview:</h4>
     <div style="text-align: center; background-color: white; padding: 10px; border-radius: 4px;">
-        <img id="previewImage" src="" alt="Preview will appear here" style="max-width: 100%; height: auto; border: 1px solid #ccc;">
+        <img id="previewImage" src="" alt="Preview will appear here"
+            style="max-width: 100%; height: auto; border: 1px solid #ccc;">
     </div>
     <p style="font-size: 0.9em; color: #666; margin-top: 8px; margin-bottom: 0;">
         This is how your text will appear on the display.
@@ -84,13 +81,19 @@
     // Character counter
     const textContent = document.getElementById('text_content');
     const charCount = document.getElementById('charCount');
-    
-    textContent.addEventListener('input', function() {
+
+    textContent.addEventListener('input', function () {
         charCount.textContent = this.value.length;
     });
 
     // Preview generation
-    document.getElementById('generatePreview').addEventListener('click', function() {
+    let currentBlobUrl = null; // Track the current blob URL to revoke it
+
+    document.getElementById('generatePreview').addEventListener('click', function () {
+        const button = this;
+        button.disabled = true;
+        button.textContent = 'Generating...';
+
         const formData = new FormData();
         formData.append('plugin_id', '{{ plugin.id }}');
         formData.append('title', document.getElementById('title').value);
@@ -100,26 +103,50 @@
         formData.append('text_color', document.getElementById('text_color').value);
         formData.append('background_color', document.getElementById('background_color').value);
         formData.append('text_align', document.getElementById('text_align').value);
+        formData.append('_cache_bust', Date.now()); // Add cache-busting parameter
 
         // Generate preview by creating a temporary image
-        fetch('/generate_preview', {
+        fetch('/generate_preview?t=' + Date.now(), {
             method: 'POST',
-            body: formData
+            body: formData,
+            cache: 'no-store' // Prevent browser caching
         })
-        .then(response => response.blob())
-        .then(blob => {
-            const url = URL.createObjectURL(blob);
-            document.getElementById('previewImage').src = url;
-            document.getElementById('previewContainer').style.display = 'block';
-        })
-        .catch(error => {
-            console.error('Error generating preview:', error);
-            alert('Failed to generate preview. Please check your settings and try again.');
-        });
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Preview generation failed');
+                }
+                return response.blob();
+            })
+            .then(blob => {
+                // Revoke the previous blob URL to free memory
+                if (currentBlobUrl) {
+                    URL.revokeObjectURL(currentBlobUrl);
+                }
+
+                // Create new blob URL
+                currentBlobUrl = URL.createObjectURL(blob);
+                const img = document.getElementById('previewImage');
+
+                // Force image reload by clearing src first
+                img.src = '';
+                setTimeout(() => {
+                    img.src = currentBlobUrl;
+                    document.getElementById('previewContainer').style.display = 'block';
+                }, 10);
+
+                button.disabled = false;
+                button.textContent = 'Generate Preview';
+            })
+            .catch(error => {
+                console.error('Error generating preview:', error);
+                alert('Failed to generate preview. Please check your settings and try again.');
+                button.disabled = false;
+                button.textContent = 'Generate Preview';
+            });
     });
 
     // Populate form values from plugin settings
-    document.addEventListener('DOMContentLoaded', () => {        
+    document.addEventListener('DOMContentLoaded', () => {
         if (loadPluginSettings) {
             document.getElementById('title').value = pluginSettings.title || '';
             document.getElementById('text_content').value = pluginSettings.text_content || '';
@@ -128,7 +155,7 @@
             document.getElementById('text_color').value = pluginSettings.text_color || '#000000';
             document.getElementById('background_color').value = pluginSettings.background_color || '#FFFFFF';
             document.getElementById('text_align').value = pluginSettings.text_align || 'center';
-            
+
             // Update character count
             charCount.textContent = document.getElementById('text_content').value.length;
         }

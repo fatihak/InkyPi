@@ -280,8 +280,15 @@ def generate_preview():
         image.save(img_io, 'PNG')
         img_io.seek(0)
         
-        from flask import send_file
-        return send_file(img_io, mimetype='image/png')
+        from flask import send_file, make_response
+        response = make_response(send_file(img_io, mimetype='image/png'))
+        
+        # Add cache prevention headers
+        response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+        response.headers['Pragma'] = 'no-cache'
+        response.headers['Expires'] = '0'
+        
+        return response
         
     except Exception as e:
         logger.exception(f"Error in generate_preview: {str(e)}")
