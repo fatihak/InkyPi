@@ -30,9 +30,6 @@ class TextRender(BasePlugin):
         text_color = settings.get("text_color", "#000000")
         background_color = settings.get("background_color", "#FFFFFF")
         text_align = settings.get("text_align", "center")
-        
-        # Debug logging
-        logger.info(f"Text Render settings: font={font_family}, size={font_size}, color={text_color}, bg={background_color}, align={text_align}")
 
         dimensions = device_config.get_resolution()
         if device_config.get_config("orientation") == "vertical":
@@ -51,8 +48,6 @@ class TextRender(BasePlugin):
             'backgroundColor': background_color,
             'textColor': text_color
         }
-        
-        logger.info(f"settings_for_template has backgroundColor: {settings_for_template.get('backgroundColor')}")
 
         image_template_params = {
             "title": title,
@@ -64,8 +59,6 @@ class TextRender(BasePlugin):
             "text_align": text_align,
             "plugin_settings": settings_for_template
         }
-        
-        logger.info(f"image_template_params plugin_settings has backgroundColor: {image_template_params['plugin_settings'].get('backgroundColor')}")
         
         image = self.render_image(dimensions, "text_render.html", "text_render.css", image_template_params)
 
