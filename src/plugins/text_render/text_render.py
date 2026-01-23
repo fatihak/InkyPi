@@ -38,6 +38,12 @@ class TextRender(BasePlugin):
         if device_config.get_config("orientation") == "vertical":
             dimensions = dimensions[::-1]
 
+        # Prepare settings for the base template (uses different naming)
+        settings_for_template = settings.copy()
+        settings_for_template['backgroundOption'] = 'color'
+        settings_for_template['backgroundColor'] = background_color
+        settings_for_template['textColor'] = text_color
+
         image_template_params = {
             "title": title,
             "content": text_content,
@@ -46,7 +52,7 @@ class TextRender(BasePlugin):
             "text_color": text_color,
             "background_color": background_color,
             "text_align": text_align,
-            "plugin_settings": settings
+            "plugin_settings": settings_for_template
         }
         
         image = self.render_image(dimensions, "text_render.html", "text_render.css", image_template_params)
