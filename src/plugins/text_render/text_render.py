@@ -39,10 +39,20 @@ class TextRender(BasePlugin):
             dimensions = dimensions[::-1]
 
         # Prepare settings for the base template (uses different naming)
-        settings_for_template = settings.copy()
-        settings_for_template['backgroundOption'] = 'color'
-        settings_for_template['backgroundColor'] = background_color
-        settings_for_template['textColor'] = text_color
+        settings_for_template = {
+            'title': title,
+            'text_content': text_content,
+            'font_family': font_family,
+            'font_size': font_size,
+            'text_color': text_color,
+            'background_color': background_color,
+            'text_align': text_align,
+            'backgroundOption': 'color',
+            'backgroundColor': background_color,
+            'textColor': text_color
+        }
+        
+        logger.info(f"settings_for_template has backgroundColor: {settings_for_template.get('backgroundColor')}")
 
         image_template_params = {
             "title": title,
@@ -55,7 +65,7 @@ class TextRender(BasePlugin):
             "plugin_settings": settings_for_template
         }
         
-        logger.info(f"Template params: {image_template_params}")
+        logger.info(f"image_template_params plugin_settings has backgroundColor: {image_template_params['plugin_settings'].get('backgroundColor')}")
         
         image = self.render_image(dimensions, "text_render.html", "text_render.css", image_template_params)
 
