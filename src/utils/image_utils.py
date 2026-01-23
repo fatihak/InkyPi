@@ -136,7 +136,6 @@ def take_screenshot(target, dimensions, timeout_ms=None):
             "--headless",
             f"--screenshot={img_file_path}",
             f"--window-size={dimensions[0]},{dimensions[1]}",
-            "--force-device-scale-factor=2",
             "--disable-dev-shm-usage",
             "--disable-gpu",
             "--use-gl=swiftshader",
@@ -163,9 +162,6 @@ def take_screenshot(target, dimensions, timeout_ms=None):
 
         # Load the image using PIL
         with Image.open(img_file_path) as img:
-            # Resize back to target dimensions if upscaled
-            if img.size != dimensions:
-                img = img.resize(dimensions, Image.Resampling.LANCZOS)
             image = img.copy()
 
         # Remove image files
