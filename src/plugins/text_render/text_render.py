@@ -30,6 +30,9 @@ class TextRender(BasePlugin):
         text_color = settings.get("text_color", "#000000")
         background_color = settings.get("background_color", "#FFFFFF")
         text_align = settings.get("text_align", "center")
+        
+        # Debug logging
+        logger.info(f"Text Render settings: font={font_family}, size={font_size}, color={text_color}, bg={background_color}, align={text_align}")
 
         dimensions = device_config.get_resolution()
         if device_config.get_config("orientation") == "vertical":

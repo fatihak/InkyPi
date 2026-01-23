@@ -267,6 +267,10 @@ def generate_preview():
         plugin_settings.update(handle_request_files(request.files))
         plugin_id = plugin_settings.pop("plugin_id")
         
+        # Debug logging
+        logger.info(f"Generate preview for plugin: {plugin_id}")
+        logger.info(f"Preview settings received: {plugin_settings}")
+        
         plugin_config = device_config.get_plugin(plugin_id)
         if not plugin_config:
             return jsonify({"error": f"Plugin '{plugin_id}' not found"}), 404

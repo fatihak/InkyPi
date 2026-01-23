@@ -1,10 +1,16 @@
 {% extends "plugin.html" %}
 
 {% block content %}
-<div class="text-content">
+<div class="text-content" style="
+  background-color: {{ background_color }};
+  color: {{ text_color }};
+  font-family: '{{ font_family }}';
+  text-align: {{ text_align }};
+  align-items: {% if text_align == 'left' %}flex-start{% elif text_align == 'right' %}flex-end{% else %}center{% endif %};
+">
   {% if title %}
   <div class="title">{{ title }}</div>
   {% endif %}
-  <div class="content">{{ content | safe }}</div>
+  <div class="content" style="font-size-class: {{ font_size }};">{{ content | safe }}</div>
 </div>
 {% endblock %}

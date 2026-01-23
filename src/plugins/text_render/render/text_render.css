@@ -2,15 +2,10 @@
   display: flex;
   flex-direction: column;
   justify-content: center;
-  align-items: {{ text_align if text_align else 'center' }};
-  text-align: {{ text_align if text_align else 'center' }};
   height: 100%;
   width: 100%;
   gap: 1dvh;
-  font-family: "{{ font_family if font_family else 'Jost' }}";
   container-type: size;
-  background-color: {{ background_color if background_color else '#FFFFFF' }};
-  color: {{ text_color if text_color else '#000000' }};
   padding: 2%;
   box-sizing: border-box;
 }
@@ -18,15 +13,7 @@
 .title {
   font-weight: bold;
   max-width: 100%;
-  {% if font_size == 'small' %}
-  font-size: min(6cqh, 5cqi);
-  {% elif font_size == 'large' %}
-  font-size: min(12cqh, 10cqi);
-  {% elif font_size == 'extra-large' %}
-  font-size: min(15cqh, 13cqi);
-  {% else %}
   font-size: min(10cqh, 8cqi);
-  {% endif %}
 }
 
 .content {
@@ -37,13 +24,21 @@
   font-weight: 300;
   white-space: pre-wrap;
   overflow: hidden;
-  {% if font_size == 'small' %}
-  font-size: min(4cqh, 3cqi);
-  {% elif font_size == 'large' %}
-  font-size: min(9cqh, 7cqi);
-  {% elif font_size == 'extra-large' %}
-  font-size: min(12cqh, 10cqi);
-  {% else %}
-  font-size: min(6cqh, 5cqi);
-  {% endif %}
+}
+
+/* Font size variations using attribute selector */
+[style*="font-size-class: small"] {
+  font-size: min(4cqh, 3cqi) !important;
+}
+
+[style*="font-size-class: medium"] {
+  font-size: min(6cqh, 5cqi) !important;
+}
+
+[style*="font-size-class: large"] {
+  font-size: min(9cqh, 7cqi) !important;
+}
+
+[style*="font-size-class: extra-large"] {
+  font-size: min(12cqh, 10cqi) !important;
 }
