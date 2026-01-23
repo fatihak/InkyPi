@@ -81,7 +81,9 @@ class BasePlugin:
         return template_params
 
     def render_image(self, dimensions, html_file, css_file=None, template_params={}):
-        logger.info(f"BasePlugin.render_image called with template_params: {template_params.get('plugin_settings', {})}")
+        logger.info(f"BasePlugin.render_image plugin_settings keys: {list(template_params.get('plugin_settings', {}).keys())}")
+        logger.info(f"BasePlugin.render_image backgroundColor: {template_params.get('plugin_settings', {}).get('backgroundColor', 'NOT FOUND')}")
+        logger.info(f"BasePlugin.render_image backgroundOption: {template_params.get('plugin_settings', {}).get('backgroundOption', 'NOT FOUND')}")
         
         # load the base plugin and current plugin css files
         css_files = [os.path.join(BASE_PLUGIN_RENDER_DIR, "plugin.css")]
