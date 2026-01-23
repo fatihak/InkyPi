@@ -256,3 +256,33 @@ def update_now():
         return jsonify({"error": f"An error occurred: {str(e)}"}), 500
 
     return jsonify({"success": True, "message": "Display updated"}), 200
+
+@plugin_bp.route('/generate_preview', methods=['POST'])
+def generate_preview():
+    """Generate a preview image without updating the display."""
+    device_config = current_app.config['DEVICE_CONFIG']
+    
+    try:
+        plugin_settings = parse_form(request.form)
+        plugin_settings.update(handle_request_files(request.files))
+        plugin_id = plugin_settings.pop("plugin_id")
+        
+        plugin_config = device_config.get_plugin(plugin_id)
+        if not plugin_config:
+            return jsonify({"error": f"Plugin '{plugin_id}' not found"}), 404
+        
+        plugin = get_plugin_instance(plugin_config)
+        image = plugin.generate_image(plugin_settings, device_config)
+        
+        # Convert PIL Image to bytes for response
+        from io import BytesIO
+        img_io = BytesIO()
+        image.save(img_io, 'PNG')
+        img_io.seek(0)
+        
+        from flask import send_file
+        return send_file(img_io, mimetype='image/png')
+        
+    except Exception as e:
+        logger.exception(f"Error in generate_preview: {str(e)}")
+        return jsonify({"error": f"An error occurred: {str(e)}"}), 500

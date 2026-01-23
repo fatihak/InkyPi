@@ -1,0 +1,10 @@
+{% extends "plugin.html" %}
+
+{% block content %}
+<div class="text-content">
+  {% if title %}
+  <div class="title">{{ title }}</div>
+  {% endif %}
+  <div class="content">{{ content | safe }}</div>
+</div>
+{% endblock %}
