@@ -30,6 +30,26 @@ FONT_FAMILIES = {
     "DS-Digital": [{
         "font-weight": "normal",
         "file": os.path.join("DS-DIGI", "DS-DIGI.TTF")
+    }],
+    "Dancing Script": [{
+        "font-weight": "normal",
+        "file": "DancingScript.ttf"
+    }],
+    "Pacifico": [{
+        "font-weight": "normal",
+        "file": "Pacifico.ttf"
+    }],
+    "Caveat": [{
+        "font-weight": "normal",
+        "file": "Caveat.ttf"
+    }],
+    "Satisfy": [{
+        "font-weight": "normal",
+        "file": "Satisfy.ttf"
+    }],
+    "Open Sans": [{
+        "font-weight": "normal",
+        "file": "OpenSans.ttf"
     }]
 }
 
