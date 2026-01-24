@@ -19,6 +19,10 @@ INSTALL_PATH="/usr/local/$APPNAME"
 BINPATH="/usr/local/bin"
 VENV_PATH="$INSTALL_PATH/venv_$APPNAME"
 
+SERVICE_FILE="$APPNAME.service"
+SERVICE_FILE_SOURCE="$SCRIPT_DIR/$SERVICE_FILE"
+SERVICE_FILE_TARGET="/etc/systemd/system/$SERVICE_FILE"
+
 APT_REQUIREMENTS_FILE="$SCRIPT_DIR/debian-requirements.txt"
 PIP_REQUIREMENTS_FILE="$SCRIPT_DIR/requirements.txt"
 
@@ -41,6 +45,19 @@ setup_earlyoom_service() {
   echo "Enabling and starting earlyoom service."
   sudo apt-get install -y earlyoom > /dev/null
   sudo systemctl enable --now earlyoom
+}
+
+update_app_service() {
+  echo "Updating $APPNAME systemd service."
+  if [ -f "$SERVICE_FILE_SOURCE" ]; then
+    cp "$SERVICE_FILE_SOURCE" "$SERVICE_FILE_TARGET"
+    echo "Restarting $APPNAME service."
+    sudo systemctl daemon-reload
+    sudo systemctl restart $SERVICE_FILE
+  else
+    echo_error "ERROR: Service file $SERVICE_FILE_SOURCE not found!"
+    exit 1
+  fi
 }
 
 # Get OS release number, e.g. 11=Bullseye, 12=Bookworm, 13=Trixe
@@ -102,8 +119,6 @@ sudo chmod +x $BINPATH/$APPNAME
 echo "Update JS and CSS files"
 bash $SCRIPT_DIR/update_vendors.sh
 
-echo "Restarting $APPNAME service."
-sudo systemctl daemon-reload
-sudo systemctl restart $APPNAME.service
+update_app_service
 
 echo_success "Update completed."
