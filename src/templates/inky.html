@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ config.name }}</title>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='styles/main.css') }}">
     <script>
         (function() {
             const theme = localStorage.getItem('inkypi-theme') || 
@@ -444,9 +445,8 @@
             background: #444;
         }
     </style>
+    <script src="{{ url_for('static', filename='scripts/image_modal.js') }}"></script>
 </head>
-<link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='styles/main.css') }}">
-<script src="{{ url_for('static', filename='scripts/image_modal.js') }}"></script>
 <body>
     <script src="{{ url_for('static', filename='scripts/dark_mode.js') }}"></script>
     <!-- Subtle frame container -->

@@ -98,6 +98,13 @@
             background: var(--hover-bg, #eee);
         }
         
+        .add-buttons-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 15px;
+        }
+
         .btn-add {
             display: flex;
             align-items: center;
@@ -110,12 +117,38 @@
             color: var(--text-muted, #666);
             font-size: 14px;
             transition: all 0.2s;
-            margin-top: 15px;
         }
         
         .btn-add:hover {
             border-color: var(--primary-color, #2c66b1);
             color: var(--primary-color, #2c66b1);
+        }
+
+        .btn-preset {
+            padding: 8px 12px;
+            border: 1px solid var(--border-color, #ddd);
+            background: var(--bg-secondary, #f5f5f5);
+            border-radius: 6px;
+            cursor: pointer;
+            color: var(--text-muted, #666);
+            font-size: 12px;
+            font-family: monospace;
+            transition: all 0.2s;
+        }
+
+        .btn-preset:hover {
+            border-color: #4CAF50;
+            background: rgba(76, 175, 80, 0.1);
+            color: #4CAF50;
+        }
+
+        [data-theme="dark"] .btn-preset {
+            background: #333;
+            border-color: #555;
+        }
+
+        [data-theme="dark"] .btn-preset:hover {
+            background: rgba(76, 175, 80, 0.2);
         }
         
         .info-banner {
@@ -123,7 +156,7 @@
             border: 1px solid #FFE0B2;
             border-radius: 8px;
             padding: 12px 15px;
-            margin-bottom: 20px;
+            margin-top: 20px;
             display: flex;
             align-items: flex-start;
             gap: 10px;
@@ -185,16 +218,6 @@
         <div class="separator"></div>
         
         <div class="apikeys-container">
-            <!-- Info Banner -->
-            <div class="info-banner">
-                <span class="info-banner-icon">ℹ️</span>
-                <span class="info-banner-text">
-                    API keys are stored in the <code>.env</code> file. 
-                    Values are encrypted in transit but stored as plain text on the device.
-                    Some plugins may require a restart after changing keys.
-                </span>
-            </div>
-            
             <!-- API Keys List -->
             <div id="apikeys-list">
                 {% if entries %}
@@ -215,10 +238,27 @@
                 {% endif %}
             </div>
             
-            <!-- Add Button -->
-            <button type="button" class="btn-add" onclick="addRow()">
-                <span>+</span> Add API Key
-            </button>
+            <!-- Add Buttons -->
+            <div class="add-buttons-grid">
+                <button type="button" class="btn-add" onclick="addRow()">
+                    <span>+</span> Add API Key
+                </button>
+                <button type="button" class="btn-preset" data-key="OPEN_WEATHER_MAP_SECRET" onclick="addPreset(this)">OPEN_WEATHER_MAP_SECRET</button>
+                <button type="button" class="btn-preset" data-key="OPEN_AI_SECRET" onclick="addPreset(this)">OPEN_AI_SECRET</button>
+                <button type="button" class="btn-preset" data-key="NASA_SECRET" onclick="addPreset(this)">NASA_SECRET</button>
+                <button type="button" class="btn-preset" data-key="UNSPLASH_ACCESS_KEY" onclick="addPreset(this)">UNSPLASH_ACCESS_KEY</button>
+                <button type="button" class="btn-preset" data-key="GITHUB_SECRET" onclick="addPreset(this)">GITHUB_SECRET</button>
+            </div>
+            
+            <!-- Info Banner -->
+            <div class="info-banner">
+                <span class="info-banner-icon">ℹ️</span>
+                <span class="info-banner-text">
+                    API keys are stored in the <code>.env</code> file. 
+                    Values are encrypted in transit but stored as plain text on the device.
+                    Some plugins may require a restart after changing keys.
+                </span>
+            </div>
         </div>
         
         <!-- Save Button -->
@@ -249,15 +289,48 @@
             `;
             list.appendChild(row);
             
-            // Focus on key input if empty
-            if (!key) {
+            // Focus on value input if key provided, otherwise focus on key input
+            if (key) {
+                row.querySelector('.apikey-value').focus();
+            } else {
                 row.querySelector('.apikey-key').focus();
             }
         }
+
+        function addPreset(btn) {
+            const key = btn.dataset.key;
+            addRow(key, '');
+            btn.style.display = 'none';
+        }
+
+        function hideExistingPresets() {
+            const existingKeys = new Set();
+            document.querySelectorAll('.apikey-key').forEach(input => {
+                existingKeys.add(input.value.trim());
+            });
+            document.querySelectorAll('.btn-preset').forEach(btn => {
+                if (existingKeys.has(btn.dataset.key)) {
+                    btn.style.display = 'none';
+                }
+            });
+        }
+
+        // Hide presets for existing keys on page load
+        document.addEventListener('DOMContentLoaded', hideExistingPresets);
         
         function deleteRow(btn) {
             const row = btn.closest('.apikey-row');
+            const keyInput = row.querySelector('.apikey-key');
+            const deletedKey = keyInput ? keyInput.value.trim() : '';
             row.remove();
+            
+            // Show preset button if it was a preset key
+            if (deletedKey) {
+                const presetBtn = document.querySelector(`.btn-preset[data-key="${deletedKey}"]`);
+                if (presetBtn) {
+                    presetBtn.style.display = '';
+                }
+            }
             
             // Show empty state if no rows left
             const list = document.getElementById('apikeys-list');
