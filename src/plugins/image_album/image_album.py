@@ -73,7 +73,7 @@ class ImageAlbum(BasePlugin):
 
         match settings.get("albumProvider"):
             case "Immich":
-                key = device_config.load_env_key("IMMICH_KEY")
+                key = device_config.get_api_key("IMMICH_KEY")
                 if not key:
                     raise RuntimeError("Immich API Key not configured.")
 

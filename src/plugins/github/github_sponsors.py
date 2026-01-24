@@ -36,7 +36,7 @@ def sponsors_generate_image(plugin_instance, settings, device_config):
     if device_config.get_config("orientation") == "vertical":
         dimensions = dimensions[::-1]
 
-    api_key = device_config.load_env_key("GITHUB_SECRET")
+    api_key = device_config.get_api_key("GITHUB_SECRET")
     if not api_key:
         raise RuntimeError("GitHub API Key not configured.")
 

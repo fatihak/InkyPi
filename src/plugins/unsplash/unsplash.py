@@ -21,7 +21,7 @@ def grab_image(image_url, dimensions, timeout_ms=40000):
 
 class Unsplash(BasePlugin):
     def generate_image(self, settings, device_config):
-        access_key = device_config.load_env_key("UNSPLASH_ACCESS_KEY")
+        access_key = device_config.get_api_key("UNSPLASH_ACCESS_KEY")
         if not access_key:
             raise RuntimeError("'Unsplash Access Key' not found.")
 

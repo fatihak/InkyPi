@@ -18,13 +18,13 @@ class AIText(BasePlugin):
         template_params['api_key'] = {
             "required": True,
             "service": "OpenAI",
-            "expected_key": "OPEN_AI_SECRET"
+            "expected_key": "OPENAI_API_KEY"
         }
         template_params['style_settings'] = True
         return template_params
 
     def generate_image(self, settings, device_config):
-        api_key = device_config.load_env_key("OPEN_AI_SECRET")
+        api_key = device_config.get_api_key("OPENAI_API_KEY")
         if not api_key:
             raise RuntimeError("OPEN AI API Key not configured.")
 

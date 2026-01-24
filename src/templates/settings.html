@@ -72,6 +72,14 @@
             icon.textContent = content.style.display === "block" ? "▲" : "▼";
         }
 
+        function toggleApiKeyVisibility(inputId, button) {
+            const input = document.getElementById(inputId);
+            const isPassword = input.type === "password";
+            input.type = isPassword ? "text" : "password";
+            button.textContent = isPassword ? "Hide" : "Show";
+            button.setAttribute("aria-pressed", isPassword ? "true" : "false");
+        }
+
         async function handleShutdown(reboot) {
             if (reboot) {
                 showResponseModal('success', 'The system is rebooting. The UI will be unavailable until the reboot is complete.');
@@ -191,6 +199,169 @@
                         <label class="form-label" for="logSystemStats">Log System Stats</label>
                             <input type="checkbox" id="logSystemStats" name="logSystemStats" {% if device_settings.log_system_stats %}checked{% endif %}>
                         </label>
+                    </div>
+                </div>
+
+                <div class="collapsible">
+                    <button type="button" class="collapsible-header" onclick="toggleCollapsible(this)">
+                        API Keys <span class="collapsible-icon">▼</span>
+                    </button>
+                    <div class="settings-container collapsible-content">
+                        <div class="form-group">
+                            <label for="openaiApiKey" class="form-label">OpenAI API Key:</label>
+                            <div class="form-inline">
+                                <input
+                                    type="password"
+                                    id="openaiApiKey"
+                                    name="OPENAI_API_KEY"
+                                    class="form-input"
+                                    value="{{ api_keys.get('OPENAI_API_KEY', '') }}"
+                                    placeholder="sk-..."
+                                    autocomplete="off"
+                                />
+                                <button
+                                    type="button"
+                                    class="header-button"
+                                    onclick="toggleApiKeyVisibility('openaiApiKey', this)"
+                                    aria-pressed="false"
+                                >
+                                    Show
+                                </button>
+                            </div>
+                            <small>
+                                Get a key from
+                                <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer">OpenAI API Keys</a>.
+                            </small>
+                        </div>
+                        <div class="form-group">
+                            <label for="openweatherApiKey" class="form-label">OpenWeatherMap API Key:</label>
+                            <div class="form-inline">
+                                <input
+                                    type="password"
+                                    id="openweatherApiKey"
+                                    name="OPENWEATHER_API_KEY"
+                                    class="form-input"
+                                    value="{{ api_keys.get('OPENWEATHER_API_KEY', '') }}"
+                                    placeholder="abc123..."
+                                    autocomplete="off"
+                                />
+                                <button
+                                    type="button"
+                                    class="header-button"
+                                    onclick="toggleApiKeyVisibility('openweatherApiKey', this)"
+                                    aria-pressed="false"
+                                >
+                                    Show
+                                </button>
+                            </div>
+                            <small>
+                                Get a key from
+                                <a href="https://home.openweathermap.org/api_keys" target="_blank" rel="noopener noreferrer">OpenWeatherMap</a>.
+                            </small>
+                        </div>
+                        <div class="form-group">
+                            <label for="nasaApiKey" class="form-label">NASA APOD API Key:</label>
+                            <div class="form-inline">
+                                <input
+                                    type="password"
+                                    id="nasaApiKey"
+                                    name="NASA_SECRET"
+                                    class="form-input"
+                                    value="{{ api_keys.get('NASA_SECRET', '') }}"
+                                    placeholder="your-key..."
+                                    autocomplete="off"
+                                />
+                                <button
+                                    type="button"
+                                    class="header-button"
+                                    onclick="toggleApiKeyVisibility('nasaApiKey', this)"
+                                    aria-pressed="false"
+                                >
+                                    Show
+                                </button>
+                            </div>
+                            <small>
+                                Get a key from
+                                <a href="https://api.nasa.gov/" target="_blank" rel="noopener noreferrer">NASA APIs</a>.
+                            </small>
+                        </div>
+                        <div class="form-group">
+                            <label for="unsplashAccessKey" class="form-label">Unsplash Access Key:</label>
+                            <div class="form-inline">
+                                <input
+                                    type="password"
+                                    id="unsplashAccessKey"
+                                    name="UNSPLASH_ACCESS_KEY"
+                                    class="form-input"
+                                    value="{{ api_keys.get('UNSPLASH_ACCESS_KEY', '') }}"
+                                    placeholder="your-key..."
+                                    autocomplete="off"
+                                />
+                                <button
+                                    type="button"
+                                    class="header-button"
+                                    onclick="toggleApiKeyVisibility('unsplashAccessKey', this)"
+                                    aria-pressed="false"
+                                >
+                                    Show
+                                </button>
+                            </div>
+                            <small>
+                                Get a key from
+                                <a href="https://unsplash.com/developers" target="_blank" rel="noopener noreferrer">Unsplash Developers</a>.
+                            </small>
+                        </div>
+                        <div class="form-group">
+                            <label for="githubSecret" class="form-label">GitHub Personal Access Token:</label>
+                            <div class="form-inline">
+                                <input
+                                    type="password"
+                                    id="githubSecret"
+                                    name="GITHUB_SECRET"
+                                    class="form-input"
+                                    value="{{ api_keys.get('GITHUB_SECRET', '') }}"
+                                    placeholder="ghp_..."
+                                    autocomplete="off"
+                                />
+                                <button
+                                    type="button"
+                                    class="header-button"
+                                    onclick="toggleApiKeyVisibility('githubSecret', this)"
+                                    aria-pressed="false"
+                                >
+                                    Show
+                                </button>
+                            </div>
+                            <small>
+                                Create a token in
+                                <a href="https://github.com/settings/tokens" target="_blank" rel="noopener noreferrer">GitHub Developer Settings</a>.
+                            </small>
+                        </div>
+                        <div class="form-group">
+                            <label for="immichKey" class="form-label">Immich API Key:</label>
+                            <div class="form-inline">
+                                <input
+                                    type="password"
+                                    id="immichKey"
+                                    name="IMMICH_KEY"
+                                    class="form-input"
+                                    value="{{ api_keys.get('IMMICH_KEY', '') }}"
+                                    placeholder="your-key..."
+                                    autocomplete="off"
+                                />
+                                <button
+                                    type="button"
+                                    class="header-button"
+                                    onclick="toggleApiKeyVisibility('immichKey', this)"
+                                    aria-pressed="false"
+                                >
+                                    Show
+                                </button>
+                            </div>
+                            <small>
+                                Create a key in your Immich account settings under API Keys.
+                            </small>
+                        </div>
                     </div>
                 </div>
 
