@@ -24,7 +24,7 @@ class ImmichProvider:
         r = requests.get(f"{self.base_url}/api/albums", headers=self.headers, timeout=30)
         r.raise_for_status()
         albums = r.json()
-        album_summary = [a for a in albums if a["albumName"] == album_name][0]
+        album_summary = next((a for a in albums if a["albumName"] == album_name), None)
 
         if album_summary is None:
             raise RuntimeError(f"Album {album_name} not found.")

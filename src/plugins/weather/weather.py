@@ -350,7 +350,7 @@ class Weather(BasePlugin):
 
             timestamp = int(dt.replace(hour=12, minute=0, second=0).timestamp())
             target_date: date = dt.date() + timedelta(days=1)
-           
+
             try:
                 phase_age = moon.phase(target_date)
                 phase_name_north_hemi = get_moon_phase_name(phase_age)
@@ -360,7 +360,7 @@ class Weather(BasePlugin):
             except Exception as e:
                 logger.error(f"Error calculating moon phase for {target_date}: {e}")
                 illum_pct = 0
-                phase_name = "newmoon"
+                phase_name_north_hemi = "newmoon"
             moon_icon_path = self.get_moon_phase_icon_path(phase_name_north_hemi, lat)
 
             forecast.append({
@@ -691,7 +691,7 @@ class Weather(BasePlugin):
                 logger.warning(f"Could not parse time string {time_str} for AQI.")
                 continue
         scale = ""
-        if current_aqi:
+        if current_aqi and current_aqi != "N/A":
             scale = ["Good","Fair","Moderate","Poor","Very Poor","Ext Poor"][min(current_aqi//20,5)]
         data_points.append({
             "label": "Air Quality", "measurement": current_aqi,

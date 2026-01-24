@@ -44,7 +44,6 @@ class ImageFolder(BasePlugin):
         image_url = random.choice(image_files)
         logger.info(f"Random image selected {image_url}")
 
-        img = None
         try:
             img = Image.open(image_url)
             img = ImageOps.exif_transpose(img)  # Correct orientation using EXIF
@@ -56,10 +55,8 @@ class ImageFolder(BasePlugin):
                     background_color = ImageColor.getcolor(settings.get('backgroundColor') or (255, 255, 255), "RGB")
                     img = ImageOps.pad(img, dimensions, color=background_color, method=Image.Resampling.LANCZOS)
 
+            return img
         except Exception as e:
             logger.error(f"Error loading image from {image_url}: {e}")
-
-        if not img:
             raise RuntimeError("Failed to load image, please check logs.")
 
-        return img
