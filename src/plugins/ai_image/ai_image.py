@@ -91,7 +91,7 @@ class AIImage(BasePlugin):
 
     @staticmethod
     def fetch_image_prompt(ai_client, from_prompt=None):
-        logger.info(f"Getting random image prompt...")
+        logger.info("Getting random image prompt...")
 
         system_content = (
             "You are a creative assistant generating extremely random and unique image prompts. "
