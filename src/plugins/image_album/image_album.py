@@ -21,7 +21,7 @@ class ImmichProvider:
         self.headers = {"x-api-key": self.key}
 
     def get_album_data(self, album_name: str) -> dict:
-        r = requests.get(f"{self.base_url}/api/albums", headers=self.headers)
+        r = requests.get(f"{self.base_url}/api/albums", headers=self.headers, timeout=30)
         r.raise_for_status()
         albums = r.json()
         album_summary = [a for a in albums if a["albumName"] == album_name][0]
@@ -30,9 +30,9 @@ class ImmichProvider:
             raise RuntimeError(f"Album {album_name} not found.")
 
         album_id = album_summary["id"]
-        r2 = requests.get(f"{self.base_url}/api/albums/{album_id}", headers=self.headers)
+        r2 = requests.get(f"{self.base_url}/api/albums/{album_id}", headers=self.headers, timeout=30)
         r2.raise_for_status()
-        
+
         return r2.json()
 
     def get_asset_ids(self, album_name: str) -> list[str]:
@@ -50,7 +50,7 @@ class ImmichProvider:
         asset_id = choice(asset_ids)
 
         logger.info(f"Downloading image {asset_id}")
-        r = requests.get(f"{self.base_url}/api/assets/{asset_id}/original", headers=self.headers)
+        r = requests.get(f"{self.base_url}/api/assets/{asset_id}/original", headers=self.headers, timeout=30)
         r.raise_for_status()
         img = Image.open(BytesIO(r.content))
         img = ImageOps.exif_transpose(img)

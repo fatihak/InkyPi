@@ -11,7 +11,7 @@ import shutil
 logger = logging.getLogger(__name__)
 
 def get_image(image_url):
-    response = requests.get(image_url)
+    response = requests.get(image_url, timeout=30)
     img = None
     if 200 <= response.status_code < 300 or response.status_code == 304:
         img = Image.open(BytesIO(response.content))

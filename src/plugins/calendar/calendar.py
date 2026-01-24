@@ -139,7 +139,7 @@ class Calendar(BasePlugin):
 
     def fetch_calendar(self, calendar_url):
         try:
-            response = requests.get(calendar_url)
+            response = requests.get(calendar_url, timeout=30)
             response.raise_for_status()
             return icalendar.Calendar.from_ical(response.text)
         except Exception as e:
