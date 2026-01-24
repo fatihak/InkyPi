@@ -29,7 +29,20 @@ settings_bp = Blueprint("settings", __name__)
 def settings_page():
     device_config = current_app.config['DEVICE_CONFIG']
     timezones = sorted(pytz.all_timezones_set)
-    return render_template('settings.html', device_settings=device_config.get_config(), timezones = timezones)
+    api_keys = {
+        "OPENAI_API_KEY": device_config.get_api_key("OPENAI_API_KEY"),
+        "OPENWEATHER_API_KEY": device_config.get_api_key("OPENWEATHER_API_KEY"),
+        "NASA_SECRET": device_config.get_api_key("NASA_SECRET"),
+        "UNSPLASH_ACCESS_KEY": device_config.get_api_key("UNSPLASH_ACCESS_KEY"),
+        "GITHUB_SECRET": device_config.get_api_key("GITHUB_SECRET"),
+        "IMMICH_KEY": device_config.get_api_key("IMMICH_KEY")
+    }
+    return render_template(
+        'settings.html',
+        device_settings=device_config.get_config(),
+        timezones=timezones,
+        api_keys=api_keys
+    )
 
 @settings_bp.route('/save_settings', methods=['POST'])
 def save_settings():
@@ -37,6 +50,14 @@ def save_settings():
 
     try:
         form_data = request.form.to_dict()
+        api_key_inputs = {
+            "OPENAI_API_KEY": form_data.get("OPENAI_API_KEY", "").strip(),
+            "OPENWEATHER_API_KEY": form_data.get("OPENWEATHER_API_KEY", "").strip(),
+            "NASA_SECRET": form_data.get("NASA_SECRET", "").strip(),
+            "UNSPLASH_ACCESS_KEY": form_data.get("UNSPLASH_ACCESS_KEY", "").strip(),
+            "GITHUB_SECRET": form_data.get("GITHUB_SECRET", "").strip(),
+            "IMMICH_KEY": form_data.get("IMMICH_KEY", "").strip()
+        }
 
         unit, interval, time_format = form_data.get('unit'), form_data.get("interval"), form_data.get("timeFormat")
         if not unit or unit not in ["minute", "hour"]:
@@ -69,6 +90,8 @@ def save_settings():
         }
         if "inky_saturation" in form_data:
             settings["image_settings"]["inky_saturation"] = float(form_data.get("inky_saturation", "0.5"))
+        for key_name, value in api_key_inputs.items():
+            device_config.set_api_key(key_name, value, write=False)
         device_config.update_config(settings)
 
         if plugin_cycle_interval_seconds != previous_interval_seconds:
@@ -145,4 +168,3 @@ def download_logs():
     except Exception as e:
         logger.error(f"Error reading logs: {e}")
         return Response(f"Error reading logs: {e}", status=500, mimetype="text/plain")
-

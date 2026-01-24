@@ -29,7 +29,7 @@ class Apod(BasePlugin):
     def generate_image(self, settings, device_config):
         logger.info(f"APOD plugin settings: {settings}")
 
-        api_key = device_config.load_env_key("NASA_SECRET")
+        api_key = device_config.get_api_key("NASA_SECRET")
         if not api_key:
             raise RuntimeError("NASA API Key not configured.")
 
