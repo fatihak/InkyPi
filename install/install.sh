@@ -294,7 +294,7 @@ start_service() {
   sudo systemctl start $SERVICE_FILE
 }
 
-copy_project() {
+install_src() {
   # Check if an existing installation is present
   echo "Installing $APPNAME to $INSTALL_PATH"
   if [[ -d $INSTALL_PATH ]]; then
@@ -306,6 +306,11 @@ copy_project() {
 
   ln -sf "$SRC_PATH" "$INSTALL_PATH/src"
   show_loader "\tCreating symlink from $SRC_PATH to $INSTALL_PATH/src"
+}
+
+install_cli() {
+  cp -r "$SCRIPT_DIR/install/cli" "$INSTALL_PATH/"
+  sudo chmod +x "$INSTALL_PATH/cli/"*.sh
 }
 
 # Get Raspberry Pi hostname
@@ -368,7 +373,8 @@ else
   echo "OS version is not Bookworm - skipping zramswap setup."
 fi
 setup_earlyoom_service
-copy_project
+install_src
+install_cli
 create_venv
 install_executable
 install_config
@@ -379,6 +385,6 @@ fi
 install_app_service
 
 echo "Update JS and CSS files"
-bash $SCRIPT_DIR/update_vendors.sh
+bash $SCRIPT_DIR/update_vendors.sh > /dev/null
 
 ask_for_reboot

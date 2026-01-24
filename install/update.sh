@@ -60,6 +60,11 @@ update_app_service() {
   fi
 }
 
+update_cli() {
+  cp -r "$SCRIPT_DIR/install/cli" "$INSTALL_PATH/"
+  sudo chmod +x "$INSTALL_PATH/cli/"*.sh
+}
+
 # Get OS release number, e.g. 11=Bullseye, 12=Bookworm, 13=Trixe
 get_os_version() {
   echo "$(lsb_release -sr)"
@@ -117,8 +122,9 @@ cp $SCRIPT_DIR/inkypi $BINPATH/
 sudo chmod +x $BINPATH/$APPNAME
 
 echo "Update JS and CSS files"
-bash $SCRIPT_DIR/update_vendors.sh
+bash $SCRIPT_DIR/update_vendors.sh > /dev/null
 
 update_app_service
+update_cli
 
 echo_success "Update completed."
