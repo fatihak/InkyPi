@@ -5,12 +5,17 @@
 # Description: This script automates the installatin of InkyPI and creation of
 #              the InkyPI service.
 #
-# Usage: ./install.sh [-W <waveshare_device>]
+# Usage: ./install.sh [-W <waveshare_device>] [-H <hostname>]
 #        -W <waveshare_device> (optional) Install for a Waveshare device, 
 #                               specifying the device model type, e.g. epd7in3e.
 #
 #                               If not specified then the Pimoroni Inky display
 #                               is assumed.
+#        -H <hostname>          (optional) Set a custom hostname for the device.
+#
+#                               If not specified, the hostname will be auto-generated
+#                               as 'inkypi' + last 4 characters of MAC address.
+#                               To skip hostname setting entirely, use -H "" or -H none.
 # =============================================================================
 
 # Formatting stuff
@@ -48,18 +53,49 @@ PIP_REQUIREMENTS_FILE="$SCRIPT_DIR/requirements.txt"
 WS_TYPE=""
 WS_REQUIREMENTS_FILE="$SCRIPT_DIR/ws-requirements.txt"
 
-# Parse the agumments, looking for the -W option.
+# Custom hostname (optional)
+# empty = use auto-generated hostname based on MAC address
+# "none" or empty string = skip hostname setting entirely
+CUSTOM_HOSTNAME=""
+SKIP_HOSTNAME=false
+
+# Parse the arguments, looking for the -W and -H options.
 parse_arguments() {
-    while getopts ":W:" opt; do
+    while getopts ":W:H:" opt; do
         case $opt in
             W) WS_TYPE=$OPTARG
                 echo "Optional parameter WS is set for Waveshare support.  Screen type is: $WS_TYPE"
                 ;;
+            H) CUSTOM_HOSTNAME=$OPTARG
+                # Check if user wants to skip hostname setting
+                if [[ -z "$CUSTOM_HOSTNAME" || "$CUSTOM_HOSTNAME" == "none" ]]; then
+                    SKIP_HOSTNAME=true
+                    echo "Optional parameter H is set to skip hostname setting."
+                else
+                    echo "Optional parameter H is set for custom hostname.  Hostname is: $CUSTOM_HOSTNAME"
+                fi
+                ;;
             \?) echo "Invalid option: -$OPTARG." >&2
                 exit 1
                 ;;
-            :) echo "Option -$OPTARG requires an the model type of the Waveshare screen." >&2
-               exit 1
+            :) case $OPTARG in
+                   W) echo_error "ERROR: Option -W requires a Waveshare device model argument."
+                      echo_error "Usage: -W <waveshare_device_model>"
+                      echo_error "Example: -W epd7in3f"
+                      exit 1
+                      ;;
+                   H) echo_error "ERROR: Option -H requires a hostname argument."
+                      echo_error "Usage: -H <hostname>"
+                      echo_error "Examples:"
+                      echo_error "  -H myinkypi     (set custom hostname)"
+                      echo_error "  -H \"\"           (skip hostname setting)"
+                      echo_error "  -H none         (skip hostname setting)"
+                      exit 1
+                      ;;
+                   *) echo_error "ERROR: Option -$OPTARG requires an argument." >&2
+                      exit 1
+                      ;;
+               esac
                ;;
         esac
     done
@@ -308,6 +344,74 @@ copy_project() {
   show_loader "\tCreating symlink from $SRC_PATH to $INSTALL_PATH/src"
 }
 
+# Get MAC address from primary network interface
+get_mac_address() {
+  # Try to get MAC from eth0 first (Ethernet), then wlan0 (WiFi)
+  local mac=""
+  if [ -f /sys/class/net/eth0/address ]; then
+    mac=$(cat /sys/class/net/eth0/address)
+  elif [ -f /sys/class/net/wlan0/address ]; then
+    mac=$(cat /sys/class/net/wlan0/address)
+  else
+    # Fallback: get first available interface
+    for interface in /sys/class/net/*; do
+      if [ -f "$interface/address" ] && [ "$(basename "$interface")" != "lo" ]; then
+        mac=$(cat "$interface/address")
+        break
+      fi
+    done
+  fi
+  
+  if [ -z "$mac" ]; then
+    echo_error "ERROR: Could not determine MAC address"
+    exit 1
+  fi
+  
+  # Remove colons and get last 4 characters
+  mac_clean=$(echo "$mac" | tr -d ':')
+  echo "${mac_clean: -4}"
+}
+
+# Set hostname to custom value, auto-generated value, or skip if requested
+set_hostname() {
+  # Skip hostname setting if explicitly requested
+  if [[ "$SKIP_HOSTNAME" == true ]]; then
+    echo "Skipping hostname setting as requested."
+    return 0
+  fi
+  
+  local new_hostname=""
+  
+  if [[ -n "$CUSTOM_HOSTNAME" ]]; then
+    # Use custom hostname if provided
+    new_hostname="$CUSTOM_HOSTNAME"
+    echo "Using custom hostname: $new_hostname"
+  else
+    # Auto-generate hostname based on MAC address
+    local mac_suffix=$(get_mac_address)
+    new_hostname="${APPNAME}${mac_suffix}"
+    echo "Auto-generating hostname: $new_hostname"
+  fi
+  
+  echo "Setting hostname to: $new_hostname"
+  
+  # Set hostname using hostnamectl (preferred method)
+  hostnamectl set-hostname "$new_hostname" > /dev/null 2>&1
+  
+  # Also update /etc/hostname
+  echo "$new_hostname" > /etc/hostname
+  
+  # Update /etc/hosts to include the new hostname
+  if ! grep -q "127.0.1.1.*$new_hostname" /etc/hosts; then
+    # Remove old hostname entries if they exist
+    sed -i "/127.0.1.1/d" /etc/hosts
+    # Add new hostname entry
+    echo "127.0.1.1	$new_hostname" >> /etc/hosts
+  fi
+  
+  echo_success "\tHostname set to: $new_hostname"
+}
+
 # Get Raspberry Pi hostname
 get_hostname() {
   echo "$(hostname)"
@@ -353,6 +457,7 @@ ask_for_reboot() {
 # to maintain default INKY display support.
 parse_arguments "$@"
 check_permissions
+set_hostname
 stop_service
 # fetch the WS display driver if defined.
 if [[ -n "$WS_TYPE" ]]; then

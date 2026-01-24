@@ -59,20 +59,42 @@ To install InkyPi, follow these steps:
     ```
 3. Run the installation script with sudo:
     ```bash
-    sudo bash install/install.sh [-W <waveshare device model>]
+    sudo bash install/install.sh [-W <waveshare device model>] [-H <hostname>]
     ``` 
-     Option: 
+     Options: 
     
     * -W \<waveshare device model\> - specify this parameter **ONLY** if installing for a Waveshare display.  After the -W option specify the Waveshare device model e.g. epd7in3f.
+    * -H \<hostname\> - (optional) Set a custom hostname for the device. If not specified, the hostname will be auto-generated as 'inkypi' + last 4 characters of MAC address. To skip hostname setting entirely, use `-H ""` or `-H none`.
 
-    e.g. for Inky displays use:
+    Examples:
+
+    For Inky displays:
     ```bash
     sudo bash install/install.sh
     ```
 
-    and for [Waveshare displays](#waveshare-display-support) use:
+    For [Waveshare displays](#waveshare-display-support):
     ```bash
     sudo bash install/install.sh -W epd7in3f
+    ```
+
+    With a custom hostname:
+    ```bash
+    sudo bash install/install.sh -H myinkypi
+    ```
+
+    To skip hostname setting:
+    ```bash
+    sudo bash install/install.sh -H ""
+    ```
+    or
+    ```bash
+    sudo bash install/install.sh -H none
+    ```
+
+    Combining options (Waveshare display with custom hostname):
+    ```bash
+    sudo bash install/install.sh -W epd7in3f -H myinkypi
     ```
 
 
