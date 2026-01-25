@@ -90,28 +90,30 @@ class Apod(BasePlugin):
             )
             pass
 
-        # Add title and copyright
-        draw = ImageDraw.Draw(image)
+        if settings.get('showTitle') == 'true':
+            # Add title and copyright
+            draw = ImageDraw.Draw(image)
+            padding = int(settings.get('textPadding', 20))
 
-        # choose font (fallback to default)
-        try:
-            font = ImageFont.truetype("arial.ttf", 20)
-        except IOError:
-            font = ImageFont.load_default()
+            # choose font (fallback to default)
+            try:
+                font = ImageFont.truetype("arial.ttf", 20)
+            except IOError:
+                font = ImageFont.load_default()
 
-        # text size
-        bbox = draw.textbbox((0, 0), text, font=font)
-        text_width = bbox[2] - bbox[0]
-        text_height = bbox[3] - bbox[1]
+            # text size
+            bbox = draw.textbbox((0, 0), text, font=font)
+            text_width = bbox[2] - bbox[0]
+            text_height = bbox[3] - bbox[1]
 
-        # bottom-right position with padding
-        padding = 15
-        x = image.width - text_width - padding
-        y = image.height - text_height - padding
+            # bottom-right position with padding
+            x = image.width - text_width - padding
+            y = image.height - text_height - padding
 
-        # draw text (white with optional shadow for readability)
-        #draw.text((x + 1, y + 1), text, font=font, fill="black")
-        draw.text((x, y), text, font=font, fill="white")
+            # draw text (white with optional shadow for readability)
+            #draw.text((x + 1, y + 1), text, font=font, fill="black")
+            draw.text((x, y), text, font=font, fill="white")
+
         return image
 
     @staticmethod
