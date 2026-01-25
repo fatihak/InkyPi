@@ -63,7 +63,7 @@ class Weather(BasePlugin):
         template_params['api_key'] = {
             "required": True,
             "service": "OpenWeatherMap",
-            "expected_key": "OPEN_WEATHER_MAP_SECRET"
+            "expected_key": "OPENWEATHER_API_KEY"
         }
         template_params['style_settings'] = True
         return template_params
@@ -87,7 +87,7 @@ class Weather(BasePlugin):
 
         try:
             if weather_provider == "OpenWeatherMap":
-                api_key = device_config.load_env_key("OPEN_WEATHER_MAP_SECRET")
+                api_key = device_config.get_api_key("OPENWEATHER_API_KEY")
                 if not api_key:
                     raise RuntimeError("Open Weather Map API Key not configured.")
                 weather_data = self.get_weather_data(api_key, units, lat, long)

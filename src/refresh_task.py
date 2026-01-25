@@ -24,6 +24,7 @@ class RefreshTask:
         self.condition = threading.Condition(self.lock)
         self.running = False
         self.manual_update_request = ()
+        self.paused = self.device_config.get_config("pause_refresh", default=False)
 
         self.refresh_event = threading.Event()
         self.refresh_event.set()
@@ -95,6 +96,9 @@ class RefreshTask:
                         refresh_action = self.manual_update_request
                         self.manual_update_request = ()
                     else:
+                        if self.paused:
+                            logger.info("Refresh is paused. Skipping interval refresh.")
+                            continue
 
                         if self.device_config.get_config("log_system_stats"):
                             self.log_system_stats()
@@ -154,6 +158,21 @@ class RefreshTask:
         if self.running:
             with self.condition:
                 self.condition.notify_all()
+
+    def toggle_pause(self):
+        """Toggle the refresh pause state and persist it to the device config."""
+        with self.condition:
+            self.paused = not self.paused
+            self.device_config.update_value("pause_refresh", self.paused, write=True)
+            self.condition.notify_all()
+        return self.paused
+
+    def set_paused(self, paused):
+        """Set the refresh pause state and persist it to the device config."""
+        with self.condition:
+            self.paused = paused
+            self.device_config.update_value("pause_refresh", self.paused, write=True)
+            self.condition.notify_all()
 
     def _get_current_datetime(self):
         """Retrieves the current datetime based on the device's configured timezone."""

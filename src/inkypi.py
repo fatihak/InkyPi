@@ -25,6 +25,7 @@ from werkzeug.serving import is_running_from_reloader
 from config import Config
 from display.display_manager import DisplayManager
 from refresh_task import RefreshTask
+from button_handler import ButtonHandler
 from blueprints.main import main_bp
 from blueprints.settings import settings_bp
 from blueprints.plugin import plugin_bp
@@ -62,6 +63,7 @@ app.jinja_loader = ChoiceLoader([FileSystemLoader(directory) for directory in te
 device_config = Config()
 display_manager = DisplayManager(device_config)
 refresh_task = RefreshTask(device_config, display_manager)
+button_handler = ButtonHandler(device_config, refresh_task)
 
 load_plugins(device_config.get_plugins())
 
@@ -86,6 +88,7 @@ if __name__ == '__main__':
 
     # start the background refresh task
     refresh_task.start()
+    button_handler.start()
 
     # display default inkypi image on startup
     if device_config.get_config("startup") is True:

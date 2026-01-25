@@ -19,6 +19,11 @@ class Config:
     # Directory path for storing plugin instance images
     plugin_image_dir = os.path.join(BASE_DIR, "static", "images", "plugins")
 
+    API_KEY_ALIASES = {
+        "OPENAI_API_KEY": ["OPEN_AI_SECRET"],
+        "OPENWEATHER_API_KEY": ["OPEN_WEATHER_MAP_SECRET"]
+    }
+
     def __init__(self):
         self.config = self.read_config()
         self.plugins_list = self.read_plugins_list()
@@ -95,6 +100,41 @@ class Config:
         """Loads an environment variable using dotenv and returns its value."""
         load_dotenv(override=True)
         return os.getenv(key)
+
+    def get_api_key(self, key_name):
+        """Gets an API key from device config, falling back to .env if needed."""
+        api_keys = self.config.get("api_keys", {})
+        if api_keys.get(key_name):
+            return api_keys.get(key_name)
+        for alias in self.API_KEY_ALIASES.get(key_name, []):
+            if api_keys.get(alias):
+                return api_keys.get(alias)
+
+        env_value = self.load_env_key(key_name)
+        if env_value:
+            return env_value
+        for alias in self.API_KEY_ALIASES.get(key_name, []):
+            env_value = self.load_env_key(alias)
+            if env_value:
+                return env_value
+        return None
+
+    def set_api_key(self, key_name, value, write=True):
+        """Stores an API key in the device config, ignoring empty values."""
+        sanitized_value = (value or "").strip()
+        api_keys = self.config.get("api_keys", {})
+        if sanitized_value:
+            api_keys[key_name] = sanitized_value
+        else:
+            api_keys.pop(key_name, None)
+
+        if api_keys:
+            self.config["api_keys"] = api_keys
+        else:
+            self.config.pop("api_keys", None)
+
+        if write:
+            self.write_config()
 
     def load_playlist_manager(self):
         """Loads the playlist manager object from the config."""
