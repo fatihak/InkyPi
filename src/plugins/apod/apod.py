@@ -7,7 +7,7 @@ For the API key, set `NASA_SECRET={API_KEY}` in your .env file.
 import numpy as np
 
 from plugins.base_plugin.base_plugin import BasePlugin
-from PIL import Image
+from PIL import Image, ImageDraw, ImageFont
 from io import BytesIO
 import requests
 import logging
@@ -57,6 +57,17 @@ class Apod(BasePlugin):
             raise RuntimeError("APOD is not an image today.")
 
         image_url = data.get("hdurl") or data.get("url")
+        image_title = data.get("title", "")
+        image_copyright = data.get("copyright", "")
+
+        if image_title and image_copyright:
+            text = f"{image_title} (© {image_copyright})"
+        elif image_title:
+            text = image_title
+        elif image_copyright:
+            text = f"© {image_copyright}"
+        else:
+            text = ""
 
         try:
             img_data = requests.get(image_url)
@@ -78,6 +89,29 @@ class Apod(BasePlugin):
                 bg
             )
             pass
+
+        # Add title and copyright
+        draw = ImageDraw.Draw(image)
+
+        # choose font (fallback to default)
+        try:
+            font = ImageFont.truetype("arial.ttf", 20)
+        except IOError:
+            font = ImageFont.load_default()
+
+        # text size
+        bbox = draw.textbbox((0, 0), text, font=font)
+        text_width = bbox[2] - bbox[0]
+        text_height = bbox[3] - bbox[1]
+
+        # bottom-right position with padding
+        padding = 15
+        x = image.width - text_width - padding
+        y = image.height - text_height - padding
+
+        # draw text (white with optional shadow for readability)
+        #draw.text((x + 1, y + 1), text, font=font, fill="black")
+        draw.text((x, y), text, font=font, fill="white")
         return image
 
     @staticmethod

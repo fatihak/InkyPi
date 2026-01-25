@@ -13,7 +13,16 @@
 </div>
 
 <div class="form-group">
-    <label for="autoResize" class="form-label">Fit image to screen size</label>
+    <label for="showTitle" class="form-label">Show image title</label>
+    <div class="toggle-container">
+        <input type="checkbox" id="showTitle" name="showTitle" class="toggle-checkbox" value="false"
+            onclick="this.value = this.checked ? 'true' : 'false'; toggleDateField(this)">
+        <label for="showTitle" class="toggle-label"></label>
+    </div>
+</div>
+
+<div class="form-group">
+    <label for="autoResize" class="form-label">Scale to Fit</label>
     <div class="toggle-container">
         <input
             type="checkbox"
@@ -53,21 +62,26 @@
         const $date = document.getElementById('customDate');
         const $autoResize = document.getElementById('autoResize');
         const $autoBgColor = document.getElementById('autoBgColor');
+        const $showTitle = document.getElementById('showTitle');
 
         const today = new Date().toISOString().split('T')[0];
 
         if (loadPluginSettings) {
             // Randomize
             $toggle.checked = pluginSettings.randomizeApod === 'true';
-            $toggle.value = pluginSettings.randomizeApod;
+            $toggle.value = pluginSettings.randomizeApod ?? 'false';
+
+            // Title
+            $showTitle.checked = pluginSettings.showTitle === 'true';
+            $showTitle.value = pluginSettings.showTitle ?? 'false';
 
             // Auto resize
             $autoResize.checked = pluginSettings.autoResize === 'true';
             $autoResize.value = pluginSettings.autoResize ?? 'false';
 
             // Auto background color
-            $autoBgColor.checked = pluginSettings.$autoBgColor === 'true';
-            $autoBgColor.value = pluginSettings.$autoBgColor ?? 'false';
+            $autoBgColor.checked = pluginSettings.autoBgColor === 'true';
+            $autoBgColor.value = pluginSettings.autoBgColor ?? 'false';
 
             // Custom Date
             $date.value = pluginSettings.customDate || today;
@@ -76,11 +90,14 @@
             $toggle.checked = false;
             $toggle.value = "false";
 
-            $autoBgColor.checked = false;
-            $autoBgColor.value = "false";
+            $showTitle.checked = true;
+            $showTitle.value = "true";
 
-            $autoResize.checked = false;
-            $autoResize.value = "false";
+            $autoBgColor.checked = true;
+            $autoBgColor.value = "true";
+
+            $autoResize.checked = true;
+            $autoResize.value = "true";
 
             $date.value = today;
         }
