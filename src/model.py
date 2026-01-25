@@ -231,6 +231,21 @@ class Playlist:
         
         return self.plugins[self.current_plugin_index]
 
+    def get_previous_plugin(self):
+        """Returns the previous plugin instance in the playlist and updates the current_plugin_index."""
+        if self.current_plugin_index is None:
+            self.current_plugin_index = len(self.plugins) - 1
+        else:
+            self.current_plugin_index = (self.current_plugin_index - 1) % len(self.plugins)
+
+        return self.plugins[self.current_plugin_index]
+
+    def get_current_plugin(self):
+        """Returns the current plugin instance, defaulting to the first plugin if unset."""
+        if self.current_plugin_index is None:
+            self.current_plugin_index = 0
+        return self.plugins[self.current_plugin_index]
+
     def get_priority(self):
         """Determine priority of a playlist, based on the time range"""
         return self.get_time_range_minutes()
