@@ -56,6 +56,7 @@ class Apod(BasePlugin):
         if data.get("media_type") != "image":
             raise RuntimeError("APOD is not an image today.")
 
+        logger.info(f"APOD image: {data}")
         image_url = data.get("hdurl") or data.get("url")
         image_title = data.get("title", "")
         image_copyright = data.get("copyright", "")
@@ -94,12 +95,14 @@ class Apod(BasePlugin):
             # Add title and copyright
             draw = ImageDraw.Draw(image)
             padding = int(settings.get('textPadding', 20))
+            fs = int(settings.get('textSize', 20))
 
             # choose font (fallback to default)
             try:
-                font = ImageFont.truetype("arial.ttf", 20)
+                font = ImageFont.truetype("src/static/fonts/Jost.ttf", fs)
             except IOError:
-                font = ImageFont.load_default()
+                logger.error(f"Failed to load font, using default font.")
+                font = ImageFont.load_default(fs)
 
             # text size
             bbox = draw.textbbox((0, 0), text, font=font)
