@@ -2,6 +2,7 @@
 
 # entry script to launch the service
 
+export APPNAME="inkypi"
 export PROGRAM_PATH=/usr/local/inkypi
 export VENV_PATH="$PROGRAM_PATH/venv_inkypi"
 
