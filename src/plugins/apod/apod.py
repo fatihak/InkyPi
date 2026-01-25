@@ -61,14 +61,8 @@ class Apod(BasePlugin):
         image_title = data.get("title", "")
         image_copyright = data.get("copyright", "")
 
-        if image_title and image_copyright:
-            text = f"{image_title} (© {image_copyright})"
-        elif image_title:
-            text = image_title
-        elif image_copyright:
-            text = f"© {image_copyright}"
-        else:
-            text = ""
+        raw_text = f"{image_title} (© {image_copyright})" if image_title and image_copyright else image_title or f"© {image_copyright}"
+        text = " ".join(raw_text.split())
 
         try:
             img_data = requests.get(image_url)
