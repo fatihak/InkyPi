@@ -165,7 +165,7 @@ case "$command" in
     install)
         install_plugin "$@"
         ;;
-    remove)
+    uninstall)
         uninstall_plugin "$@"
         ;;
     list)

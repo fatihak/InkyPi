@@ -25,7 +25,7 @@ run_app() {
 }
 
 run_plugin_cli() {
-    exec "$PROGRAM_PATH/install/cli/inkypi-plugin" "$@"
+    exec "$PROGRAM_PATH/cli/inkypi-plugin" "$@"
 }
 
 case "$command" in

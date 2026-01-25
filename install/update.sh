@@ -61,8 +61,8 @@ update_app_service() {
 }
 
 update_cli() {
-  cp -r "$SCRIPT_DIR/install/cli" "$INSTALL_PATH/"
-  sudo chmod +x "$INSTALL_PATH/cli/"*.sh
+  cp -r "$SCRIPT_DIR/cli" "$INSTALL_PATH/"
+  sudo chmod +x "$INSTALL_PATH/cli/"*
 }
 
 # Get OS release number, e.g. 11=Bullseye, 12=Bookworm, 13=Trixe
