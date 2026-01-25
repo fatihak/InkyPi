@@ -161,7 +161,7 @@ For reference, see the Weather and AI Text plugins.
 
 To publish your plugin as a third party plugin for others to install, you'll need to create a new repository. See [Creating a new repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/creating-a-new-repository) in the GitHub documentation.
 
-It's also recommended to name your repository InkyPi-{plugin_name}
+Note: It’s recommended to name your repository `InkyPi-{plugin_name}` so it’s easy to discover via GitHub search.
 
 ### Repository Structure
 
