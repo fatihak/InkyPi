@@ -9,7 +9,7 @@ shift || true
 usage() {
     echo ""
     echo "Plugin commands:"
-    echo "  inkypi plugin install <git_repo_url> <plugin_id>"
+    echo "  inkypi plugin install <plugin_id> <git_repository_url>"
     echo "  inkypi plugin remove <plugin_id>"
     echo "  inkypi plugin list"
     echo ""
@@ -31,8 +31,8 @@ install_plugin() {
         exit 1
     fi
 
-    REPO_URL="$1"
-    PLUGIN_ID="$2"
+    PLUGIN_ID="$1"
+    REPO_URL="$2"
     DEST_DIR="$PLUGINS_DIR/$PLUGIN_ID"
 
     require_plugins_dir
