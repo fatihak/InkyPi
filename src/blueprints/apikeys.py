@@ -1,4 +1,5 @@
 from flask import Blueprint, request, jsonify, current_app, render_template
+from dotenv import dotenv_values
 import os
 import re
 import logging
@@ -15,31 +16,15 @@ def get_env_path():
 
 def parse_env_file(filepath):
     """Parse .env file and return list of (key, value) tuples."""
-    entries = []
     if not os.path.exists(filepath):
-        return entries
+        return []
     
     try:
-        with open(filepath, 'r') as f:
-            for line in f:
-                line = line.strip()
-                # Skip empty lines and comments
-                if not line or line.startswith('#'):
-                    continue
-                # Parse KEY=VALUE
-                match = re.match(r'^([A-Za-z_][A-Za-z0-9_]*)=(.*)$', line)
-                if match:
-                    key = match.group(1)
-                    value = match.group(2)
-                    # Remove quotes if present
-                    if (value.startswith('"') and value.endswith('"')) or \
-                       (value.startswith("'") and value.endswith("'")):
-                        value = value[1:-1]
-                    entries.append((key, value))
+        env_dict = dotenv_values(filepath)
+        return list(env_dict.items())
     except Exception as e:
         logger.error(f"Error parsing .env file: {e}")
-    
-    return entries
+        return []
 
 
 def write_env_file(filepath, entries):
@@ -60,12 +45,10 @@ def write_env_file(filepath, entries):
 
 
 def mask_value(value):
-    """Mask API key value for display, showing only first/last few chars."""
+    """Mask API key value for display. Never reveal actual values for security."""
     if not value:
-        return ""
-    if len(value) <= 8:
-        return "●" * len(value)
-    return value[:4] + "●" * (len(value) - 8) + value[-4:]
+        return "(empty)"
+    return "●" * min(len(value), 20)
 
 
 @apikeys_bp.route('/api-keys')
@@ -74,9 +57,9 @@ def apikeys_page():
     env_path = get_env_path()
     entries = parse_env_file(env_path)
     
-    # Prepare entries for template: list of dicts with key, masked, value
+    # Prepare entries for template: only key and masked value (no real values for security)
     template_entries = [
-        {"key": key, "masked": mask_value(value), "value": value}
+        {"key": key, "masked": mask_value(value)}
         for key, value in entries
     ]
     
@@ -94,11 +77,15 @@ def save_apikeys():
         data = request.get_json()
         entries = data.get('entries', [])
         
-        # Validate entries
+        # Load existing values for keys marked as keepExisting
+        env_path = get_env_path()
+        existing_values = dict(parse_env_file(env_path))
+        
+        # Validate and process entries
         valid_entries = []
         for entry in entries:
             key = entry.get('key', '').strip()
-            value = entry.get('value', '').strip()
+            keep_existing = entry.get('keepExisting', False)
             
             if not key:
                 continue
@@ -107,9 +94,14 @@ def save_apikeys():
             if not re.match(r'^[A-Za-z_][A-Za-z0-9_]*$', key):
                 return jsonify({"error": f"Invalid key format: {key}"}), 400
             
+            if keep_existing:
+                # Use existing value from .env file
+                value = existing_values.get(key, '')
+            else:
+                # Use provided value
+                value = entry.get('value', '').strip()
+            
             valid_entries.append((key, value))
-        
-        env_path = get_env_path()
         
         if write_env_file(env_path, valid_entries):
             # Reload environment variables
@@ -126,4 +118,3 @@ def save_apikeys():
     except Exception as e:
         logger.error(f"Error saving API keys: {e}")
         return jsonify({"error": str(e)}), 500
-

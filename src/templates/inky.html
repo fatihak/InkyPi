@@ -52,174 +52,6 @@
             setInterval(refreshImage, refreshIntervalMs);
         });
     </script>
-    <style>
-        /* Plugin Grid/List Styles */
-        .plugins-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 15px;
-        }
-
-        .plugins-title {
-            margin: 0;
-        }
-
-        .plugins-controls {
-            display: flex;
-            gap: 8px;
-            align-items: center;
-        }
-
-        .view-toggle, .sort-toggle {
-            background: var(--bg-secondary, #f5f5f5);
-            border: 1px solid var(--border-color, #ddd);
-            border-radius: 4px;
-            padding: 6px 10px;
-            cursor: pointer;
-            font-size: 14px;
-            color: var(--text-primary, #333);
-            transition: all 0.2s;
-        }
-
-        .view-toggle:hover, .sort-toggle:hover {
-            background: var(--bg-tertiary, #eee);
-        }
-
-        .sort-toggle.active {
-            background: #4CAF50;
-            color: #fff;
-            border-color: #4CAF50;
-        }
-
-        /* Grid View (default) */
-        .plugins-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
-            gap: 10px;
-            justify-items: stretch;
-        }
-
-        .plugin-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: flex-start;
-            text-decoration: none;
-            color: var(--text-primary, #333);
-            padding: 12px 8px 10px;
-            border-radius: 8px;
-            border: 1px solid var(--border-color, #ddd);
-            box-sizing: border-box;
-            width: 100%;
-            justify-self: stretch;
-            transition: background 0.2s, border-color 0.2s;
-        }
-
-        .plugin-item:hover {
-            background: var(--bg-secondary, #f5f5f5);
-            border-color: var(--text-secondary, #999);
-        }
-
-        .plugin-item .icon-image {
-            width: 48px;
-            height: 48px;
-            min-width: 48px;
-            min-height: 48px;
-            border-radius: 10px;
-            object-fit: cover;
-        }
-
-        .plugin-name {
-            margin-top: 8px;
-            font-size: 11px;
-            line-height: 1.2;
-            text-align: center;
-            color: var(--text-secondary, #666);
-            width: 100%;
-            padding: 0 2px;
-            box-sizing: border-box;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-
-        /* List View */
-        .plugins-container.list-view {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
-
-        .plugins-container.list-view .plugin-item {
-            flex-direction: row;
-            justify-content: flex-start;
-            align-items: center;
-            padding: 10px 14px;
-            gap: 12px;
-        }
-
-        .plugins-container.list-view .plugin-item .icon-image {
-            width: 32px;
-            height: 32px;
-            min-width: 32px;
-            min-height: 32px;
-        }
-
-        .plugins-container.list-view .plugin-name {
-            margin-top: 0;
-            font-size: 14px;
-            text-align: left;
-            width: auto;
-            padding: 0;
-            white-space: nowrap;
-        }
-
-        /* Sorting Mode */
-        .plugins-container.sorting .plugin-item {
-            cursor: grab;
-            border-style: dashed;
-            border-color: var(--border-color, #ddd);
-        }
-
-        .plugins-container.sorting .plugin-item:hover {
-            border-color: #4CAF50;
-            background: rgba(76, 175, 80, 0.05);
-        }
-
-        .plugins-container.sorting .plugin-item.dragging {
-            opacity: 0.5;
-            cursor: grabbing;
-        }
-
-        .plugins-container.sorting .plugin-item.drag-over {
-            border-color: #2196F3;
-            border-style: solid;
-            background: rgba(33, 150, 243, 0.1);
-        }
-
-        .sort-hint {
-            display: none;
-            font-size: 12px;
-            color: var(--text-muted, #888);
-            margin-bottom: 10px;
-        }
-
-        .sort-hint.visible {
-            display: block;
-        }
-
-        [data-theme="dark"] .view-toggle,
-        [data-theme="dark"] .sort-toggle {
-            background: #333;
-            border-color: #444;
-        }
-
-        [data-theme="dark"] .view-toggle:hover,
-        [data-theme="dark"] .sort-toggle:hover {
-            background: #444;
-        }
-    </style>
     <script src="{{ url_for('static', filename='scripts/image_modal.js') }}"></script>
 </head>
 <body>
@@ -230,6 +62,9 @@
         <header class="header">
             <h1>{{ config.name }}</h1>
             <button class="settings-button dark-mode-toggle" title="Toggle Dark Mode" aria-label="Toggle Dark Mode"></button>
+            <a href="{{ url_for('apikeys.apikeys_page') }}" class="settings-button" title="API Keys">
+                <span style="font-size: 20px;">🔑</span>
+            </a>
             <a href="{{ url_for('playlist.playlists') }}" class="settings-button">
                 <img src="{{ url_for('static', filename='icons/playlist.png') }}" title="Playlists" alt="playlists icon" class="icon-image">
             </a>
@@ -251,11 +86,10 @@
             <div class="plugins-controls">
                 <button class="sort-toggle" id="sortToggle" title="Reorder plugins">Sort</button>
                 <button class="view-toggle" id="viewToggle" title="Switch view">List</button>
-                <a href="{{ url_for('apikeys.apikeys_page') }}" class="settings-button" title="API Keys" style="padding: 6px 10px;">🔑</a>
             </div>
         </div>
 
-        <div class="sort-hint" id="sortHint">Drag plugins to reorder. Click "Sort" again to save.</div>
+        <div class="sort-hint" id="sortHint">Drag plugins to reorder. Click "Save" when done.</div>
 
         <div class="plugins-container" id="pluginsContainer">
             {% for plugin in plugins %}
@@ -305,7 +139,7 @@
             function enableSorting() {
                 isSorting = true;
                 sortToggle.classList.add('active');
-                sortToggle.textContent = 'Done';
+                sortToggle.textContent = 'Save';
                 sortHint.classList.add('visible');
                 pluginsContainer.classList.add('sorting');
 

@@ -37,7 +37,7 @@
             font-family: monospace;
             font-size: 14px;
             background: var(--input-bg, #fff);
-            color: var(--text-color, #333);
+            color: var(--text-primary, #333);
         }
         
         .apikey-value {
@@ -48,18 +48,19 @@
             font-family: monospace;
             font-size: 14px;
             background: var(--input-bg, #fff);
-            color: var(--text-color, #333);
+            color: var(--text-primary, #333);
         }
         
         .apikey-value.masked {
-            color: var(--text-muted, #888);
+            color: var(--text-secondary, #888);
             letter-spacing: 2px;
+            background: var(--bg-secondary, #f9f9f9);
         }
         
         .apikey-value:focus {
             outline: none;
-            border-color: var(--primary-color, #2c66b1);
-            box-shadow: 0 0 0 2px rgba(44, 102, 177, 0.2);
+            border-color: var(--accent-primary, #1abc9c);
+            box-shadow: 0 0 0 2px rgba(26, 188, 156, 0.2);
         }
         
         .btn-delete {
@@ -81,23 +82,6 @@
             background: #C62828;
         }
         
-        .btn-toggle-visibility {
-            width: 36px;
-            height: 36px;
-            border: 1px solid var(--border-color, #ddd);
-            background: var(--card-bg, #f5f5f5);
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 16px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        .btn-toggle-visibility:hover {
-            background: var(--hover-bg, #eee);
-        }
-        
         .add-buttons-grid {
             display: flex;
             flex-wrap: wrap;
@@ -114,14 +98,14 @@
             background: transparent;
             border-radius: 6px;
             cursor: pointer;
-            color: var(--text-muted, #666);
+            color: var(--text-secondary, #666);
             font-size: 14px;
             transition: all 0.2s;
         }
         
         .btn-add:hover {
-            border-color: var(--primary-color, #2c66b1);
-            color: var(--primary-color, #2c66b1);
+            border-color: var(--accent-primary, #1abc9c);
+            color: var(--accent-primary, #1abc9c);
         }
 
         .btn-preset {
@@ -130,7 +114,7 @@
             background: var(--bg-secondary, #f5f5f5);
             border-radius: 6px;
             cursor: pointer;
-            color: var(--text-muted, #666);
+            color: var(--text-secondary, #666);
             font-size: 12px;
             font-family: monospace;
             transition: all 0.2s;
@@ -180,6 +164,11 @@
             color: #eee;
         }
         
+        [data-theme="dark"] .apikey-value.masked {
+            background: #2a2a2a;
+            color: #888;
+        }
+        
         [data-theme="dark"] .info-banner {
             background: #3E2723;
             border-color: #5D4037;
@@ -192,7 +181,7 @@
         .empty-state {
             text-align: center;
             padding: 40px 20px;
-            color: var(--text-muted, #666);
+            color: var(--text-secondary, #666);
         }
         
         .empty-state-icon {
@@ -222,10 +211,9 @@
             <div id="apikeys-list">
                 {% if entries %}
                     {% for entry in entries %}
-                    <div class="apikey-row" data-original-value="{{ entry.value }}">
-                        <input type="text" class="apikey-key" value="{{ entry.key }}" placeholder="KEY_NAME">
-                        <input type="text" class="apikey-value masked" value="{{ entry.masked }}" placeholder="value" data-masked="{{ entry.masked }}" data-revealed="false">
-                        <button type="button" class="btn-toggle-visibility" onclick="toggleVisibility(this)" title="Show/Hide">👁️</button>
+                    <div class="apikey-row" data-existing="true">
+                        <input type="text" class="apikey-key" value="{{ entry.key }}" placeholder="KEY_NAME" readonly>
+                        <input type="text" class="apikey-value masked" value="{{ entry.masked }}" placeholder="(unchanged)" readonly>
                         <button type="button" class="btn-delete" onclick="deleteRow(this)" title="Delete">×</button>
                     </div>
                     {% endfor %}
@@ -254,8 +242,8 @@
             <div class="info-banner">
                 <span class="info-banner-icon">ℹ️</span>
                 <span class="info-banner-text">
-                    API keys are stored in the <code>.env</code> file. 
-                    Values are encrypted in transit but stored as plain text on the device.
+                    API keys are stored in the <code>.env</code> file on the device.
+                    For security, existing values are never displayed. To change a key, delete it and add a new one.
                     Some plugins may require a restart after changing keys.
                 </span>
             </div>
@@ -281,10 +269,10 @@
             const list = document.getElementById('apikeys-list');
             const row = document.createElement('div');
             row.className = 'apikey-row';
+            row.dataset.existing = 'false';
             row.innerHTML = `
                 <input type="text" class="apikey-key" value="${key}" placeholder="KEY_NAME">
-                <input type="text" class="apikey-value" value="${value}" placeholder="value">
-                <button type="button" class="btn-toggle-visibility" style="visibility: hidden;">👁️</button>
+                <input type="text" class="apikey-value" value="${value}" placeholder="Enter value">
                 <button type="button" class="btn-delete" onclick="deleteRow(this)" title="Delete">×</button>
             `;
             list.appendChild(row);
@@ -345,49 +333,47 @@
             }
         }
         
-        function toggleVisibility(btn) {
-            const row = btn.closest('.apikey-row');
-            const input = row.querySelector('.apikey-value');
-            const isRevealed = input.dataset.revealed === 'true';
-            
-            if (isRevealed) {
-                // Hide - show masked
-                input.value = input.dataset.masked;
-                input.classList.add('masked');
-                input.dataset.revealed = 'false';
-                btn.textContent = '👁️';
-            } else {
-                // Reveal - show actual value
-                const originalValue = row.dataset.originalValue || '';
-                input.value = originalValue;
-                input.classList.remove('masked');
-                input.dataset.revealed = 'true';
-                btn.textContent = '🙈';
-            }
-        }
-        
         async function saveKeys() {
             const rows = document.querySelectorAll('.apikey-row');
             const entries = [];
+            let hasNewKeys = false;
             
             rows.forEach(row => {
                 const keyInput = row.querySelector('.apikey-key');
                 const valueInput = row.querySelector('.apikey-value');
+                const isExisting = row.dataset.existing === 'true';
                 
                 if (!keyInput || !valueInput) return;
                 
                 const key = keyInput.value.trim();
-                let value = valueInput.value.trim();
-                
-                // If value is masked, use original value
-                if (valueInput.classList.contains('masked') && valueInput.dataset.revealed === 'false') {
-                    value = row.dataset.originalValue || '';
-                }
+                const value = valueInput.value.trim();
                 
                 if (key) {
-                    entries.push({ key, value });
+                    if (isExisting) {
+                        // Existing key - mark to keep current value on server
+                        entries.push({ key, value: null, keepExisting: true });
+                    } else {
+                        // New key - must have a value
+                        if (!value) {
+                            hasNewKeys = true;
+                            return;
+                        }
+                        entries.push({ key, value });
+                    }
                 }
             });
+            
+            if (hasNewKeys) {
+                const newRows = document.querySelectorAll('.apikey-row[data-existing="false"]');
+                for (const row of newRows) {
+                    const valueInput = row.querySelector('.apikey-value');
+                    if (!valueInput.value.trim()) {
+                        valueInput.focus();
+                        showResponseModal('failure', 'Please enter a value for new API keys');
+                        return;
+                    }
+                }
+            }
             
             try {
                 const response = await fetch('{{ url_for("apikeys.save_apikeys") }}', {
@@ -400,7 +386,7 @@
                 
                 if (response.ok) {
                     showResponseModal('success', result.message);
-                    // Reload page to refresh masked values
+                    // Reload page to refresh
                     setTimeout(() => window.location.reload(), 1500);
                 } else {
                     showResponseModal('failure', result.error);
