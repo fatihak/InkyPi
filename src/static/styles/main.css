@@ -4,6 +4,7 @@
     --bg-secondary: #ffffff;
     --text-primary: #333333;
     --text-secondary: #555555;
+    --text-muted: #888888;
     --border-color: #e0e0e0;
     --border-light: #dddddd;
     --border-subtle: #ddd;
@@ -39,6 +40,7 @@ html[data-theme="dark"] {
     --bg-secondary: #2d2d2d;
     --text-primary: #e0e0e0;
     --text-secondary: #b0b0b0;
+    --text-muted: #777777;
     --border-color: #444444;
     --border-light: #555555;
     --border-subtle: #555555;
@@ -122,16 +124,18 @@ body {
 /* Current image styling */
 .image-container {
     position: relative;
-    width: 300px;
+    width: fit-content;
     margin: 0 auto;
+    padding: 6px;
     cursor: pointer;
     transition: opacity 0.3s ease;
+    background-color: #1a1a1a;
+    border-radius: 8px;
 }
 
 .image-container img {
     height: auto;
     display: block;
-    margin: auto;
     border-radius: 6px;
     max-width: 20rem;
     max-height: 15rem;
@@ -1070,4 +1074,74 @@ html[data-theme="dark"] .settings-button.dark-mode-toggle::before {
 
 .font-weight-normal {
     font-weight: normal;
+}
+
+/* Hardware button controls */
+.display-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    margin: 0 auto;
+}
+
+.button-panel {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    width: fit-content;
+    margin: 16px auto 0;
+    padding: 12px;
+    background-color: var(--bg-secondary);
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+}
+
+.button-panel-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.button-panel-buttons {
+    display: flex;
+    flex-direction: row;
+    gap: 12px;
+}
+
+.hw-button {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    border: 2px solid var(--border-color);
+    background-color: var(--button-bg);
+    color: var(--text-primary);
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: manipulation;
+}
+
+.hw-button:hover {
+    background-color: var(--button-hover);
+    border-color: var(--accent-primary);
+}
+
+.hw-button.pressed {
+    transform: scale(0.95);
+    background-color: var(--accent-primary);
+    border-color: var(--accent-primary);
+    color: white;
+}
+
+.hw-button.long-pressed {
+    background-color: var(--accent-warn);
+    border-color: var(--accent-warn);
+    color: white;
 }
