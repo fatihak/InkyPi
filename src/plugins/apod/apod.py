@@ -4,9 +4,10 @@ This plugin fetches the Astronomy Picture of the Day (APOD) from NASA's API
 and displays it on the InkyPi device. It supports optional manual date selection or random dates.
 For the API key, set `NASA_SECRET={API_KEY}` in your .env file.
 """
+import numpy as np
 
 from plugins.base_plugin.base_plugin import BasePlugin
-from PIL import Image
+from PIL import Image, ImageDraw, ImageFont
 from io import BytesIO
 import requests
 import logging
@@ -55,7 +56,13 @@ class Apod(BasePlugin):
         if data.get("media_type") != "image":
             raise RuntimeError("APOD is not an image today.")
 
+        logger.info(f"APOD image: {data}")
         image_url = data.get("hdurl") or data.get("url")
+        image_title = data.get("title", "")
+        image_copyright = data.get("copyright", "")
+
+        raw_text = f"{image_title} (© {image_copyright})" if image_title and image_copyright else image_title or f"© {image_copyright}"
+        text = " ".join(raw_text.split())
 
         try:
             img_data = requests.get(image_url, timeout=30)
@@ -64,4 +71,88 @@ class Apod(BasePlugin):
             logger.error(f"Failed to load APOD image: {str(e)}")
             raise RuntimeError("Failed to load APOD image.")
 
+        if settings.get('autoResize') == 'true':
+            inky_res = device_config.config.get('resolution')
+            if settings.get('autoBgColor') == 'true':
+                bg = Apod.average_border_color(image)
+            else:
+                bg = 0, 0, 0
+
+            image = self.fit_with_background(
+                image,
+                inky_res,
+                bg
+            )
+            pass
+
+        if settings.get('showTitle') == 'true':
+            # Add title and copyright
+            draw = ImageDraw.Draw(image)
+            padding = int(settings.get('textPadding', 20))
+            fs = int(settings.get('textSize', 20))
+
+            # choose font (fallback to default)
+            try:
+                font = ImageFont.truetype("src/static/fonts/Jost.ttf", fs)
+            except IOError:
+                logger.error(f"Failed to load font, using default font.")
+                font = ImageFont.load_default(fs)
+
+            # text size
+            bbox = draw.textbbox((0, 0), text, font=font)
+            text_width = bbox[2] - bbox[0]
+            text_height = bbox[3] - bbox[1]
+
+            # bottom-right position with padding
+            x = image.width - text_width - padding
+            y = image.height - text_height - padding
+
+            # draw text (white with optional shadow for readability)
+            #draw.text((x + 1, y + 1), text, font=font, fill="black")
+            draw.text((x, y), text, font=font, fill="white")
+
         return image
+
+    @staticmethod
+    def resize_to_fit(img: Image.Image, target_size: tuple[int, int]) -> Image.Image:
+        target_w, target_h = target_size
+
+        img = img.copy()
+        img.thumbnail((target_w, target_h), Image.LANCZOS)
+
+        return img
+
+    @staticmethod
+    def fit_with_background(
+        img: Image.Image,
+        target_size: tuple[int, int],
+        background=(255, 255, 255)
+    ) -> Image.Image:
+        img = Apod.resize_to_fit(img, target_size)
+
+        canvas = Image.new("RGB", target_size, background)
+        x = (target_size[0] - img.width) // 2
+        y = (target_size[1] - img.height) // 2
+
+        canvas.paste(img, (x, y))
+        return canvas
+
+    @staticmethod
+    def average_border_color(img: Image.Image, border_px: int = 10):
+        img = img.convert("RGB")
+        w, h = img.size
+
+        pixels = []
+
+        # Top & bottom
+        for y in range(border_px):
+            pixels.extend(img.crop((0, y, w, y + 1)).getdata())
+            pixels.extend(img.crop((0, h - y - 1, w, h - y)).getdata())
+
+        # Left & right
+        for x in range(border_px):
+            pixels.extend(img.crop((x, 0, x + 1, h)).getdata())
+            pixels.extend(img.crop((w - x - 1, 0, w - x, h)).getdata())
+
+        return tuple(map(int, np.mean(pixels, axis=0)))
+

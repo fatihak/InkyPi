@@ -432,6 +432,9 @@ small {
     color: var(--text-primary);
     white-space: nowrap;
     transition: color 0.3s ease;
+
+    width: 220px;      /* FIXED COLUMN WIDTH */
+    flex-shrink: 0;    /* PREVENT FLEX RESIZE */
 }
 
 /* Input field styling */
