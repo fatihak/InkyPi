@@ -26,22 +26,6 @@
         </small>
     </div>
 
-    <div class="form-group">
-        <label for="orientationFilter" class="form-label">Match Orientation:</label>
-        <div class="toggle-container">
-            <!-- Checkbox for display only, doesn't submit -->
-            <input type="checkbox" id="orientationFilterCheckbox" class="toggle-checkbox" checked
-                onchange="updateOrientationFilterValue()">
-            <label for="orientationFilterCheckbox" class="toggle-label"></label>
-        </div>
-        <!-- Hidden input that actually submits the value -->
-        <input type="hidden" id="orientationFilter" name="orientationFilter" value="true">
-        <small style="display: block; margin-top: 5px; color: #666; font-size: 0.9em;">
-            When enabled: only selects images matching the display orientation (landscape/portrait) and crops them to fill the screen.
-            Background settings apply only when disabled.
-        </small>
-    </div>
-
    <div class="form-group">
         <label for="randomize" class="form-label">Random Order:</label>
         <div class="toggle-container">
@@ -52,7 +36,7 @@
     </div>
 
     <div class="form-group">
-        <label class="form-label" for="backgroundOption">Background <small style="color: #888;">(when Match Orientation is off)</small>:</label>
+        <label class="form-label" for="backgroundOption">Background:</label>
         <div class="form-group">
             <input type="radio" id="backgroundOption" name="backgroundOption" value="blur">
             <label>Blur</label>
@@ -64,14 +48,6 @@
 </div>
 
 <script>
-    // Update hidden input value when checkbox changes
-    function updateOrientationFilterValue() {
-        const checkbox = document.getElementById('orientationFilterCheckbox');
-        const hiddenInput = document.getElementById('orientationFilter');
-        hiddenInput.value = checkbox.checked ? 'true' : 'false';
-        console.log('Orientation filter changed to:', hiddenInput.value);
-    }
-
     // populate form values from plugin settings
     document.addEventListener('DOMContentLoaded', () => {
         let backgroundOption = "blur"
@@ -82,14 +58,6 @@
             document.getElementById('randomize').checked = pluginSettings.randomize;
             document.getElementById('backgroundColor').value = pluginSettings.backgroundColor;
             backgroundOption = pluginSettings.backgroundOption || 'blur'
-
-            // Load orientation filter setting (default: true)
-            const orientationFilter = pluginSettings.orientationFilter !== undefined ?
-                pluginSettings.orientationFilter === 'true' : true;
-            document.getElementById('orientationFilterCheckbox').checked = orientationFilter;
-            document.getElementById('orientationFilter').value = orientationFilter ? 'true' : 'false';
-
-            console.log('Loaded orientation filter setting:', orientationFilter);
         }
         document.querySelector(`input[name="backgroundOption"][value="${backgroundOption}"]`).checked = true;
     });

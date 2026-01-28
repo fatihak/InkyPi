@@ -4,7 +4,7 @@ from random import choice
 from PIL import Image, ImageColor, ImageOps
 from utils.http_client import get_http_session
 from plugins.base_plugin.base_plugin import BasePlugin
-from utils.image_utils import pad_image_blur, resize_image
+from utils.image_utils import pad_image_blur
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +30,7 @@ class ImmichProvider:
         return matching_albums[0]["id"]
 
     def get_assets(self, album_id: str) -> list[dict]:
-        """Fetch all assets from album with their full metadata including dimensions."""
+        """Fetch all assets from album."""
         all_items = []
         page_items = [1]
         page = 1
@@ -51,140 +51,15 @@ class ImmichProvider:
             page += 1
 
         logger.debug(f"Found {len(all_items)} total assets in album")
+        return all_items
 
-        # Fetch full asset details to get exifInfo with dimensions
-        # The search/metadata endpoint doesn't include dimension data
-        logger.debug(f"Fetching full details for {len(all_items)} assets to get dimensions")
-        detailed_assets = []
-
-        for asset in all_items:
-            asset_id = asset.get('id')
-            try:
-                r = self.session.get(f"{self.base_url}/api/assets/{asset_id}", headers=self.headers)
-                r.raise_for_status()
-                detailed_asset = r.json()
-                detailed_assets.append(detailed_asset)
-            except Exception as e:
-                logger.warning(f"Failed to fetch details for asset {asset_id}: {e}")
-                # Keep the original asset data even if detail fetch fails
-                detailed_assets.append(asset)
-
-        # Debug: Log first detailed asset structure
-        if detailed_assets:
-            first_asset = detailed_assets[0]
-            logger.debug(f"Sample detailed asset - ID: {first_asset.get('id')}")
-            logger.debug(f"Available keys: {list(first_asset.keys())}")
-            if 'exifInfo' in first_asset:
-                exif_keys = list(first_asset['exifInfo'].keys())
-                logger.debug(f"EXIF keys: {exif_keys}")
-                exif_info = first_asset['exifInfo']
-                if 'exifImageWidth' in exif_info and 'exifImageHeight' in exif_info:
-                    logger.debug(f"Dimensions: {exif_info['exifImageWidth']}x{exif_info['exifImageHeight']}")
-
-        return detailed_assets
-
-    def filter_assets_by_orientation(self, assets: list[dict], dimensions: tuple[int, int]) -> list[dict]:
+    def get_image(self, album: str, dimensions: tuple[int, int]) -> Image.Image | None:
         """
-        Filter assets to match display orientation.
-
-        Args:
-            assets: List of asset objects with dimension metadata
-            dimensions: Target display dimensions (width, height)
-
-        Returns:
-            List of assets matching the orientation, raises error if none match
-        """
-        display_width, display_height = dimensions
-        display_is_landscape = display_width > display_height
-        orientation_name = "landscape" if display_is_landscape else "portrait"
-
-        logger.info(f"Display: {display_width}x{display_height} ({orientation_name})")
-
-        matching_assets = []
-        skipped_wrong_orientation = 0
-        skipped_no_dimensions = 0
-
-        for asset in assets:
-            asset_id = asset.get("id", "unknown")
-
-            # Get EXIF info
-            exif_info = asset.get("exifInfo", {})
-            img_width = exif_info.get("exifImageWidth")
-            img_height = exif_info.get("exifImageHeight")
-            exif_orientation = exif_info.get("orientation")
-
-            # Skip assets without dimension info
-            if not img_width or not img_height:
-                logger.debug(f"Asset {asset_id}: No dimensions available, skipping")
-                skipped_no_dimensions += 1
-                continue
-
-            # Log orientation value for debugging
-            logger.debug(f"Asset {asset_id}: EXIF dimensions {img_width}x{img_height}, orientation={exif_orientation} (type: {type(exif_orientation).__name__})")
-
-            # Apply EXIF orientation to determine actual displayed dimensions
-            # EXIF orientation values that cause 90°/270° rotation (swaps dimensions):
-            # - 6: Rotate 90° CW
-            # - 8: Rotate 270° CW (or 90° CCW)
-            # The value might be int or string depending on Immich version
-            actual_width = img_width
-            actual_height = img_height
-
-            orientation_rotates = False
-            if exif_orientation is not None:
-                # Convert to int if it's a string
-                try:
-                    orientation_value = int(exif_orientation) if isinstance(exif_orientation, str) else exif_orientation
-                    if orientation_value in [6, 8]:
-                        orientation_rotates = True
-                except (ValueError, TypeError):
-                    logger.debug(f"Asset {asset_id}: Could not parse orientation value: {exif_orientation}")
-
-            if orientation_rotates:
-                # Image will be rotated 90° or 270°, swap dimensions
-                actual_width = img_height
-                actual_height = img_width
-                logger.debug(f"Asset {asset_id}: Orientation {exif_orientation} causes rotation - swapping to {actual_width}x{actual_height}")
-
-            # Check if asset orientation matches display orientation
-            asset_is_landscape = actual_width > actual_height
-            asset_orientation = "landscape" if asset_is_landscape else "portrait"
-
-            dimension_info = f"{img_width}x{img_height}"
-            if orientation_rotates:
-                dimension_info += f" (rotated to {actual_width}x{actual_height})"
-
-            if asset_is_landscape == display_is_landscape:
-                logger.debug(f"Asset {asset_id}: {dimension_info} ({asset_orientation}) - MATCH")
-                matching_assets.append(asset)
-            else:
-                logger.debug(f"Asset {asset_id}: {dimension_info} ({asset_orientation}) - FILTERED OUT")
-                skipped_wrong_orientation += 1
-
-        logger.info(f"Orientation filter results: {len(matching_assets)} matching, "
-                   f"{skipped_wrong_orientation} wrong orientation, {skipped_no_dimensions} no dimension data")
-
-        if matching_assets:
-            logger.info(f"Using {len(matching_assets)} {orientation_name} images")
-            return matching_assets
-        else:
-            if skipped_no_dimensions > 0:
-                error_msg = (f"No {orientation_name} images found in album. "
-                           f"Found {len(assets)} total assets but {skipped_no_dimensions} have no dimension metadata. "
-                           f"Try disabling orientation filtering or check your Immich version.")
-            else:
-                error_msg = f"No {orientation_name} images found in album. Found {len(assets)} total assets but none match the display orientation."
-            logger.error(error_msg)
-            raise RuntimeError(error_msg)
-
-    def get_image(self, album: str, dimensions: tuple[int, int], orientation_filter: bool = True) -> Image.Image | None:
-        """
-        Get a random image from the album, optionally filtered by orientation.
+        Get a random image from the album.
 
         Args:
             album: Album name
             dimensions: Target dimensions (width, height)
-            orientation_filter: If True, prefer images matching the display orientation
 
         Returns:
             PIL Image or None on error
@@ -199,19 +74,11 @@ class ImmichProvider:
                 logger.error(f"No assets found in album '{album}'")
                 return None
 
-            # Filter by orientation if enabled
-            if orientation_filter:
-                assets = self.filter_assets_by_orientation(assets, dimensions)
-
-                if not assets:
-                    logger.error(f"No assets available after filtering")
-                    return None
-
         except Exception as e:
             logger.error(f"Error retrieving album data from {self.base_url}: {e}")
             return None
 
-        # Select random asset from (filtered) list
+        # Select random asset
         selected_asset = choice(assets)
         asset_id = selected_asset["id"]
         asset_url = f"{self.base_url}/api/assets/{asset_id}/original"
@@ -281,14 +148,8 @@ class ImageAlbum(BasePlugin):
                 logger.info(f"Immich URL: {url}")
                 logger.info(f"Album: {album}")
 
-                # Check if orientation filtering is enabled (default: true)
-                orientation_filter_setting = settings.get('orientationFilter', 'true')
-                orientation_filter = orientation_filter_setting == 'true'
-                logger.info(f"Orientation filter setting received: '{orientation_filter_setting}'")
-                logger.info(f"Orientation filtering: {'enabled' if orientation_filter else 'disabled'}")
-
                 provider = ImmichProvider(url, key, self.image_loader)
-                img = provider.get_image(album, dimensions, orientation_filter)
+                img = provider.get_image(album, dimensions)
 
                 if not img:
                     logger.error("Failed to retrieve image from Immich")
@@ -304,14 +165,9 @@ class ImageAlbum(BasePlugin):
         # Check padding options
         use_padding = settings.get('padImage') == "true"
         background_option = settings.get('backgroundOption', 'blur')
-        logger.debug(f"Settings: pad_image={use_padding}, background_option={background_option}, orientation_filter={orientation_filter}")
+        logger.debug(f"Settings: pad_image={use_padding}, background_option={background_option}")
 
-        # When orientation filtering is enabled and found a matching image,
-        # use crop-to-fill instead of pad-to-fit for better display
-        if orientation_filter and use_padding:
-            logger.info("Orientation-matched image: using crop-to-fill instead of pad-to-fit for optimal display")
-            img = resize_image(img, dimensions)
-        elif use_padding:
+        if use_padding:
             logger.debug(f"Applying padding with {background_option} background")
             if background_option == "blur":
                 img = pad_image_blur(img, dimensions)
