@@ -39,7 +39,7 @@
             <div class="data-point-measurement">
 			        {{ dp.measurement }}{% if dp.unit %}<span class="data-point-unit">{{ dp.unit }}</span>{% endif %}
               {% if dp.label == "Wind" %}
-                <span class="wind-arrow-symbol" style="margin-right: 5px;">{{ dp.arrow }}</span>
+                <span class="wind-arrow-symbol">{{ dp.arrow }}</span>
               {% endif %}
 		    	 </div>
           </div>
@@ -93,6 +93,8 @@
     const temperatures = [{% for hour in hourly_forecast %}{{ hour.temperature }}{% if not loop.last %}, {% endif %}{% endfor %}];
     const precipitation = [{% for hour in hourly_forecast %}{{ hour.precipitation * 100}}{% if not loop.last %}, {% endif %}{% endfor %}]; // Convert to percentage
     const rain = [{% for hour in hourly_forecast %}{{ hour.rain or 0 }}{% if not loop.last %}, {% endif %}{% endfor %}];
+    const weatherIconsPaths = [{% for hour in hourly_forecast %}"{{ hour.icon | replace('\\', '/') }}"{% if not loop.last %}, {% endif %}{% endfor %}];
+	const iconStep = parseInt("{{ plugin_settings.graphIconStep or 2 }}");
 	const units = document.getElementById('units-container').dataset.units;
 	const isImperial = units === "imperial";
 	const unit = isImperial ? "in" : "mm";
@@ -139,6 +141,34 @@
       }
     });
 	
+    {% if plugin_settings.displayGraphIcons == "true" %}
+    Chart.register({
+      id: 'chartIcons',
+      afterDatasetsDraw(chart) {
+        const { ctx, chartArea: { bottom }, scales: { x } } = chart;
+        const iconSize = 22;
+
+        ctx.save();
+        chart.getDatasetMeta(0).data.forEach((point, i) => {
+		
+		if (i % iconStep !== 0) return;
+		
+          const img = new Image();
+          img.src = weatherIconsPaths[i];
+          const xPos = point.x - (iconSize / 2);
+          const yPos = bottom + 25;
+      
+          if (img.complete) {
+            ctx.drawImage(img, xPos, yPos, iconSize, iconSize);
+          } else {
+            img.onload = () => ctx.drawImage(img, xPos, yPos, iconSize, iconSize);
+          }
+        });
+        ctx.restore();
+      }
+    });
+    {% endif %}
+
     const chart = new Chart(ctx, {
       type: 'line',
       data: {
@@ -172,7 +202,13 @@
       ]
       },
       options: {
-        animation: {
+        layout: {
+		  padding: {
+		    top: {% if plugin_settings.displayGraphIcons == "true" %}3{% else %}0{% endif %},
+		    bottom: {% if plugin_settings.displayGraphIcons == "true" %}11{% else %}0{% endif %}
+		  }
+        },
+		animation: {
           duration: 0, // general animation time
         },
         responsive: true,
@@ -181,7 +217,7 @@
           x: {
             ticks: {
               autoSkip: true,
-              padding: 0,
+              padding: 10,
               maxRotation: 0, // Prevent label rotation
               minRotation: 0, // Prevent label rotation
               color: "{{ plugin_settings.textColor }}",
@@ -200,7 +236,7 @@
           },
           y: {
             ticks: {
-              padding: 0,
+              padding: 5,
               color: "{{ plugin_settings.textColor }}",
               font: {
                 family: 'Jost'

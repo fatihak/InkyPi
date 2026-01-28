@@ -2,7 +2,7 @@ class AbstractDisplay:
     """
     Abstract base class for all display devices.
 
-    This class defines methods taht subclasses are required to implement for
+    This class defines methods that subclasses are required to implement for
     initialization and to display images on a screen.  
 
     These implementations will be device specific.

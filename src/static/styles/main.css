@@ -178,9 +178,8 @@ body {
     font-size: 1.2rem;
     font-weight: 600;
     color: var(--text-secondary);
-    margin-bottom: 10px;
+    margin: 0;
     text-align: left;
-    margin-left: 5px;
     transition: color 0.3s ease;
 }
 
@@ -1070,4 +1069,157 @@ html[data-theme="dark"] .settings-button.dark-mode-toggle::before {
 
 .font-weight-normal {
     font-weight: normal;
+}
+
+/* Plugin Grid/List View Styles */
+.plugins-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 15px;
+}
+
+.plugins-controls {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.view-toggle,
+.sort-toggle {
+    background: var(--button-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    padding: 6px 10px;
+    cursor: pointer;
+    font-size: 14px;
+    color: var(--text-primary);
+    transition: all 0.2s;
+}
+
+.view-toggle:hover,
+.sort-toggle:hover {
+    background: var(--button-hover);
+}
+
+.sort-toggle.active {
+    background: #4CAF50;
+    color: #fff;
+    border-color: #4CAF50;
+}
+
+/* Grid View (default) */
+.plugins-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+    gap: 10px;
+    justify-items: stretch;
+}
+
+.plugins-container .plugin-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    text-decoration: none;
+    color: var(--text-primary);
+    padding: 12px 8px 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    box-sizing: border-box;
+    width: 100%;
+    justify-self: stretch;
+    transition: background 0.2s, border-color 0.2s;
+}
+
+.plugins-container .plugin-item:hover {
+    background: var(--button-bg);
+    border-color: var(--text-secondary);
+}
+
+.plugins-container .plugin-item .icon-image {
+    width: 48px;
+    height: 48px;
+    min-width: 48px;
+    min-height: 48px;
+    border-radius: 10px;
+    object-fit: cover;
+}
+
+.plugin-name {
+    margin-top: 8px;
+    font-size: 11px;
+    line-height: 1.2;
+    text-align: center;
+    color: var(--text-secondary);
+    width: 100%;
+    padding: 0 2px;
+    box-sizing: border-box;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* List View */
+.plugins-container.list-view {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.plugins-container.list-view .plugin-item {
+    flex-direction: row;
+    justify-content: flex-start;
+    align-items: center;
+    padding: 10px 14px;
+    gap: 12px;
+}
+
+.plugins-container.list-view .plugin-item .icon-image {
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    min-height: 32px;
+}
+
+.plugins-container.list-view .plugin-name {
+    margin-top: 0;
+    font-size: 14px;
+    text-align: left;
+    width: auto;
+    padding: 0;
+    white-space: nowrap;
+}
+
+/* Sorting Mode */
+.plugins-container.sorting .plugin-item {
+    cursor: grab;
+    border-style: dashed;
+}
+
+.plugins-container.sorting .plugin-item:hover {
+    border-color: #4CAF50;
+    background: rgba(76, 175, 80, 0.05);
+}
+
+.plugins-container.sorting .plugin-item.dragging {
+    opacity: 0.5;
+    cursor: grabbing;
+}
+
+.plugins-container.sorting .plugin-item.drag-over {
+    border-color: #2196F3;
+    border-style: solid;
+    background: rgba(33, 150, 243, 0.1);
+}
+
+.sort-hint {
+    display: none;
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-bottom: 10px;
+}
+
+.sort-hint.visible {
+    display: block;
 }

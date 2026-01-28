@@ -73,7 +73,7 @@ def image(plugin_id, filename):
 
     # Security check to prevent directory traversal
     safe_path = os.path.abspath(os.path.join(plugin_dir, filename))
-    if not safe_path.startswith(os.path.abspath(plugin_dir)):
+    if not safe_path.startswith(os.path.abspath(plugins_dir)):
         return "Invalid path", 403
 
     # Convert to absolute path for send_from_directory
