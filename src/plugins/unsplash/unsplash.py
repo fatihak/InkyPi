@@ -20,17 +20,11 @@ class Unsplash(BasePlugin):
         content_filter = settings.get('content_filter', 'low')
         color = settings.get('color')
         orientation = settings.get('orientation')
-        image_size = settings.get('image_size', 'regular')  # Default to 'regular' for memory efficiency
 
-        # CRITICAL: Automatically downgrade dangerous image sizes on low-resource devices
-        # This prevents OOM crashes
+        # Automatically determine image size based on device capabilities
         is_low_resource = _is_low_resource_device()
-        original_size = image_size
-
-        if is_low_resource and image_size == 'full':
-            image_size = 'regular'
-            logger.warning(f"⚠️  Image size 'full' may cause crashes on low-RAM devices")
-            logger.warning(f"⚠️  Automatically downgraded from '{original_size}' to '{image_size}' for stability")
+        image_size = 'regular' if is_low_resource else 'full'
+        logger.info(f"Device type: {'low-resource' if is_low_resource else 'standard'}, using image size: '{image_size}'")
 
         logger.info(f"Settings: image_size='{image_size}', content_filter='{content_filter}'")
         if search_query:

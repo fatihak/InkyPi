@@ -45,20 +45,6 @@
             <option value="portrait">Portrait</option>
         </select>
     </div>
-
-    <div class="form-group">
-        <label for="image_size" class="form-label">Image Size:</label>
-        <select id="image_size" name="image_size" class="form-input">
-            <option value="small">Small (400px) - Fastest</option>
-            <option value="regular">Regular (1080px) - Recommended</option>
-            <option value="full">Full (2000px+) - High quality</option>
-        </select>
-        <small style="width: 100%; color: var(--text-primary);">
-            <strong>Small:</strong> Fast downloads, good for simple images.<br>
-            <strong>Regular (Recommended):</strong> Perfect balance for e-ink displays. Safe on all devices.<br>
-            <strong>Full:</strong> Very high resolution (2000-4000px). Automatically downgraded to Regular on Raspberry Pi Zero to prevent crashes.
-        </small>
-    </div>
 </div>
 
 <script>
@@ -70,7 +56,6 @@
             document.getElementById('content_filter').value = pluginSettings.content_filter || 'low';
             document.getElementById('color').value = pluginSettings.color || '';
             document.getElementById('orientation').value = pluginSettings.orientation || '';
-            document.getElementById('image_size').value = pluginSettings.image_size || 'regular';
         }
     });
 </script>
