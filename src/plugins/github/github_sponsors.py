@@ -69,7 +69,7 @@ def fetch_sponsorships(username, api_key):
     headers = {"Authorization": f"Bearer {api_key}"}
     variables = {"username": username}
 
-    resp = requests.post(url, json={"query": GRAPHQL_QUERY, "variables": variables}, headers=headers)
+    resp = requests.post(url, json={"query": GRAPHQL_QUERY, "variables": variables}, headers=headers, timeout=30)
     resp.raise_for_status()
     data = resp.json()
 

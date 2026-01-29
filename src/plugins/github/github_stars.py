@@ -39,7 +39,7 @@ def fetch_stars(github_repository):
     url = f"https://api.github.com/repos/{github_repository}"
     headers = {"Accept": "application/json"}
 
-    response = requests.get(url, headers=headers)
+    response = requests.get(url, headers=headers, timeout=30)
     if response.status_code == 200:
         data = response.json()
     else:

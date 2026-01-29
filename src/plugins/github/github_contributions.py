@@ -63,7 +63,7 @@ def fetch_contributions(username, api_key):
     url = "https://api.github.com/graphql"
     headers = {"Authorization": f"Bearer {api_key}"}
     variables = {"username": username}
-    resp = requests.post(url, json={"query": GRAPHQL_QUERY, "variables": variables}, headers=headers)
+    resp = requests.post(url, json={"query": GRAPHQL_QUERY, "variables": variables}, headers=headers, timeout=30)
     resp.raise_for_status()
     return resp.json()
 

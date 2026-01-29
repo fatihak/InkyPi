@@ -53,6 +53,7 @@ def plugin_page(plugin_id):
                 # add plugin instance settings to the template to prepopulate
                 template_params["plugin_settings"] = plugin_instance.settings
                 template_params["plugin_instance"] = plugin_instance_name
+                template_params["refresh_settings"] = plugin_instance.refresh
 
             template_params["playlists"] = playlist_manager.get_playlist_names()
         except Exception as e:
@@ -72,7 +73,7 @@ def image(plugin_id, filename):
 
     # Security check to prevent directory traversal
     safe_path = os.path.abspath(os.path.join(plugin_dir, filename))
-    if not safe_path.startswith(os.path.abspath(plugin_dir)):
+    if not safe_path.startswith(os.path.abspath(plugins_dir)):
         return "Invalid path", 403
 
     # Convert to absolute path for send_from_directory
@@ -163,15 +164,37 @@ def update_plugin_instance(instance_name):
 
         if not instance_name:
             raise RuntimeError("Instance name is required")
-        plugin_settings = form_data
-        plugin_settings.update(handle_request_files(request.files, request.form))
 
-        plugin_id = plugin_settings.pop("plugin_id")
+        plugin_id = form_data.pop("plugin_id")
         plugin_instance = playlist_manager.find_plugin(plugin_id, instance_name)
         if not plugin_instance:
             return jsonify({"error": f"Plugin instance: {instance_name} does not exist"}), 500
 
-        plugin_instance.settings = plugin_settings
+        # Handle refresh settings if provided
+        refresh_settings_json = form_data.pop("refresh_settings", None)
+        if refresh_settings_json:
+            from utils.time_utils import calculate_seconds
+            refresh_settings = json.loads(refresh_settings_json)
+            refresh_type = refresh_settings.get('refreshType')
+
+            if refresh_type == "interval":
+                unit = refresh_settings.get('unit')
+                interval = refresh_settings.get('interval')
+                if unit and interval:
+                    refresh_interval_seconds = calculate_seconds(int(interval), unit)
+                    plugin_instance.refresh = {"interval": refresh_interval_seconds}
+            elif refresh_type == "scheduled":
+                refresh_time = refresh_settings.get('refreshTime')
+                if refresh_time:
+                    plugin_instance.refresh = {"scheduled": refresh_time}
+
+        # Only update plugin settings if there's actual data (not just refresh settings)
+        plugin_settings = form_data
+        plugin_settings.update(handle_request_files(request.files, request.form))
+
+        if plugin_settings:  # Only update if there are actual plugin settings
+            plugin_instance.settings = plugin_settings
+
         device_config.write_config()
     except Exception as e:
         return jsonify({"error": f"An error occurred: {str(e)}"}), 500

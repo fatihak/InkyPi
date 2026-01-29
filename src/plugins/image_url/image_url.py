@@ -6,10 +6,10 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-def grab_image(image_url, dimensions, timeout_ms=40000):
+def grab_image(image_url, dimensions, timeout=40):
     """Grab an image from a URL and resize it to the specified dimensions."""
     try:
-        response = requests.get(image_url, timeout=timeout_ms / 1000)
+        response = requests.get(image_url, timeout=timeout)
         response.raise_for_status()
         img = Image.open(BytesIO(response.content))
         img = img.resize(dimensions, Image.LANCZOS)
@@ -30,7 +30,7 @@ class ImageURL(BasePlugin):
 
         logger.info(f"Grabbing image from: {url}")
 
-        image = grab_image(url, dimensions, timeout_ms=40000)
+        image = grab_image(url, dimensions, timeout=40)
 
         if not image:
             raise RuntimeError("Failed to load image, please check logs.")

@@ -67,7 +67,8 @@ If your plugin requires user configuration through the web UI, you’ll need to 
     {
         "display_name": "Clock",    # The name shown in the web UI for the plugin.
         "id": "clock",              # A unique identifier for the plugin (use lowercase and avoid spaces)
-        "class": "Clock"            # The name of your plugin’s Python class.
+        "class": "Clock",           # The name of your plugin’s Python class.
+        "repository": ""            # GitHub Repositry URL, if the plugin will be published as a third party plugin.
     }
     ```
 - Plugins will be loaded on startup if the folder contains a `plugin-info.json`
@@ -93,6 +94,7 @@ Here’s how your plugin directory should look:
 ```
 plugins/{plugin_id}/
     ├── {plugin_id}.py          # Main plugin script
+    ├── plugin-info.json        # Plugin manifest file
     ├── icon.png                # Plugin icon
     ├── settings.html           # Optional: Plugin settings page (if applicable)
     ├── render/                 # Optional: If generating images from html and css files, store them here
@@ -110,7 +112,7 @@ When a plugin is added to a playlist, a "Plugin Instance" is created, and its se
     document.addEventListener('DOMContentLoaded', () => {     
         if (loadPluginSettings) {
             # Text Input
-            document.getElementById('{textInputElementId}').value = pluginSettings.textInpuElementName || '';
+            document.getElementById('{textInputElementId}').value = pluginSettings.textInputElementName || '';
 
             # Radio
             document.querySelector(`input[name="radioElementName"][value="${pluginSettings.radioElementName}"]`).checked = true;
@@ -153,3 +155,34 @@ For reference, see the Weather and AI Text plugins.
 1. The `render_image` function renders the HTML template using the Jinja2 library.
 2. It then calls the `take_screenshot_html` function in `image_utils.py`.
 3. This function uses the Chromium Browser in headless mode to load the HTML file and capture a screenshot.
+
+
+## Publishing a third party plugin
+
+To publish your plugin as a third party plugin for others to install, you'll need to create a new repository. See [Creating a new repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/creating-a-new-repository) in the GitHub documentation.
+
+Note: It’s recommended to name your repository `InkyPi-{plugin_name}` so it’s easy to discover via GitHub search.
+
+### Repository Structure
+
+Your repository must include:
+
+- **A folder named after your `plugin_id`**
+  - This folder will contain your plugin source code, see [example directory structure](./building_plugins.md#example-directory-structure) for the contents of the folder.
+  - When a user installs your plugin, this folder is copied into the `src/plugins/` directory.
+
+- **A README file** containing:
+  - A short, clear, one-sentence description of what the plugin does.
+  - At least one high-quality screenshot showing the plugin running.
+  - Any external APIs the plugin depends on, including:
+    - Links to the API documentation.
+    - Instructions for obtaining and configuring API keys, if required.
+    - Whether the API requires a key and any known usage limits or costs (for example, free tiers or rate limits).
+  - The current development status (for example: actively maintained, work in progress, looking for a maintainer, or no longer maintained).
+
+---
+
+See [InkyPi-Plugin-Template](https://github.com/fatihak/InkyPi-Plugin-Template) for a sample template of a third party plugin.
+
+Once you're done, feel free to add your plugin to the [3rd Party Plugin List](https://github.com/fatihak/InkyPi/wiki/3rd-Party-Plugins) and share it in the [🙌 Show and Tell Discussion Board](https://github.com/fatihak/InkyPi/discussions/categories/show-and-tell).
+

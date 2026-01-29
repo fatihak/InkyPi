@@ -16,6 +16,7 @@
     <link rel= "stylesheet" type= "text/css" href= "{{ url_for('static',filename='styles/main.css') }}">
     <script src="{{ url_for('static', filename='scripts/dark_mode.js') }}"></script>
     <script src="{{ url_for('static', filename='scripts/response_modal.js') }}"></script>
+    <script src="{{ url_for('static', filename='scripts/refresh_settings_manager.js') }}"></script>
     <style>
         /* Plugin Instance Thumbnail */
         .plugin-thumbnail-container {
@@ -139,9 +140,13 @@
 
         // Close modal when clicking outside the image
         window.onclick = function(event) {
-            const modal = document.getElementById('thumbnailPreviewModal');
-            if (event.target === modal) {
+            const thumbnailModal = document.getElementById('thumbnailPreviewModal');
+            const refreshModal = document.getElementById('refreshSettingsModal');
+            if (event.target === thumbnailModal) {
                 closeThumbnailPreview();
+            }
+            if (event.target === refreshModal) {
+                closeRefreshModal();
             }
         }
 
@@ -320,7 +325,60 @@
                 showResponseModal(type, text);
                 sessionStorage.removeItem("storedMessage"); // Clear stored message after displaying
             }
+
+            // Add event listeners for refresh settings buttons
+            document.querySelectorAll('.refresh-settings-btn').forEach(button => {
+                button.addEventListener('click', function() {
+                    const playlistName = this.dataset.playlist;
+                    const pluginId = this.dataset.pluginId;
+                    const instanceName = this.dataset.instance;
+                    const refreshSettings = JSON.parse(this.dataset.refresh);
+                    openRefreshModal(playlistName, pluginId, instanceName, refreshSettings);
+                });
+            });
         });
+
+        // Global variables to track the plugin being edited
+        let currentEditPlaylist = '';
+        let currentEditPluginId = '';
+        let currentEditInstance = '';
+
+        // Initialize refresh settings manager
+        const playlistRefreshManager = createRefreshSettingsManager('refreshSettingsModal', 'modal');
+
+        // Function to open refresh settings modal from playlist view
+        function openRefreshModal(playlistName, pluginId, instanceName, refreshSettings) {
+            currentEditPlaylist = playlistName;
+            currentEditPluginId = pluginId;
+            currentEditInstance = instanceName;
+
+            playlistRefreshManager.open({ refreshSettings });
+        }
+
+        function closeRefreshModal() {
+            playlistRefreshManager.close();
+        }
+
+        async function saveRefreshSettings() {
+            await playlistRefreshManager.submit(async (formData) => {
+                const data = new FormData();
+                data.append('plugin_id', currentEditPluginId);
+                data.append('refresh_settings', JSON.stringify(formData));
+
+                const response = await fetch("{{ url_for('plugin.update_plugin_instance', instance_name='') }}" + currentEditInstance, {
+                    method: 'PUT',
+                    body: data
+                });
+
+                const result = await response.json();
+                if (response.ok) {
+                    sessionStorage.setItem("storedMessage", JSON.stringify({ type: "success", text: `Success! ${result.message}` }));
+                    location.reload();
+                } else {
+                    throw new Error(result.error || 'Failed to update refresh settings');
+                }
+            });
+        }
     </script>
 </head>
 <body>
@@ -386,6 +444,14 @@
                                 <a href="{{ url_for('plugin.plugin_page', plugin_id=plugin_instance.plugin_id) }}?instance={{ plugin_instance.name }}" class="edit-button">
                                     <img src="{{ url_for('static', filename='icons/edit.png') }}" alt="edit plugin" class="action-icon">
                                 </a>
+                                <button class="edit-button refresh-settings-btn"
+                                        title="Edit Refresh Settings"
+                                        data-playlist="{{ playlist.name }}"
+                                        data-plugin-id="{{ plugin_instance.plugin_id }}"
+                                        data-instance="{{ plugin_instance.name }}"
+                                        data-refresh='{{ plugin_instance.refresh | tojson }}'>
+                                    <img src="{{ url_for('static', filename='icons/clock.svg') }}" alt="refresh settings" class="action-icon">
+                                </button>
                                 <button class="edit-button" title="Display Now" onclick="displayPluginInstance('{{ playlist.name }}', '{{ plugin_instance.plugin_id }}','{{ plugin_instance.name }}')">
                                     <img src="{{ url_for('static', filename='icons/display.png') }}" alt="display now" class="action-icon">
                                 </button>
@@ -424,6 +490,22 @@
             <div class="buttons-container">
                 <button type="button" class="action-button" id="saveButton">Save</button>
                 <button type="button" class="action-button warn hidden" id="deleteButton" onclick="deletePlaylist()">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Refresh Settings Modal -->
+    <div id="refreshSettingsModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" onclick="closeRefreshModal()">×</span>
+            <h2>Refresh Settings</h2>
+            <div class="separator"></div>
+            <form id="refreshSettingsForm" class="settings-form">
+                {% set prefix = "modal" %}
+                {% include 'refresh_settings_form.html' %}
+            </form>
+            <div class="buttons-container">
+                <button type="button" class="action-button" onclick="saveRefreshSettings()">Save</button>
             </div>
         </div>
     </div>

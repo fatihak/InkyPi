@@ -30,7 +30,7 @@ class Comic(BasePlugin):
         return self._compose_image(comic_panel, is_caption, caption_font_size, width, height)
 
     def _compose_image(self, comic_panel, is_caption, caption_font_size, width, height):
-        response = requests.get(comic_panel["image_url"], stream=True)
+        response = requests.get(comic_panel["image_url"], stream=True, timeout=30)
         response.raise_for_status()
 
         with Image.open(response.raw) as img:

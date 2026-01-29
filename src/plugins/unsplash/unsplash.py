@@ -51,7 +51,7 @@ class Unsplash(BasePlugin):
             params['orientation'] = orientation
 
         try:
-            response = requests.get(url, params=params)
+            response = requests.get(url, params=params, timeout=30)
             response.raise_for_status()
             data = response.json()
             if search_query:
