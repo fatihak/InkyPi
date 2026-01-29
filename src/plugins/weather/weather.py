@@ -187,7 +187,7 @@ class Weather(BasePlugin):
         data['forecast'] = self.parse_open_meteo_forecast(weather_data.get('daily', {}), units, tz, is_day, lat)
         data['data_points'] = self.parse_open_meteo_data_points(weather_data, aqi_data, units, tz, time_format)
         
-        data['hourly_forecast'] = self.parse_open_meteo_hourly(weather_data.get('hourly', {}), units tz, time_format, daily.get('sunrise', []), daily.get('sunset', []))
+        data['hourly_forecast'] = self.parse_open_meteo_hourly(weather_data.get('hourly', {}), units, tz, time_format, daily.get('sunrise', []), daily.get('sunset', []))
         return data
 
     def map_weather_code_to_icon(self, weather_code, is_day):
