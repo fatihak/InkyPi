@@ -178,9 +178,9 @@ class ImageAlbum(BasePlugin):
                 )
                 img = ImageOps.pad(img, dimensions, color=background_color, method=Image.Resampling.LANCZOS)
         else:
-            # No padding requested, resize to fit dimensions
-            logger.debug(f"Resizing to fit dimensions: {dimensions[0]}x{dimensions[1]}")
-            img = img.resize(dimensions, Image.LANCZOS)
+            # No padding requested, scale to fit dimensions while preserving aspect ratio
+            logger.debug(f"Scaling to fit dimensions: {dimensions[0]}x{dimensions[1]}")
+            img = ImageOps.fit(img, dimensions, method=Image.Resampling.LANCZOS)
 
         logger.info("=== Image Album Plugin: Image generation complete ===")
         return img
