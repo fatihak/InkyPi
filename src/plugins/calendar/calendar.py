@@ -45,11 +45,20 @@ class Calendar(BasePlugin):
         tz = pytz.timezone(timezone)
 
         current_dt = datetime.now(tz)
+        
+        # Calculate rounded "Now" indicator time based on interval setting
+        interval = int(settings.get("nowIndicatorInterval", 60))
+        rounded_minute = (current_dt.minute // interval) * interval
+        display_now = current_dt.replace(minute=rounded_minute, second=0, microsecond=0)
+
         start, end = self.get_view_range(view, current_dt, settings)
+        
+        # Fetch events using settings for auth and color logic
         logger.debug(f"Fetching events for {start} --> [{current_dt}] --> {end}")
-        events = self.fetch_ics_events(calendar_urls, calendar_colors, tz, start, end)
+        events = self.fetch_ics_events(calendar_urls, calendar_colors, tz, start, end, settings)
+        
         if not events:
-            logger.warn("No events found for ics url")
+            logger.warning("No events found for provided iCal URLs")
 
         if view == 'timeGridWeek' and settings.get("displayPreviousDays") != "true":
             view = 'timeGrid'
@@ -57,11 +66,11 @@ class Calendar(BasePlugin):
         template_params = {
             "view": view,
             "events": events,
-            "current_dt": current_dt.replace(minute=0, second=0, microsecond=0).isoformat(),
+            "current_dt": display_now.isoformat(),
             "timezone": timezone,
             "plugin_settings": settings,
             "time_format": time_format,
-            "font_scale": FONT_SIZES.get(settings.get("fontSize", "normal"))
+            "font_scale": FONT_SIZES.get(settings.get("fontSize", "normal"), 1.0)
         }
 
         image = self.render_image(dimensions, "calendar.html", "calendar.css", template_params)
@@ -70,21 +79,44 @@ class Calendar(BasePlugin):
             raise RuntimeError("Failed to take screenshot, please check logs.")
         return image
     
-    def fetch_ics_events(self, calendar_urls, colors, tz, start_range, end_range):
+    def fetch_ics_events(self, calendar_urls, colors, tz, start_range, end_range, settings):
         parsed_events = []
+        
+        # Get Attendee settings
+        use_attendee_color = settings.get('useAttendeeColor') == 'true'
+        attendee_username = settings.get('loginUsername', '').lower()
+        attendance_color = settings.get('attendeeColor', '#00FF00')
+        contrast_attendance_color = self.get_contrast_color(attendance_color)
 
         for calendar_url, color in zip(calendar_urls, colors):
-            cal = self.fetch_calendar(calendar_url)
+            cal = self.fetch_calendar(calendar_url, settings)
             events = recurring_ical_events.of(cal).between(start_range, end_range)
             contrast_color = self.get_contrast_color(color)
 
             for event in events:
                 start, end, all_day = self.parse_data_points(event, tz)
+                
+                # Check for attendance if enabled
+                is_attending = False
+                if use_attendee_color and attendee_username:
+                    attendees = event.get('ATTENDEE', [])
+                    if isinstance(attendees, icalendar.vCalAddress):
+                        attendees = [attendees]
+                    organizer = event.get('ORGANIZER')
+                    if organizer:
+                        attendees.append(organizer)
+                    if not isinstance(attendees, list):
+                        attendees = [attendees]
+                    is_attending = any(attendee_username in str(a).lower() for a in attendees)
+
+                current_bg = attendance_color if is_attending else color
+                current_text = contrast_attendance_color if is_attending else contrast_color
+
                 parsed_event = {
                     "title": str(event.get("summary")),
                     "start": start,
-                    "backgroundColor": color,
-                    "textColor": contrast_color,
+                    "backgroundColor": current_bg,
+                    "textColor": current_text,
                     "allDay": all_day
                 }
                 if end:
@@ -137,12 +169,19 @@ class Calendar(BasePlugin):
             end = (dtstart + duration).isoformat()
         return start, end, all_day
 
-    def fetch_calendar(self, calendar_url):
+    def fetch_calendar(self, calendar_url, settings):
+        username = settings.get("loginUsername")
+        password = settings.get("loginPassword")
+        
+        auth = None
+        if username and password:
+            auth = (username, password)
+
         # workaround for webcal urls
         if calendar_url.startswith("webcal://"):
             calendar_url = calendar_url.replace("webcal://", "https://")
         try:
-            response = requests.get(calendar_url, timeout=30)
+            response = requests.get(calendar_url, auth=auth, timeout=30)
             response.raise_for_status()
             return icalendar.Calendar.from_ical(response.text)
         except Exception as e:

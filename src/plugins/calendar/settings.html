@@ -5,6 +5,19 @@
 </div>
 
 <div class="form-group">
+    <label class="form-label">Login Information (Optional):</label>
+    <div class="form-group nowrap" style="margin-bottom: 5px;">
+        <input type="text" id="loginUsername" name="loginUsername" class="form-input" placeholder="Username">
+        <input type="password" id="loginPassword" name="loginPassword" class="form-input" placeholder="Password">
+    </div>
+    <div class="form-group">
+        <input type="checkbox" id="useAttendeeColor" name="useAttendeeColor" value="false" onclick="this.value=this.checked ? 'true' : 'false';">
+        <span>Use Attendee Color:</span>
+        <input type="color" id="attendeeColor" name="attendeeColor" class="color-picker" value="#00FF00">
+    </div>
+</div>
+
+<div class="form-group">
     <div class="form-group">
         <label class="form-label">Layout: </label>
         <div class="button-group" id="viewSelector">
@@ -48,6 +61,15 @@
       <input type="checkbox" id="displayNowIndicator" name="displayNowIndicator" value="true" checked onclick="this.value=this.checked ? 'true' : 'false';">
       <span>Now Indicator</span>
       <input type="color" id="nowIndicatorColor" name="nowIndicatorColor" class="color-picker" value="#ff0000">
+      
+      <label for="nowIndicatorInterval" style="margin-left: 10px;">Update Every:</label>
+      <select id="nowIndicatorInterval" name="nowIndicatorInterval" class="form-input" style="width: auto; display: inline-block;">
+          <option value="60">60 min</option>
+          <option value="30">30 min</option>
+          <option value="15">15 min</option>
+          <option value="10">10 min</option>
+          <option value="5">5 min</option>
+      </select>
     </div>
 
     <div class="form-group" data-visible-modes="timeGridWeek">
@@ -173,6 +195,7 @@
         let language = "en";
         let calendars = [{ url: '', color: '#007BFF' }];
         let fontSize = "normal";
+        let indicatorInterval = "60"; // Default interval
 
         if (loadPluginSettings) {
             viewMode = pluginSettings.viewMode;
@@ -191,6 +214,7 @@
             document.getElementById('displayNowIndicator').checked = pluginSettings.displayNowIndicator;
             document.getElementById('displayNowIndicator').value = pluginSettings.displayNowIndicator;
             document.getElementById('nowIndicatorColor').value = pluginSettings.nowIndicatorColor;
+            document.getElementById('nowIndicatorInterval').value = pluginSettings.nowIndicatorInterval;
 
             document.getElementById('displayPreviousDays').checked = pluginSettings.displayPreviousDays;
             document.getElementById('displayPreviousDays').value = pluginSettings.displayPreviousDays;
@@ -201,6 +225,13 @@
             document.getElementById("endTimeInterval").value = pluginSettings.endTimeInterval;
 
             document.getElementById("displayWeeks").value = pluginSettings.displayWeeks;
+
+            // Populate Login Info
+            document.getElementById('loginUsername').value = pluginSettings.loginUsername || '';
+            document.getElementById('loginPassword').value = pluginSettings.loginPassword || '';
+            document.getElementById('attendeeColor').value = pluginSettings.attendeeColor;
+            document.getElementById('useAttendeeColor').checked = pluginSettings.useAttendeeColor;
+            document.getElementById('useAttendeeColor').value = pluginSettings.useAttendeeColor;
             
             if (pluginSettings["calendarURLs[]"]) {
                 calendars = pluginSettings["calendarURLs[]"].map((url, i) => ({
