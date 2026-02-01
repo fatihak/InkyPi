@@ -57,8 +57,10 @@ class ServoControl(BasePlugin):
         # if 'current', do not change orientation
         
         # Move servo to the target angle
+        logger.info("Call Servo Move")
         self.servo_driver.configure(gpio_pin=gpio_pin, pwm_chip=self.pwm_chip, pwm_channel=self.pwm_channel)
         self.servo_driver.move(current_angle, target_angle, servo_speed)
+        logger.info("Finished Servo Move Call")
         
         # Store new angle in device config for next boot
         device_config.update_value('current_servo_angle', target_angle, write=True)
