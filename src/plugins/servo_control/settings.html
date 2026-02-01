@@ -21,12 +21,14 @@
         id="target-angle" 
         name="target_angle" 
         class="form-range" 
-        min="0" 
-        max="180" 
+        min="-90" 
+        max="270" 
         value="90"
         step="1"
     />
-    <small class="form-text">Drag the slider to set target servo angle (0° - 180°)</small>
+    <small class="form-text">
+        Drag the slider to set target servo angle (<span id="angle-min">-90</span>° - <span id="angle-max">270</span>°)
+    </small>
 </div>
 
 <div class="form-group">
@@ -105,6 +107,7 @@
 </div>
 
 <script>
+
     // Update angle display
     document.getElementById('target-angle').addEventListener('input', function() {
         document.getElementById('angle-display').textContent = this.value + '°';

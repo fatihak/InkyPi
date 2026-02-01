@@ -19,14 +19,18 @@ except ImportError as e:
 HAS_PWM_SYSFS = os.path.isdir("/sys/class/pwm")
 HARDWARE_AVAILABLE = HAS_PWM_SYSFS or HAS_GPIOD
 
+DEFAULT_PWM_CHIP = "pwmchip0"
 DEFAULT_GPIO_PIN = 18
 DEFAULT_ANGLE = 90
 DEFAULT_SPEED = 10  # milliseconds delay between steps
-MIN_ANGLE = 0
-MAX_ANGLE = 180
-DEFAULT_PWM_CHIP = "pwmchip0"
-SERVO_MIN_PULSE_US = 1000
-SERVO_MAX_PULSE_US = 2000
+
+SERVO_MIN_PULSE_US = 500
+SERVO_0_DEGREE_PULSE_US = 1000
+SERVO_180_DEGREE_PULSE_US = 2000
+SERVO_MAX_PULSE_US = 2500
+SERVO_US_PER_DEGREE = (SERVO_180_DEGREE_PULSE_US - SERVO_0_DEGREE_PULSE_US) / 180.0
+MIN_ANGLE = (SERVO_MIN_PULSE_US - SERVO_0_DEGREE_PULSE_US) / SERVO_US_PER_DEGREE
+MAX_ANGLE = (SERVO_MAX_PULSE_US - SERVO_0_DEGREE_PULSE_US) / SERVO_US_PER_DEGREE
 SERVO_PERIOD_US = 20000  # 50Hz
 
 class ServoControl(BasePlugin):
@@ -286,8 +290,8 @@ class ServoControl(BasePlugin):
     def _angle_to_pulse_us(self, angle):
         """Convert angle (0-180) to PWM pulse width in microseconds."""
         angle = max(MIN_ANGLE, min(MAX_ANGLE, angle))
-        span = SERVO_MAX_PULSE_US - SERVO_MIN_PULSE_US
-        return int(SERVO_MIN_PULSE_US + (angle / 180.0) * span)
+        pulse = SERVO_0_DEGREE_PULSE_US + (angle * SERVO_US_PER_DEGREE)
+        return int(max(SERVO_MIN_PULSE_US, min(SERVO_MAX_PULSE_US, pulse)))
 
     def _pwm_sysfs_set_pulse_us(self, pulse_us):
         """Set PWM duty cycle via sysfs in nanoseconds."""
@@ -297,6 +301,15 @@ class ServoControl(BasePlugin):
         duty_ns = int(pulse_us * 1000)
         with open(duty_path, "w", encoding="utf-8") as f:
             f.write(str(duty_ns))
+
+    def _pwm_sysfs_disable(self):
+        """Disable PWM output without unexporting the channel."""
+        if not self.pwm_path:
+            return
+        enable_path = f"{self.pwm_path}/enable"
+        if os.path.exists(enable_path):
+            with open(enable_path, "w", encoding="utf-8") as f:
+                f.write("0")
 
     def _gpiod_set_value(self, active):
         """Set GPIO line value using libgpiod."""
@@ -350,6 +363,8 @@ class ServoControl(BasePlugin):
 
                 final_pulse_us = self._angle_to_pulse_us(target_angle)
                 self._pwm_sysfs_set_pulse_us(final_pulse_us)
+                time.sleep(0.2)
+                self._pwm_sysfs_disable()
                 logger.info(f"Moved servo from {current_angle}° to {target_angle}° (kernel PWM)")
                 return
             except Exception as e:
@@ -373,6 +388,7 @@ class ServoControl(BasePlugin):
                 # Ensure we reach exact target
                 final_pulse_us = self._angle_to_pulse_us(target_angle)
                 self._gpiod_pwm_for_duration(final_pulse_us, max(200, speed_ms))
+                self._gpiod_set_value(False)
                 logger.info(f"Moved servo from {current_angle}° to {target_angle}° (libgpiod)")
                 return
             except Exception as e:
