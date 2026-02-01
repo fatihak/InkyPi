@@ -72,11 +72,13 @@ def playlists():
     device_config = current_app.config['DEVICE_CONFIG']
     playlist_manager = device_config.get_playlist_manager()
     refresh_info = device_config.get_refresh_info()
+    plugins_list = device_config.get_plugins()
 
     return render_template(
         'playlist.html',
         playlist_config=playlist_manager.to_dict(),
-        refresh_info=refresh_info.to_dict()
+        refresh_info=refresh_info.to_dict(),
+        plugins={p["id"]: p for p in plugins_list}
     )
 
 @playlist_bp.route('/create_playlist', methods=['POST'])

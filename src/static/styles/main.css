@@ -1111,7 +1111,7 @@ html[data-theme="dark"] .settings-button.dark-mode-toggle::before {
 /* Grid View (default) */
 .plugins-container {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
     gap: 10px;
     justify-items: stretch;
 }
