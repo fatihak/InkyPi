@@ -96,55 +96,57 @@ class ServoControl(BasePlugin):
             PIL.Image: Status image
         """
         width, height = dimensions
-        
-        # Create white background
-        image = Image.new('RGB', (width, height), color='white')
+        image = Image.new('RGB', (width, height), color='black')
         draw = ImageDraw.Draw(image)
-        
-        title_font = ImageFont.load_default()
-        large_font = ImageFont.load_default()
-        medium_font = ImageFont.load_default()
-        small_font = ImageFont.load_default()
 
-        
-        # Title
-        title = "Servo Control"
-        draw.text((width // 2, height * 0.1), title, font=title_font, fill='black', anchor='mm')
-        
-        # Target angle - large display
+        # High-contrast palette
+        sky_color = '#1e90ff'
+        ground_color = '#f39c12'
+        horizon_color = '#ffffff'
+        text_color = '#ffffff'
+
+        # Map target angle (0-180) to horizon tilt (-45 to 45)
+        normalized = (target_angle - 90) / 90.0
+        tilt_deg = max(-45, min(45, normalized * 45))
+        tilt_rad = (tilt_deg * 3.141592653589793) / 180.0
+
+        # Horizon line parameters
+        cx, cy = width / 2, height / 2
+        line_len = max(width, height) * 1.5
+        dx = (line_len / 2) * (1.0 if tilt_deg == 0 else (abs(__import__('math').cos(tilt_rad))))
+        dy = (line_len / 2) * (1.0 if tilt_deg == 0 else (abs(__import__('math').sin(tilt_rad))))
+
+        # Compute line endpoints using rotation matrix
+        cos_t = __import__('math').cos(tilt_rad)
+        sin_t = __import__('math').sin(tilt_rad)
+        x1 = cx - (line_len / 2) * cos_t
+        y1 = cy - (line_len / 2) * sin_t
+        x2 = cx + (line_len / 2) * cos_t
+        y2 = cy + (line_len / 2) * sin_t
+
+        # Fill sky/ground polygons
+        draw.polygon([(0, 0), (width, 0), (x2, y2), (x1, y1)], fill=sky_color)
+        draw.polygon([(0, height), (width, height), (x2, y2), (x1, y1)], fill=ground_color)
+
+        # Horizon line (thick)
+        line_width = max(2, int(min(width, height) * 0.04))
+        draw.line([(x1, y1), (x2, y2)], fill=horizon_color, width=line_width)
+
+        # Center marker
+        marker_size = max(4, int(min(width, height) * 0.06))
+        draw.rectangle(
+            [
+                (cx - marker_size, cy - line_width),
+                (cx + marker_size, cy + line_width)
+            ],
+            fill=horizon_color
+        )
+
+        # Angle text overlay
+        font = ImageFont.load_default()
         angle_text = f"{target_angle}°"
-        draw.text((width // 2, height * 0.3), angle_text, font=large_font, fill='#2c3e50', anchor='mm')
-        
-        # GPIO pin info
-        gpio_text = f"GPIO Pin: {gpio_pin}"
-        draw.text((width // 2, height * 0.45), gpio_text, font=medium_font, fill='#7f8c8d', anchor='mm')
-        
-        # Draw a simple arc to visualize angle
-        arc_y = height * 0.6
-        arc_radius = min(width, height) * 0.15
-        arc_bbox = [
-            width // 2 - arc_radius,
-            arc_y - arc_radius,
-            width // 2 + arc_radius,
-            arc_y + arc_radius
-        ]
-        
-        # Background arc (0-180)
-        draw.arc(arc_bbox, start=0, end=180, fill='#ecf0f1', width=int(height * 0.02))
-        
-        # Target position arc
-        draw.arc(arc_bbox, start=0, end=target_angle, fill='#3498db', width=int(height * 0.02))
-        
-        # Orientation info
-        if orientation in ['landscape', 'portrait']:
-            y_offset = height * 0.78
-            draw.text((width // 2, y_offset), "Orientation:", font=medium_font, fill='black', anchor='mm')
-            
-            y_offset += height * 0.06
-            orientation_text = orientation.capitalize()
-            orientation_color = '#e74c3c'
-            draw.text((width // 2, y_offset), orientation_text, font=small_font, fill=orientation_color, anchor='mm')
-        
+        draw.text((width * 0.06, height * 0.06), angle_text, font=font, fill=text_color)
+
         return image
     
     def cleanup(self, settings):
