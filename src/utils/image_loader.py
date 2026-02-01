@@ -6,7 +6,7 @@ Automatically uses memory-efficient strategies on low-RAM devices (Pi Zero)
 and high-performance strategies on capable devices (Pi 3/4).
 """
 
-from PIL import Image
+from PIL import Image, ImageOps
 from io import BytesIO
 from utils.http_client import get_http_session
 import logging
@@ -311,12 +311,12 @@ class AdaptiveImageLoader:
 
             # Stage 2: High-quality resize to exact dimensions
             logger.debug(f"Stage 2: Final resize to {dimensions[0]}x{dimensions[1]} using LANCZOS")
-            img = img.resize(dimensions, Image.LANCZOS)
+            img = ImageOps.fit(img, dimensions, method=Image.LANCZOS)
             logger.debug(f"Stage 2 complete: {dimensions[0]}x{dimensions[1]}")
         else:
             # Direct resize with BICUBIC (fast, sufficient quality for e-ink)
             logger.debug(f"Resizing directly from {img.size[0]}x{img.size[1]} to {dimensions[0]}x{dimensions[1]}")
-            img = img.resize(dimensions, Image.BICUBIC)
+            img = ImageOps.fit(img, dimensions, method=Image.BICUBIC)
 
         # Explicit garbage collection
         gc.collect()
@@ -329,5 +329,5 @@ class AdaptiveImageLoader:
         logger.debug("Using high-quality processing (LANCZOS filter)")
         logger.debug(f"Resizing from {img.size[0]}x{img.size[1]} to {dimensions[0]}x{dimensions[1]}")
 
-        return img.resize(dimensions, Image.LANCZOS)
+        return ImageOps.fit(img, dimensions, method=Image.LANCZOS)
 

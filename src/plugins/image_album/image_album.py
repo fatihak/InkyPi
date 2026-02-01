@@ -53,13 +53,14 @@ class ImmichProvider:
         logger.debug(f"Found {len(all_items)} total assets in album")
         return all_items
 
-    def get_image(self, album: str, dimensions: tuple[int, int]) -> Image.Image | None:
+    def get_image(self, album: str, dimensions: tuple[int, int], resize: bool = True) -> Image.Image | None:
         """
         Get a random image from the album.
 
         Args:
             album: Album name
             dimensions: Target dimensions (width, height)
+            resize: Whether to let loader resize (False when padding will be applied)
 
         Returns:
             PIL Image or None on error
@@ -87,12 +88,12 @@ class ImmichProvider:
         logger.debug(f"Downloading from: {asset_url}")
 
         # Use adaptive image loader for memory-efficient processing
-        # Don't auto-resize since we need to handle padding options later
+        # Let loader resize when requested (when no padding will be applied)
         img = self.image_loader.from_url(
             asset_url,
             dimensions,
             timeout_ms=40000,
-            resize=False,
+            resize=resize,
             headers=self.headers
         )
 
@@ -128,6 +129,11 @@ class ImageAlbum(BasePlugin):
         album_provider = settings.get("albumProvider")
         logger.info(f"Album provider: {album_provider}")
 
+        # Check padding options to determine resize strategy
+        use_padding = settings.get('padImage') == "true"
+        background_option = settings.get('backgroundOption', 'blur')
+        logger.debug(f"Settings: pad_image={use_padding}, background_option={background_option}")
+
         match album_provider:
             case "Immich":
                 key = device_config.load_env_key("IMMICH_KEY")
@@ -149,7 +155,8 @@ class ImageAlbum(BasePlugin):
                 logger.info(f"Album: {album}")
 
                 provider = ImmichProvider(url, key, self.image_loader)
-                img = provider.get_image(album, dimensions)
+                # Let loader resize when no padding needed, otherwise load full-size for padding
+                img = provider.get_image(album, dimensions, resize=not use_padding)
 
                 if not img:
                     logger.error("Failed to retrieve image from Immich")
@@ -162,11 +169,7 @@ class ImageAlbum(BasePlugin):
             logger.error("Image is None after provider processing")
             raise RuntimeError("Failed to load image, please check logs.")
 
-        # Check padding options
-        use_padding = settings.get('padImage') == "true"
-        background_option = settings.get('backgroundOption', 'blur')
-        logger.debug(f"Settings: pad_image={use_padding}, background_option={background_option}")
-
+        # Apply padding if requested (image was loaded at full size)
         if use_padding:
             logger.debug(f"Applying padding with {background_option} background")
             if background_option == "blur":
@@ -177,10 +180,7 @@ class ImageAlbum(BasePlugin):
                     "RGB"
                 )
                 img = ImageOps.pad(img, dimensions, color=background_color, method=Image.Resampling.LANCZOS)
-        else:
-            # No padding requested, scale to fit dimensions while preserving aspect ratio
-            logger.debug(f"Scaling to fit dimensions: {dimensions[0]}x{dimensions[1]}")
-            img = ImageOps.fit(img, dimensions, method=Image.Resampling.LANCZOS)
+        # else: loader already resized to fit with proper aspect ratio
 
         logger.info("=== Image Album Plugin: Image generation complete ===")
         return img
