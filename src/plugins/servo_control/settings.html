@@ -38,7 +38,7 @@
         id="servo-speed" 
         name="servo_speed"  
         min="0" 
-        value="50"
+        value="30"
     />
     <small class="form-text">Delay between angle steps in milliseconds (lower = faster)</small>
 </div>
@@ -58,6 +58,12 @@
         Update device orientation when servo moves. 
         "Keep Current" will not change the display orientation.
     </small>
+</div>
+
+<div class="form-group">
+    <label class="form-label" for="inverted_image">Invert Image</label>
+    <input type="checkbox" id="inverted_image" name="inverted_image">
+    <small class="form-text">Invert the display output.</small>
 </div>
 
 <script>
@@ -98,6 +104,11 @@
             // Load orientation
             if (pluginSettings.orientation !== undefined) {
                 document.getElementById('orientation').value = pluginSettings.orientation;
+            }
+
+            // Load invert image
+            if (pluginSettings.inverted_image !== undefined) {
+                document.getElementById('inverted_image').checked = !!pluginSettings.inverted_image;
             }
         }
     });

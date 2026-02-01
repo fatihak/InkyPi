@@ -40,6 +40,7 @@ class ServoControl(BasePlugin):
         target_angle = int(settings.get('target_angle', DEFAULT_ANGLE))
         servo_speed = int(settings.get('servo_speed', DEFAULT_SPEED))
         orientation = settings.get('orientation', 'current')
+        invert_setting = settings.get('inverted_image', None)
         self.pwm_chip = str(settings.get('pwm_chip', DEFAULT_PWM_CHIP))
         pwm_channel = settings.get('pwm_channel', None)
         self.pwm_channel = int(pwm_channel) if pwm_channel not in (None, "") else None
@@ -55,6 +56,12 @@ class ServoControl(BasePlugin):
             device_config.update_value("orientation", "vertical", write=True)
             logger.info("Updated device orientation to vertical (portrait)")
         # if 'current', do not change orientation
+
+        # Update image inversion if specified
+        if invert_setting is not None:
+            invert_value = str(invert_setting).lower() in ("1", "true", "yes", "on")
+            device_config.update_value("inverted_image", invert_value, write=True)
+            logger.info(f"Updated inverted_image to {invert_value}")
         
         # Move servo to the target angle
         logger.info("Call Servo Move")

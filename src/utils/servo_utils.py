@@ -20,7 +20,7 @@ HARDWARE_AVAILABLE = HAS_PWM_SYSFS or HAS_GPIOD
 DEFAULT_PWM_CHIP = "pwmchip0"
 DEFAULT_GPIO_PIN = 18
 DEFAULT_ANGLE = 90
-DEFAULT_SPEED = 10  # milliseconds delay between steps
+DEFAULT_SPEED = 30  # milliseconds delay between steps
 
 SERVO_MIN_PULSE_US = 500
 SERVO_0_DEGREE_PULSE_US = 1000
