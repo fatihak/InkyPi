@@ -19,7 +19,7 @@ except ImportError as e:
 HAS_PWM_SYSFS = os.path.isdir("/sys/class/pwm")
 HARDWARE_AVAILABLE = HAS_PWM_SYSFS or HAS_GPIOD
 
-DEFAULT_GPIO_PIN = 13
+DEFAULT_GPIO_PIN = 18
 DEFAULT_ANGLE = 90
 DEFAULT_SPEED = 10  # milliseconds delay between steps
 MIN_ANGLE = 0
@@ -400,18 +400,11 @@ class ServoControl(BasePlugin):
         image = Image.new('RGB', (width, height), color='white')
         draw = ImageDraw.Draw(image)
         
-        # Fonts
-        try:
-            title_font = get_font("Roboto-Bold", int(height * 0.08))
-            large_font = get_font("Roboto-Bold", int(height * 0.15))
-            medium_font = get_font("Roboto-Regular", int(height * 0.06))
-            small_font = get_font("Roboto-Regular", int(height * 0.045))
-        except:
-            # Fallback to default font
-            title_font = ImageFont.load_default()
-            large_font = ImageFont.load_default()
-            medium_font = ImageFont.load_default()
-            small_font = ImageFont.load_default()
+        title_font = ImageFont.load_default()
+        large_font = ImageFont.load_default()
+        medium_font = ImageFont.load_default()
+        small_font = ImageFont.load_default()
+
         
         # Title
         title = "Servo Control"

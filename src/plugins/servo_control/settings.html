@@ -8,10 +8,10 @@
         class="form-control" 
         min="0" 
         max="27" 
-        value="13"
+        value="18"
         required
     />
-    <small class="form-text">GPIO pin where the servo signal wire is connected (default: 13)</small>
+    <small class="form-text">GPIO pin where the servo signal wire is connected (default: 18)</small>
 </div>
 
 <div class="form-group">
@@ -86,7 +86,7 @@
                 <code class="d-block p-2 rounded">
                     curl -X POST http://your-inkypi:8080/update_now \<br>
                     &nbsp;&nbsp;-F "plugin_id=servo_control" \<br>
-                    &nbsp;&nbsp;-F "gpio_pin=13" \<br>
+                    &nbsp;&nbsp;-F "gpio_pin=18" \<br>
                     &nbsp;&nbsp;-F "target_angle=90" \<br>
                     &nbsp;&nbsp;-F "servo_speed=10" \<br>
                     &nbsp;&nbsp;-F "orientation=landscape"
