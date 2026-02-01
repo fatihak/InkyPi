@@ -140,6 +140,16 @@ enable_interfaces(){
   fi 
 }
 
+enable_pwm_overlay(){
+  echo "Enabling PWM overlay for servo control"
+  if ! grep -E -q '^[[:space:]]*dtoverlay=pwm-2chan' /boot/firmware/config.txt; then
+      sed -i '/^dtparam=spi=on/a dtoverlay=pwm-2chan' /boot/firmware/config.txt
+      echo_success "\tPWM overlay enabled (pwm-2chan)"
+  else
+      echo_success "\tPWM overlay already enabled"
+  fi
+}
+
 show_loader() {
   local pid=$!
   local delay=0.1
@@ -190,6 +200,11 @@ install_debian_dependencies() {
     echo "ERROR: System dependencies file $APT_REQUIREMENTS_FILE not found!"
     exit 1
   fi
+}
+
+install_servo_dependencies() {
+  echo "Installing servo dependencies (libgpiod and tools)."
+  sudo apt-get install -y gpiod python3-libgpiod > /dev/null
 }
 
 setup_zramswap_service() {
@@ -364,7 +379,9 @@ if [[ -n "$WS_TYPE" ]]; then
   fetch_waveshare_driver
 fi
 enable_interfaces
+enable_pwm_overlay
 install_debian_dependencies
+install_servo_dependencies
 # check OS version for Bookworm to setup zramswap
 if [[ $(get_os_version) = "12" ]] ; then
   echo "OS version is Bookworm - setting up zramswap"
