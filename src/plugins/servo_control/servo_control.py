@@ -100,14 +100,14 @@ class ServoControl(BasePlugin):
         draw = ImageDraw.Draw(image)
 
         # High-contrast palette
-        sky_color = '#1e90ff'
-        ground_color = '#f39c12'
-        horizon_color = '#ffffff'
+        sky_color = '#00CFEB'
+        ground_color = '#EACE00'
+        horizon_color = '#EB0078'
         text_color = '#ffffff'
 
-        # Map target angle (0-180) to horizon tilt (-45 to 45)
+        # Map target angle (0-180) to horizon tilt (0 to 90 degrees)
         normalized = (target_angle - 90) / 90.0
-        tilt_deg = max(-45, min(45, normalized * 45))
+        tilt_deg = max(0, min(90, normalized * 90))
         tilt_rad = (tilt_deg * 3.141592653589793) / 180.0
 
         # Horizon line parameters
