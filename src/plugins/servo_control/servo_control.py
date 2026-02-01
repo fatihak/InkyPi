@@ -16,19 +16,8 @@ except ImportError as e:
     HAS_GPIOD = False
     logger.warning(f"libgpiod not available, will try gpiozero fallback. Error: {e}")
 
-# Try to import gpiozero as a fallback
-try:
-    from gpiozero import Servo
-    from gpiozero.pins.pigpio import PiGPIOFactory
-    HAS_GPIOZERO = True
-except ImportError as e:
-    HAS_GPIOZERO = False
-    logger.warning(f"gpiozero not available, servo control will be mocked. Error: {e}")
-    logger.info("To enable gpiozero, install: pip install gpiozero")
-
 HAS_PWM_SYSFS = os.path.isdir("/sys/class/pwm")
-SERVO_BACKEND = "auto"
-HARDWARE_AVAILABLE = HAS_PWM_SYSFS or HAS_GPIOD or HAS_GPIOZERO
+HARDWARE_AVAILABLE = HAS_PWM_SYSFS or HAS_GPIOD
 
 DEFAULT_GPIO_PIN = 13
 DEFAULT_ANGLE = 90
@@ -48,7 +37,6 @@ class ServoControl(BasePlugin):
     
     def __init__(self, config, **dependencies):
         super().__init__(config, **dependencies)
-        self.servo = None
         self.current_gpio_pin = None
         self.gpiod_chip = None
         self.gpiod_line = None
@@ -150,33 +138,7 @@ class ServoControl(BasePlugin):
                     raise RuntimeError(f"Failed to initialize libgpiod on GPIO pin {gpio_pin}: {e}")
             return
         
-        # Clean up existing servo if pin changed
-        if self.servo and self.current_gpio_pin != gpio_pin:
-            try:
-                self.servo.close()
-            except:
-                pass
-            self.servo = None
-        
-        # Initialize new servo
-        if not self.servo or self.current_gpio_pin != gpio_pin:
-            try:
-                # Use pigpio for better PWM control if available
-                factory = PiGPIOFactory()
-                # SG90 specific pulse widths: 1ms (0°) to 2ms (180°)
-                self.servo = Servo(gpio_pin, min_pulse_width=1/1000, max_pulse_width=2/1000, pin_factory=factory)
-                self.current_gpio_pin = gpio_pin
-                logger.info(f"Initialized servo on GPIO pin {gpio_pin} with pigpio")
-            except Exception as e:
-                logger.warning(f"Failed to use pigpio, falling back to default: {e}")
-                try:
-                    # SG90 specific pulse widths for default factory too
-                    self.servo = Servo(gpio_pin, min_pulse_width=1/1000, max_pulse_width=2/1000)
-                    self.current_gpio_pin = gpio_pin
-                    logger.info(f"Initialized servo on GPIO pin {gpio_pin} (default pins)")
-                except Exception as e:
-                    logger.error(f"Failed to initialize servo: {e}")
-                    raise RuntimeError(f"Failed to initialize servo on GPIO pin {gpio_pin}: {e}")
+        logger.info("No additional backend initialization required.")
 
     def _select_backend(self, gpio_pin):
         """Select the best available backend for servo control."""
@@ -184,8 +146,6 @@ class ServoControl(BasePlugin):
             return "pwm_sysfs"
         if HAS_GPIOD:
             return "gpiod"
-        if HAS_GPIOZERO:
-            return "gpiozero"
         return "mock"
 
     def _pwm_sysfs_available(self, gpio_pin):
@@ -323,14 +283,6 @@ class ServoControl(BasePlugin):
             self.gpiod_chip = None
         self.gpiod_api = None
     
-    def _angle_to_servo_value(self, angle):
-        """
-        Convert angle (0-180) to servo value (-1 to 1).
-        For SG90 servo: -1 = 0°, 0 = 90°, 1 = 180°
-        """
-        # Map 0-180 to -1 to 1
-        return (angle / 90.0) - 1.0
-
     def _angle_to_pulse_us(self, angle):
         """Convert angle (0-180) to PWM pulse width in microseconds."""
         angle = max(MIN_ANGLE, min(MAX_ANGLE, angle))
@@ -427,32 +379,7 @@ class ServoControl(BasePlugin):
                 logger.error(f"Failed to move servo with libgpiod: {e}")
                 raise RuntimeError(f"Failed to move servo with libgpiod: {e}")
         
-        try:
-            # Initialize servo if needed
-            self._initialize_servo(gpio_pin)
-            
-            # Calculate step direction
-            step = 1 if target_angle > current_angle else -1
-            
-            # Move incrementally for smooth motion
-            for angle in range(int(current_angle), int(target_angle), step):
-                servo_value = self._angle_to_servo_value(angle)
-                self.servo.value = servo_value
-                logger.info(f"new Angle: {angle}° new Servo Value: {servo_value}")
-                time.sleep(speed_ms/1000)
-            
-            # Ensure we reach exact target
-            final_value = self._angle_to_servo_value(target_angle)
-            self.servo.value = final_value
-            
-            # Stop sending PWM signals without causing servo twitch
-            time.sleep(0.5)  # Hold position briefly
-            self.servo.value = None
-            logger.info(f"Moved servo from {current_angle}° to {target_angle}°")
-            
-        except Exception as e:
-            logger.error(f"Failed to move servo: {e}")
-            raise RuntimeError(f"Failed to move servo: {e}")
+        logger.warning("No supported backend available; servo move skipped.")
     
     def _create_status_image(self, dimensions, gpio_pin, target_angle, orientation):
         """
@@ -530,9 +457,3 @@ class ServoControl(BasePlugin):
         """Clean up servo resources when plugin instance is deleted."""
         self._cleanup_gpiod()
         self._cleanup_pwm_sysfs()
-        if self.servo:
-            try:
-                self.servo.close()
-                logger.info("Closed servo connection")
-            except Exception as e:
-                logger.error(f"Error closing servo: {e}")

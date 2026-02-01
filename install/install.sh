@@ -142,12 +142,19 @@ enable_interfaces(){
 
 enable_pwm_overlay(){
   echo "Enabling PWM overlay for servo control"
-  if ! grep -E -q '^[[:space:]]*dtoverlay=pwm-2chan' /boot/firmware/config.txt; then
-      sed -i '/^dtparam=spi=on/a dtoverlay=pwm-2chan' /boot/firmware/config.txt
-      echo_success "\tPWM overlay enabled (pwm-2chan)"
-  else
-      echo_success "\tPWM overlay already enabled"
-  fi
+  local CONFIG_PRIMARY="/boot/firmware/config.txt"
+  local CONFIG_FALLBACK="/boot/config.txt"
+
+  for cfg in "$CONFIG_PRIMARY" "$CONFIG_FALLBACK"; do
+    if [ -f "$cfg" ]; then
+      if ! grep -E -q '^[[:space:]]*dtoverlay=pwm-2chan' "$cfg"; then
+          sed -i '/^dtparam=spi=on/a dtoverlay=pwm-2chan' "$cfg"
+          echo_success "\tPWM overlay enabled (pwm-2chan) in $cfg"
+      else
+          echo_success "\tPWM overlay already enabled in $cfg"
+      fi
+    fi
+  done
 }
 
 show_loader() {
@@ -204,7 +211,7 @@ install_debian_dependencies() {
 
 install_servo_dependencies() {
   echo "Installing servo dependencies (libgpiod and tools)."
-  sudo apt-get install -y gpiod python3-libgpiod > /dev/null
+  sudo apt-get install -y gpiod python3-libgpiod libgpiod-dev > /dev/null
 }
 
 setup_zramswap_service() {
