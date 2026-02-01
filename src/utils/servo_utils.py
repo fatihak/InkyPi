@@ -1,6 +1,7 @@
 import logging
 import os
 import time
+import threading
 
 logger = logging.getLogger(__name__)
 
@@ -49,6 +50,8 @@ class ServoDriver:
         self.pwm_chip_path = None
         self.pwm_path = None
         self.pwm_enabled = False
+        self._move_lock = threading.Lock()
+        self._move_thread = None
 
     def configure(self, gpio_pin=None, pwm_chip=None, pwm_channel=None):
         """Update servo configuration and reset backends if needed."""
@@ -64,50 +67,63 @@ class ServoDriver:
             self._cleanup_pwm_sysfs()
 
     def move(self, current_angle, target_angle, speed_ms):
-        """Move servo from current angle to target angle."""
-        if not HARDWARE_AVAILABLE:
-            logger.info(
-                f"Mock: Would move servo on GPIO {self.gpio_pin} from {current_angle}° to {target_angle}° at {speed_ms}ms speed"
-            )
+        """Move servo from current angle to target angle asynchronously."""
+        if self._move_thread and self._move_thread.is_alive():
+            logger.warning("Servo move already in progress; new request ignored.")
             return
 
-        current_angle = max(MIN_ANGLE, min(MAX_ANGLE, current_angle))
-        target_angle = max(MIN_ANGLE, min(MAX_ANGLE, target_angle))
+        self._move_thread = threading.Thread(
+            target=self._move_blocking,
+            args=(current_angle, target_angle, speed_ms),
+            daemon=True,
+        )
+        self._move_thread.start()
 
-        self.backend = self._select_backend(self.gpio_pin)
+    def _move_blocking(self, current_angle, target_angle, speed_ms):
+        with self._move_lock:
+            if not HARDWARE_AVAILABLE:
+                logger.info(
+                    f"Mock: Would move servo on GPIO {self.gpio_pin} from {current_angle}° to {target_angle}° at {speed_ms}ms speed"
+                )
+                return
 
-        if self.backend == "pwm_sysfs":
-            self._initialize_pwm_if_needed(self.gpio_pin)
-            step = 1 if target_angle > current_angle else -1
-            for angle in range(int(current_angle), int(target_angle), step):
-                pulse_us = self._angle_to_pulse_us(angle)
-                self._pwm_sysfs_set_pulse_us(pulse_us)
-                logger.info(f"new Angle: {angle}° new Pulse: {pulse_us}us")
-                time.sleep(speed_ms / 1000)
+            current_angle = max(MIN_ANGLE, min(MAX_ANGLE, current_angle))
+            target_angle = max(MIN_ANGLE, min(MAX_ANGLE, target_angle))
 
-            final_pulse_us = self._angle_to_pulse_us(target_angle)
-            self._pwm_sysfs_set_pulse_us(final_pulse_us)
-            time.sleep(0.2)
-            self._pwm_sysfs_disable()
-            logger.info(f"Moved servo from {current_angle}° to {target_angle}° (kernel PWM)")
-            return
+            self.backend = self._select_backend(self.gpio_pin)
 
-        if self.backend == "gpiod":
-            self._initialize_gpiod_if_needed(self.gpio_pin)
-            step = 1 if target_angle > current_angle else -1
-            for angle in range(int(current_angle), int(target_angle), step):
-                pulse_us = self._angle_to_pulse_us(angle)
-                step_duration_ms = max(speed_ms, 20)
-                self._gpiod_pwm_for_duration(pulse_us, step_duration_ms)
-                logger.info(f"new Angle: {angle}° new Pulse: {pulse_us}us")
+            if self.backend == "pwm_sysfs":
+                self._initialize_pwm_if_needed(self.gpio_pin)
+                step = 1 if target_angle > current_angle else -1
+                for angle in range(int(current_angle), int(target_angle), step):
+                    pulse_us = self._angle_to_pulse_us(angle)
+                    self._pwm_sysfs_set_pulse_us(pulse_us)
+                    logger.info(f"new Angle: {angle}° new Pulse: {pulse_us}us")
+                    time.sleep(speed_ms / 1000)
 
-            final_pulse_us = self._angle_to_pulse_us(target_angle)
-            self._gpiod_pwm_for_duration(final_pulse_us, max(200, speed_ms))
-            self._gpiod_set_value(False)
-            logger.info(f"Moved servo from {current_angle}° to {target_angle}° (libgpiod)")
-            return
+                final_pulse_us = self._angle_to_pulse_us(target_angle)
+                self._pwm_sysfs_set_pulse_us(final_pulse_us)
+                time.sleep(0.2)
+                self._pwm_sysfs_disable()
+                logger.info(f"Moved servo from {current_angle}° to {target_angle}° (kernel PWM)")
+                return
 
-        logger.warning("No supported backend available; servo move skipped.")
+            if self.backend == "gpiod":
+                self._initialize_gpiod_if_needed(self.gpio_pin)
+                step = 1 if target_angle > current_angle else -1
+                for angle in range(int(current_angle), int(target_angle), step):
+                    pulse_us = self._angle_to_pulse_us(angle)
+                    step_duration_ms = max(speed_ms, 20)
+                    self._gpiod_pwm_for_duration(pulse_us, step_duration_ms)
+                    logger.info(f"new Angle: {angle}° new Pulse: {pulse_us}us")
+
+                final_pulse_us = self._angle_to_pulse_us(target_angle)
+                self._gpiod_pwm_for_duration(final_pulse_us, max(200, speed_ms))
+                self._gpiod_set_value(False)
+                logger.info(f"Moved servo from {current_angle}° to {target_angle}° (libgpiod)")
+                return
+
+            logger.warning("No supported backend available; servo move skipped.")
 
     def cleanup(self):
         """Clean up hardware resources."""
