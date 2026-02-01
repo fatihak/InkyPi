@@ -61,14 +61,11 @@ class ImageFolder(BasePlugin):
         try:
             # Use adaptive loader for memory-efficient processing
             # Load without auto-resize first to handle padding options
+            # Note: Loader automatically handles EXIF orientation correction
             img = self.image_loader.from_file(image_url, dimensions, resize=False)
 
             if not img:
                 raise RuntimeError("Failed to load image from file")
-
-            # Correct orientation using EXIF
-            logger.debug("Correcting image orientation using EXIF data")
-            img = ImageOps.exif_transpose(img)
 
             if use_padding:
                 logger.debug(f"Applying padding with {background_option} background")

@@ -130,6 +130,11 @@ class AdaptiveImageLoader:
 
             if resize:
                 img = self._process_and_resize(img, dimensions, original_size)
+            else:
+                # Even without resizing, apply EXIF orientation correction
+                img = ImageOps.exif_transpose(img)
+                if img.size != original_size:
+                    logger.debug(f"EXIF orientation applied: {original_size[0]}x{original_size[1]} -> {img.size[0]}x{img.size[1]}")
 
             return img
         except Exception as e:
@@ -200,6 +205,11 @@ class AdaptiveImageLoader:
                 logger.debug(f"Image decoded: {img.size[0]}x{img.size[1]} (draft mode reduced from {original_size[0]}x{original_size[1]})")
 
                 img = self._process_and_resize(img, dimensions, original_size)
+            else:
+                # Even without resizing, apply EXIF orientation correction
+                img = ImageOps.exif_transpose(img)
+                if img.size != original_size:
+                    logger.debug(f"EXIF orientation applied: {original_size[0]}x{original_size[1]} -> {img.size[0]}x{img.size[1]}")
 
             return img
 
@@ -233,6 +243,11 @@ class AdaptiveImageLoader:
 
             if resize:
                 img = self._process_and_resize(img, dimensions, original_size)
+            else:
+                # Even without resizing, apply EXIF orientation correction
+                img = ImageOps.exif_transpose(img)
+                if img.size != original_size:
+                    logger.debug(f"EXIF orientation applied: {original_size[0]}x{original_size[1]} -> {img.size[0]}x{img.size[1]}")
 
             return img
 
@@ -253,6 +268,11 @@ class AdaptiveImageLoader:
 
             if resize:
                 img = self._process_and_resize(img, dimensions, original_size)
+            else:
+                # Even without resizing, apply EXIF orientation correction
+                img = ImageOps.exif_transpose(img)
+                if img.size != original_size:
+                    logger.debug(f"EXIF orientation applied: {original_size[0]}x{original_size[1]} -> {img.size[0]}x{img.size[1]}")
 
             return img
 
@@ -274,6 +294,13 @@ class AdaptiveImageLoader:
         Returns:
             Processed and resized PIL Image
         """
+        # Apply EXIF orientation correction first (before any processing)
+        # This handles images from cameras/phones that store rotation in EXIF metadata
+        # Safe to call on any image - returns unchanged if no EXIF data present
+        img = ImageOps.exif_transpose(img)
+        if img.size != original_size:
+            logger.debug(f"EXIF orientation applied: {original_size[0]}x{original_size[1]} -> {img.size[0]}x{img.size[1]}")
+        
         # Convert to RGB if necessary (removes alpha channel, saves memory)
         # E-ink displays don't need alpha channel anyway
         if img.mode in ('RGBA', 'LA', 'P'):
