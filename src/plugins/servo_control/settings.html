@@ -1,0 +1,147 @@
+<!-- Servo Control Plugin Settings -->
+<div class="form-group">
+    <label for="gpio-pin" class="form-label">GPIO Pin Number:</label>
+    <input 
+        type="number" 
+        id="gpio-pin" 
+        name="gpio_pin" 
+        class="form-control" 
+        min="0" 
+        max="27" 
+        value="13"
+        required
+    />
+    <small class="form-text">GPIO pin where the servo signal wire is connected (default: 13)</small>
+</div>
+
+<div class="form-group">
+    <label for="target-angle" class="form-label">Target Angle: <span id="angle-display">90°</span></label>
+    <input 
+        type="range" 
+        id="target-angle" 
+        name="target_angle" 
+        class="form-range" 
+        min="0" 
+        max="180" 
+        value="90"
+        step="1"
+    />
+    <small class="form-text">Drag the slider to set target servo angle (0° - 180°)</small>
+</div>
+
+<div class="form-group">
+    <label for="servo-speed" class="form-label">Servo Speed: <span id="speed-display">10ms</span></label>
+    <input 
+        type="number" 
+        id="servo-speed" 
+        name="servo_speed" 
+        class="form-range" 
+        min="0" 
+        value="100"
+    />
+    <small class="form-text">Delay between angle steps in milliseconds (lower = faster)</small>
+</div>
+
+<div class="form-group">
+    <label for="orientation" class="form-label">Orientation:</label>
+    <select 
+        id="orientation" 
+        name="orientation" 
+        class="form-control"
+    >
+        <option value="current">Keep Current</option>
+        <option value="landscape">Landscape (Horizontal)</option>
+        <option value="portrait">Portrait (Vertical)</option>
+    </select>
+    <small class="form-text">
+        Update device orientation when servo moves. 
+        "Keep Current" will not change the display orientation.
+    </small>
+</div>
+
+<br/>
+<!-- API Documentation Section -->
+<div>
+    <p><strong>API Documentation:</strong></p>
+    <div class="card bg-light">
+        <div class="card-body">            
+            <div class="mb-3">
+                <p><strong>Trigger servo via playlist (Recommended):</strong></p>
+                <code class="d-block p-2 rounded">
+                    curl -X POST http://your-inkypi:8080/api/plugin/servo_control \<br>
+                    &nbsp;&nbsp;-H "Content-Type: application/json" \<br>
+                    &nbsp;&nbsp;-d '{<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;"playlist_name": "YOUR_PLAYLIST_NAME",<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;"plugin_instance": "YOUR_PLUGIN_INSTANCE_NAME",<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;"plugin_id": "servo_control"<br>
+                    &nbsp;&nbsp;}'
+                </code>
+                <small class="text-muted d-block mt-2">
+                    This will activate the servo with the target angle configured in the specified playlist instance.
+                </small>
+            </div>
+            
+            <div class="mb-3">
+                <p><strong>Direct servo control (Manual):</strong></p>
+                <code class="d-block p-2 rounded">
+                    curl -X POST http://your-inkypi:8080/update_now \<br>
+                    &nbsp;&nbsp;-F "plugin_id=servo_control" \<br>
+                    &nbsp;&nbsp;-F "gpio_pin=13" \<br>
+                    &nbsp;&nbsp;-F "target_angle=90" \<br>
+                    &nbsp;&nbsp;-F "servo_speed=10" \<br>
+                    &nbsp;&nbsp;-F "orientation=landscape"
+                </code>
+                <small class="text-muted d-block mt-2">
+                    orientation can be: current, landscape, or portrait
+                </small>
+            </div>
+            
+            <p class="mt-3 mb-0">
+                <small><strong>Note:</strong> The servo will move to the target angle and update the display. 
+                The current angle is stored persistently and used as the starting position after reboot.</small>
+            </p>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Update angle display
+    document.getElementById('target-angle').addEventListener('input', function() {
+        document.getElementById('angle-display').textContent = this.value + '°';
+    });
+    
+    // Update speed display
+    document.getElementById('servo-speed').addEventListener('input', function() {
+        document.getElementById('speed-display').textContent = this.value + 'ms';
+    });
+    
+    // Load settings from pluginSettings
+    document.addEventListener('DOMContentLoaded', () => {
+        // Check if we're in edit mode and have existing settings
+        if (loadPluginSettings && typeof pluginSettings !== 'undefined' && pluginSettings) {
+            // Load GPIO pin
+            if (pluginSettings.gpio_pin !== undefined) {
+                document.getElementById('gpio-pin').value = pluginSettings.gpio_pin;
+            }
+            
+            // Load target angle
+            if (pluginSettings.target_angle !== undefined) {
+                const angle = pluginSettings.target_angle;
+                document.getElementById('target-angle').value = angle;
+                document.getElementById('angle-display').textContent = angle + '°';
+            }
+            
+            // Load servo speed
+            if (pluginSettings.servo_speed !== undefined) {
+                const speed = pluginSettings.servo_speed;
+                document.getElementById('servo-speed').value = speed;
+                document.getElementById('speed-display').textContent = speed + 'ms';
+            }
+            
+            // Load orientation
+            if (pluginSettings.orientation !== undefined) {
+                document.getElementById('orientation').value = pluginSettings.orientation;
+            }
+        }
+    });
+</script>
