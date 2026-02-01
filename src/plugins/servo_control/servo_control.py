@@ -297,8 +297,12 @@ class ServoControl(BasePlugin):
         """Set PWM duty cycle via sysfs in nanoseconds."""
         if not self.pwm_path:
             return
+        enable_path = f"{self.pwm_path}/enable"
         duty_path = f"{self.pwm_path}/duty_cycle"
         duty_ns = int(pulse_us * 1000)
+        if os.path.exists(enable_path):
+            with open(enable_path, "w", encoding="utf-8") as f:
+                f.write("1")
         with open(duty_path, "w", encoding="utf-8") as f:
             f.write(str(duty_ns))
 
