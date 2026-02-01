@@ -11,16 +11,15 @@
         value="18"
         required
     />
-    <small class="form-text">GPIO pin where the servo signal wire is connected (default: 18)</small>
+    <small class="form-text">GPIO pin where the servo signal wire is connected (default: 18, other Pins not tested, perhaps need more configuration)</small>
 </div>
 
 <div class="form-group">
     <label for="target-angle" class="form-label">Target Angle: </label>
     <input 
-        type="range" 
+        type="number" 
         id="target-angle" 
         name="target_angle" 
-        class="form-range" 
         min="-90" 
         max="270" 
         value="90"
@@ -33,14 +32,13 @@
 </div>
 
 <div class="form-group">
-    <label for="servo-speed" class="form-label">Servo Speed: <span id="speed-display">10ms</span></label>
+    <label for="servo-speed" class="form-label">Servo Speed: </label>
     <input 
         type="number" 
         id="servo-speed" 
-        name="servo_speed" 
-        class="form-range" 
+        name="servo_speed"  
         min="0" 
-        value="100"
+        value="50"
     />
     <small class="form-text">Delay between angle steps in milliseconds (lower = faster)</small>
 </div>
@@ -60,51 +58,6 @@
         Update device orientation when servo moves. 
         "Keep Current" will not change the display orientation.
     </small>
-</div>
-
-<br/>
-<!-- API Documentation Section -->
-<div>
-    <p><strong>API Documentation:</strong></p>
-    <div class="card bg-light">
-        <div class="card-body">            
-            <div class="mb-3">
-                <p><strong>Trigger servo via playlist (Recommended):</strong></p>
-                <code class="d-block p-2 rounded">
-                    curl -X POST http://your-inkypi:8080/api/plugin/servo_control \<br>
-                    &nbsp;&nbsp;-H "Content-Type: application/json" \<br>
-                    &nbsp;&nbsp;-d '{<br>
-                    &nbsp;&nbsp;&nbsp;&nbsp;"playlist_name": "YOUR_PLAYLIST_NAME",<br>
-                    &nbsp;&nbsp;&nbsp;&nbsp;"plugin_instance": "YOUR_PLUGIN_INSTANCE_NAME",<br>
-                    &nbsp;&nbsp;&nbsp;&nbsp;"plugin_id": "servo_control"<br>
-                    &nbsp;&nbsp;}'
-                </code>
-                <small class="text-muted d-block mt-2">
-                    This will activate the servo with the target angle configured in the specified playlist instance.
-                </small>
-            </div>
-            
-            <div class="mb-3">
-                <p><strong>Direct servo control (Manual):</strong></p>
-                <code class="d-block p-2 rounded">
-                    curl -X POST http://your-inkypi:8080/update_now \<br>
-                    &nbsp;&nbsp;-F "plugin_id=servo_control" \<br>
-                    &nbsp;&nbsp;-F "gpio_pin=18" \<br>
-                    &nbsp;&nbsp;-F "target_angle=90" \<br>
-                    &nbsp;&nbsp;-F "servo_speed=10" \<br>
-                    &nbsp;&nbsp;-F "orientation=landscape"
-                </code>
-                <small class="text-muted d-block mt-2">
-                    orientation can be: current, landscape, or portrait
-                </small>
-            </div>
-            
-            <p class="mt-3 mb-0">
-                <small><strong>Note:</strong> The servo will move to the target angle and update the display. 
-                The current angle is stored persistently and used as the starting position after reboot.</small>
-            </p>
-        </div>
-    </div>
 </div>
 
 <script>
