@@ -1,4 +1,8 @@
 from plugins.base_plugin.base_plugin import BasePlugin
+from plugins.weather.translations import (
+    SUPPORTED_LANGUAGES, get_translation, get_aqi_label,
+    translate_day, translate_date, get_time_format
+)
 from PIL import Image
 import os
 import requests
@@ -69,6 +73,7 @@ class Weather(BasePlugin):
             "expected_key": "OPEN_WEATHER_MAP_SECRET"
         }
         template_params['style_settings'] = True
+        template_params['supported_languages'] = SUPPORTED_LANGUAGES
         return template_params
 
     def generate_image(self, settings, device_config):
@@ -83,9 +88,11 @@ class Weather(BasePlugin):
 
         weather_provider = settings.get('weatherProvider', 'OpenWeatherMap')
         title = settings.get('customTitle', '')
+        language = settings.get('language', 'en')
 
         timezone = device_config.get_config("timezone", default="America/New_York")
-        time_format = device_config.get_config("time_format", default="12h")
+        # Get time format based on selected language instead of device config
+        time_format = get_time_format(language)
         tz = pytz.timezone(timezone)
 
         try:
@@ -100,15 +107,15 @@ class Weather(BasePlugin):
                 if settings.get('weatherTimeZone', 'locationTimeZone') == 'locationTimeZone':
                     logger.info("Using location timezone for OpenWeatherMap data.")
                     wtz = self.parse_timezone(weather_data)
-                    template_params = self.parse_weather_data(weather_data, aqi_data, wtz, units, time_format, lat)
+                    template_params = self.parse_weather_data(weather_data, aqi_data, wtz, units, time_format, lat, language)
                 else:
                     logger.info("Using configured timezone for OpenWeatherMap data.")
-                    template_params = self.parse_weather_data(weather_data, aqi_data, tz, units, time_format, lat)
+                    template_params = self.parse_weather_data(weather_data, aqi_data, tz, units, time_format, lat, language)
             elif weather_provider == "OpenMeteo":
                 forecast_days = 7
                 weather_data = self.get_open_meteo_data(lat, long, units, forecast_days + 1)
                 aqi_data = self.get_open_meteo_air_quality(lat, long)
-                template_params = self.parse_open_meteo_data(weather_data, aqi_data, tz, units, time_format, lat)
+                template_params = self.parse_open_meteo_data(weather_data, aqi_data, tz, units, time_format, lat, language)
             else:
                 raise RuntimeError(f"Unknown weather provider: {weather_provider}")
 
@@ -137,7 +144,7 @@ class Weather(BasePlugin):
             raise RuntimeError("Failed to take screenshot, please check logs.")
         return image
 
-    def parse_weather_data(self, weather_data, aqi_data, tz, units, time_format, lat):
+    def parse_weather_data(self, weather_data, aqi_data, tz, units, time_format, lat, language="en"):
         current = weather_data.get("current")
         daily_forecast = weather_data.get("daily", [])
         dt = datetime.fromtimestamp(current.get('dt'), tz=timezone.utc).astimezone(tz)
@@ -149,44 +156,59 @@ class Weather(BasePlugin):
         if icon_code not in icon_codes_to_preserve:
             if current_icon.endswith('n'):
                 current_icon = current_icon.replace("n", "d")
+
+        # Translate date
+        current_date_en = dt.strftime("%A, %B %d")
+        current_date = translate_date(language, current_date_en)
+
         data = {
-            "current_date": dt.strftime("%A, %B %d"),
+            "current_date": current_date,
             "current_day_icon": self.get_plugin_dir(f'icons/{current_icon}.png'),
             "current_temperature": str(round(current.get("temp"))),
             "feels_like": str(round(current.get("feels_like"))),
             "temperature_unit": UNITS[units]["temperature"],
             "units": units,
-            "time_format": time_format
+            "time_format": time_format,
+            "language": language,
+            "feels_like_label": get_translation(language, "feels_like"),
+            "last_refresh_label": get_translation(language, "last_refresh")
         }
-        data['forecast'] = self.parse_forecast(weather_data.get('daily'), tz, current_suffix, lat)
-        data['data_points'] = self.parse_data_points(weather_data, aqi_data, tz, units, time_format)
+        data['forecast'] = self.parse_forecast(weather_data.get('daily'), tz, current_suffix, lat, language)
+        data['data_points'] = self.parse_data_points(weather_data, aqi_data, tz, units, time_format, language)
 
         data['hourly_forecast'] = self.parse_hourly(weather_data.get('hourly'), tz, time_format, units, daily_forecast)
         return data
 
-    def parse_open_meteo_data(self, weather_data, aqi_data, tz, units, time_format, lat):
+    def parse_open_meteo_data(self, weather_data, aqi_data, tz, units, time_format, lat, language="en"):
         current = weather_data.get("current", {})
         daily = weather_data.get('daily', {})
         dt = datetime.fromisoformat(current.get('time')).astimezone(tz) if current.get('time') else datetime.now(tz)
         weather_code = current.get("weather_code", 0)
         is_day = current.get("is_day", 1)
         current_icon = self.map_weather_code_to_icon(weather_code, is_day)
-        
+
         temperature_conversion = 273.15 if units == "standard" else 0.
 
+        # Translate date
+        current_date_en = dt.strftime("%A, %B %d")
+        current_date = translate_date(language, current_date_en)
+
         data = {
-            "current_date": dt.strftime("%A, %B %d"),
+            "current_date": current_date,
             "current_day_icon": self.get_plugin_dir(f'icons/{current_icon}.png'),
             "current_temperature": str(round(current.get("temperature", 0) + temperature_conversion)),
             "feels_like": str(round(current.get("apparent_temperature", current.get("temperature", 0)) + temperature_conversion)),
             "temperature_unit": UNITS[units]["temperature"],
             "units": units,
-            "time_format": time_format
+            "time_format": time_format,
+            "language": language,
+            "feels_like_label": get_translation(language, "feels_like"),
+            "last_refresh_label": get_translation(language, "last_refresh")
         }
 
-        data['forecast'] = self.parse_open_meteo_forecast(weather_data.get('daily', {}), units, tz, is_day, lat)
-        data['data_points'] = self.parse_open_meteo_data_points(weather_data, aqi_data, units, tz, time_format)
-        
+        data['forecast'] = self.parse_open_meteo_forecast(weather_data.get('daily', {}), units, tz, is_day, lat, language)
+        data['data_points'] = self.parse_open_meteo_data_points(weather_data, aqi_data, units, tz, time_format, language)
+
         data['hourly_forecast'] = self.parse_open_meteo_hourly(weather_data.get('hourly', {}), units, tz, time_format, daily.get('sunrise', []), daily.get('sunset', []))
         return data
 
@@ -260,7 +282,7 @@ class Weather(BasePlugin):
         
         return self.get_plugin_dir(f"icons/{phase_name}.png")
 
-    def parse_forecast(self, daily_forecast, tz, current_suffix, lat):
+    def parse_forecast(self, daily_forecast, tz, current_suffix, lat, language="en"):
         """
         - daily_forecast: list of daily entries from One‑Call v3 (each has 'dt', 'weather', 'temp', 'moon_phase')
         - tz: your target tzinfo (e.g. from zoneinfo or pytz)
@@ -298,7 +320,7 @@ class Weather(BasePlugin):
             else:
                 if weather_icon.endswith('n'):
                     weather_icon = weather_icon.replace("n", "d")
-            weather_icon = f"{icon_code}d"        
+            weather_icon = f"{icon_code}d"
             weather_icon_path = self.get_plugin_dir(f"icons/{weather_icon}.png")
 
             # --- moon phase & icon ---
@@ -311,7 +333,8 @@ class Weather(BasePlugin):
 
             # --- date & temps ---
             dt = datetime.fromtimestamp(day["dt"], tz=timezone.utc).astimezone(tz)
-            day_label = dt.strftime("%a")
+            day_label_en = dt.strftime("%a")
+            day_label = translate_day(language, day_label_en)
 
             forecast.append(
                 {
@@ -326,7 +349,7 @@ class Weather(BasePlugin):
 
         return forecast
         
-    def parse_open_meteo_forecast(self, daily_data, units, tz, is_day, lat):
+    def parse_open_meteo_forecast(self, daily_data, units, tz, is_day, lat, language="en"):
         """
         Parse the daily forecast from Open-Meteo API and calculate moon phase and illumination using the local 'astral' library.
         """
@@ -340,9 +363,10 @@ class Weather(BasePlugin):
 
         forecast = []
 
-        for i in range(0, len(times)): 
+        for i in range(0, len(times)):
             dt = datetime.fromisoformat(times[i]).replace(tzinfo=timezone.utc).astimezone(tz)
-            day_label = dt.strftime("%a")
+            day_label_en = dt.strftime("%a")
+            day_label = translate_day(language, day_label_en)
 
             code = weather_codes[i] if i < len(weather_codes) else 0
             weather_icon = self.map_weather_code_to_icon(code, is_day=1)
@@ -466,14 +490,14 @@ class Weather(BasePlugin):
             hourly.append(hour_forecast)
         return hourly
 
-    def parse_data_points(self, weather, air_quality, tz, units, time_format):
+    def parse_data_points(self, weather, air_quality, tz, units, time_format, language="en"):
         data_points = []
         sunrise_epoch = weather.get('current', {}).get("sunrise")
 
         if sunrise_epoch:
             sunrise_dt = datetime.fromtimestamp(sunrise_epoch, tz=timezone.utc).astimezone(tz)
             data_points.append({
-                "label": "Sunrise",
+                "label": get_translation(language, "sunrise"),
                 "measurement": self.format_time(sunrise_dt, time_format, include_am_pm=False),
                 "unit": "" if time_format == "24h" else sunrise_dt.strftime('%p'),
                 "icon": self.get_plugin_dir('icons/sunrise.png')
@@ -485,7 +509,7 @@ class Weather(BasePlugin):
         if sunset_epoch:
             sunset_dt = datetime.fromtimestamp(sunset_epoch, tz=timezone.utc).astimezone(tz)
             data_points.append({
-                "label": "Sunset",
+                "label": get_translation(language, "sunset"),
                 "measurement": self.format_time(sunset_dt, time_format, include_am_pm=False),
                 "unit": "" if time_format == "24h" else sunset_dt.strftime('%p'),
                 "icon": self.get_plugin_dir('icons/sunset.png')
@@ -496,7 +520,7 @@ class Weather(BasePlugin):
         wind_deg = weather.get('current', {}).get("wind_deg", 0)
         wind_arrow = self.get_wind_arrow(wind_deg)
         data_points.append({
-            "label": "Wind",
+            "label": get_translation(language, "wind"),
             "measurement": weather.get('current', {}).get("wind_speed"),
             "unit": UNITS[units]["speed"],
             "icon": self.get_plugin_dir('icons/wind.png'),
@@ -504,21 +528,21 @@ class Weather(BasePlugin):
         })
 
         data_points.append({
-            "label": "Humidity",
+            "label": get_translation(language, "humidity"),
             "measurement": weather.get('current', {}).get("humidity"),
             "unit": '%',
             "icon": self.get_plugin_dir('icons/humidity.png')
         })
 
         data_points.append({
-            "label": "Pressure",
+            "label": get_translation(language, "pressure"),
             "measurement": weather.get('current', {}).get("pressure"),
             "unit": 'hPa',
             "icon": self.get_plugin_dir('icons/pressure.png')
         })
 
         data_points.append({
-            "label": "UV Index",
+            "label": get_translation(language, "uv_index"),
             "measurement": weather.get('current', {}).get("uvi"),
             "unit": '',
             "icon": self.get_plugin_dir('icons/uvi.png')
@@ -537,7 +561,7 @@ class Weather(BasePlugin):
         if at_max_visibility:
             visibility_str = u"\u2265" + visibility_str
         data_points.append({
-            "label": "Visibility",
+            "label": get_translation(language, "visibility"),
             "measurement": visibility_str,
             "unit": UNITS[units]["distance"],
             "icon": self.get_plugin_dir('icons/visibility.png')
@@ -545,15 +569,15 @@ class Weather(BasePlugin):
 
         aqi = air_quality.get('list', [])[0].get("main", {}).get("aqi")
         data_points.append({
-            "label": "Air Quality",
+            "label": get_translation(language, "air_quality"),
             "measurement": aqi,
-            "unit": ["Good", "Fair", "Moderate", "Poor", "Very Poor"][int(aqi)-1],
+            "unit": get_aqi_label(language, int(aqi) - 1),
             "icon": self.get_plugin_dir('icons/aqi.png')
         })
 
         return data_points
 
-    def parse_open_meteo_data_points(self, weather_data, aqi_data, units, tz, time_format):
+    def parse_open_meteo_data_points(self, weather_data, aqi_data, units, tz, time_format, language="en"):
         """Parses current data points from Open-Meteo API response."""
         data_points = []
         daily_data = weather_data.get('daily', {})
@@ -567,7 +591,7 @@ class Weather(BasePlugin):
         if sunrise_times:
             sunrise_dt = datetime.fromisoformat(sunrise_times[0]).astimezone(tz)
             data_points.append({
-                "label": "Sunrise",
+                "label": get_translation(language, "sunrise"),
                 "measurement": self.format_time(sunrise_dt, time_format, include_am_pm=False),
                 "unit": "" if time_format == "24h" else sunrise_dt.strftime('%p'),
                 "icon": self.get_plugin_dir('icons/sunrise.png')
@@ -580,7 +604,7 @@ class Weather(BasePlugin):
         if sunset_times:
             sunset_dt = datetime.fromisoformat(sunset_times[0]).astimezone(tz)
             data_points.append({
-                "label": "Sunset",
+                "label": get_translation(language, "sunset"),
                 "measurement": self.format_time(sunset_dt, time_format, include_am_pm=False),
                 "unit": "" if time_format == "24h" else sunset_dt.strftime('%p'),
                 "icon": self.get_plugin_dir('icons/sunset.png')
@@ -594,7 +618,7 @@ class Weather(BasePlugin):
         wind_arrow = self.get_wind_arrow(wind_deg)
         wind_unit = UNITS[units]["speed"]
         data_points.append({
-            "label": "Wind", "measurement": wind_speed, "unit": wind_unit,
+            "label": get_translation(language, "wind"), "measurement": wind_speed, "unit": wind_unit,
             "icon": self.get_plugin_dir('icons/wind.png'), "arrow": wind_arrow
         })
 
@@ -611,7 +635,7 @@ class Weather(BasePlugin):
                 logger.warning(f"Could not parse time string {time_str} for humidity.")
                 continue
         data_points.append({
-            "label": "Humidity", "measurement": current_humidity, "unit": '%',
+            "label": get_translation(language, "humidity"), "measurement": current_humidity, "unit": '%',
             "icon": self.get_plugin_dir('icons/humidity.png')
         })
 
@@ -628,7 +652,7 @@ class Weather(BasePlugin):
                 logger.warning(f"Could not parse time string {time_str} for pressure.")
                 continue
         data_points.append({
-            "label": "Pressure", "measurement": current_pressure, "unit": 'hPa',
+            "label": get_translation(language, "pressure"), "measurement": current_pressure, "unit": 'hPa',
             "icon": self.get_plugin_dir('icons/pressure.png')
         })
 
@@ -645,12 +669,13 @@ class Weather(BasePlugin):
                 logger.warning(f"Could not parse time string {time_str} for UV Index.")
                 continue
         data_points.append({
-            "label": "UV Index", "measurement": current_uv_index, "unit": '',
+            "label": get_translation(language, "uv_index"), "measurement": current_uv_index, "unit": '',
             "icon": self.get_plugin_dir('icons/uvi.png')
         })
 
         # Visibility
         current_visibility = "N/A"
+        at_max_visibility = False
         visibility_hourly_times = hourly_data.get('time', [])
         visibility_values = hourly_data.get('visibility', [])
         if units == "imperial":
@@ -668,12 +693,12 @@ class Weather(BasePlugin):
             except ValueError:
                 logger.warning(f"Could not parse time string {time_str} for visibility.")
                 continue
-        visibility_str = f"{current_visibility:.1f}"
+        visibility_str = f"{current_visibility:.1f}" if current_visibility != "N/A" else "N/A"
         if at_max_visibility:
             visibility_str = u"\u2265" + visibility_str
         data_points.append({
-            "label": "Visibility", 
-            "measurement": visibility_str, 
+            "label": get_translation(language, "visibility"),
+            "measurement": visibility_str,
             "unit": UNITS[units]["distance"],
             "icon": self.get_plugin_dir('icons/visibility.png')
         })
@@ -692,9 +717,10 @@ class Weather(BasePlugin):
                 continue
         scale = ""
         if current_aqi and current_aqi != "N/A":
-            scale = ["Good","Fair","Moderate","Poor","Very Poor","Ext Poor"][min(current_aqi//20,5)]
+            aqi_index = min(int(current_aqi // 20), 5)
+            scale = get_aqi_label(language, aqi_index)
         data_points.append({
-            "label": "Air Quality", "measurement": current_aqi,
+            "label": get_translation(language, "air_quality"), "measurement": current_aqi,
             "unit": scale, "icon": self.get_plugin_dir('icons/aqi.png')
         })
 
