@@ -24,10 +24,10 @@ class ImageFolder(BasePlugin):
         folder_path = settings.get('folder_path')
         if not folder_path:
             raise RuntimeError("Folder path is required.")
-        
+
         if not os.path.exists(folder_path):
             raise RuntimeError(f"Folder does not exist: {folder_path}")
-        
+
         if not os.path.isdir(folder_path):
             raise RuntimeError(f"Path is not a directory: {folder_path}")
 
@@ -52,7 +52,7 @@ class ImageFolder(BasePlugin):
                 if settings.get('backgroundOption', 'blur') == "blur":
                     img = pad_image_blur(img, dimensions)
                 else:
-                    background_color = ImageColor.getcolor(settings.get('backgroundColor') or (255, 255, 255), "RGB")
+                    background_color = ImageColor.getcolor(settings.get('backgroundColor') or "white", img.mode)
                     img = ImageOps.pad(img, dimensions, color=background_color, method=Image.Resampling.LANCZOS)
 
             return img
