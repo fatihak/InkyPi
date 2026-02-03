@@ -1,14 +1,15 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ config.name }}</title>
     <link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='styles/main.css') }}">
     <script>
-        (function() {
-            const theme = localStorage.getItem('inkypi-theme') || 
-                         (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        (function () {
+            const theme = localStorage.getItem('inkypi-theme') ||
+                (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
             if (theme === 'dark') {
                 document.documentElement.setAttribute('data-theme', 'dark');
             }
@@ -27,7 +28,7 @@
                 }
 
                 const response = await fetch('{{ url_for("main.get_current_image") }}', { headers });
-                
+
                 if (response.status === 304) {
                     return;
                 }
@@ -39,7 +40,7 @@
 
                 const blob = await response.blob();
                 const objectUrl = URL.createObjectURL(blob);
-                
+
                 img.src = objectUrl;
                 lastModified = response.headers.get('Last-Modified');
             } catch (error) {
@@ -47,13 +48,14 @@
             }
         }
 
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             refreshImage();
             setInterval(refreshImage, refreshIntervalMs);
         });
     </script>
     <script src="{{ url_for('static', filename='scripts/image_modal.js') }}"></script>
 </head>
+
 <body>
     <script src="{{ url_for('static', filename='scripts/dark_mode.js') }}"></script>
     <!-- Subtle frame container -->
@@ -61,15 +63,21 @@
         <!-- Page Title -->
         <header class="header">
             <h1>{{ config.name }}</h1>
-            <button class="settings-button dark-mode-toggle" title="Toggle Dark Mode" aria-label="Toggle Dark Mode"></button>
+            <button class="settings-button dark-mode-toggle" title="Toggle Dark Mode"
+                aria-label="Toggle Dark Mode"></button>
+            <a href="{{ url_for('plugin_manage.plugin_manage_page') }}" class="settings-button" title="Manage plugins">
+                <span style="font-size: 20px;">🧩</span>
+            </a>
             <a href="{{ url_for('apikeys.apikeys_page') }}" class="settings-button" title="API Keys">
                 <span style="font-size: 20px;">🔑</span>
             </a>
             <a href="{{ url_for('playlist.playlists') }}" class="settings-button">
-                <img src="{{ url_for('static', filename='icons/playlist.png') }}" title="Playlists" alt="playlists icon" class="icon-image">
+                <img src="{{ url_for('static', filename='icons/playlist.png') }}" title="Playlists" alt="playlists icon"
+                    class="icon-image">
             </a>
             <a href="{{ url_for('settings.settings_page') }}" class="settings-button">
-                <img src="{{ url_for('static', filename='icons/settings.png') }}" title="Settings" alt="settings icon" class="icon-image">
+                <img src="{{ url_for('static', filename='icons/settings.png') }}" title="Settings" alt="settings icon"
+                    class="icon-image">
             </a>
         </header>
 
@@ -93,14 +101,10 @@
 
         <div class="plugins-container" id="pluginsContainer">
             {% for plugin in plugins %}
-            <a href="{{ url_for('plugin.plugin_page', plugin_id=plugin.id) }}"
-               class="plugin-item"
-               data-plugin-id="{{ plugin.id }}"
-               title="{{ plugin.display_name }}"
-               draggable="false">
+            <a href="{{ url_for('plugin.plugin_page', plugin_id=plugin.id) }}" class="plugin-item"
+                data-plugin-id="{{ plugin.id }}" title="{{ plugin.display_name }}" draggable="false">
                 <img src="{{ url_for('plugin.image', plugin_id=plugin.id, filename='icon.png') }}"
-                     alt="{{ plugin.display_name }}"
-                     class="icon-image">
+                    alt="{{ plugin.display_name }}" class="icon-image">
                 <span class="plugin-name">{{ plugin.display_name }}</span>
             </a>
             {% endfor %}
@@ -249,4 +253,5 @@
         </script>
     </div>
 </body>
+
 </html>

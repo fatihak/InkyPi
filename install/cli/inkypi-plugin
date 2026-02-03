@@ -16,7 +16,8 @@ usage() {
     echo ""
     echo "Plugin commands:"
     echo "  inkypi plugin install <plugin_id> <git_repository_url>"
-    echo "  inkypi plugin remove <plugin_id>"
+    echo "  inkypi plugin install-from-url <git_repository_url>"
+    echo "  inkypi plugin uninstall <plugin_id>"
     echo "  inkypi plugin list"
     echo ""
 }
@@ -24,6 +25,24 @@ usage() {
 require_plugins_dir() {
     if [[ ! -d "$PLUGINS_DIR" ]]; then
         echo "Plugins directory does not exist: $PLUGINS_DIR"
+        exit 1
+    fi
+}
+
+# Remove a plugin directory; on permission failure print clear error and exit.
+# Call only when the directory is safe to remove (e.g. plugin dir in PLUGINS_DIR).
+# In dev (APPNAME unset) we skip sudo to avoid password prompt when run from the UI.
+try_remove_plugin_dir() {
+    local dir="$1"
+    [[ -z "$dir" ]] && return 1
+    if [[ -n "${APPNAME:-}" ]]; then
+        sudo chown -R "$(whoami)":"$(whoami)" "$dir" 2>/dev/null || true
+    fi
+    chmod -R u+rw "$dir" 2>/dev/null || true
+    rm -rf "$dir" 2>/dev/null || true
+    if [[ -d "$dir" ]]; then
+        echo "[ERROR] Could not remove directory (permission denied): $dir"
+        echo "Try from a terminal: sudo rm -rf $dir"
         exit 1
     fi
 }
@@ -43,15 +62,11 @@ install_plugin() {
 
     require_plugins_dir
 
-    # Workaround for .pyc files created by inkypi app with sudo
-    if [[ -d "$DEST_DIR" ]]; then
-        sudo chown -R "$(whoami)":"$(whoami)" "$DEST_DIR" 2>/dev/null || true
-        chmod -R u+rw "$DEST_DIR" 2>/dev/null || true
-    fi
-
     echo "[INFO] Installing plugin '$PLUGIN_ID' from $REPO_URL"
 
-    rm -rf "$DEST_DIR"
+    if [[ -d "$DEST_DIR" ]]; then
+        try_remove_plugin_dir "$DEST_DIR"
+    fi
     mkdir -p "$DEST_DIR"
 
     git clone --depth 1 --filter=blob:none --sparse "$REPO_URL" "$DEST_DIR" &>/dev/null
@@ -60,7 +75,7 @@ install_plugin() {
     DEFAULT_BRANCH=$(git -C "$DEST_DIR" symbolic-ref --short HEAD 2>/dev/null || echo main)
     if ! git -C "$DEST_DIR" ls-tree --name-only "$DEFAULT_BRANCH" | grep -qx "$PLUGIN_ID"; then
         echo "[INFO] Plugin '$PLUGIN_ID' does not exist in the repo"
-        rm -rf "$DEST_DIR"
+        try_remove_plugin_dir "$DEST_DIR"
         exit 1
     fi
 
@@ -73,31 +88,91 @@ install_plugin() {
     rm -rf "$PLUGIN_ID"
 
     echo "[INFO] Plugin copied to $DEST_DIR"
+   
+    # Record install URL in plugin-info.json so "list" shows third_party so we do not rely on plugin having a repository field in plugin-info.json
+    if [[ -f "$DEST_DIR/plugin-info.json" ]] && command -v jq &>/dev/null; then
+        jq --arg url "$REPO_URL" '.repository = $url' "$DEST_DIR/plugin-info.json" > "$DEST_DIR/plugin-info.json.tmp" && mv "$DEST_DIR/plugin-info.json.tmp" "$DEST_DIR/plugin-info.json"
+    fi
 
-    # Install requirements if any
+    # Install requirements if any (skip when VENV_PATH unset, e.g. in dev)
     REQ_FILE="$DEST_DIR/requirements.txt"
 
     if [[ -f "$REQ_FILE" ]]; then
-        echo "[INFO] requirements.txt found, installing dependencies..."
-
-        if [[ ! -d "$VENV_PATH" ]]; then
-            echo "[ERROR] Virtual environment not found at $VENV_PATH"
-            exit 1
+        if [[ -n "${VENV_PATH:-}" ]] && [[ -d "$VENV_PATH" ]]; then
+            echo "[INFO] requirements.txt found, installing dependencies..."
+            source "$VENV_PATH/bin/activate"
+            pip install -r "$REQ_FILE"
+            deactivate
+            echo "[INFO] Dependencies installed"
+        else
+            echo "[INFO] requirements.txt found but VENV_PATH not set or missing, skipping dependency install"
         fi
-
-        source "$VENV_PATH/bin/activate"
-        pip install -r "$REQ_FILE"
-        deactivate
-
-        echo "[INFO] Dependencies installed"
     else
         echo "[INFO] No requirements.txt found, skipping dependency install"
     fi
 
-    echo "[INFO] Restarting $APPNAME service."
-    sudo systemctl restart "$APPNAME.service"
+    if [[ -n "${APPNAME:-}" ]]; then
+        echo "[INFO] Restarting $APPNAME service."
+        sudo systemctl restart "$APPNAME.service"
+    else
+        echo "[INFO] APPNAME not set, skipping service restart (e.g. development mode)"
+    fi
 
     echo "[INFO] Done"
+}
+
+# ----------------------------
+# INSTALL FROM URL (discover plugin id from repo)
+# ----------------------------
+install_from_url() {
+    if [[ $# -ne 1 ]]; then
+        usage
+        exit 1
+    fi
+
+    REPO_URL="$1"
+    require_plugins_dir
+
+    if ! command -v jq &>/dev/null; then
+        echo "[ERROR] jq is required for install-from-url. Please install jq."
+        exit 1
+    fi
+
+    TMP_DIR="$(mktemp -d)"
+    trap 'rm -rf "$TMP_DIR"' EXIT
+
+    echo "[INFO] Cloning repository to discover plugin..."
+    if ! git clone --depth 1 "$REPO_URL" "$TMP_DIR" &>/dev/null; then
+        echo "[ERROR] Failed to clone repository: $REPO_URL"
+        exit 1
+    fi
+
+    PLUGIN_FOLDER=""
+    FOUND_COUNT=0
+
+    for dir in "$TMP_DIR"/*; do
+        [[ -d "$dir" ]] || continue
+        dirname="$(basename "$dir")"
+        [[ "$dirname" == ".git" ]] && continue
+        if [[ -d "$dir/render" ]] && [[ -f "$dir/plugin-info.json" ]]; then
+            if [[ -n "$(jq -r '.id // empty' "$dir/plugin-info.json")" ]]; then
+                PLUGIN_FOLDER="$dirname"
+                (( FOUND_COUNT++ )) || true
+            fi
+        fi
+    done
+
+    if [[ $FOUND_COUNT -eq 0 ]]; then
+        echo "[ERROR] No valid InkyPi plugin found in repository (need a folder containing render/ and plugin-info.json with id)"
+        exit 1
+    fi
+
+    if [[ $FOUND_COUNT -gt 1 ]]; then
+        echo "[ERROR] Multiple plugin folders found in repository; use 'install <plugin_id> <url>' to specify which one"
+        exit 1
+    fi
+
+    install_plugin "$PLUGIN_FOLDER" "$REPO_URL"
 }
 
 # ----------------------------
@@ -121,13 +196,16 @@ uninstall_plugin() {
 
     echo "[INFO] Removing plugin '$PLUGIN_ID'"
 
-    sudo chown -R "$(whoami)":"$(whoami)" "$DEST_DIR" 2>/dev/null || true
-    rm -rf "$DEST_DIR"
+    try_remove_plugin_dir "$DEST_DIR"
 
     echo "[INFO] Plugin successfully uninstalled"
 
-    echo "[INFO] Restarting $APPNAME service."
-    sudo systemctl restart "$APPNAME.service"
+    if [[ -n "${APPNAME:-}" ]]; then
+        echo "[INFO] Restarting $APPNAME service."
+        sudo systemctl restart "$APPNAME.service"
+    else
+        echo "[INFO] APPNAME not set, skipping service restart (e.g. development mode)"
+    fi
 }
 
 # ----------------------------
@@ -170,6 +248,9 @@ list_plugins() {
 case "$command" in
     install)
         install_plugin "$@"
+        ;;
+    install-from-url)
+        install_from_url "$@"
         ;;
     uninstall)
         uninstall_plugin "$@"
