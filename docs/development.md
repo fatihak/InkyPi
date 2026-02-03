@@ -114,38 +114,6 @@ exit                                 # Exit devbox shell and deactivates Python 
 3. Check `mock_display_output/latest.png` for result
 4. Iterate quickly without deployment
 
-## Testing on device without a display
-
-To test the full install on a Raspberry Pi without a physical e-ink display:
-
-1. **Install InkyPi on the Pi** as usual (e.g. clone the repo and run `sudo bash install/install.sh`, or with `-W <waveshare_model>` if you use Waveshare).
-
-2. **Switch the device config to mock display** so no display hardware is used:
-   - Edit `/usr/local/inkypi/src/config/device.json` on the Pi.
-   - Ensure it contains `"display_type": "mock"` and a resolution. Optionally set `output_dir` so mock output is written to a persistent path (e.g. for checking rendered images on the Pi):
-     ```json
-     {
-         "name": "InkyPi",
-         "display_type": "mock",
-         "resolution": [800, 480],
-         "output_dir": "/usr/local/inkypi/mock_display_output",
-         "orientation": "horizontal",
-         "inverted_image": false,
-         "scheduler_sleep_time": 60,
-         "startup": true
-     }
-     ```
-   - Adjust other keys (e.g. `plugin_order`, `playlist_config`) as needed; the install only creates `device.json` from a base if the file does not exist, so your edits are kept on later updates.
-
-3. **Restart the service:**
-   ```bash
-   sudo systemctl restart inkypi.service
-   ```
-
-4. **Use the web UI** from another device at `http://<pi-ip-address>` (port 80). Open **Manage plugins** (puzzle icon), install or uninstall a third-party plugin; the service will restart after each action. Use **Reload page** once the service is back.
-
-Rendered images are written to the device (e.g. `src/static/images/current_image.png`); with mock display they are also written to the mock output path used by the app (see MockDisplay implementation). To switch back to a real display later, set `display_type` to `"inky"` or the Waveshare model (e.g. `"epd7in3f"`) in `device.json` and restart the service.
-
 ## Other Requirements
 
 InkyPi relies on system packages for some features, which are normally installed via the `install.sh` script. **(Skip if using devbox method)**
