@@ -178,7 +178,7 @@
                         onclick="installPlugin()">Install</button>
                 </div>
                 <p style="font-size: 13px; color: var(--text-secondary, #666); margin-top: 8px;">
-                    Enter the HTTPS URL of a repository that contains a valid InkyPi plugin.
+                    Only GitHub.com repository URLs are accepted (e.g. https://github.com/username/repo).
                 </p>
             </div>
 
@@ -248,7 +248,18 @@
                 return;
             }
             if (!url.startsWith('https://')) {
-                showMessage(false, 'Only HTTPS URLs are allowed');
+                showMessage(false, 'Only GitHub.com repository URLs are accepted (HTTPS).');
+                return;
+            }
+            try {
+                const u = new URL(url);
+                const host = u.hostname.toLowerCase();
+                if (host !== 'github.com' && host !== 'www.github.com') {
+                    showMessage(false, 'Only GitHub.com repository URLs are accepted.');
+                    return;
+                }
+            } catch (_) {
+                showMessage(false, 'Invalid URL.');
                 return;
             }
             installBtn.disabled = true;

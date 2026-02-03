@@ -31,7 +31,7 @@ def _third_party_plugins():
 
 
 def _validate_install_url(url):
-    """Validate URL for install: HTTPS only. Returns (ok, error_message)."""
+    """Validate URL for install: HTTPS and GitHub.com only. Returns (ok, error_message)."""
     if not url or not isinstance(url, str):
         return False, "URL is required"
     url = url.strip()
@@ -45,6 +45,9 @@ def _validate_install_url(url):
         return False, "Only HTTPS URLs are allowed"
     if not parsed.netloc:
         return False, "Invalid URL host"
+    host = parsed.netloc.lower().split(":")[0]  # strip port if present
+    if host not in ("github.com", "www.github.com"):
+        return False, "Only GitHub.com repository URLs are accepted"
     return True, None
 
 
