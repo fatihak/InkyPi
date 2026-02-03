@@ -107,13 +107,26 @@ def take_screenshot_html(html_str, dimensions, timeout_ms=None):
     return image
 
 def _find_chromium_binary():
-    """Find the first available Chromium-based binary in system PATH."""
-    candidates = ["chromium-headless-shell", "chromium", "chrome"]
-    for candidate in candidates:
+    """Find the first available Chromium-based binary in PATH or common install locations."""
+    # 1. Check PATH (works when binary name is on PATH)
+    path_candidates = ["chromium-headless-shell", "chromium", "chrome", "google-chrome"]
+    for candidate in path_candidates:
         path = shutil.which(candidate)
         if path:
             logger.debug(f"Found browser binary: {candidate} at {path}")
-            return candidate
+            return path
+
+    # 2. On macOS, check .app bundles (Chrome is not typically on PATH)
+    if os.name == "posix" and os.uname().sysname == "Darwin":
+        app_paths = [
+            "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+            "/Applications/Chromium.app/Contents/MacOS/Chromium",
+        ]
+        for app_path in app_paths:
+            if os.path.isfile(app_path) and os.access(app_path, os.X_OK):
+                logger.debug(f"Found browser at {app_path}")
+                return app_path
+
     return None
 
 

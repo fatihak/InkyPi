@@ -34,16 +34,82 @@
                 "name": "Default",
                 "start_time": "00:00",
                 "end_time": "24:00",
-                "plugins": [],
+                "plugins": [
+                    {
+                        "plugin_id": "countdown",
+                        "name": "Countdown",
+                        "plugin_settings": {
+                            "title": "Test",
+                            "date": "2026-02-05",
+                            "selectedFrame": "None",
+                            "topMargin": "",
+                            "bottomMargin": "",
+                            "leftMargin": "",
+                            "rightMargin": "",
+                            "backgroundOption": "color",
+                            "backgroundColor": "#ffffff",
+                            "textColor": "#000000"
+                        },
+                        "refresh": {
+                            "interval": 900
+                        },
+                        "latest_refresh_time": "2026-02-03T09:56:49.747724+00:00"
+                    },
+                    {
+                        "plugin_id": "clock",
+                        "name": "Clock",
+                        "plugin_settings": {
+                            "selectedClockFace": "Gradient Clock",
+                            "primaryColor": "#db3246",
+                            "secondaryColor": "#000000"
+                        },
+                        "refresh": {
+                            "interval": 900
+                        },
+                        "latest_refresh_time": "2026-02-03T09:47:18.638639+00:00"
+                    },
+                    {
+                        "plugin_id": "weather",
+                        "name": "Wetter",
+                        "plugin_settings": {
+                            "latitude": "49.83798245308486",
+                            "longitude": "9.31640625",
+                            "weatherProvider": "OpenMeteo",
+                            "units": "metric",
+                            "titleSelection": "custom",
+                            "customTitle": "Wetter",
+                            "displayRefreshTime": "true",
+                            "displayMetrics": "true",
+                            "displayGraph": "true",
+                            "graphIconStep": "2",
+                            "displayForecast": "true",
+                            "forecastDays": "7",
+                            "selectedFrame": "None",
+                            "topMargin": "",
+                            "bottomMargin": "",
+                            "leftMargin": "",
+                            "rightMargin": "",
+                            "backgroundOption": "color",
+                            "backgroundColor": "#ffffff",
+                            "textColor": "#000000"
+                        },
+                        "refresh": {
+                            "interval": 900
+                        },
+                        "latest_refresh_time": "2026-02-03T09:57:37.386176+00:00"
+                    }
+                ],
                 "current_plugin_index": null
             }
         ],
         "active_playlist": null
     },
     "refresh_info": {
-        "refresh_time": null,
-        "image_hash": null,
-        "refresh_type": null,
-        "plugin_id": null
+        "refresh_time": "2026-02-03T09:57:37.386176+00:00",
+        "image_hash": "3e2a08c927b16fc493700a172cad0a7f6ac15f9b07104afb3ce486c7125ce769",
+        "refresh_type": "Playlist",
+        "plugin_id": "weather",
+        "playlist": "Default",
+        "plugin_instance": "Wetter"
     }
 }
