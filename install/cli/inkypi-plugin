@@ -1,6 +1,12 @@
 #!/usr/bin/env bash
 set -e
 
+# Default PROJECT_DIR to parent of install/ when unset (e.g. dev: run from repo root without env)
+if [[ -z "${PROJECT_DIR:-}" ]]; then
+    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
+    PROJECT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
+fi
+
 PLUGINS_DIR="$PROJECT_DIR/src/plugins"
 
 command="${1:-}"

@@ -97,19 +97,67 @@
                             "interval": 900
                         },
                         "latest_refresh_time": "2026-02-03T09:57:37.386176+00:00"
+                    },
+                    {
+                        "plugin_id": "seniorDashboard_allDay",
+                        "name": "Senior",
+                        "plugin_settings": {
+                            "calendarURLs[]": [
+                                "webcal://p118-caldav.icloud.com/published/2/MTQwNjAzNDU1ODE0MDYwM7HUJEuAlayW3-W2_XEY2Y2g8cvVGd9TTmOQVRhbm7Hye7a2NilMMsmHN9fWHV18mjlRBAAjAPnzn2n09tQ6IL8",
+                                "webcal://p118-caldav.icloud.com/published/2/MTQwNjAzNDU1ODE0MDYwM7HUJEuAlayW3-W2_XEY2Y3NginMnQW9z79YWK5Cfsu7DpZq0UDgoVOGcj06O0vjkyTJ-LDogGcUS0acKPulbdc"
+                            ],
+                            "language": "de",
+                            "latitude": "49.8728",
+                            "longitude": "8.651200000000017",
+                            "fontSize": "larger",
+                            "selectedFrame": "None",
+                            "topMargin": "",
+                            "bottomMargin": "",
+                            "leftMargin": "",
+                            "rightMargin": "",
+                            "backgroundOption": "color",
+                            "backgroundColor": "#ffffff",
+                            "textColor": "#000000"
+                        },
+                        "refresh": {
+                            "interval": 900
+                        },
+                        "latest_refresh_time": "2026-02-03T12:12:45.241336+01:00"
+                    },
+                    {
+                        "plugin_id": "screenshot",
+                        "name": "Tagesschau ",
+                        "plugin_settings": {
+                            "url": "http://tageschau.de"
+                        },
+                        "refresh": {
+                            "interval": 900
+                        },
+                        "latest_refresh_time": "2026-02-03T12:15:48.596039+01:00"
                     }
                 ],
                 "current_plugin_index": null
             }
         ],
-        "active_playlist": null
+        "active_playlist": "Default"
     },
     "refresh_info": {
-        "refresh_time": "2026-02-03T09:57:37.386176+00:00",
-        "image_hash": "3e2a08c927b16fc493700a172cad0a7f6ac15f9b07104afb3ce486c7125ce769",
+        "refresh_time": "2026-02-03T12:15:48.596039+01:00",
+        "image_hash": "5b821e9eb57fba6c410285074edcc423952c0b2d68e475e679d234a1b5b9ca0e",
         "refresh_type": "Playlist",
-        "plugin_id": "weather",
+        "plugin_id": "screenshot",
         "playlist": "Default",
-        "plugin_instance": "Wetter"
+        "plugin_instance": "Tagesschau "
+    },
+    "inverted_image": null,
+    "log_system_stats": null,
+    "timezone": "Europe/Berlin",
+    "time_format": "24h",
+    "plugin_cycle_interval_seconds": 3600,
+    "image_settings": {
+        "saturation": 1.0,
+        "brightness": 1.0,
+        "sharpness": 1.0,
+        "contrast": 1.0
     }
 }
