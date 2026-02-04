@@ -212,7 +212,7 @@
         }
 
         function reloadPage() {
-            window.location.reload();
+            window.location.href = '{{ url_for("main.main_page") }}';
         }
 
         async function uninstallPlugin(pluginId, btn) {
@@ -242,13 +242,27 @@
         async function installPlugin() {
             const urlInput = document.getElementById('plugin-url');
             const installBtn = document.getElementById('install-btn');
+
+            // Prevent multiple simultaneous installs
+            if (installBtn.disabled) {
+                return;
+            }
+
+            // Disable button immediately when clicked
+            installBtn.disabled = true;
+            installBtn.textContent = 'Installing… be patient!';
+
             const url = (urlInput.value || '').trim();
             if (!url) {
                 showMessage(false, 'Please enter a repository URL');
+                installBtn.disabled = false;
+                installBtn.textContent = 'Install';
                 return;
             }
             if (!url.startsWith('https://')) {
                 showMessage(false, 'Only GitHub.com repository URLs are accepted (HTTPS).');
+                installBtn.disabled = false;
+                installBtn.textContent = 'Install';
                 return;
             }
             try {
@@ -256,14 +270,16 @@
                 const host = u.hostname.toLowerCase();
                 if (host !== 'github.com' && host !== 'www.github.com') {
                     showMessage(false, 'Only GitHub.com repository URLs are accepted.');
+                    installBtn.disabled = false;
+                    installBtn.textContent = 'Install';
                     return;
                 }
             } catch (_) {
                 showMessage(false, 'Invalid URL.');
+                installBtn.disabled = false;
+                installBtn.textContent = 'Install';
                 return;
             }
-            installBtn.disabled = true;
-            installBtn.textContent = 'Installing…';
             try {
                 const response = await fetch('{{ url_for("plugin_manage.install_plugin") }}', {
                     method: 'POST',
