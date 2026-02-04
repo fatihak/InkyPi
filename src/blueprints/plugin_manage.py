@@ -90,11 +90,21 @@ def install_plugin():
         logger.exception("Plugin install subprocess failed")
         return jsonify({"success": False, "error": str(e)}), 500
 
-    if result.returncode != 0:
+    # Check if install succeeded by looking for "[INFO] Done" in output
+    # This handles cases where restart fails but plugin was installed
+    output = (result.stdout or "") + "\n" + (result.stderr or "")
+    install_succeeded = "[INFO] Done" in output or result.returncode == 0
+    
+    if not install_succeeded:
         err_msg = result.stderr.strip() or result.stdout.strip() or "Install failed"
         logger.warning("Plugin install failed: %s", err_msg)
         return jsonify({"success": False, "error": err_msg}), 400
-
+    
+    # Log any warnings but still return success if plugin was installed
+    if result.returncode != 0:
+        logger.warning("Plugin install completed but CLI exited with code %d: %s", 
+                      result.returncode, output.strip())
+    
     return jsonify({"success": True})
 
 
@@ -134,9 +144,18 @@ def uninstall_plugin():
         logger.exception("Plugin uninstall subprocess failed")
         return jsonify({"success": False, "error": str(e)}), 500
 
-    if result.returncode != 0:
+    # Check if uninstall succeeded by looking for success message in output
+    output = (result.stdout or "") + "\n" + (result.stderr or "")
+    uninstall_succeeded = "Plugin successfully uninstalled" in output or result.returncode == 0
+    
+    if not uninstall_succeeded:
         err_msg = result.stderr.strip() or result.stdout.strip() or "Uninstall failed"
         logger.warning("Plugin uninstall failed: %s", err_msg)
         return jsonify({"success": False, "error": err_msg}), 400
-
+    
+    # Log any warnings but still return success if plugin was uninstalled
+    if result.returncode != 0:
+        logger.warning("Plugin uninstall completed but CLI exited with code %d: %s", 
+                      result.returncode, output.strip())
+    
     return jsonify({"success": True})

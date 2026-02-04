@@ -113,7 +113,7 @@ install_plugin() {
 
     if [[ -n "${APPNAME:-}" ]]; then
         echo "[INFO] Restarting $APPNAME service."
-        sudo systemctl restart "$APPNAME.service"
+        sudo systemctl restart "$APPNAME.service" 2>&1 || echo "[WARN] Service restart failed, but plugin is installed"
     else
         echo "[INFO] APPNAME not set, skipping service restart (e.g. development mode)"
     fi
@@ -202,7 +202,7 @@ uninstall_plugin() {
 
     if [[ -n "${APPNAME:-}" ]]; then
         echo "[INFO] Restarting $APPNAME service."
-        sudo systemctl restart "$APPNAME.service"
+        sudo systemctl restart "$APPNAME.service" 2>&1 || echo "[WARN] Service restart failed, but plugin is uninstalled"
     else
         echo "[INFO] APPNAME not set, skipping service restart (e.g. development mode)"
     fi
