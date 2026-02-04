@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage plugins</title>
+    <script>
+        (function () {
+            const theme = localStorage.getItem('inkypi-theme') ||
+                (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+            if (theme === 'dark') {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            }
+        })();
+    </script>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='styles/main.css') }}">
+    <script src="{{ url_for('static', filename='scripts/dark_mode.js') }}"></script>
+    <script src="{{ url_for('static', filename='scripts/response_modal.js') }}"></script>
+    <style>
+        .plugin-manage-container {
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        .plugin-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 12px;
+            align-items: center;
+        }
+
+        .plugin-name {
+            flex: 1;
+            padding: 10px 12px;
+            border: 1px solid var(--border-color, #ddd);
+            border-radius: 6px;
+            font-size: 14px;
+            background: var(--input-bg, #fff);
+            color: var(--text-primary, #333);
+        }
+
+        .plugin-repo {
+            flex: 1;
+            padding: 10px 12px;
+            font-size: 12px;
+            color: var(--text-secondary, #666);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .btn-delete {
+            width: 36px;
+            height: 36px;
+            border: none;
+            background: #E53935;
+            color: white;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+            flex-shrink: 0;
+        }
+
+        .btn-delete:hover {
+            background: #C62828;
+        }
+
+        .btn-delete:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .install-section {
+            margin-top: 24px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border-color, #ddd);
+        }
+
+        .install-row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .install-row .form-input {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-secondary, #666);
+        }
+
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+
+        [data-theme="dark"] .plugin-name {
+            background: #333;
+            border-color: #555;
+            color: #eee;
+        }
+
+        [data-theme="dark"] .plugin-repo {
+            color: #aaa;
+        }
+
+        .plugin-action-success {
+            margin-top: 20px;
+            padding: 16px;
+            border-radius: 8px;
+            background: rgba(76, 175, 80, 0.15);
+            border: 1px solid rgba(76, 175, 80, 0.4);
+        }
+
+        .plugin-action-success p {
+            margin: 0 0 12px 0;
+            color: var(--text-primary, #333);
+        }
+
+        [data-theme="dark"] .plugin-action-success {
+            background: rgba(76, 175, 80, 0.2);
+            border-color: rgba(76, 175, 80, 0.5);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="frame">
+        <button onclick="history.back()" class="back-button">← Back</button>
+
+        <div class="app-header">
+            <div class="header-content">
+                <div class="title-container">
+                    <span style="font-size: 28px; margin-right: 10px;">🧩</span>
+                    <h1 class="app-title">Manage plugins</h1>
+                </div>
+            </div>
+        </div>
+        <div class="separator"></div>
+
+        <div class="plugin-manage-container">
+            <h2 class="form-label" style="margin-bottom: 12px;">Installed third-party plugins</h2>
+            <div id="plugins-list">
+                {% if third_party_plugins %}
+                {% for plugin in third_party_plugins %}
+                <div class="plugin-row" data-plugin-id="{{ plugin.id }}">
+                    <span class="plugin-name">{{ plugin.display_name or plugin.id }}</span>
+                    <span class="plugin-repo" title="{{ plugin.repository }}">{{ plugin.repository }}</span>
+                    <button type="button" class="btn-delete" onclick="uninstallPlugin('{{ plugin.id }}', this)"
+                        title="Uninstall">×</button>
+                </div>
+                {% endfor %}
+                {% else %}
+                <div class="empty-state">
+                    <div class="empty-state-icon">📦</div>
+                    <p>No third-party plugins installed.</p>
+                    <p>Install one from a GitHub repository below.</p>
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="install-section">
+                <h2 class="form-label" style="margin-bottom: 12px;">Install from GitHub</h2>
+                <div class="install-row">
+                    <input type="text" id="plugin-url" class="form-input" placeholder="https://github.com/username/repo"
+                        autocomplete="url">
+                    <button type="button" id="install-btn" class="action-button"
+                        onclick="installPlugin()">Install</button>
+                </div>
+                <p style="font-size: 13px; color: var(--text-secondary, #666); margin-top: 8px;">
+                    Only GitHub.com repository URLs are accepted (e.g. https://github.com/username/repo).
+                </p>
+            </div>
+
+            <div id="plugin-action-success" class="plugin-action-success" style="display: none;">
+                <p id="plugin-action-success-msg"></p>
+                <button type="button" class="action-button" onclick="reloadPage()">Reload page</button>
+            </div>
+        </div>
+    </div>
+
+    {% include 'response_modal.html' %}
+
+    <script>
+        function showMessage(success, text) {
+            if (typeof showResponseModal === 'function') {
+                showResponseModal(success ? 'success' : 'failure', text);
+            } else {
+                alert(text);
+            }
+        }
+
+        function showSuccessWithReload(message) {
+            const block = document.getElementById('plugin-action-success');
+            const msg = document.getElementById('plugin-action-success-msg');
+            if (block && msg) {
+                msg.textContent = message;
+                block.style.display = 'block';
+                block.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+            showMessage(true, message);
+        }
+
+        function reloadPage() {
+            window.location.href = '{{ url_for("main.main_page") }}';
+        }
+
+        async function uninstallPlugin(pluginId, btn) {
+            if (!confirm('Uninstall this plugin? It will be removed from the device.')) {
+                return;
+            }
+            btn.disabled = true;
+            try {
+                const response = await fetch('{{ url_for("plugin_manage.uninstall_plugin") }}', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ plugin_id: pluginId })
+                });
+                const data = await response.json().catch(() => ({}));
+                if (response.ok && data.success) {
+                    showSuccessWithReload('Plugin uninstalled. The service is restarting — click "Reload page" when it\'s back.');
+                } else {
+                    showMessage(false, data.error || 'Uninstall failed');
+                    btn.disabled = false;
+                }
+            } catch (e) {
+                showMessage(false, 'Request failed: ' + e.message);
+                btn.disabled = false;
+            }
+        }
+
+        async function installPlugin() {
+            const urlInput = document.getElementById('plugin-url');
+            const installBtn = document.getElementById('install-btn');
+
+            // Prevent multiple simultaneous installs
+            if (installBtn.disabled) {
+                return;
+            }
+
+            // Disable button immediately when clicked
+            installBtn.disabled = true;
+            installBtn.textContent = 'Installing… be patient!';
+
+            const url = (urlInput.value || '').trim();
+            if (!url) {
+                showMessage(false, 'Please enter a repository URL');
+                installBtn.disabled = false;
+                installBtn.textContent = 'Install';
+                return;
+            }
+            if (!url.startsWith('https://')) {
+                showMessage(false, 'Only GitHub.com repository URLs are accepted (HTTPS).');
+                installBtn.disabled = false;
+                installBtn.textContent = 'Install';
+                return;
+            }
+            try {
+                const u = new URL(url);
+                const host = u.hostname.toLowerCase();
+                if (host !== 'github.com' && host !== 'www.github.com') {
+                    showMessage(false, 'Only GitHub.com repository URLs are accepted.');
+                    installBtn.disabled = false;
+                    installBtn.textContent = 'Install';
+                    return;
+                }
+            } catch (_) {
+                showMessage(false, 'Invalid URL.');
+                installBtn.disabled = false;
+                installBtn.textContent = 'Install';
+                return;
+            }
+            try {
+                const response = await fetch('{{ url_for("plugin_manage.install_plugin") }}', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url: url })
+                });
+                const data = await response.json().catch(() => ({}));
+                if (response.ok && data.success) {
+                    showSuccessWithReload('Plugin installed. The service is restarting — click "Reload page" when it\'s back.');
+                    urlInput.value = '';
+                    installBtn.disabled = false;
+                    installBtn.textContent = 'Install';
+                } else {
+                    showMessage(false, data.error || 'Install failed');
+                    installBtn.disabled = false;
+                    installBtn.textContent = 'Install';
+                }
+            } catch (e) {
+                showMessage(false, 'Request failed: ' + e.message);
+                installBtn.disabled = false;
+                installBtn.textContent = 'Install';
+            }
+        }
+    </script>
+</body>
+
+</html>

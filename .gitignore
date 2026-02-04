@@ -166,9 +166,19 @@ cython_debug/
 # Development artifacts
 mock_display_output/
 
+# Third-party / CLI-installed plugins (each has its own .git; don't track in main repo, since it's flatened and will mess up the git history)
+/src/plugins/seniorDashboard_allDay/
+
 # IDE files
 .idea
 
 # Static Files added by install/update_vendors.sh
 /src/static/scripts/
 /src/static/styles/
+
+.gitignore
+.cursorrules
+
+# 
+src/config/device_dev.json
+src/static/images/current_image.png
