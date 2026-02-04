@@ -75,6 +75,31 @@
             cursor: not-allowed;
         }
 
+        .btn-update {
+            width: 36px;
+            height: 36px;
+            border: none;
+            background: #2196F3;
+            color: white;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+            flex-shrink: 0;
+        }
+
+        .btn-update:hover {
+            background: #1976D2;
+        }
+
+        .btn-update:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
         .install-section {
             margin-top: 24px;
             padding-top: 20px;
@@ -156,6 +181,8 @@
                 <div class="plugin-row" data-plugin-id="{{ plugin.id }}">
                     <span class="plugin-name">{{ plugin.display_name or plugin.id }}</span>
                     <span class="plugin-repo" title="{{ plugin.repository }}">{{ plugin.repository }}</span>
+                    <button type="button" class="btn-update" onclick="updatePlugin('{{ plugin.id }}', this)"
+                        title="Update">↻</button>
                     <button type="button" class="btn-delete" onclick="uninstallPlugin('{{ plugin.id }}', this)"
                         title="Uninstall">×</button>
                 </div>
@@ -213,6 +240,30 @@
 
         function reloadPage() {
             window.location.href = '{{ url_for("main.main_page") }}';
+        }
+
+        async function updatePlugin(pluginId, btn) {
+            if (!confirm('Update this plugin? It will be reinstalled from the repository.')) {
+                return;
+            }
+            btn.disabled = true;
+            try {
+                const response = await fetch('{{ url_for("plugin_manage.update_plugin") }}', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ plugin_id: pluginId })
+                });
+                const data = await response.json().catch(() => ({}));
+                if (response.ok && data.success) {
+                    showSuccessWithReload('Plugin updated. The service is restarting — click "Reload page" when it\'s back.');
+                } else {
+                    showMessage(false, data.error || 'Update failed');
+                    btn.disabled = false;
+                }
+            } catch (e) {
+                showMessage(false, 'Request failed: ' + e.message);
+                btn.disabled = false;
+            }
         }
 
         async function uninstallPlugin(pluginId, btn) {

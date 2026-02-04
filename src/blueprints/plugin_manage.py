@@ -159,3 +159,60 @@ def uninstall_plugin():
                       result.returncode, output.strip())
     
     return jsonify({"success": True})
+
+
+@plugin_manage_bp.route("/manage-plugins/update", methods=["POST"])
+def update_plugin():
+    """Update a third-party plugin by reinstalling from its repository. Only allows plugins with repository set."""
+    data = request.get_json() or {}
+    plugin_id = (data.get("plugin_id") or "").strip()
+
+    if not plugin_id:
+        return jsonify({"success": False, "error": "plugin_id is required"}), 400
+
+    third_party = _third_party_plugins()
+    plugin_info = next((p for p in third_party if p["id"] == plugin_id), None)
+    if not plugin_info:
+        return jsonify({"success": False, "error": "Plugin not found or cannot be updated"}), 400
+
+    repo_url = plugin_info.get("repository", "").strip()
+    if not repo_url:
+        return jsonify({"success": False, "error": "Plugin repository URL not found"}), 400
+
+    cli = _cli_script()
+    if not os.path.isfile(cli):
+        return jsonify({"success": False, "error": "Plugin CLI not found"}), 500
+
+    project_dir = _project_dir()
+    env = {**os.environ, "PROJECT_DIR": project_dir}
+
+    try:
+        result = subprocess.run(
+            ["bash", cli, "install", plugin_id, repo_url],
+            env=env,
+            cwd=project_dir,
+            capture_output=True,
+            text=True,
+            timeout=120,
+        )
+    except subprocess.TimeoutExpired:
+        return jsonify({"success": False, "error": "Update timed out"}), 500
+    except Exception as e:
+        logger.exception("Plugin update subprocess failed")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+    # Check if update succeeded by looking for "[INFO] Done" in output
+    output = (result.stdout or "") + "\n" + (result.stderr or "")
+    update_succeeded = "[INFO] Done" in output or result.returncode == 0
+    
+    if not update_succeeded:
+        err_msg = result.stderr.strip() or result.stdout.strip() or "Update failed"
+        logger.warning("Plugin update failed: %s", err_msg)
+        return jsonify({"success": False, "error": err_msg}), 400
+    
+    # Log any warnings but still return success if plugin was updated
+    if result.returncode != 0:
+        logger.warning("Plugin update completed but CLI exited with code %d: %s", 
+                      result.returncode, output.strip())
+    
+    return jsonify({"success": True})
