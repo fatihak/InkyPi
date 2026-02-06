@@ -89,11 +89,17 @@
         }
 
         async function sendButtonPress(button, pressType) {
+            // Prevent concurrent button actions
+            if (isCurrentlyRefreshing) {
+                console.log('Button action already in progress, ignoring press');
+                return;
+            }
+
             try {
                 const loader = document.getElementById('refresh-loader');
                 loader.classList.add('visible');
                 isCurrentlyRefreshing = true;
-                
+
                 const response = await fetch('{{ url_for("settings.button_press") }}', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },

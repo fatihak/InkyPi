@@ -62,32 +62,37 @@ class ButtonManager:
     
     def _on_button_press(self, button_id: ButtonID, press_type: PressType):
         """Main button event handler.
-        
+
         Priority order:
         1. Plugin's on_button_press() - plugins get first chance
         2. Configured actions from settings (button_actions)
         3. Default actions as fallback
         """
         logger.info(f"Button event: {button_id.value} {press_type.value}")
-        
+
+        # Prevent concurrent button actions while refresh is in progress
+        if self._refresh_task.is_refreshing:
+            logger.debug(f"Refresh in progress, ignoring button {button_id.value} {press_type.value}")
+            return
+
         action_key = f"{button_id.value}_{press_type.value}"
-        
+
         # Get configured action
         button_actions = self._device_config.get_config("button_actions", default={})
         configured_action = button_actions.get(action_key)
-        
+
         # If action is explicitly "none", do nothing
         if configured_action == "none":
             logger.debug(f"Action disabled for {action_key}")
             return
-        
+
         # 1. Try plugin first (plugins have priority)
         if self._forward_to_plugin(button_id, press_type):
             return
-        
+
         # 2. Use configured action if set, otherwise fall back to default
         action = configured_action or self.DEFAULT_ACTIONS.get((button_id.value, press_type.value))
-        
+
         if action:
             self._execute_action(action)
     
