@@ -82,9 +82,10 @@ class ServoControl(BasePlugin):
         
         if show_test_image:
             # Create status image with virtual horizon
-            image = self._create_status_image(dimensions, gpio_pin, target_angle, orientation)
-        
-        return image
+            return self._create_status_image(dimensions, gpio_pin, target_angle, orientation)
+        else:
+            # No image to display - servo has been moved, return None
+            return None
     
     def _create_status_image(self, dimensions, gpio_pin, target_angle, orientation):
         """
