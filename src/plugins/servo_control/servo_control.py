@@ -103,7 +103,7 @@ class ServoControl(BasePlugin):
         sky_color = '#00CFEB'
         ground_color = '#EACE00'
         horizon_color = '#EB0078'
-        text_color = '#ffffff'
+        text_color = '#EBCFEB'
 
         # Map target angle (0-180) to horizon tilt (0 to 90 degrees)
         normalized = (target_angle - 90) / 90.0
