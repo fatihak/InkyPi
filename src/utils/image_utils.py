@@ -94,6 +94,7 @@ def take_screenshot_html(html_str, dimensions, timeout_ms=None):
         # Create a temporary HTML file
         with tempfile.NamedTemporaryFile(suffix=".html", delete=False) as html_file:
             html_file.write(html_str.encode("utf-8"))
+            html_file.flush()
             html_file_path = html_file.name
 
         image = take_screenshot(html_file_path, dimensions, timeout_ms)
