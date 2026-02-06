@@ -49,8 +49,8 @@ class Clock(BasePlugin):
 
     def generate_image(self, settings, device_config):
         clock_face = settings.get('selectedClockFace')
-        primary_color = ImageColor.getcolor(settings.get('primaryColor') or (255,255,255), "RGB")
-        secondary_color = ImageColor.getcolor(settings.get('secondaryColor') or (0,0,0), "RGB")
+        primary_color = ImageColor.getcolor(settings.get('primaryColor') or "white", "RGB")
+        secondary_color = ImageColor.getcolor(settings.get('secondaryColor') or "black", "RGB")
         if not clock_face or clock_face not in [face['name'] for face in CLOCK_FACES]:
             clock_face = DEFAULT_CLOCK_FACE
 

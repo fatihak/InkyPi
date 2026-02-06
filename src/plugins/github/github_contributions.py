@@ -63,14 +63,14 @@ def fetch_contributions(username, api_key):
     url = "https://api.github.com/graphql"
     headers = {"Authorization": f"Bearer {api_key}"}
     variables = {"username": username}
-    resp = requests.post(url, json={"query": GRAPHQL_QUERY, "variables": variables}, headers=headers)
+    resp = requests.post(url, json={"query": GRAPHQL_QUERY, "variables": variables}, headers=headers, timeout=30)
     resp.raise_for_status()
     return resp.json()
 
 def parse_contributions(data, colors):
     weeks = data["data"]["user"]["contributionsCollection"]["contributionCalendar"]["weeks"]
 
-    grid = [[day for day in week["contributionDays"]] for week in weeks]
+    grid = [list(week["contributionDays"]) for week in weeks]
     max_contrib = max(day["contributionCount"] for week in grid for day in week)
 
     def get_color(count):

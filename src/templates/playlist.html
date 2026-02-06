@@ -122,14 +122,14 @@
             }
         }
 
-        function showThumbnailPreview(playlistName, pluginId, instanceName) {
+        function showThumbnailPreview(playlistName, pluginId, pluginName, instanceName) {
             const modal = document.getElementById('thumbnailPreviewModal');
             const img = document.getElementById('thumbnailPreviewImage');
             const info = document.getElementById('thumbnailPreviewInfo');
 
             const imageUrl = `/plugin_instance_image/${encodeURIComponent(playlistName)}/${encodeURIComponent(pluginId)}/${encodeURIComponent(instanceName)}`;
             img.src = imageUrl;
-            info.textContent = `Plugin: ${pluginId} | Instance: ${instanceName}`;
+            info.textContent = `Plugin: ${pluginName} | Instance: ${instanceName}`;
             modal.style.display = 'block';
         }
 
@@ -415,7 +415,7 @@
 
                                 <!-- Thumbnail preview - only show if image has been generated -->
                                 {% if plugin_instance.latest_refresh_time %}
-                                <div class="plugin-thumbnail-container" onclick="showThumbnailPreview('{{ playlist.name }}', '{{ plugin_instance.plugin_id }}', '{{ plugin_instance.name }}')">
+                                <div class="plugin-thumbnail-container" onclick="showThumbnailPreview('{{ playlist.name }}', '{{ plugin_instance.plugin_id }}', '{{ plugins.get(plugin_instance.plugin_id, {}).display_name or plugin_instance.plugin_id }}','{{ plugin_instance.name }}')">
                                     <img
                                         src="{{ url_for('plugin.plugin_instance_image', playlist_name=playlist.name, plugin_id=plugin_instance.plugin_id, instance_name=plugin_instance.name) }}"
                                         alt="Preview"
