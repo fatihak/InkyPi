@@ -7,9 +7,18 @@ main_bp = Blueprint("main", __name__)
 @main_bp.route('/')
 def main_page():
     device_config = current_app.config['DEVICE_CONFIG']
-    # Show buttons only if enabled in settings AND visible in UI
+    # Show buttons only if enabled in settings
     buttons_enabled = device_config.get_config("buttons_enabled", default=True)
-    show_buttons = buttons_enabled and device_config.get_config("show_buttons", default=True)
+    
+    show_buttons_config = device_config.get_config("show_buttons", default="none")
+    # Handle legacy boolean values
+    if show_buttons_config is True:
+        show_buttons_config = "bottom"
+    elif show_buttons_config is False:
+        show_buttons_config = "none"
+        
+    show_buttons = show_buttons_config if buttons_enabled else "none"
+
     response = make_response(render_template(
         'inky.html', 
         config=device_config.get_config(), 

@@ -125,18 +125,17 @@ body {
 .image-container {
     position: relative;
     width: fit-content;
-    margin: 0 auto;
-    padding: 6px;
     cursor: pointer;
     transition: opacity 0.3s ease;
-    background-color: #1a1a1a;
-    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 4px;
 }
 
 .image-container img {
     height: auto;
     display: block;
-    border-radius: 6px;
+    border-radius: 10px;
     max-width: 20rem;
     max-height: 15rem;
     /* Do NOT apply filter to image-container images */
@@ -1265,13 +1264,13 @@ html[data-theme="dark"] .settings-button.dark-mode-toggle::before {
 }
 
 .hw-button {
-    width: 48px;
-    height: 48px;
+    width: 38px;
+    height: 38px;
     border-radius: 50%;
     border: 2px solid var(--border-color);
     background-color: var(--button-bg);
     color: var(--text-primary);
-    font-size: 16px;
+    font-size: 14px;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.15s ease;
@@ -1297,4 +1296,105 @@ html[data-theme="dark"] .settings-button.dark-mode-toggle::before {
     border-color: var(--accent-warn);
     color: white;
 }
+
+/* Display Layout for Button Positions */
+.display-layout {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 20px auto;
+    width: 100%;
+}
+
+.display-layout.pos-bottom {
+    flex-direction: column;
+    gap: 12px;
+    width: fit-content;
+}
+
+.display-layout.pos-bottom .button-panel {
+    width: 100%;
+    padding: 8px 12px;
+}
+
+.display-layout.pos-top {
+    flex-direction: column-reverse;
+    gap: 12px;
+    width: fit-content;
+}
+
+.display-layout.pos-top .button-panel {
+    width: 100%;
+    padding: 8px 12px;
+}
+
+.display-layout.pos-bottom .button-panel-buttons,
+.display-layout.pos-top .button-panel-buttons {
+    width: 100%;
+    justify-content: space-between;
+}
+
+.display-layout.pos-left,
+.display-layout.pos-right {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr; /* Image stays in the center column */
+    grid-template-rows: 1fr; /* Single row to keep them on the same level */
+    gap: 12px;
+    align-items: stretch;
+}
+
+.display-layout.pos-left .button-panel,
+.display-layout.pos-left .image-container,
+.display-layout.pos-right .button-panel,
+.display-layout.pos-right .image-container {
+    grid-row: 1; /* Explicitly place on the first row */
+}
+
+.display-layout.pos-left .button-panel {
+    grid-column: 1;
+    justify-self: end;
+}
+
+.display-layout.pos-left .image-container {
+    grid-column: 2;
+}
+
+.display-layout.pos-right .image-container {
+    grid-column: 2;
+}
+
+.display-layout.pos-right .button-panel {
+    grid-column: 3;
+    justify-self: start;
+}
+
+.display-layout.pos-left .button-panel,
+.display-layout.pos-right .button-panel {
+    display: flex;
+    flex-direction: column;
+    padding: 10px 8px;
+    margin: 0; /* Remove top margin that pushes it down */
+}
+
+.display-layout.pos-left .button-panel-buttons,
+.display-layout.pos-right .button-panel-buttons {
+    flex-direction: column;
+    flex-grow: 1;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+/* Force text wrap for vertical layout and keep it at top */
+.display-layout.pos-left .button-panel-label,
+.display-layout.pos-right .button-panel-label {
+    max-width: 60px;
+    text-align: center;
+    line-height: 1.1;
+    margin-bottom: 10px;
+    font-size: 10px;
+}
+
+/* Adjust button panel margin when inside layout */
+.display-layout .button-panel {
+    margin: 0;
 }

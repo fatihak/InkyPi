@@ -688,9 +688,18 @@
                         {% endif %}
 
                         <div class="form-group nowrap" style="margin-bottom: 20px;">
-                            <label class="form-label" for="showButtons">Show Hardware Buttons in UI</label>
-                            <input type="checkbox" id="showButtons" name="showButtons" {% if device_settings.get('show_buttons', true) %}checked{% endif %}>
-                            <span title="Display virtual hardware buttons (A, B, C, D) on the main screen for remote control.">ⓘ</span>
+                            <label class="form-label" for="showButtons">Hardware Buttons Position</label>
+                            {% set show_buttons = device_settings.get('show_buttons', 'bottom') %}
+                            {# Handle legacy boolean values #}
+                            {% if show_buttons == true %}{% set show_buttons = 'bottom' %}{% elif show_buttons == false %}{% set show_buttons = 'none' %}{% endif %}
+                            <select id="showButtons" name="showButtons" class="form-input">
+                                <option value="none" {% if show_buttons == 'none' %}selected{% endif %}>Don't show</option>
+                                <option value="top" {% if show_buttons == 'top' %}selected{% endif %}>Top</option>
+                                <option value="bottom" {% if show_buttons == 'bottom' %}selected{% endif %}>Bottom</option>
+                                <option value="left" {% if show_buttons == 'left' %}selected{% endif %}>Left</option>
+                                <option value="right" {% if show_buttons == 'right' %}selected{% endif %}>Right</option>
+                            </select>
+                            <span title="Display virtual hardware buttons (A, B, C, D) on the main screen for remote control. Select position or hide.">ⓘ</span>
                         </div>
                         
                         <div style="margin-top: 20px;">

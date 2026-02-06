@@ -67,7 +67,7 @@ def save_settings():
             "inverted_image": form_data.get("invertImage"),
             "log_system_stats": form_data.get("logSystemStats"),
             "buttons_enabled": form_data.get("buttonsEnabled") == "on",
-            "show_buttons": form_data.get("showButtons") == "on",
+            "show_buttons": form_data.get("showButtons", "bottom"),
             "timezone": form_data.get("timezoneName"),
             "time_format": form_data.get("timeFormat"),
             "plugin_cycle_interval_seconds": plugin_cycle_interval_seconds,

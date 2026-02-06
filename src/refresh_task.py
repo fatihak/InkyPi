@@ -114,25 +114,27 @@ class RefreshTask:
                         if plugin_config is None:
                             logger.error(f"Plugin config not found for '{refresh_action.get_plugin_id()}'.")
                             continue
-                        plugin = get_plugin_instance(plugin_config)
-                        image = refresh_action.execute(plugin, self.device_config, current_dt)
-                        image_hash = compute_image_hash(image)
+                        
+                        # Set refreshing state for UI before image generation
+                        self.is_refreshing = True
+                        self.refresh_started_at = time.time()
+                        
+                        try:
+                            plugin = get_plugin_instance(plugin_config)
+                            image = refresh_action.execute(plugin, self.device_config, current_dt)
+                            image_hash = compute_image_hash(image)
 
-                        refresh_info = refresh_action.get_refresh_info()
-                        refresh_info.update({"refresh_time": current_dt.isoformat(), "image_hash": image_hash})
-                        # check if image is the same as current image
-                        if image_hash != latest_refresh.image_hash:
-                            logger.info(f"Updating display. | refresh_info: {refresh_info}")
-                            # Set refreshing state for UI
-                            self.is_refreshing = True
-                            self.refresh_started_at = time.time()
-                            try:
+                            refresh_info = refresh_action.get_refresh_info()
+                            refresh_info.update({"refresh_time": current_dt.isoformat(), "image_hash": image_hash})
+                            # check if image is the same as current image
+                            if image_hash != latest_refresh.image_hash:
+                                logger.info(f"Updating display. | refresh_info: {refresh_info}")
                                 self.display_manager.display_image(image, image_settings=plugin.config.get("image_settings", []))
-                            finally:
-                                self.is_refreshing = False
-                                self.refresh_started_at = None
-                        else:
-                            logger.info(f"Image already displayed, skipping refresh. | refresh_info: {refresh_info}")
+                            else:
+                                logger.info(f"Image already displayed, skipping refresh. | refresh_info: {refresh_info}")
+                        finally:
+                            self.is_refreshing = False
+                            self.refresh_started_at = None
 
                         # update latest refresh data in the device config
                         self.device_config.refresh_info = RefreshInfo(**refresh_info)

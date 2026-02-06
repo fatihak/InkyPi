@@ -1,11 +1,13 @@
 import logging
 import subprocess
+from datetime import datetime
 from typing import TYPE_CHECKING, Optional
 from buttons.abstract_button_handler import AbstractButtonHandler, ButtonID, PressType
 
 if TYPE_CHECKING:
     from refresh_task import RefreshTask
     from config import Config
+    from display.display_manager import DisplayManager
 
 logger = logging.getLogger(__name__)
 
@@ -32,11 +34,13 @@ class ButtonManager:
         self, 
         button_handler: AbstractButtonHandler,
         refresh_task: "RefreshTask",
-        device_config: "Config"
+        device_config: "Config",
+        display_manager: "DisplayManager"
     ):
         self._handler = button_handler
         self._refresh_task = refresh_task
         self._device_config = device_config
+        self._display_manager = display_manager
         self._handler.set_callback(self._on_button_press)
     
     def start(self):
@@ -99,6 +103,7 @@ class ButtonManager:
             "next_plugin": self._next_plugin,
             "prev_plugin": self._prev_plugin,
             "next_playlist": self._next_playlist,
+            "show_info": self._show_info,
             "none": lambda: None,
         }
         
@@ -203,7 +208,6 @@ class ButtonManager:
     
     def _navigate_playlist(self, direction: str):
         """Navigate through playlist and trigger display update."""
-        from datetime import datetime
         import pytz
         from refresh_task import PlaylistRefresh
         
@@ -265,3 +269,45 @@ class ButtonManager:
         
         logger.info(f"Switched to playlist: {next_name}")
         self._refresh_task.signal_config_change()
+
+    def _show_info(self):
+        """Display system info overlay."""
+        logger.info("Show info requested")
+        
+        try:
+            from PIL import Image, ImageDraw
+            from utils.app_utils import get_font, get_ip_address, get_wifi_name
+            import socket
+            
+            dimensions = self._device_config.get_resolution()
+            if self._device_config.get_config("orientation") == "vertical":
+                dimensions = dimensions[::-1]
+            
+            width, height = dimensions
+            img = Image.new("RGB", dimensions, (30, 30, 30))
+            draw = ImageDraw.Draw(img)
+            
+            # Use Jost font as it's available in the project
+            font_title = get_font("Jost", 32, font_weight="bold")
+            font_text = get_font("Jost", 20)
+            
+            hostname = socket.gethostname()
+            ip = get_ip_address()
+            wifi = get_wifi_name() or "Not connected"
+            
+            draw.text((width/2, height/4), "InkyPi System Info", anchor="mm", fill=(255, 255, 255), font=font_title)
+            
+            info_text = [
+                f"Hostname: {hostname}",
+                f"IP Address: {ip}",
+                f"WiFi: {wifi}",
+                f"Time: {datetime.now().strftime('%H:%M:%S')}"
+            ]
+            
+            for i, text in enumerate(info_text):
+                draw.text((width/2, height/2 + i*30), text, anchor="mm", fill=(200, 200, 200), font=font_text)
+            
+            self._display_manager.display_image(img)
+            
+        except Exception as e:
+            logger.error(f"Failed to show info: {e}")

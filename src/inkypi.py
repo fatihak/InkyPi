@@ -77,7 +77,7 @@ if buttons_enabled:
         button_pins = device_config.get_config("button_pins")
         button_handler = GPIOButtonHandler(button_pins)
     
-    button_manager = ButtonManager(button_handler, refresh_task, device_config)
+    button_manager = ButtonManager(button_handler, refresh_task, device_config, display_manager)
 else:
     button_manager = None
     logger.info("Hardware buttons disabled in settings")
