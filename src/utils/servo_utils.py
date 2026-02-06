@@ -80,6 +80,9 @@ class ServoDriver:
         self._move_thread.start()
 
     def _move_blocking(self, current_angle, target_angle, speed_ms):
+        if current_angle == target_angle:
+            logger.info(f"Servo already at target angle {target_angle}°; no movement needed.")
+            return
         with self._move_lock:
             if not HARDWARE_AVAILABLE:
                 logger.info(
