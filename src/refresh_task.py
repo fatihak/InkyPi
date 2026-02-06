@@ -112,6 +112,9 @@ class RefreshTask:
                             continue
                         plugin = get_plugin_instance(plugin_config)
                         image = refresh_action.execute(plugin, self.device_config, current_dt)
+                        if image is None:
+                            logger.info(f"Plugin '{plugin.name}' did not return an image.")
+                            continue
                         image_hash = compute_image_hash(image)
 
                         refresh_info = refresh_action.get_refresh_info()
