@@ -58,10 +58,10 @@ class ServoControl(BasePlugin):
         # if 'current', do not change orientation
 
         # Update image inversion if specified
-        if invert_setting is not None:
-            invert_value = str(invert_setting).lower() in ("1", "true", "yes", "on")
-            device_config.update_value("inverted_image", invert_value, write=True)
-            logger.info(f"Updated inverted_image to {invert_value}")
+        invert_value = str(invert_setting).lower() in ("1", "true", "yes", "on")
+        device_config.update_value("inverted_image", invert_value, write=True)
+        logger.info(f"Updated inverted_image to {invert_value}")
+        
         
         # Move servo to the target angle
         logger.info("Call Servo Move")
