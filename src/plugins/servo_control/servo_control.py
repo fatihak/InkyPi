@@ -118,7 +118,7 @@ class ServoControl(BasePlugin):
         sky_color = '#00CFEB'      # Cyan for sky
         ground_color = '#EACE00'   # Yellow for ground
         horizon_color = '#EB0078'  # Magenta for horizon line
-        text_color = '#EBCFEB'     # Light pink for text
+        text_color = '#00EB00'     # Light green for text
 
         # Calculate the rotation angle for the virtual horizon
         # The horizon should be tilted opposite to the physical rotation
