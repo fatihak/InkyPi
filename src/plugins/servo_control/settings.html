@@ -66,6 +66,12 @@
     <small class="form-text">Invert the display output.</small>
 </div>
 
+<div class="form-group">
+    <label class="form-label" for="show_test_image">Show Test Image</label>
+    <input type="checkbox" id="show_test_image" name="show_test_image">
+    <small class="form-text">Display a virtual horizon test image that appears level when the screen is physically rotated to match the servo angle.</small>
+</div>
+
 <script>
 
     // Update angle display
@@ -109,6 +115,11 @@
             // Load invert image
             if (pluginSettings.inverted_image !== undefined) {
                 document.getElementById('inverted_image').checked = !!pluginSettings.inverted_image;
+            }
+
+            // Load show test image
+            if (pluginSettings.show_test_image !== undefined) {
+                document.getElementById('show_test_image').checked = !!pluginSettings.show_test_image;
             }
         }
     });

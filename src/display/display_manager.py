@@ -69,6 +69,11 @@ class DisplayManager:
 
         if not hasattr(self, "display"):
             raise ValueError("No valid display instance initialized.")
+
+        # If no Image provided, skip rendering
+        if image is None:
+            logger.info("No image provided, skipping rendering")
+            return
         
         # Save the image
         logger.info(f"Saving image to {self.device_config.current_image_file}")

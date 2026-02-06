@@ -77,75 +77,127 @@ class ServoControl(BasePlugin):
         if device_config.get_config("orientation") == "vertical":
             dimensions = dimensions[::-1]
         
-        # Create status image
-        image = self._create_status_image(dimensions, gpio_pin, target_angle, orientation)
+        # Check if test image should be shown
+        show_test_image = str(settings.get('show_test_image', 'false')).lower() in ("1", "true", "yes", "on")
+        
+        if show_test_image:
+            # Create status image with virtual horizon
+            image = self._create_status_image(dimensions, gpio_pin, target_angle, orientation)
         
         return image
     
     def _create_status_image(self, dimensions, gpio_pin, target_angle, orientation):
         """
-        Create a status image showing servo state.
+        Create a virtual horizon test image.
+        
+        The horizon is drawn at an angle that compensates for the physical rotation
+        of the display. When the screen is rotated to match the servo angle (target_angle),
+        the horizon should appear level/straight.
+        
+        For example:
+        - If target_angle = 90° (level), the horizon is drawn horizontally
+        - If target_angle = 0° (rotated 90° CCW), the horizon is drawn at 90° CW
+          so it appears horizontal when the screen is physically rotated
         
         Args:
             dimensions: Image dimensions (width, height)
             gpio_pin: GPIO pin number
-            current_angle: Current servo angle
-            positions: Dictionary of saved positions
+            target_angle: Target servo angle in degrees
+            orientation: Display orientation setting
             
         Returns:
-            PIL.Image: Status image
+            PIL.Image: Virtual horizon test image
         """
+        import math
+        
         width, height = dimensions
         image = Image.new('RGB', (width, height), color='black')
         draw = ImageDraw.Draw(image)
 
-        # High-contrast palette
-        sky_color = '#00CFEB'
-        ground_color = '#EACE00'
-        horizon_color = '#EB0078'
-        text_color = '#EBCFEB'
+        # High-contrast color palette
+        sky_color = '#00CFEB'      # Cyan for sky
+        ground_color = '#EACE00'   # Yellow for ground
+        horizon_color = '#EB0078'  # Magenta for horizon line
+        text_color = '#EBCFEB'     # Light pink for text
 
-        # Map target angle (0-180) to horizon tilt (0 to 90 degrees)
-        normalized = (target_angle - 90) / 90.0
-        tilt_deg = max(0, min(90, normalized * 90))
-        tilt_rad = (tilt_deg * 3.141592653589793) / 180.0
+        # Calculate the rotation angle for the virtual horizon
+        # The horizon should be tilted opposite to the physical rotation
+        # so it appears level when the display is rotated
+        # Assuming 90° is level, and angles rotate from there
+        rotation_angle = 90 - target_angle  # Degrees to rotate the horizon
+        rotation_rad = math.radians(rotation_angle)
 
-        # Horizon line parameters
+        # Center point of the image
         cx, cy = width / 2, height / 2
-        line_len = max(width, height) * 1.5
-        dx = (line_len / 2) * (1.0 if tilt_deg == 0 else (abs(__import__('math').cos(tilt_rad))))
-        dy = (line_len / 2) * (1.0 if tilt_deg == 0 else (abs(__import__('math').sin(tilt_rad))))
+        
+        # Length of the horizon line (diagonal across the image)
+        line_len = math.sqrt(width**2 + height**2) * 1.2
 
-        # Compute line endpoints using rotation matrix
-        cos_t = __import__('math').cos(tilt_rad)
-        sin_t = __import__('math').sin(tilt_rad)
-        x1 = cx - (line_len / 2) * cos_t
-        y1 = cy - (line_len / 2) * sin_t
-        x2 = cx + (line_len / 2) * cos_t
-        y2 = cy + (line_len / 2) * sin_t
+        # Calculate horizon line endpoints using rotation
+        cos_r = math.cos(rotation_rad)
+        sin_r = math.sin(rotation_rad)
+        x1 = cx - (line_len / 2) * cos_r
+        y1 = cy - (line_len / 2) * sin_r
+        x2 = cx + (line_len / 2) * cos_r
+        y2 = cy + (line_len / 2) * sin_r
 
-        # Fill sky/ground polygons
-        draw.polygon([(0, 0), (width, 0), (x2, y2), (x1, y1)], fill=sky_color)
-        draw.polygon([(0, height), (width, height), (x2, y2), (x1, y1)], fill=ground_color)
+        # Determine which corners are above/below the horizon line
+        # Create polygons for sky (above) and ground (below)
+        corners = [(0, 0), (width, 0), (width, height), (0, height)]
+        
+        # Sky polygon: top corners + horizon line points
+        if rotation_angle >= -45 and rotation_angle <= 45:
+            # Horizon is mostly horizontal
+            sky_points = [(0, 0), (width, 0), (x2, y2), (x1, y1)]
+            ground_points = [(0, height), (width, height), (x2, y2), (x1, y1)]
+        else:
+            # For steep angles, use all corners and line points
+            sky_points = [(0, 0), (width, 0), (x2, y2), (x1, y1)]
+            ground_points = [(0, height), (width, height), (x2, y2), (x1, y1)]
 
-        # Horizon line (thick)
-        line_width = max(2, int(min(width, height) * 0.04))
+        # Fill sky and ground
+        draw.polygon(sky_points, fill=sky_color)
+        draw.polygon(ground_points, fill=ground_color)
+
+        # Draw the horizon line (thick)
+        line_width = max(3, int(min(width, height) * 0.015))
         draw.line([(x1, y1), (x2, y2)], fill=horizon_color, width=line_width)
 
-        # Center marker
-        marker_size = max(4, int(min(width, height) * 0.06))
-        draw.rectangle(
-            [
-                (cx - marker_size, cy - line_width),
-                (cx + marker_size, cy + line_width)
-            ],
-            fill=horizon_color
+        # Draw center marker (crosshair)
+        marker_size = max(8, int(min(width, height) * 0.03))
+        # Horizontal line
+        draw.line(
+            [(cx - marker_size, cy), (cx + marker_size, cy)],
+            fill=horizon_color,
+            width=max(2, line_width // 2)
+        )
+        # Vertical line
+        draw.line(
+            [(cx, cy - marker_size), (cx, cy + marker_size)],
+            fill=horizon_color,
+            width=max(2, line_width // 2)
         )
 
-        # Angle text overlay
+        # Draw angle information
         font = ImageFont.load_default()
-        angle_text = f"{target_angle}°"
-        draw.text((width * 0.06, height * 0.06), angle_text, font=font, fill=text_color)
+        angle_text = f"Servo: {target_angle}°"
+        rotation_text = f"Horizon: {rotation_angle:.1f}°"
+        
+        # Position text in corner with padding
+        padding = int(min(width, height) * 0.03)
+        draw.text((padding, padding), angle_text, font=font, fill=text_color)
+        draw.text((padding, padding + 15), rotation_text, font=font, fill=text_color)
+        
+        # Add instructions at bottom
+        instruction_text = "Rotate display to match servo angle"
+        bbox = draw.textbbox((0, 0), instruction_text, font=font)
+        text_width = bbox[2] - bbox[0]
+        draw.text(
+            ((width - text_width) // 2, height - padding - 15),
+            instruction_text,
+            font=font,
+            fill=text_color
+        )
 
         return image
     
