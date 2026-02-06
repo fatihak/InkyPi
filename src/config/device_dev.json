@@ -49,7 +49,7 @@
     "inverted_image": null,
     "log_system_stats": null,
     "buttons_enabled": true,
-    "show_buttons": "left",
+    "show_buttons": "right",
     "timezone": "Africa/Algiers",
     "time_format": "12h",
     "plugin_cycle_interval_seconds": 60,

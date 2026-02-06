@@ -6,6 +6,12 @@
     <title>{{ config.name }}</title>
     <link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='styles/main.css') }}">
     <script>
+        window.addEventListener('pageshow', (event) => {
+            if (localStorage.getItem('inkypi-settings-dirty') === 'true') {
+                localStorage.removeItem('inkypi-settings-dirty');
+                window.location.reload();
+            }
+        });
         (function() {
             const theme = localStorage.getItem('inkypi-theme') || 
                          (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');

@@ -387,6 +387,7 @@
                 
                 const result = await response.json();
                 if (response.ok) {
+                    localStorage.setItem('inkypi-settings-dirty', 'true');
                     showResponseModal('success', `Success! ${result.message}`);
                 } else {
                     showResponseModal('failure', `Error!  ${result.error}`);
