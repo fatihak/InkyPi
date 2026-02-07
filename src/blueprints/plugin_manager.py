@@ -89,6 +89,48 @@ def install_requirements(plugin_dir, venv_path=None):
         logger.exception(f"Error installing requirements: {e}")
         raise RuntimeError(f"Error installing requirements: {str(e)}")
 
+def set_plugin_permissions(plugin_dir):
+    """Set proper ownership and permissions for plugin directory."""
+    try:
+        # Determine the user/group from the parent plugins directory
+        plugins_dir = get_plugins_dir()
+
+        # Get the owner of the plugins directory
+        stat_info = os.stat(plugins_dir)
+        uid = stat_info.st_uid
+        gid = stat_info.st_gid
+
+        # Set ownership to match the plugins directory owner
+        # Use subprocess to run chown as it requires privileges
+        subprocess.run(
+            ['chown', '-R', f'{uid}:{gid}', plugin_dir],
+            capture_output=True,
+            text=True,
+            check=False  # Don't fail if not running as root
+        )
+
+        # Set directory permissions to 755
+        for root, dirs, files in os.walk(plugin_dir):
+            for dir_name in dirs:
+                dir_path = os.path.join(root, dir_name)
+                try:
+                    os.chmod(dir_path, 0o755)
+                except Exception:
+                    pass
+
+            # Set file permissions to 644
+            for file_name in files:
+                file_path = os.path.join(root, file_name)
+                try:
+                    os.chmod(file_path, 0o644)
+                except Exception:
+                    pass
+
+        logger.info(f"Fixed permissions for plugin directory: {plugin_dir}")
+    except Exception as e:
+        logger.warning(f"Could not fix all permissions: {e}")
+        # Don't raise - permissions are nice to have but not critical
+
 def install_plugin_from_git(plugin_id, repo_url):
     """
     Install a plugin from a Git repository.
@@ -161,6 +203,9 @@ def install_plugin_from_git(plugin_id, repo_url):
         # Install requirements
         install_requirements(dest_dir)
 
+        # Fix permissions
+        set_plugin_permissions(dest_dir)
+
         logger.info(f"Plugin '{plugin_id}' installed successfully")
         return True, f"Plugin '{plugin_info['display_name']}' installed successfully", plugin_info
 
@@ -230,6 +275,9 @@ def install_plugin_from_archive(archive_file):
         # Install requirements
         install_requirements(dest_dir)
 
+        # Fix permissions
+        set_plugin_permissions(dest_dir)
+
         logger.info(f"Plugin '{plugin_id}' installed successfully from archive")
         return True, f"Plugin '{plugin_info['display_name']}' installed successfully", plugin_info
 
@@ -241,26 +289,21 @@ def remove_plugin(plugin_id):
     plugins_dir = get_plugins_dir()
     plugin_dir = os.path.join(plugins_dir, plugin_id)
 
-    # Prevent removing base_plugin
-    if plugin_id == 'base_plugin':
-        raise ValueError("Cannot remove base_plugin")
+    # List of known builtin plugin IDs that ship with InkyPi
+    BUILTIN_PLUGINS = {
+        'base_plugin', 'clock', 'weather', 'calendar', 'image_upload',
+        'image_url', 'image_folder', 'image_album', 'ai_image', 'ai_text',
+        'apod', 'comic', 'github', 'newspaper', 'screenshot', 'spotify',
+        'todo_list', 'unsplash', 'wpotd', 'year_progress', 'countdown', 'rss'
+    }
+
+    # Prevent removing builtin plugins
+    if plugin_id in BUILTIN_PLUGINS:
+        raise ValueError(f"Cannot remove builtin plugin '{plugin_id}'")
 
     # Check if plugin exists
     if not os.path.exists(plugin_dir):
         raise ValueError(f"Plugin '{plugin_id}' not found")
-
-    # Check if plugin-info.json indicates it's a builtin plugin
-    try:
-        plugin_info_path = os.path.join(plugin_dir, "plugin-info.json")
-        if os.path.exists(plugin_info_path):
-            with open(plugin_info_path, 'r') as f:
-                plugin_info = json.load(f)
-
-            # Only allow removing third-party plugins (those with repository field)
-            if not plugin_info.get('repository'):
-                raise ValueError(f"Cannot remove builtin plugin '{plugin_id}'")
-    except Exception as e:
-        logger.warning(f"Error reading plugin-info.json: {e}")
 
     # Remove plugin directory
     try:
@@ -279,11 +322,23 @@ def update_plugin(plugin_id):
     plugins_dir = get_plugins_dir()
     plugin_dir = os.path.join(plugins_dir, plugin_id)
 
+    # List of known builtin plugin IDs that ship with InkyPi
+    BUILTIN_PLUGINS = {
+        'base_plugin', 'clock', 'weather', 'calendar', 'image_upload',
+        'image_url', 'image_folder', 'image_album', 'ai_image', 'ai_text',
+        'apod', 'comic', 'github', 'newspaper', 'screenshot', 'spotify',
+        'todo_list', 'unsplash', 'wpotd', 'year_progress', 'countdown', 'rss'
+    }
+
+    # Check if plugin is builtin
+    if plugin_id in BUILTIN_PLUGINS:
+        raise ValueError(f"Cannot update builtin plugin '{plugin_id}'")
+
     # Check if plugin exists
     if not os.path.exists(plugin_dir):
         raise ValueError(f"Plugin '{plugin_id}' not found")
 
-    # Read plugin-info.json to check if it's a third-party plugin
+    # Read plugin-info.json
     plugin_info_path = os.path.join(plugin_dir, "plugin-info.json")
     if not os.path.exists(plugin_info_path):
         raise ValueError(f"Plugin '{plugin_id}' has no plugin-info.json")
@@ -293,10 +348,6 @@ def update_plugin(plugin_id):
             plugin_info = json.load(f)
     except json.JSONDecodeError:
         raise ValueError(f"Invalid plugin-info.json for '{plugin_id}'")
-
-    # Check if plugin is third-party (has repository field)
-    if not plugin_info.get('repository'):
-        raise ValueError(f"Cannot update builtin plugin '{plugin_id}'")
 
     # Check if plugin directory is a git repository
     git_dir = os.path.join(plugin_dir, '.git')
@@ -365,6 +416,14 @@ def get_installed_plugins():
     plugins_dir = get_plugins_dir()
     plugins = []
 
+    # List of known builtin plugin IDs that ship with InkyPi
+    BUILTIN_PLUGINS = {
+        'base_plugin', 'clock', 'weather', 'calendar', 'image_upload',
+        'image_url', 'image_folder', 'image_album', 'ai_image', 'ai_text',
+        'apod', 'comic', 'github', 'newspaper', 'screenshot', 'spotify',
+        'todo_list', 'unsplash', 'wpotd', 'year_progress', 'countdown', 'rss'
+    }
+
     if not os.path.exists(plugins_dir):
         return plugins
 
@@ -381,15 +440,15 @@ def get_installed_plugins():
                 with open(plugin_info_path, 'r') as f:
                     plugin_info = json.load(f)
 
-                # Determine plugin type
-                if plugin_info.get('repository'):
+                # Determine plugin type based on whether it's in builtin list
+                if plugin_id in BUILTIN_PLUGINS:
+                    plugin_info['type'] = 'builtin'
+                    plugin_info['is_git'] = False
+                else:
                     plugin_info['type'] = 'third-party'
                     # Check if it's a git repository (can be updated)
                     git_dir = os.path.join(plugin_dir, '.git')
                     plugin_info['is_git'] = os.path.exists(git_dir)
-                else:
-                    plugin_info['type'] = 'builtin'
-                    plugin_info['is_git'] = False
 
                 plugins.append(plugin_info)
             except Exception as e:
