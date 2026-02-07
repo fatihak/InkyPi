@@ -1086,7 +1086,8 @@ html[data-theme="dark"] .settings-button.dark-mode-toggle::before {
 }
 
 .view-toggle,
-.sort-toggle {
+.sort-toggle,
+.plugin-manager-button {
     background: var(--button-bg);
     border: 1px solid var(--border-color);
     border-radius: 4px;
@@ -1095,10 +1096,13 @@ html[data-theme="dark"] .settings-button.dark-mode-toggle::before {
     font-size: 14px;
     color: var(--text-primary);
     transition: all 0.2s;
+    text-decoration: none;
+    display: inline-block;
 }
 
 .view-toggle:hover,
-.sort-toggle:hover {
+.sort-toggle:hover,
+.plugin-manager-button:hover {
     background: var(--button-hover);
 }
 
