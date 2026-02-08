@@ -87,7 +87,11 @@ body {
 }
 
 /** HTML Elements **/
-/* Textarea styling */
+
+h1, h2, h3, h4, h5, h6, button, label, span, p, div, input, select, option, textarea, small {
+    color: var(--text-primary);
+}
+
 textarea {
     background-color: var(--input-bg);
     border: 1px solid var(--border-subtle);
