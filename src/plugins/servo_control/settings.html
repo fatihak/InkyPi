@@ -1,88 +1,210 @@
 <!-- Servo Control Plugin Settings -->
-<div class="form-group">
-    <label for="gpio-pin" class="form-label">GPIO Pin Number:</label>
-    <input 
-        type="number" 
-        id="gpio-pin" 
-        name="gpio_pin" 
-        class="form-control" 
-        min="0" 
-        max="27" 
-        value="18"
-        required
-    />
-    <small class="form-text">GPIO pin where the servo signal wire is connected (default: 18, other Pins not tested, perhaps need more configuration)</small>
-</div>
 
-<div class="form-group">
-    <label for="target-angle" class="form-label">Target Angle: </label>
-    <input 
-        type="number" 
-        id="target-angle" 
-        name="target_angle" 
-        min="-45" 
-        max="135" 
-        value="45"
-        step="1"
-    />
-    <span id="angle-display">45°</span>
-    <small class="form-text">
-        Drag the slider to set target servo angle (<span id="angle-min">-45</span>° - <span id="angle-max">135</span>°)
-    </small>
-</div>
+<!-- Servo Control Section -->
+<fieldset class="settings-section">
+    <legend class="section-title">Servo Control</legend>
+    
+    <div class="form-group">
+        <label for="gpio-pin" class="form-label">GPIO Pin Number:</label>
+        <input 
+            type="number" 
+            id="gpio-pin" 
+            name="gpio_pin" 
+            class="form-control" 
+            value="18"
+            required
+        />
+        <small class="form-text">GPIO pin where the servo signal wire is connected (default: 18, other Pins not tested, perhaps need more configuration)</small>
+    </div>
 
-<div class="form-group">
-    <label for="servo-speed" class="form-label">Servo Speed: </label>
-    <input 
-        type="number" 
-        id="servo-speed" 
-        name="servo_speed"  
-        min="0" 
-        value="35"
-    />
-    <small class="form-text">Delay between angle steps in milliseconds (lower = faster)</small>
-</div>
+    <div class="form-group">
+        <label for="target-angle" class="form-label">Target Angle: </label>
+        <input 
+            type="number" 
+            id="target-angle" 
+            name="target_angle" 
+            min="-45" 
+            max="135" 
+            value="45"
+            step="1"
+        />
+        <span id="angle-display">45°</span>
+        <small class="form-text">
+            Drag the slider to set target servo angle (<span id="angle-min">-45</span>° - <span id="angle-max">135</span>°)
+        </small>
+    </div>
 
-<div class="form-group">
-    <label for="orientation" class="form-label">Orientation:</label>
-    <select 
-        id="orientation" 
-        name="orientation" 
-        class="form-control"
-    >
-        <option value="current">Keep Current</option>
-        <option value="landscape">Landscape (Horizontal)</option>
-        <option value="portrait">Portrait (Vertical)</option>
-    </select>
-    <small class="form-text">
-        Update device orientation when servo moves. 
-        "Keep Current" will not change the display orientation.
-    </small>
-</div>
+    <div class="form-group">
+        <label for="servo-speed" class="form-label">Servo Speed: </label>
+        <input 
+            type="number" 
+            id="servo-speed" 
+            name="servo_speed"  
+            min="0" 
+            value="35"
+        />
+        <small class="form-text">Delay between angle steps in milliseconds (lower = faster)</small>
+    </div>
+</fieldset>
 
-<div class="form-group">
-    <label class="form-label" for="inverted_image">Invert Image</label>
-    <input type="checkbox" id="inverted_image" name="inverted_image">
-    <small class="form-text">Invert the display output.</small>
-</div>
+<!-- Device Config Section -->
+<fieldset class="settings-section">
+    <legend class="section-title">Device Config</legend>
+    
+    <div class="form-group">
+        <label for="orientation" class="form-label">Orientation:</label>
+        <select 
+            id="orientation" 
+            name="orientation" 
+            class="form-control"
+        >
+            <option value="current">Keep Current</option>
+            <option value="landscape">Landscape (Horizontal)</option>
+            <option value="portrait">Portrait (Vertical)</option>
+        </select>
+        <small class="form-text">
+            Update device orientation when servo moves. 
+            "Keep Current" will not change the display orientation.
+        </small>
+    </div>
 
-<div class="form-group">
-    <label class="form-label" for="show_test_image">Show Test Image</label>
-    <input type="checkbox" id="show_test_image" name="show_test_image">
-    <small class="form-text">Display a virtual horizon test image that appears level when the screen is physically rotated to match the servo angle.</small>
-</div>
+    <div class="form-group">
+        <label class="form-label" for="inverted_image">Invert Image</label>
+        <input type="checkbox" id="inverted_image" name="inverted_image">
+        <small class="form-text">Invert the display output.</small>
+    </div>
+</fieldset>
+
+<!-- Display Options Section -->
+<fieldset class="settings-section">
+    <legend class="section-title">Display Options</legend>
+    
+    <div class="form-group">
+        <label class="form-label" for="show_test_image">Show Test Image</label>
+        <input type="checkbox" id="show_test_image" name="show_test_image">
+        <small class="form-text">Display a virtual horizon test image that appears level when the screen is physically rotated to match the servo angle.</small>
+    </div>
+</fieldset>
+
+<!-- API Example Section -->
+<details class="api-example-section">
+    <summary class="api-example-title">API Example</summary>
+    <div class="api-example-content">
+        <p>Example POST request to update servo control settings:</p>
+        <pre id="api-example-code"><code>curl -X POST http://localhost:5000/api/plugin/servo_control/update \
+  -H "Content-Type: application/json" \
+  -d '{
+  "gpio_pin": 18,
+  "target_angle": 45,
+  "servo_speed": 35,
+  "orientation": "current",
+  "inverted_image": false,
+  "show_test_image": false
+}'</code></pre>
+    </div>
+</details>
+
+<style>
+    .settings-section {
+        border: 1px solid #e0e0e0;
+        border-radius: 4px;
+        padding: 15px;
+        margin-bottom: 20px;
+        background-color: #f9f9f9;
+    }
+    
+    .section-title {
+        font-size: 1.1em;
+        font-weight: 600;
+        color: #333;
+        margin: -15px -15px 15px -15px;
+        padding: 10px 15px;
+        background-color: #f0f0f0;
+        border-radius: 3px 3px 0 0;
+        display: block;
+    }
+    
+    .api-example-section {
+        border: 1px solid #e0e0e0;
+        border-radius: 4px;
+        padding: 15px;
+        margin-top: 20px;
+        background-color: #f9f9f9;
+    }
+    
+    .api-example-title {
+        font-size: 1.1em;
+        font-weight: 600;
+        color: #333;
+        cursor: pointer;
+        user-select: none;
+        padding: 5px 0;
+    }
+    
+    .api-example-table::-webkit-details-marker {
+        cursor: pointer;
+    }
+    
+    .api-example-content {
+        margin-top: 15px;
+        padding-top: 15px;
+        border-top: 1px solid #e0e0e0;
+    }
+    
+    .api-example-content pre {
+        background-color: #f5f5f5;
+        border: 1px solid #ddd;
+        border-radius: 3px;
+        padding: 12px;
+        overflow-x: auto;
+        font-size: 0.9em;
+    }
+    
+    .api-example-content code {
+        font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+        color: #333;
+    }
+</style>
 
 <script>
 
+    // Update API example code
+    function updateApiExample() {
+        const example = {
+            gpio_pin: parseInt(document.getElementById('gpio-pin').value),
+            target_angle: parseInt(document.getElementById('target-angle').value),
+            servo_speed: parseInt(document.getElementById('servo-speed').value),
+            orientation: document.getElementById('orientation').value,
+            inverted_image: document.getElementById('inverted_image').checked,
+            show_test_image: document.getElementById('show_test_image').checked
+        };
+        
+        const jsonData = JSON.stringify(example, null, 2);
+        const curlCommand = `curl -X POST http://inkypi.local/api/plugin/servo_control/update \\
+  -H "Content-Type: application/json" \\
+  -d '${jsonData.replace(/'/g, "'\\''")}'`;
+        
+        const codeElement = document.getElementById('api-example-code');
+        codeElement.textContent = curlCommand;
+    }
+    
     // Update angle display
     document.getElementById('target-angle').addEventListener('input', function() {
         document.getElementById('angle-display').textContent = this.value + '°';
+        updateApiExample();
     });
     
     // Update speed display
     document.getElementById('servo-speed').addEventListener('input', function() {
         document.getElementById('speed-display').textContent = this.value + 'ms';
+        updateApiExample();
     });
+    
+    // Update API example on other field changes
+    document.getElementById('gpio-pin').addEventListener('input', updateApiExample);
+    document.getElementById('orientation').addEventListener('change', updateApiExample);
+    document.getElementById('inverted_image').addEventListener('change', updateApiExample);
+    document.getElementById('show_test_image').addEventListener('change', updateApiExample);
     
     // Load settings from pluginSettings
     document.addEventListener('DOMContentLoaded', () => {
@@ -121,6 +243,9 @@
             if (pluginSettings.show_test_image !== undefined) {
                 document.getElementById('show_test_image').checked = !!pluginSettings.show_test_image;
             }
+            
+            // Update API example after loading all settings
+            updateApiExample();
         }
     });
 </script>

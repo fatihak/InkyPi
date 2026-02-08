@@ -5,12 +5,14 @@
 # Description: This script automates the installation of InkyPI and creation of
 #              the InkyPI service.
 #
-# Usage: ./install.sh [-W <waveshare_device>]
+# Usage: ./install.sh [-W <waveshare_device>] [-S]
 #        -W <waveshare_device> (optional) Install for a Waveshare device,
 #                               specifying the device model type, e.g. epd7in3e.
 #
 #                               If not specified then the Pimoroni Inky display
 #                               is assumed.
+#        -S (optional) Install servo control support and enable PWM overlay.
+#                      If not specified, servo support is disabled.
 # =============================================================================
 
 # Formatting stuff
@@ -48,12 +50,22 @@ PIP_REQUIREMENTS_FILE="$SCRIPT_DIR/requirements.txt"
 WS_TYPE=""
 WS_REQUIREMENTS_FILE="$SCRIPT_DIR/ws-requirements.txt"
 
-# Parse the arguments, looking for the -W option.
+#
+# Additional requirements for Servo support.
+#
+# empty means no servo support required, otherwise install servo support
+SERVO_ENABLED=""
+SERVO_REQUIREMENTS_FILE="$SCRIPT_DIR/servo-requirements.txt"
+
+# Parse the arguments, looking for the -W and -S options.
 parse_arguments() {
-    while getopts ":W:" opt; do
+    while getopts ":W:S" opt; do
         case $opt in
             W) WS_TYPE=$OPTARG
                 echo "Optional parameter WS is set for Waveshare support.  Screen type is: $WS_TYPE"
+                ;;
+            S) SERVO_ENABLED="true"
+                echo "Optional parameter S is set for Servo control support."
                 ;;
             \?) echo "Invalid option: -$OPTARG." >&2
                 exit 1
@@ -141,6 +153,11 @@ enable_interfaces(){
 }
 
 enable_pwm_overlay(){
+  # Only enable PWM overlay if servo support is requested
+  if [[ -z "$SERVO_ENABLED" ]]; then
+    return
+  fi
+
   echo "Enabling PWM overlay for servo control"
   local CONFIG_PRIMARY="/boot/firmware/config.txt"
   local CONFIG_FALLBACK="/boot/config.txt"
@@ -241,6 +258,13 @@ create_venv(){
     show_loader "\tInstalling additional Waveshare python dependencies. "
   fi
 
+  # do additional dependencies for Servo support.
+  if [[ -n "$SERVO_ENABLED" ]]; then
+    echo "Adding additional dependencies for servo control to the python virtual environment. "
+    $VENV_PATH/bin/python -m pip install -r $SERVO_REQUIREMENTS_FILE > servo_pip_install.log &
+    show_loader "\tInstalling additional Servo python dependencies. "
+  fi
+
 }
 
 install_app_service() {
@@ -276,12 +300,12 @@ install_config() {
 }
 
 #
-# Update the device.json file with the supplied Waveshare parameter (if set).
+# Update the device.json file with the supplied Waveshare and Servo parameters (if set).
 #
 update_config() {
+  local DEVICE_JSON="$CONFIG_DIR/device.json"
+  
   if [[ -n "$WS_TYPE" ]]; then
-      local DEVICE_JSON="$CONFIG_DIR/device.json"
-
       if grep -q '"display_type":' "$DEVICE_JSON"; then
           # Update existing display_type value
           sed -i "s/\"display_type\": \".*\"/\"display_type\": \"$WS_TYPE\"/" "$DEVICE_JSON"
@@ -295,8 +319,22 @@ update_config() {
           echo "}" >> "$DEVICE_JSON"  # Add trailing }
           echo "Added display_type: $WS_TYPE"
       fi
-  else
-      echo "Config not updated as WS_TYPE flag is not set"
+  fi
+
+  if [[ -n "$SERVO_ENABLED" ]]; then
+      if grep -q '"servo_enabled":' "$DEVICE_JSON"; then
+          # Update existing servo_enabled value
+          sed -i 's/"servo_enabled": false/"servo_enabled": true/' "$DEVICE_JSON"
+          echo "Updated servo_enabled to: true" 
+      else
+          # Append servo_enabled safely, ensuring proper comma placement
+          if grep -q '}$' "$DEVICE_JSON"; then
+              sed -i '$s/}/,/' "$DEVICE_JSON"  # Replace last } with a comma
+          fi
+          echo "  \"servo_enabled\": true" >> "$DEVICE_JSON"
+          echo "}" >> "$DEVICE_JSON"  # Add trailing }
+          echo "Added servo_enabled: true"
+      fi
   fi
 }
 
@@ -388,7 +426,10 @@ fi
 enable_interfaces
 enable_pwm_overlay
 install_debian_dependencies
-install_servo_dependencies
+# Only install servo dependencies if servo support is requested
+if [[ -n "$SERVO_ENABLED" ]]; then
+  install_servo_dependencies
+fi
 # check OS version for Bookworm to setup zramswap
 if [[ $(get_os_version) = "12" ]] ; then
   echo "OS version is Bookworm - setting up zramswap"
@@ -402,8 +443,8 @@ install_cli
 create_venv
 install_executable
 install_config
-# update the config file with additional WS if defined.
-if [[ -n "$WS_TYPE" ]]; then
+# update the config file with additional WS or Servo if defined.
+if [[ -n "$WS_TYPE" ]] || [[ -n "$SERVO_ENABLED" ]]; then
   update_config
 fi
 install_app_service
