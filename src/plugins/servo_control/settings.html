@@ -1,7 +1,7 @@
 <!-- Servo Control Plugin Settings -->
 
 <!-- Servo Control Section -->
-<fieldset class="settings-section">
+<fieldset class="form-group">
     <legend class="section-title">Servo Control</legend>
     
     <div class="form-group">
@@ -48,7 +48,7 @@
 </fieldset>
 
 <!-- Device Config Section -->
-<fieldset class="settings-section">
+<fieldset class="form-group">
     <legend class="section-title">Device Config</legend>
     
     <div class="form-group">
@@ -76,7 +76,7 @@
 </fieldset>
 
 <!-- Display Options Section -->
-<fieldset class="settings-section">
+<fieldset class="form-group">
     <legend class="section-title">Display Options</legend>
     
     <div class="form-group">
@@ -91,9 +91,10 @@
     <summary class="api-example-title">API Example</summary>
     <div class="api-example-content">
         <p>Example POST request to update servo control settings:</p>
-        <pre id="api-example-code"><code>curl -X POST http://localhost:5000/api/plugin/servo_control/update \
+        <pre id="api-example-code"><code>curl -X POST http://inkypi.local/update_now \
   -H "Content-Type: application/json" \
   -d '{
+  "plugin_id": "servo_control",
   "gpio_pin": 18,
   "target_angle": 45,
   "servo_speed": 35,
@@ -104,73 +105,12 @@
     </div>
 </details>
 
-<style>
-    .settings-section {
-        border: 1px solid #e0e0e0;
-        border-radius: 4px;
-        padding: 15px;
-        margin-bottom: 20px;
-        background-color: #f9f9f9;
-    }
-    
-    .section-title {
-        font-size: 1.1em;
-        font-weight: 600;
-        color: #333;
-        margin: -15px -15px 15px -15px;
-        padding: 10px 15px;
-        background-color: #f0f0f0;
-        border-radius: 3px 3px 0 0;
-        display: block;
-    }
-    
-    .api-example-section {
-        border: 1px solid #e0e0e0;
-        border-radius: 4px;
-        padding: 15px;
-        margin-top: 20px;
-        background-color: #f9f9f9;
-    }
-    
-    .api-example-title {
-        font-size: 1.1em;
-        font-weight: 600;
-        color: #333;
-        cursor: pointer;
-        user-select: none;
-        padding: 5px 0;
-    }
-    
-    .api-example-table::-webkit-details-marker {
-        cursor: pointer;
-    }
-    
-    .api-example-content {
-        margin-top: 15px;
-        padding-top: 15px;
-        border-top: 1px solid #e0e0e0;
-    }
-    
-    .api-example-content pre {
-        background-color: #f5f5f5;
-        border: 1px solid #ddd;
-        border-radius: 3px;
-        padding: 12px;
-        overflow-x: auto;
-        font-size: 0.9em;
-    }
-    
-    .api-example-content code {
-        font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-        color: #333;
-    }
-</style>
-
 <script>
 
     // Update API example code
     function updateApiExample() {
         const example = {
+            plugin_id: "servo_control",
             gpio_pin: parseInt(document.getElementById('gpio-pin').value),
             target_angle: parseInt(document.getElementById('target-angle').value),
             servo_speed: parseInt(document.getElementById('servo-speed').value),
@@ -180,7 +120,7 @@
         };
         
         const jsonData = JSON.stringify(example, null, 2);
-        const curlCommand = `curl -X POST http://inkypi.local/api/plugin/servo_control/update \\
+        const curlCommand = `curl -X POST http://inkypi.local/update_now \\
   -H "Content-Type: application/json" \\
   -d '${jsonData.replace(/'/g, "'\\''")}'`;
         
