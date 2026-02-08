@@ -92,16 +92,7 @@
     <div class="api-example-content">
         <p>Example POST request to update servo control settings:</p>
         <pre id="api-example-code"><code>curl -X POST http://inkypi.local/update_now \
-  -H "Content-Type: application/json" \
-  -d '{
-  "plugin_id": "servo_control",
-  "gpio_pin": 18,
-  "target_angle": 45,
-  "servo_speed": 35,
-  "orientation": "current",
-  "inverted_image": false,
-  "show_test_image": false
-}'</code></pre>
+  -d "plugin_id=servo_control&gpio_pin=18&target_angle=45&servo_speed=35&orientation=current&inverted_image=false&show_test_image=false"</code></pre>
     </div>
 </details>
 
@@ -109,20 +100,17 @@
 
     // Update API example code
     function updateApiExample() {
-        const example = {
-            plugin_id: "servo_control",
-            gpio_pin: parseInt(document.getElementById('gpio-pin').value),
-            target_angle: parseInt(document.getElementById('target-angle').value),
-            servo_speed: parseInt(document.getElementById('servo-speed').value),
-            orientation: document.getElementById('orientation').value,
-            inverted_image: document.getElementById('inverted_image').checked,
-            show_test_image: document.getElementById('show_test_image').checked
-        };
+        const formData = new URLSearchParams();
+        formData.append('plugin_id', 'servo_control');
+        formData.append('gpio_pin', document.getElementById('gpio-pin').value);
+        formData.append('target_angle', document.getElementById('target-angle').value);
+        formData.append('servo_speed', document.getElementById('servo-speed').value);
+        formData.append('orientation', document.getElementById('orientation').value);
+        formData.append('inverted_image', document.getElementById('inverted_image').checked);
+        formData.append('show_test_image', document.getElementById('show_test_image').checked);
         
-        const jsonData = JSON.stringify(example, null, 2);
         const curlCommand = `curl -X POST http://inkypi.local/update_now \\
-  -H "Content-Type: application/json" \\
-  -d '${jsonData.replace(/'/g, "'\\''")}'`;
+  -d "${formData.toString()}"`;
         
         const codeElement = document.getElementById('api-example-code');
         codeElement.textContent = curlCommand;
