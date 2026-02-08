@@ -106,7 +106,7 @@ class ServoDriver:
 
                 final_pulse_us = self._angle_to_pulse_us(target_angle)
                 self._pwm_sysfs_set_pulse_us(final_pulse_us)
-                time.sleep(0.2)
+                time.sleep(0.5)
                 self._pwm_sysfs_disable()
                 logger.info(f"Moved servo from {current_angle}° to {target_angle}° (kernel PWM)")
                 return
