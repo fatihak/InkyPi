@@ -85,6 +85,49 @@ body {
     transition: background-color 0.3s ease, color 0.3s ease;
 }
 
+/** HTML Elements **/
+/* Textarea styling */
+textarea {
+    background-color: var(--input-bg);
+    border: 1px solid var(--border-subtle);
+    border-radius: 6px;
+    padding: 0.5rem;
+    font-size: 1rem;
+    font-family: 'Poppins', sans-serif;
+    transition: all 0.3s ease;
+}
+
+textarea:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 3px var(--input-focus);
+}
+
+textarea::placeholder {
+    color: var(--text-secondary);
+}
+
+/* Small text elements for form hints */
+small {
+    transition: color 0.3s ease;
+}
+
+fieldset {
+    padding: 0.5rem;
+    border: 2px solid var(--border-color);
+}
+
+legend {
+    padding: 0.5rem;
+    border: 2px solid var(--border-color);
+}
+
+details {
+    margin: 5px 0 5px;
+}
+
+
+
 /* Subtle frame container */
 .frame {
     background-color: var(--bg-secondary);
@@ -110,7 +153,6 @@ body {
 .header h1 {
     font-size: 2rem;
     font-weight: 700;
-    color: var(--text-primary);
     text-transform: uppercase;
     letter-spacing: 2px;
     margin-bottom: 0;
@@ -242,7 +284,6 @@ body {
 .app-title {
     font-size: 1.5rem;
     font-weight: bold;
-    color: var(--text-primary);
     transition: color 0.3s ease;
 }
 
@@ -283,12 +324,10 @@ body {
 .form-group label {
     white-space: nowrap;
     font-weight: 600;
-    color: var(--text-primary);
     transition: color 0.3s ease;
 }
 
 .form-group span {
-    color: var(--text-primary);
     transition: color 0.3s ease;
 }
 
@@ -301,14 +340,12 @@ body {
     box-sizing: border-box;
     min-width: 50px;
     background-color: var(--input-bg);
-    color: var(--text-primary);
     transition: all 0.3s ease;
 }
 
 .form-group input[type="number"] {
     min-width: 50px;
     background-color: var(--input-bg);
-    color: var(--text-primary);
     border: 1px solid var(--border-subtle);
     border-radius: 6px;
     padding: 0.5rem;
@@ -327,34 +364,6 @@ body {
     box-shadow: 0 0 3px var(--input-focus);
 }
 
-/* Textarea styling */
-textarea {
-    background-color: var(--input-bg);
-    color: var(--text-primary);
-    border: 1px solid var(--border-subtle);
-    border-radius: 6px;
-    padding: 0.5rem;
-    font-size: 1rem;
-    font-family: 'Poppins', sans-serif;
-    transition: all 0.3s ease;
-}
-
-textarea:focus {
-    outline: none;
-    border-color: var(--accent-primary);
-    box-shadow: 0 0 3px var(--input-focus);
-}
-
-textarea::placeholder {
-    color: var(--text-secondary);
-}
-
-/* Small text elements for form hints */
-small {
-    color: var(--text-primary);
-    transition: color 0.3s ease;
-}
-
 /* Buttons container */
 .buttons-container {
     display: flex;
@@ -365,7 +374,6 @@ small {
 /* Back button */
 .back-button {
     background-color: var(--button-bg);
-    color: var(--text-primary);
     border: 1px solid var(--border-subtle);
     border-radius: 5px;
     padding: 10px 20px;
@@ -428,7 +436,6 @@ small {
 .form-label {
     font-size: 1rem;
     font-weight: 600;
-    color: var(--text-primary);
     white-space: nowrap;
     transition: color 0.3s ease;
 }
@@ -442,7 +449,6 @@ small {
     border-radius: 5px;
     box-sizing: border-box;
     background-color: var(--input-bg);
-    color: var(--text-primary);
     transition: all 0.3s ease;
 }
 
@@ -506,7 +512,6 @@ small {
 .file-upload-label {
     display: inline-block;
     background-color: var(--button-bg);
-    color: var(--text-primary);
     padding: 10px 20px;
     border-radius: 6px;
     cursor: pointer;
@@ -532,7 +537,6 @@ small {
 /* File name display styling */
 .file-name {
     font-size: 1rem;
-    color: var(--text-primary);
     word-wrap: break-word;
     transition: color 0.3s ease;
 }
@@ -660,7 +664,6 @@ html[data-theme="dark"] .settings-button.dark-mode-toggle::before {
 .modal-content h2 {
     font-size: 1.2rem;
     margin-bottom: 15px;
-    color: var(--text-primary);
     text-align: center;
     transition: color 0.3s ease;
 }
@@ -847,7 +850,6 @@ html[data-theme="dark"] .settings-button.dark-mode-toggle::before {
 }
 
 .plugin-instance {
-    color: var(--text-primary);
     transition: color 0.3s ease;
 }
 
@@ -901,7 +903,6 @@ html[data-theme="dark"] .settings-button.dark-mode-toggle::before {
 .playlist-title {
     font-size: 1.2rem;
     font-weight: 600;
-    color: var(--text-primary);
     transition: color 0.3s ease;
 }
 
@@ -963,7 +964,6 @@ html[data-theme="dark"] .settings-button.dark-mode-toggle::before {
     box-sizing: border-box;
     text-align: center;
     background-color: var(--input-bg);
-    color: var(--text-primary);
     transition: all 0.3s ease;
 }
 
@@ -1007,7 +1007,6 @@ html[data-theme="dark"] .settings-button.dark-mode-toggle::before {
     text-align: left;
     font-size: 1rem;
     margin: 10px 0px 5px 0px;
-    color: var(--text-primary);
     transition: all 0.3s ease;
 }
 
@@ -1045,7 +1044,6 @@ html[data-theme="dark"] .settings-button.dark-mode-toggle::before {
     margin-left: -1px;
     position: relative;
     z-index: 1;
-    color: var(--text-primary);
     transition: all 0.3s ease;
 }
 
@@ -1093,7 +1091,6 @@ html[data-theme="dark"] .settings-button.dark-mode-toggle::before {
     padding: 6px 10px;
     cursor: pointer;
     font-size: 14px;
-    color: var(--text-primary);
     transition: all 0.2s;
 }
 
@@ -1122,7 +1119,6 @@ html[data-theme="dark"] .settings-button.dark-mode-toggle::before {
     align-items: center;
     justify-content: flex-start;
     text-decoration: none;
-    color: var(--text-primary);
     padding: 12px 8px 10px;
     border-radius: 8px;
     border: 1px solid var(--border-color);
