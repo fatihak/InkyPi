@@ -92,20 +92,25 @@ h1, h2, h3, h4, h5, h6, button, label, span, p, div, input, select, option, text
     color: var(--text-primary);
 }
 
-textarea {
-    background-color: var(--input-bg);
-    border: 1px solid var(--border-subtle);
-    border-radius: 6px;
+input, textarea, select {
+    background: var(--input-bg);
     padding: 0.5rem;
     font-size: 1rem;
-    font-family: 'Poppins', sans-serif;
+    border: 1px solid var(--border-subtle);
+    border-radius: 6px;
+    box-sizing: border-box;
     transition: all 0.3s ease;
 }
 
-textarea:focus {
+input:focus, textarea:focus, select:focus {
     outline: none;
     border-color: var(--accent-primary);
     box-shadow: 0 0 3px var(--input-focus);
+}
+
+textarea {
+    font-family: 'Poppins', sans-serif;
+    transition: all 0.3s ease;
 }
 
 textarea::placeholder {
@@ -338,35 +343,12 @@ details {
 
 .form-group input[type="text"] {
     flex-grow: 1;
-    padding: 0.5rem;
-    font-size: 1rem;
-    border: 1px solid var(--border-subtle);
-    border-radius: 6px;
-    box-sizing: border-box;
     min-width: 50px;
-    background-color: var(--input-bg);
-    transition: all 0.3s ease;
+
 }
 
 .form-group input[type="number"] {
     min-width: 50px;
-    background-color: var(--input-bg);
-    border: 1px solid var(--border-subtle);
-    border-radius: 6px;
-    padding: 0.5rem;
-    transition: all 0.3s ease;
-}
-
-.form-group input[type="text"]:focus {
-    outline: none;
-    border-color: var(--accent-primary);
-    box-shadow: 0 0 3px var(--input-focus);
-}
-
-.form-group input[type="number"]:focus {
-    outline: none;
-    border-color: var(--accent-primary);
-    box-shadow: 0 0 3px var(--input-focus);
 }
 
 /* Buttons container */
@@ -448,19 +430,6 @@ details {
 /* Input field styling */
 .form-input {
     flex: auto;
-    padding: 0.4rem;
-    font-size: 1rem;
-    border: 1px solid var(--border-subtle);
-    border-radius: 5px;
-    box-sizing: border-box;
-    background-color: var(--input-bg);
-    transition: all 0.3s ease;
-}
-
-.form-input:focus {
-    outline: none;
-    border-color: var(--accent-primary);
-    box-shadow: 0 0 0 2px var(--input-focus);
 }
 
 /* Toggle Container */
