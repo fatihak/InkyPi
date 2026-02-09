@@ -98,8 +98,15 @@ plugins/{plugin_id}/
     ├── icon.png                # Plugin icon
     ├── settings.html           # Optional: Plugin settings page (if applicable)
     ├── render/                 # Optional: If generating images from html and css files, store them here
+    ├── fonts/                  # Optional: Plugin-specific fonts (automatically discovered)
+    │   ├── CustomFont.ttf
+    │   └── CustomFont-Bold.ttf
     └── {other files/resources} # Any additional files or resources used by the plugin
 ```
+
+### Plugin Fonts
+
+Plugins can bundle fonts by creating a `fonts/` subdirectory. Fonts placed here are automatically discovered and made available system-wide. When the plugin is removed, its fonts are automatically removed as well. See [Font Management](./fonts.md) for details.
 
 ## Prepopulating forms for Plugin Instances
 
