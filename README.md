@@ -4,31 +4,31 @@
 
 
 ## About InkyPi 
-InkyPi is an open-source, customizable E-Ink display powered by a Raspberry Pi. Designed for simplicity and flexibility, it allows you to effortlessly display the content you care about, with a simple web interface that makes setup and configuration effortless.
+InkyPi is an open-source, customizable E-Ink display powered by a Raspberry Pi. Designed for simplicity and flexibility, it displays the content you care about through a simple web interface for easy setup and configuration.
 
 **Features**:
-- Natural paper-like aethetic: crisp, minimalist visuals that are easy on the eyes, with no glare or backlight
+- Natural paper-like aesthetic: crisp, minimalist visuals that are easy on the eyes, with no glare or backlight
 - Web Interface allows you to update and configure the display from any device on your network
-- Minimize distractions: no LEDS, noise, or notifications, just the content you care about
+- Minimize distractions: no LEDs, noise, or notifications, just the content you care about
 - Easy installation and configuration, perfect for beginners and makers alike
 - Open source project allowing you to modify, customize, and create your own plugins
 - Set up scheduled playlists to display different plugins at designated times
 
 **Plugins**:
 
-- Image Upload: Upload and display any image from your browser
-- Daily Newspaper/Comic: Show daily comics and front pages of major newspapers from around the world
-- Clock: Customizable clock faces for displaying time
-- AI Image/Text: Generate images and dynamic text from prompts using OpenAI's models
-- Weather: Display current weather conditions and multi-day forecasts with a customizable layout
-- Calendar: Visualize your calendar from Google, Outlook, or Apple Calendar with customizable layouts
+- Images & photos: Upload images from your browser or display images from URLs, folders, albums, or Unsplash
+- News & comics: Show daily newspaper front pages and comics from around the world
+- Time & productivity: Customizable clock faces, countdown timers, and a simple to-do list
+- AI image & text: Generate images and dynamic text from prompts using AI models
+- Information panels: Display current weather conditions, multi-day forecasts, and calendar events with customizable layouts
+- Data feeds & stats: Visualize RSS feeds, GitHub activity, and other integrations
 
-And additional plugins coming soon! For documentation on building custom plugins, see [Building InkyPi Plugins](./docs/building_plugins.md).
+InkyPi also includes many additional plugins and examples. For documentation on building custom plugins, see [Building InkyPi Plugins](./docs/building_plugins.md).
 
 See [the wiki](https://github.com/fatihak/InkyPi/wiki) for a list of community-maintained third-party plugins.
 
 ## Hardware 
-- Raspberry Pi (4 | 3 | Zero 2 W)
+- Raspberry Pi (4, 3, Zero 2 W, or Zero W; see troubleshooting notes for Zero W installation)
     - Recommended to get 40 pin Pre Soldered Header
 - MicroSD Card (min 8 GB) like [this one](https://amzn.to/3G3Tq9W)
 - E-Ink Display:
@@ -103,7 +103,7 @@ To update your InkyPi with the latest code changes, follow these steps:
 This process ensures that any new updates, including code changes and additional dependencies, are properly applied without requiring a full reinstallation.
 
 ## Uninstall
-To install InkyPi, simply run the following command:
+To uninstall InkyPi, simply run the following command:
 
 ```bash
 sudo bash install/uninstall.sh
@@ -137,7 +137,7 @@ This project includes fonts and icons with separate licensing and attribution re
 
 Check out the [troubleshooting guide](./docs/troubleshooting.md). If you're still having trouble, feel free to create an issue on the [GitHub Issues](https://github.com/fatihak/InkyPi/issues) page.
 
-If you're using a Pi Zero W, note that there are known issues during the installation process. See [Known Issues during Pi Zero W Installation](./docs/troubleshooting.md#known-issues-during-pi-zero-w-installation) section in the troubleshooting guide for additional details..
+If you're using a Pi Zero W, note that there are known issues during the installation process. See [Known Issues during Pi Zero W Installation](./docs/troubleshooting.md#known-issues-during-pi-zero-w-installation) section in the troubleshooting guide for additional details.
 
 ## Sponsoring
 
