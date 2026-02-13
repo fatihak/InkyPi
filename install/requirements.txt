@@ -15,4 +15,5 @@ psutil==7.2.2
 cysystemd==2.0.1
 waitress==3.0.2
 feedparser==6.0.11
+fonttools>=4.0.0
 astral>=3.1
