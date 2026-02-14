@@ -6,6 +6,7 @@
         480
     ],
     "orientation": "horizontal",
+    "servo_enabled": true,
     "plugin_order": [
         "calendar",
         "ai_image",
@@ -41,9 +42,11 @@
         "active_playlist": null
     },
     "refresh_info": {
-        "refresh_time": null,
-        "image_hash": null,
-        "refresh_type": null,
-        "plugin_id": null
-    }
+        "refresh_time": "2026-02-14T12:22:33.752604+00:00",
+        "image_hash": "bd2481643abcf6ae451ee72e1f33f704367d4d21b7f60b1273dd14e57061a6c4",
+        "refresh_type": "Manual Update",
+        "plugin_id": "servo_control"
+    },
+    "inverted_image": true,
+    "current_servo_angle": 45
 }

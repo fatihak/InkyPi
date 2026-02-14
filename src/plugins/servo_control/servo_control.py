@@ -1,4 +1,5 @@
 import logging
+from display.mock_display import MockDisplay
 from plugins.base_plugin.base_plugin import BasePlugin
 from PIL import Image, ImageDraw, ImageFont
 from utils.servo_utils import ServoDriver, DEFAULT_GPIO_PIN, DEFAULT_ANGLE, DEFAULT_SPEED
@@ -44,6 +45,7 @@ class ServoControl(BasePlugin):
         self.pwm_chip = str(settings.get('pwm_chip', DEFAULT_PWM_CHIP))
         pwm_channel = settings.get('pwm_channel', None)
         self.pwm_channel = int(pwm_channel) if pwm_channel not in (None, "") else None
+        display_type = device_config.get_config("display_type")
         
         # Get current angle from device config (persistent across reboots)
         current_angle = device_config.get_config('current_servo_angle', DEFAULT_ANGLE)
@@ -65,8 +67,11 @@ class ServoControl(BasePlugin):
         
         # Move servo to the target angle
         logger.info("Call Servo Move")
-        self.servo_driver.configure(gpio_pin=gpio_pin, pwm_chip=self.pwm_chip, pwm_channel=self.pwm_channel)
-        self.servo_driver.move(current_angle, target_angle, servo_speed)
+        if display_type == "mock":
+            logger.info(f"Mock Servo move from {current_angle}° to {target_angle}° at speed {servo_speed} (GPIO pin {gpio_pin})")
+        else:
+            self.servo_driver.configure(gpio_pin=gpio_pin, pwm_chip=self.pwm_chip, pwm_channel=self.pwm_channel)
+            self.servo_driver.move(current_angle, target_angle, servo_speed)
         logger.info("Finished Servo Move Call")
         
         # Store new angle in device config for next boot
