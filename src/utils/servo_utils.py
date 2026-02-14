@@ -62,9 +62,9 @@ class ServoDriver:
 
         if gpio_pin is not None and gpio_pin != self.gpio_pin:
             self.gpio_pin = gpio_pin
-            self.current_gpio_pin = None
             self._cleanup_gpiod()
             self._cleanup_pwm_sysfs()
+            self.current_gpio_pin = None
 
     def move(self, current_angle, target_angle, speed_ms):
         """Move servo from current angle to target angle asynchronously."""
@@ -101,7 +101,6 @@ class ServoDriver:
                 for angle in range(int(current_angle), int(target_angle), step):
                     pulse_us = self._angle_to_pulse_us(angle)
                     self._pwm_sysfs_set_pulse_us(pulse_us)
-                    logger.info(f"new Angle: {angle}° new Pulse: {pulse_us}us")
                     time.sleep(speed_ms / 1000)
 
                 final_pulse_us = self._angle_to_pulse_us(target_angle)
@@ -118,7 +117,6 @@ class ServoDriver:
                     pulse_us = self._angle_to_pulse_us(angle)
                     step_duration_ms = max(speed_ms, 20)
                     self._gpiod_pwm_for_duration(pulse_us, step_duration_ms)
-                    logger.info(f"new Angle: {angle}° new Pulse: {pulse_us}us")
 
                 final_pulse_us = self._angle_to_pulse_us(target_angle)
                 self._gpiod_pwm_for_duration(final_pulse_us, max(200, speed_ms))

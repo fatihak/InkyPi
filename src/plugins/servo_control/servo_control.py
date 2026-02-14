@@ -1,5 +1,4 @@
 import logging
-from display.mock_display import MockDisplay
 from plugins.base_plugin.base_plugin import BasePlugin
 from PIL import Image, ImageDraw, ImageFont
 from utils.servo_utils import ServoDriver, DEFAULT_GPIO_PIN, DEFAULT_ANGLE, DEFAULT_SPEED
