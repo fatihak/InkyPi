@@ -67,14 +67,19 @@ class Config:
         return self.config
 
     def get_plugins(self):
-        """Returns the list of plugin configurations, sorted by custom order if set."""
+        """Returns the list of plugin configurations, sorted by custom order if set.
+        Disables servo_control plugin if servo_enabled is false in config."""
         plugin_order = self.config.get('plugin_order', [])
+        servo_enabled = self.config.get('servo_enabled', False)
+        
+        # Filter out servo_control plugin if servo is not enabled
+        filtered_plugins = [p for p in self.plugins_list if not (p['id'] == 'servo_control' and not servo_enabled)]
 
         if not plugin_order:
-            return self.plugins_list
+            return filtered_plugins
 
         # Create a dict for quick lookup
-        plugins_dict = {p['id']: p for p in self.plugins_list}
+        plugins_dict = {p['id']: p for p in filtered_plugins}
 
         # Build ordered list
         ordered = []

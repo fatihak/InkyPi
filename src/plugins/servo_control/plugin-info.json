@@ -1,0 +1,6 @@
+{
+    "display_name": "Servo Control",
+    "id": "servo_control",
+    "class": "ServoControl",
+    "repository": ""
+}
