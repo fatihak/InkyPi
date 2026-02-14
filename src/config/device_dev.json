@@ -1,6 +1,49 @@
 {
     "name": "InkyPi Development",
     "display_type": "mock",
-    "resolution": [800, 480],
-    "orientation": "horizontal"
+    "resolution": [
+        800,
+        480
+    ],
+    "orientation": "horizontal",
+    "plugin_order": [
+        "calendar",
+        "ai_image",
+        "ai_text",
+        "clock",
+        "comic",
+        "countdown",
+        "github",
+        "image_album",
+        "image_folder",
+        "image_upload",
+        "apod",
+        "image_url",
+        "newspaper",
+        "rss",
+        "screenshot",
+        "todo_list",
+        "unsplash",
+        "weather",
+        "wpotd",
+        "year_progress"
+    ],
+    "playlist_config": {
+        "playlists": [
+            {
+                "name": "Default",
+                "start_time": "00:00",
+                "end_time": "24:00",
+                "plugins": [],
+                "current_plugin_index": null
+            }
+        ],
+        "active_playlist": null
+    },
+    "refresh_info": {
+        "refresh_time": null,
+        "image_hash": null,
+        "refresh_type": null,
+        "plugin_id": null
+    }
 }

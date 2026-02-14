@@ -49,7 +49,7 @@ class Calendar(BasePlugin):
         logger.debug(f"Fetching events for {start} --> [{current_dt}] --> {end}")
         events = self.fetch_ics_events(calendar_urls, calendar_colors, tz, start, end)
         if not events:
-            logger.warn("No events found for ics url")
+            logger.warning("No events found for ics url")
 
         if view == 'timeGridWeek' and settings.get("displayPreviousDays") != "true":
             view = 'timeGrid'
@@ -138,8 +138,11 @@ class Calendar(BasePlugin):
         return start, end, all_day
 
     def fetch_calendar(self, calendar_url):
+        # workaround for webcal urls
+        if calendar_url.startswith("webcal://"):
+            calendar_url = calendar_url.replace("webcal://", "https://")
         try:
-            response = requests.get(calendar_url)
+            response = requests.get(calendar_url, timeout=30)
             response.raise_for_status()
             return icalendar.Calendar.from_ical(response.text)
         except Exception as e:

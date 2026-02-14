@@ -2,12 +2,48 @@
 
 # entry script to launch the service
 
-PROGRAM_PATH=/usr/local/inkypi
-VENV_PATH="$PROGRAM_PATH/venv_inkypi"
-
-source "$VENV_PATH/bin/activate"
+export APPNAME="inkypi"
+export PROGRAM_PATH=/usr/local/inkypi
+export VENV_PATH="$PROGRAM_PATH/venv_inkypi"
 
 export PROJECT_DIR="$PROGRAM_PATH"
 export SRC_DIR="$PROGRAM_PATH/src"
 
-exec python -u "$(realpath $PROGRAM_PATH/src/inkypi.py)"
+command="${1:-}"
+shift || true
+
+usage() {
+    echo ""
+    echo "Usage:"
+    echo "  inkypi run"
+    echo "  inkypi plugin <subcommand> [args]"
+    echo ""
+}
+
+run_app() {
+    source "$VENV_PATH/bin/activate"
+    exec python -u "$(realpath "$PROGRAM_PATH/src/inkypi.py")"
+}
+
+run_plugin_cli() {
+    exec "$PROGRAM_PATH/cli/inkypi-plugin" "$@"
+}
+
+case "$command" in
+    run)
+        run_app
+        ;;
+    plugin)
+        run_plugin_cli "$@"
+        ;;
+    ""|-h|--help|help)
+        usage
+        exit 0
+        ;;
+    *)
+        echo "Unknown command: $command"
+        usage
+        exit 1
+        ;;
+esac
+

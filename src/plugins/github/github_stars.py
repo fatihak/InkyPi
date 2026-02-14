@@ -36,15 +36,15 @@ def stars_generate_image(plugin_instance, settings, device_config):
     )
 
 def fetch_stars(github_repository):
-    global data
     url = f"https://api.github.com/repos/{github_repository}"
     headers = {"Accept": "application/json"}
 
-    response = requests.get(url, headers=headers)
+    response = requests.get(url, headers=headers, timeout=30)
     if response.status_code == 200:
         data = response.json()
     else:
         logger.error(f"GitHub Stars Plugin: Error: {response.status_code} - {response.text}")
+        data = {"stargazers_count": 0}
 
     return data['stargazers_count']
 

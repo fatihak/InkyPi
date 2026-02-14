@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ config.name }}</title>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='styles/main.css') }}">
     <script>
         (function() {
             const theme = localStorage.getItem('inkypi-theme') || 
@@ -28,7 +29,6 @@
                 const response = await fetch('{{ url_for("main.get_current_image") }}', { headers });
                 
                 if (response.status === 304) {
-                    // Image hasn't changed, no need to update
                     return;
                 }
 
@@ -40,10 +40,7 @@
                 const blob = await response.blob();
                 const objectUrl = URL.createObjectURL(blob);
                 
-                // Update the image source
                 img.src = objectUrl;
-                
-                // Store the Last-Modified header for next request
                 lastModified = response.headers.get('Last-Modified');
             } catch (error) {
                 console.error('Error refreshing image:', error);
@@ -51,16 +48,12 @@
         }
 
         document.addEventListener('DOMContentLoaded', function() {
-            // Refresh image immediately on page load
             refreshImage();
-            
-            // Set up auto-refresh based on plugin cycle interval
             setInterval(refreshImage, refreshIntervalMs);
         });
     </script>
+    <script src="{{ url_for('static', filename='scripts/image_modal.js') }}"></script>
 </head>
-<link rel= "stylesheet" type= "text/css" href= "{{ url_for('static',filename='styles/main.css') }}">
-<script src="{{ url_for('static', filename='scripts/image_modal.js') }}"></script>
 <body>
     <script src="{{ url_for('static', filename='scripts/dark_mode.js') }}"></script>
     <!-- Subtle frame container -->
@@ -69,6 +62,9 @@
         <header class="header">
             <h1>{{ config.name }}</h1>
             <button class="settings-button dark-mode-toggle" title="Toggle Dark Mode" aria-label="Toggle Dark Mode"></button>
+            <a href="{{ url_for('apikeys.apikeys_page') }}" class="settings-button" title="API Keys">
+                <span style="font-size: 20px;">🔑</span>
+            </a>
             <a href="{{ url_for('playlist.playlists') }}" class="settings-button">
                 <img src="{{ url_for('static', filename='icons/playlist.png') }}" title="Playlists" alt="playlists icon" class="icon-image">
             </a>
@@ -84,14 +80,173 @@
 
         <!-- Separator -->
         <div class="separator"></div>
-        <h2 class="plugins-title">Plugins</h2>
-        <div class="button-grid">
+
+        <div class="plugins-header">
+            <h2 class="plugins-title">Plugins</h2>
+            <div class="plugins-controls">
+                <button class="sort-toggle" id="sortToggle" title="Reorder plugins">Sort</button>
+                <button class="view-toggle" id="viewToggle" title="Switch view">List</button>
+            </div>
+        </div>
+
+        <div class="sort-hint" id="sortHint">Drag plugins to reorder. Click "Save" when done.</div>
+
+        <div class="plugins-container" id="pluginsContainer">
             {% for plugin in plugins %}
-            <a href="{{ url_for('plugin.plugin_page', plugin_id=plugin.id) }}" class="icon-button" title="{{ plugin.display_name }}" >
-                <img src="{{ url_for('plugin.image', plugin_id=plugin.id, filename='icon.png') }}" alt="{{ plugin.display_name }} icon" class="icon-image">
+            <a href="{{ url_for('plugin.plugin_page', plugin_id=plugin.id) }}"
+               class="plugin-item"
+               data-plugin-id="{{ plugin.id }}"
+               title="{{ plugin.display_name }}"
+               draggable="false">
+                <img src="{{ url_for('plugin.image', plugin_id=plugin.id, filename='icon.png') }}"
+                     alt="{{ plugin.display_name }}"
+                     class="icon-image">
+                <span class="plugin-name">{{ plugin.display_name }}</span>
             </a>
             {% endfor %}
         </div>
+
+        <script>
+            // View mode (grid/list)
+            const viewToggle = document.getElementById('viewToggle');
+            const pluginsContainer = document.getElementById('pluginsContainer');
+            let currentView = localStorage.getItem('inkypi-plugins-view') || 'grid';
+
+            function updateView() {
+                if (currentView === 'list') {
+                    pluginsContainer.classList.add('list-view');
+                    viewToggle.textContent = 'Grid';
+                } else {
+                    pluginsContainer.classList.remove('list-view');
+                    viewToggle.textContent = 'List';
+                }
+            }
+
+            viewToggle.addEventListener('click', () => {
+                currentView = currentView === 'grid' ? 'list' : 'grid';
+                localStorage.setItem('inkypi-plugins-view', currentView);
+                updateView();
+            });
+
+            updateView();
+
+            // Sort mode
+            const sortToggle = document.getElementById('sortToggle');
+            const sortHint = document.getElementById('sortHint');
+            let isSorting = false;
+            let draggedItem = null;
+
+            function enableSorting() {
+                isSorting = true;
+                sortToggle.classList.add('active');
+                sortToggle.textContent = 'Save';
+                sortHint.classList.add('visible');
+                pluginsContainer.classList.add('sorting');
+
+                document.querySelectorAll('.plugin-item').forEach(item => {
+                    item.draggable = true;
+                    item.addEventListener('dragstart', handleDragStart);
+                    item.addEventListener('dragend', handleDragEnd);
+                    item.addEventListener('dragover', handleDragOver);
+                    item.addEventListener('dragleave', handleDragLeave);
+                    item.addEventListener('drop', handleDrop);
+                    item.addEventListener('click', preventClick);
+                });
+            }
+
+            function disableSorting() {
+                isSorting = false;
+                sortToggle.classList.remove('active');
+                sortToggle.textContent = 'Sort';
+                sortHint.classList.remove('visible');
+                pluginsContainer.classList.remove('sorting');
+
+                document.querySelectorAll('.plugin-item').forEach(item => {
+                    item.draggable = false;
+                    item.removeEventListener('dragstart', handleDragStart);
+                    item.removeEventListener('dragend', handleDragEnd);
+                    item.removeEventListener('dragover', handleDragOver);
+                    item.removeEventListener('dragleave', handleDragLeave);
+                    item.removeEventListener('drop', handleDrop);
+                    item.removeEventListener('click', preventClick);
+                });
+
+                // Save order
+                savePluginOrder();
+            }
+
+            function preventClick(e) {
+                if (isSorting) {
+                    e.preventDefault();
+                }
+            }
+
+            function handleDragStart(e) {
+                draggedItem = this;
+                this.classList.add('dragging');
+                e.dataTransfer.effectAllowed = 'move';
+            }
+
+            function handleDragEnd(e) {
+                this.classList.remove('dragging');
+                document.querySelectorAll('.plugin-item').forEach(item => {
+                    item.classList.remove('drag-over');
+                });
+            }
+
+            function handleDragOver(e) {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                if (this !== draggedItem) {
+                    this.classList.add('drag-over');
+                }
+            }
+
+            function handleDragLeave(e) {
+                this.classList.remove('drag-over');
+            }
+
+            function handleDrop(e) {
+                e.preventDefault();
+                this.classList.remove('drag-over');
+
+                if (this !== draggedItem) {
+                    const items = Array.from(pluginsContainer.children);
+                    const draggedIndex = items.indexOf(draggedItem);
+                    const targetIndex = items.indexOf(this);
+
+                    if (draggedIndex < targetIndex) {
+                        this.parentNode.insertBefore(draggedItem, this.nextSibling);
+                    } else {
+                        this.parentNode.insertBefore(draggedItem, this);
+                    }
+                }
+            }
+
+            async function savePluginOrder() {
+                const order = Array.from(pluginsContainer.children).map(item => item.dataset.pluginId);
+                try {
+                    const response = await fetch('{{ url_for("main.save_plugin_order") }}', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ order: order })
+                    });
+                    if (!response.ok) {
+                        console.error('Failed to save plugin order');
+                    }
+                } catch (error) {
+                    console.error('Error saving plugin order:', error);
+                }
+            }
+
+            sortToggle.addEventListener('click', () => {
+                if (isSorting) {
+                    disableSorting();
+                } else {
+                    enableSorting();
+                }
+            });
+        </script>
     </div>
 </body>
 </html>
