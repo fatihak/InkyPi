@@ -14,6 +14,60 @@ img {
     image-rendering: -webkit-optimize-contrast;
 }
 
+/* Debug Info Styling */
+.debug-info {
+    position: absolute;
+    top: 0.5dvh;
+    right: 0.5dvw;
+    font-size: min(3dvh, 3vw);
+    background-color: rgb(255, 255, 255);
+    color: rgb(0, 0, 0);
+    border: 2px solid rgb(0, 0, 0);
+    border-radius: 0.5dvw;
+    padding: 0.7dvh 1dvw;
+    max-width: 40vw;
+    z-index: 1000;
+}
+
+.debug-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4dvh;
+}
+
+.debug-title {
+    font-weight: bold;
+    font-size: min(3.5dvh, 3.5vw);
+    margin-bottom: 0.4dvh;
+    border-bottom: 1px solid rgb(0, 0, 0);
+    padding-bottom: 0.3dvh;
+}
+
+.debug-row {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    gap: 1.5dvw;
+    line-height: 1.3;
+}
+
+.debug-label {
+    font-weight: bold;
+    white-space: nowrap;
+    color: rgb(0, 0, 0);
+}
+
+.debug-value {
+    text-align: right;
+    color: rgb(0, 0, 0);
+    word-break: break-word;
+}
+
+.debug-divider {
+    border-top: 1px dashed rgb(0, 0, 0);
+    margin: 0.4dvh 0;
+}
+
 .container {
     display: flex;
     justify-content: center;
@@ -60,7 +114,7 @@ img {
     border-top: 0.7vw solid;
     border-left: 0.7vw solid;
   }
-  
+
   .corner-frame:after {
     display: block;
     content: "";

@@ -8,9 +8,10 @@ from astral import moon
 import pytz
 from io import BytesIO
 import math
+import time
 
 logger = logging.getLogger(__name__)
-        
+
 def get_moon_phase_name(phase_age: float) -> str:
     """Determines the name of the lunar phase based on the age of the moon."""
     PHASES_THRESHOLDS = [
@@ -26,7 +27,7 @@ def get_moon_phase_name(phase_age: float) -> str:
 
     for threshold, phase_name in PHASES_THRESHOLDS:
         if phase_age <= threshold:
-            return phase_name  
+            return phase_name
     return "newmoon"
 
 UNITS = {
@@ -61,6 +62,14 @@ OPEN_METEO_UNIT_PARAMS = {
 }
 
 class Weather(BasePlugin):
+    def __init__(self, config, **dependencies):
+        super().__init__(config, **dependencies)
+        self._weather_provider = None
+        self._weather_timezone = None
+        self._api_call_time = None
+        self._data_points_count = 0
+        self._forecast_days = 0
+
     def generate_settings_template(self):
         template_params = super().generate_settings_template()
         template_params['api_key'] = {
@@ -70,6 +79,51 @@ class Weather(BasePlugin):
         }
         template_params['style_settings'] = True
         return template_params
+
+    def get_custom_debug_info(self, plugin_settings, device_config):
+        """Add weather-specific debug information."""
+        custom_info = {}
+
+        # Weather provider
+        if self._weather_provider:
+            custom_info['provider'] = self._weather_provider
+
+        # API call performance
+        if self._api_call_time is not None:
+            custom_info['api_time'] = f"{self._api_call_time:.2f}s"
+
+        # Location coordinates
+        lat = plugin_settings.get('latitude')
+        long = plugin_settings.get('longitude')
+        if lat and long:
+            custom_info['location'] = f"{lat}, {long}"
+
+        # Temperature units
+        units = plugin_settings.get('units')
+        if units:
+            custom_info['units'] = units
+
+        # Display options summary
+        display_options = []
+        if plugin_settings.get('displayMetrics') == 'true':
+            display_options.append('Metrics')
+        if plugin_settings.get('displayGraph') == 'true':
+            display_options.append('Graph')
+        if plugin_settings.get('displayForecast') == 'true':
+            days = plugin_settings.get('forecastDays', '?')
+            display_options.append(f'{days}d Forecast')
+        if plugin_settings.get('moonPhase') == 'true':
+            display_options.append('Moon')
+
+        if display_options:
+            custom_info['showing'] = ', '.join(display_options)
+
+        # Timezone info (only if using location TZ and OpenWeatherMap)
+        if self._weather_provider == 'OpenWeatherMap' and self._weather_timezone:
+            if plugin_settings.get('weatherTimeZone') == 'locationTimeZone':
+                custom_info['data_timezone'] = self._weather_timezone
+
+        return custom_info if custom_info else None
 
     def generate_image(self, settings, device_config):
         lat = float(settings.get('latitude'))
@@ -89,6 +143,9 @@ class Weather(BasePlugin):
         tz = pytz.timezone(timezone)
 
         try:
+            # Track API call time
+            api_start = time.time()
+
             if weather_provider == "OpenWeatherMap":
                 api_key = device_config.load_env_key("OPEN_WEATHER_MAP_SECRET")
                 if not api_key:
@@ -112,26 +169,25 @@ class Weather(BasePlugin):
             else:
                 raise RuntimeError(f"Unknown weather provider: {weather_provider}")
 
+            # Store API call time for debug info
+            self._api_call_time = time.time() - api_start
+
             template_params['title'] = title
         except Exception as e:
             logger.error(f"{weather_provider} request failed: {str(e)}")
             raise RuntimeError(f"{weather_provider} request failure, please check logs.")
-       
+
         dimensions = device_config.get_resolution()
         if device_config.get_config("orientation") == "vertical":
             dimensions = dimensions[::-1]
 
         template_params["plugin_settings"] = settings
 
-        # Add last refresh time
-        now = datetime.now(tz)
-        if time_format == "24h":
-            last_refresh_time = now.strftime("%Y-%m-%d %H:%M")
-        else:
-            last_refresh_time = now.strftime("%Y-%m-%d %I:%M %p")
-        template_params["last_refresh_time"] = last_refresh_time
+        # Store weather provider for debug info
+        self._weather_provider = weather_provider
+        self._weather_timezone = tz.zone
 
-        image = self.render_image(dimensions, "weather.html", "weather.css", template_params)
+        image = self.render_image(dimensions, "weather.html", "weather.css", template_params, device_config=device_config)
 
         if not image:
             raise RuntimeError("Failed to take screenshot, please check logs.")
@@ -193,7 +249,7 @@ class Weather(BasePlugin):
     def map_weather_code_to_icon(self, weather_code, is_day):
 
         icon = "01d" # Default to clear day icon
-        
+
         if weather_code in [0]:   # Clear sky
             icon = "01d"
         elif weather_code in [1]: # Mainly clear
@@ -203,19 +259,19 @@ class Weather(BasePlugin):
         elif weather_code in [3]: # Overcast
             icon = "04d"
         elif weather_code in [51, 61, 80]: # Drizzle, showers, rain: Light
-            icon = "51d"          
+            icon = "51d"
         elif weather_code in [53, 63, 81]: # Drizzle, showers, rain: Moderatr
             icon = "53d"
         elif weather_code in [55, 65, 82]: # Drizzle, showers, rain: Heavy
             icon = "09d"
         elif weather_code in [45]: # Fog
-            icon = "50d"                       
+            icon = "50d"
         elif weather_code in [48]: # Icy fog
             icon = "48d"
         elif weather_code in [56, 66]: # Light freezing Drizzle
-            icon = "56d"            
+            icon = "56d"
         elif weather_code in [57, 67]: # Freezing Drizzle
-            icon = "57d"            
+            icon = "57d"
         elif weather_code in [71, 85]: # Snow fall: Slight
             icon = "71d"
         elif weather_code in [73]:     # Snow fall: Moderate
@@ -235,7 +291,7 @@ class Weather(BasePlugin):
             elif icon == "022d":
                 icon = "022n"     # Mainly clear night
             elif icon == "02d":
-                icon = "02n"      # Partly cloudy night                
+                icon = "02n"      # Partly cloudy night
             elif icon == "10d":
                 icon = "10n"      # Rain night
 
@@ -257,7 +313,7 @@ class Weather(BasePlugin):
                 phase_name = "lastquarter"
             elif phase_name == "lastquarter":
                 phase_name = "firstquarter"
-        
+
         return self.get_plugin_dir(f"icons/{phase_name}.png")
 
     def parse_forecast(self, daily_forecast, tz, current_suffix, lat):
@@ -340,7 +396,7 @@ class Weather(BasePlugin):
 
         forecast = []
 
-        for i in range(0, len(times)): 
+        for i in range(0, len(times)):
             dt = datetime.fromisoformat(times[i]).replace(tzinfo=timezone.utc).astimezone(tz)
             day_label = dt.strftime("%a")
 
@@ -759,7 +815,7 @@ class Weather(BasePlugin):
         if not 200 <= response.status_code < 300:
             logger.error(f"Failed to retrieve Open-Meteo weather data: {response.content}")
             raise RuntimeError("Failed to retrieve Open-Meteo weather data.")
-        
+
         return response.json()
 
     def get_open_meteo_air_quality(self, lat, long):
@@ -768,21 +824,21 @@ class Weather(BasePlugin):
         if not 200 <= response.status_code < 300:
             logger.error(f"Failed to retrieve Open-Meteo air quality data: {response.content}")
             raise RuntimeError("Failed to retrieve Open-Meteo air quality data.")
-        
+
         return response.json()
-    
+
     def format_time(self, dt, time_format, hour_only=False, include_am_pm=True):
         """Format datetime based on 12h or 24h preference"""
         if time_format == "24h":
             return dt.strftime("%H:00" if hour_only else "%H:%M")
-        
+
         if include_am_pm:
             fmt = "%I %p" if hour_only else "%I:%M %p"
         else:
             fmt = "%I" if hour_only else "%I:%M"
 
         return dt.strftime(fmt).lstrip("0")
-    
+
     def parse_timezone(self, weatherdata):
         """Parse timezone from weather data"""
         if 'timezone' in weatherdata:

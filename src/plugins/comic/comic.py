@@ -47,6 +47,9 @@ class Comic(BasePlugin):
         logger.debug("Composing comic image with captions...")
         image = self._compose_image(comic_panel, is_caption, caption_font_size, width, height)
 
+        # Add debug overlay if enabled
+        image = self.add_debug_overlay(image, settings, device_config)
+
         logger.info("=== Comic Plugin: Image generation complete ===")
         return image
 

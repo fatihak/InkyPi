@@ -182,5 +182,8 @@ class ImageAlbum(BasePlugin):
                 img = ImageOps.pad(img, dimensions, color=background_color, method=Image.Resampling.LANCZOS)
         # else: loader already resized to fit with proper aspect ratio
 
+        # Add debug overlay if enabled
+        img = self.add_debug_overlay(img, settings, device_config)
+
         logger.info("=== Image Album Plugin: Image generation complete ===")
         return img

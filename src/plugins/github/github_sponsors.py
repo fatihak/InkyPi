@@ -57,7 +57,8 @@ def sponsors_generate_image(plugin_instance, settings, device_config):
         dimensions,
         "github_sponsors.html",
         "github.css",
-        template_params
+        template_params,
+        device_config=device_config
     )
 
 # -------------------------
