@@ -92,7 +92,7 @@ h1, h2, h3, h4, h5, h6, button, label, span, p, div, input, select, option, text
     color: var(--text-primary);
 }
 
-input, textarea, select {
+input, textarea, select, button {
     background: var(--input-bg);
     padding: 0.5rem;
     font-size: 1rem;
@@ -102,7 +102,7 @@ input, textarea, select {
     transition: all 0.3s ease;
 }
 
-input:focus, textarea:focus, select:focus {
+input:focus, textarea:focus, select:focus, button:focus {
     outline: none;
     border-color: var(--accent-primary);
     box-shadow: 0 0 3px var(--input-focus);
