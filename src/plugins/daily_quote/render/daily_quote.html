@@ -1,0 +1,11 @@
+{% extends "plugin.html" %}
+
+{% block content %}
+
+<div class="quote-container font-{{ font_size }}">
+    <div class="quote-mark opening">&ldquo;</div>
+    <div class="quote-text">{{ quote }}</div>
+    <div class="quote-author">&mdash; {{ author }}</div>
+</div>
+
+{% endblock %}
