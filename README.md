@@ -1,4 +1,4 @@
-# InkyPi 
+# InkyPi 2
 
 <img src="./docs/images/inky_clock.jpg" />
 
