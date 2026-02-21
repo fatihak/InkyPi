@@ -1,7 +1,7 @@
 """
 Wpotd Plugin for InkyPi
 This plugin fetches the Wikipedia Picture of the Day (Wpotd) from Wikipedia's API
-and displays it on the InkyPi device. 
+and displays it on the InkyPi device.
 
 It supports optional manual date selection or random dates and can resize the image to fit the device's dimensions.
 
@@ -24,7 +24,7 @@ Flow:
 from plugins.base_plugin.base_plugin import BasePlugin
 from PIL import Image, UnidentifiedImageError
 from io import BytesIO
-import requests
+from utils.http_client import get_http_session
 import logging
 from random import randint
 from datetime import datetime, timedelta, date
@@ -34,8 +34,7 @@ from typing import Dict, Any
 logger = logging.getLogger(__name__)
 
 class Wpotd(BasePlugin):
-    SESSION = requests.Session()
-    HEADERS = {'User-Agent': 'InkyPi/0.0 (https://github.com/fatihak/InkyPi/)'}
+    HEADERS = {'User-Agent': 'InkyPi/1.0 (https://github.com/fatihak/InkyPi/)'}
     API_URL = "https://en.wikipedia.org/w/api.php"
 
     def generate_settings_template(self) -> Dict[str, Any]:
@@ -44,26 +43,44 @@ class Wpotd(BasePlugin):
         return template_params
 
     def generate_image(self, settings: Dict[str, Any], device_config: Dict[str, Any]) -> Image.Image:
-        logger.info(f"WPOTD plugin settings: {settings}")
+        logger.info("=== Wikipedia POTD Plugin: Starting image generation ===")
+
         datetofetch = self._determine_date(settings)
-        logger.info(f"WPOTD plugin datetofetch: {datetofetch}")
+        logger.info(f"Fetching Wikipedia Picture of the Day for: {datetofetch}")
+        logger.debug(f"Settings: shrink_to_fit={settings.get('shrinkToFitWpotd', 'false')}, randomize={settings.get('randomizeWpotd', 'false')}")
 
         data = self._fetch_potd(datetofetch)
         picurl = data["image_src"]
-        logger.info(f"WPOTD plugin Picture URL: {picurl}")
+        logger.info(f"Image URL: {picurl}")
+        logger.debug(f"Image filename: {data.get('filename', 'Unknown')}")
 
-        image = self._download_image(picurl)
+        # Get dimensions
+        max_width, max_height = device_config.get_resolution()
+        if device_config.get_config("orientation") == "vertical":
+            max_width, max_height = max_height, max_width
+            logger.debug(f"Vertical orientation detected, dimensions: {max_width}x{max_height}")
+
+        dimensions = (max_width, max_height)
+
+        # Use adaptive loader if shrink-to-fit is enabled
+        shrink_to_fit = settings.get("shrinkToFitWpotd") == "true"
+        logger.debug(
+            f"Shrink-to-fit={'enabled' if shrink_to_fit else 'disabled'}; "
+            f"{'using adaptive loader' if shrink_to_fit else 'downloading original size'}"
+        )
+
+        image = self._download_image(
+            picurl,
+            dimensions=dimensions,
+            resize=shrink_to_fit,
+        )
         if image is None:
-            logger.error("Failed to download WPOTD image.")
+            logger.error("Failed to download WPOTD image")
             raise RuntimeError("Failed to download WPOTD image.")
-        if settings.get("shrinkToFitWpotd") == "true":
-            dimensions = device_config.get_resolution()
-            if device_config.get_config("orientation") == "vertical":
-                dimensions = dimensions[::-1]
-            max_width, max_height = dimensions
-            image = self._shrink_to_fit(image, max_width, max_height)
-            logger.info(f"Image resized to fit device dimensions: {max_width},{max_height}")
+        if shrink_to_fit:
+            logger.info(f"Image resized to fit device dimensions: {max_width}x{max_height}")
 
+        logger.info("=== Wikipedia POTD Plugin: Image generation complete ===")
         return image
 
     def _determine_date(self, settings: Dict[str, Any]) -> date:
@@ -76,15 +93,30 @@ class Wpotd(BasePlugin):
         else:
             return datetime.today().date()
 
-    def _download_image(self, url: str) -> Image.Image:
-        if url.lower().endswith(".svg"):
-            logger.warning("SVG format is not supported by Pillow. Skipping image download.")
-            raise RuntimeError("Unsupported image format: SVG.")
+    def _download_image(self, url: str, dimensions: tuple = None, resize: bool = False) -> Image.Image:
+        """
+        Download image from URL, optionally resizing with adaptive loader.
 
+        Args:
+            url: Image URL
+            dimensions: Target dimensions if resizing
+            resize: Whether to use adaptive resizing
+        """
         try:
-            response = self.SESSION.get(url, headers=self.HEADERS, timeout=10)
+            if url.lower().endswith(".svg"):
+                logger.warning("SVG format is not supported by Pillow. Skipping image download.")
+                raise RuntimeError("Unsupported image format: SVG.")
+
+            if resize and dimensions:
+                # Use adaptive loader for memory-efficient processing
+                return self.image_loader.from_url(url, dimensions, timeout_ms=10000, headers=self.HEADERS)
+            else:
+                # Original behavior: download without resizing
+                session = get_http_session()
+                response = session.get(url, headers=self.HEADERS, timeout=10)
             response.raise_for_status()
             return Image.open(BytesIO(response.content))
+
         except UnidentifiedImageError as e:
             logger.error(f"Unsupported image format at {url}: {str(e)}")
             raise RuntimeError("Unsupported image format.")
@@ -136,42 +168,10 @@ class Wpotd(BasePlugin):
 
     def _make_request(self, params: Dict[str, Any]) -> Dict[str, Any]:
         try:
-            response = self.SESSION.get(self.API_URL, params=params, headers=self.HEADERS, timeout=10)
+            session = get_http_session()
+            response = session.get(self.API_URL, params=params, headers=self.HEADERS, timeout=10)
             response.raise_for_status()
             return response.json()
         except Exception as e:
             logger.error(f"Wikipedia API request failed with params {params}: {str(e)}")
             raise RuntimeError("Wikipedia API request failed.")
-        
-    def _shrink_to_fit(self, image: Image.Image, max_width: int, max_height: int) -> Image.Image:
-        """
-        Resize the image to fit within max_width and max_height while maintaining aspect ratio.
-        Uses high-quality resampling.
-        """
-        orig_width, orig_height = image.size
-
-        if orig_width > max_width or orig_height > max_height:
-            # Determine whether to constrain by width or height
-            if orig_width >= orig_height:
-                # Landscape or square -> constrain by max_width
-                if orig_width > max_width:
-                    new_width = max_width
-                    new_height = int(orig_height * max_width / orig_width)
-                else:
-                    new_width, new_height = orig_width, orig_height
-            else:
-                # Portrait -> constrain by max_height
-                if orig_height > max_height:
-                    new_height = max_height
-                    new_width = int(orig_width * max_height / orig_height)
-                else:
-                    new_width, new_height = orig_width, orig_height
-            # Resize using high-quality resampling
-            image = image.resize((new_width, new_height), Image.LANCZOS)
-            # Create a new image with white background and paste the resized image in the center
-            new_image = Image.new("RGB", (max_width, max_height), (255, 255, 255))
-            new_image.paste(image, ((max_width - new_width) // 2, (max_height - new_height) // 2))
-            return new_image
-        else:
-            # If the image is already within bounds, return it as is
-            return image
