@@ -5,6 +5,7 @@
 export APPNAME="inkypi"
 export PROGRAM_PATH=/usr/local/inkypi
 export VENV_PATH="$PROGRAM_PATH/venv_inkypi"
+export PYTHONUNBUFFERED="1"
 
 export PROJECT_DIR="$PROGRAM_PATH"
 export SRC_DIR="$PROGRAM_PATH/src"
