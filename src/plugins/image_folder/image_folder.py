@@ -79,10 +79,8 @@ class ImageFolder(BasePlugin):
                 logger.debug(f"Scaling to fit dimensions: {dimensions[0]}x{dimensions[1]}")
                 img = ImageOps.fit(img, dimensions, method=Image.LANCZOS)
 
+            logger.info("=== Image Folder Plugin: Image generation complete ===")
             return img
         except Exception as e:
             logger.error(f"Error loading image from {image_url}: {e}")
             raise RuntimeError("Failed to load image, please check logs.")
-
-        logger.info("=== Image Folder Plugin: Image generation complete ===")
-        return img
