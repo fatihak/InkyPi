@@ -1,0 +1,63 @@
+<div class="form-group">
+    <label for="host" class="form-label">AdGuard Home URL</label>
+    <input type="text" id="host" name="host" placeholder="http://192.168.1.1:3000" class="form-input">
+</div>
+
+<div class="form-group">
+    <label for="username" class="form-label">Username</label>
+    <input type="text" id="username" name="username" placeholder="admin" class="form-input" autocomplete="off">
+</div>
+
+<div class="form-group">
+    <label for="password" class="form-label">Password</label>
+    <input type="password" id="password" name="password" class="form-input" autocomplete="off">
+</div>
+
+<hr>
+
+<div class="form-group">
+    <label class="form-label">Display Options</label>
+    <div class="checkbox-group">
+        <label><input type="checkbox" name="show_status" value="true"> Protection Status</label>
+        <label><input type="checkbox" name="show_queries" value="true"> Query Statistics</label>
+        <label><input type="checkbox" name="show_top_clients" value="true"> Top Clients</label>
+        <label><input type="checkbox" name="show_chart" value="true"> 24h Chart</label>
+        <label><input type="checkbox" name="show_rules" value="true"> Blocklist Size</label>
+    </div>
+</div>
+
+<hr>
+
+<div class="form-group">
+    <label class="form-label">Bar Colors</label>
+    <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 4px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <input type="color" id="color_blocked" name="color_blocked" value="#c62828">
+            <label for="color_blocked" style="margin: 0;">Blocked queries (bars, text, progress)</label>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <input type="color" id="color_total" name="color_total" value="#cccccc">
+            <label for="color_total" style="margin: 0;">Total queries bar background</label>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        if (loadPluginSettings) {
+            document.getElementById('host').value = pluginSettings.host || '';
+            document.getElementById('username').value = pluginSettings.username || '';
+            document.getElementById('password').value = pluginSettings.password || '';
+
+            document.getElementById('color_blocked').value = pluginSettings.color_blocked || '#c62828';
+            document.getElementById('color_total').value = pluginSettings.color_total || '#cccccc';
+
+            ['show_status', 'show_queries', 'show_top_clients', 'show_chart', 'show_rules'].forEach(key => {
+                const cb = document.querySelector(`input[name="${key}"]`);
+                if (cb) cb.checked = pluginSettings[key] !== 'false';
+            });
+        } else {
+            document.querySelectorAll('.checkbox-group input[type="checkbox"]').forEach(cb => cb.checked = true);
+        }
+    });
+</script>
