@@ -1,0 +1,125 @@
+{% extends "plugin.html" %}
+
+{% block content %}
+<style>
+:root {
+    --color-blocked: {{ color_blocked }};
+    --color-total: {{ color_total }};
+}
+</style>
+<div class="agh-dashboard">
+
+    <!-- Header: title + status badge -->
+    <div class="agh-header">
+        <span class="agh-title">AdGuard Home</span>
+        {% if show_status %}
+            {% if protection_enabled %}
+                <span class="agh-badge badge-on">● Enabled</span>
+            {% else %}
+                <span class="agh-badge badge-off">● Disabled</span>
+            {% endif %}
+        {% endif %}
+        {% if version %}
+            <span class="agh-version">v{{ version }}</span>
+        {% endif %}
+    </div>
+
+    <div class="agh-body">
+
+        <!-- Left column: stats + top clients -->
+        <div class="agh-left">
+
+            {% if show_queries %}
+            <div class="agh-section">
+                <div class="stat-row">
+                    <div class="stat-block">
+                        <span class="stat-value">{{ "{:,}".format(total_queries) }}</span>
+                        <span class="stat-label">Total Queries</span>
+                    </div>
+                    <div class="stat-block">
+                        <span class="stat-value blocked-color">{{ "{:,}".format(blocked_queries) }}</span>
+                        <span class="stat-label">Blocked</span>
+                    </div>
+                    <div class="stat-block">
+                        <span class="stat-value blocked-color">{{ blocked_percent }}%</span>
+                        <span class="stat-label">Block Rate</span>
+                    </div>
+                </div>
+
+                <!-- Progress bar -->
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: {{ blocked_percent }}%"></div>
+                </div>
+
+                {% if safe_browsing > 0 or safe_search > 0 or parental > 0 %}
+                <div class="stat-row stat-row-small">
+                    {% if safe_browsing > 0 %}
+                    <div class="stat-block">
+                        <span class="stat-value-sm">{{ "{:,}".format(safe_browsing) }}</span>
+                        <span class="stat-label">Safe Browsing</span>
+                    </div>
+                    {% endif %}
+                    {% if safe_search > 0 %}
+                    <div class="stat-block">
+                        <span class="stat-value-sm">{{ "{:,}".format(safe_search) }}</span>
+                        <span class="stat-label">Safe Search</span>
+                    </div>
+                    {% endif %}
+                    {% if parental > 0 %}
+                    <div class="stat-block">
+                        <span class="stat-value-sm">{{ "{:,}".format(parental) }}</span>
+                        <span class="stat-label">Parental</span>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
+
+            {% if show_rules %}
+            <div class="agh-section rules-row">
+                <span class="stat-label">Blocklist Rules</span>
+                <span class="stat-value-sm">{{ "{:,}".format(rules_count) }}</span>
+            </div>
+            {% endif %}
+
+            {% if show_top_clients and top_clients %}
+            <div class="agh-section">
+                <div class="section-title">Top Clients</div>
+                <ul class="client-list">
+                    {% for client in top_clients %}
+                    <li class="client-item">
+                        <span class="client-name">{{ client.name }}</span>
+                        <span class="client-count">{{ "{:,}".format(client.count) }}</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+
+        </div>
+
+        <!-- Right column: 24h chart -->
+        {% if show_chart and chart_bars %}
+        <div class="agh-right">
+            <div class="section-title">Queries / 24h</div>
+            <div class="chart">
+                {% for bar in chart_bars %}
+                <div class="bar-wrap" title="{{ loop.index0 }}h">
+                    <div class="bar-total" style="height: {{ bar.total_pct }}%">
+                        <div class="bar-blocked" style="height: {% if bar.total_pct > 0 %}{{ (bar.blocked_pct / bar.total_pct * 100)|round }}{% else %}0{% endif %}%"></div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            <div class="chart-labels">
+                <span>0h</span>
+                <span>12h</span>
+                <span>24h</span>
+            </div>
+        </div>
+        {% endif %}
+
+    </div>
+</div>
+{% endblock %}

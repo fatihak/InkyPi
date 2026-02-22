@@ -1,0 +1,55 @@
+{% extends "plugin.html" %}
+
+{% block content %}
+<div class="moon-container">
+    <div class="moon-graphic">
+        <svg viewBox="0 0 200 200" class="moon-svg">
+            <!-- Dark background circle -->
+            <circle cx="100" cy="100" r="80" class="moon-dark"/>
+            <!-- Illuminated area -->
+            {% if svg_path %}
+            <path d="{{ svg_path }}" class="moon-light"/>
+            {% endif %}
+            <!-- Outer ring -->
+            <circle cx="100" cy="100" r="80" class="moon-ring"/>
+        </svg>
+    </div>
+
+    <div class="moon-info">
+        <div class="moon-phase-name">{{ phase_name }}</div>
+        <div class="moon-stats">
+            <div class="moon-stat">
+                <span class="stat-value">{{ illumination }}%</span>
+                <span class="stat-label">Illuminated</span>
+            </div>
+            <div class="moon-stat">
+                <span class="stat-value">{{ days_to_full }}</span>
+                <span class="stat-label">Days to Full</span>
+            </div>
+            <div class="moon-stat">
+                <span class="stat-value">{{ days_to_new }}</span>
+                <span class="stat-label">Days to New</span>
+            </div>
+        </div>
+
+        {% if moonrise or moonset %}
+        <div class="moon-riseset">
+            {% if moonrise %}
+            <div class="riseset-item">
+                <span class="riseset-icon">↑</span>
+                <span class="riseset-value">{{ moonrise }}</span>
+                <span class="riseset-label">Rise</span>
+            </div>
+            {% endif %}
+            {% if moonset %}
+            <div class="riseset-item">
+                <span class="riseset-icon">↓</span>
+                <span class="riseset-value">{{ moonset }}</span>
+                <span class="riseset-label">Set</span>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

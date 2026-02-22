@@ -1,0 +1,50 @@
+<div class="form-group">
+    <label class="form-label">Source</label>
+    <div class="radio-group">
+        <label><input type="radio" name="source" value="hackernews"> Hacker News</label>
+        <label><input type="radio" name="source" value="reddit"> Reddit</label>
+    </div>
+</div>
+
+<div class="form-group" id="hn-options">
+    <label for="feed" class="form-label">Feed</label>
+    <select id="feed" name="feed" class="form-input">
+        {% for f in feeds %}
+        <option value="{{ f }}">{{ f|capitalize }}</option>
+        {% endfor %}
+    </select>
+</div>
+
+<div class="form-group" id="reddit-options" style="display:none">
+    <label for="subreddit" class="form-label">Subreddit</label>
+    <input type="text" id="subreddit" name="subreddit" placeholder="programming" class="form-input">
+</div>
+
+<div class="form-group">
+    <label for="count" class="form-label">Number of Stories</label>
+    <select id="count" name="count" class="form-input">
+        <option value="5">5</option>
+        <option value="10">10</option>
+        <option value="15">15</option>
+    </select>
+</div>
+
+<script>
+    function updateSourceVisibility() {
+        const source = document.querySelector('input[name="source"]:checked')?.value;
+        document.getElementById('hn-options').style.display = source === 'reddit' ? 'none' : '';
+        document.getElementById('reddit-options').style.display = source === 'reddit' ? '' : 'none';
+    }
+    document.querySelectorAll('input[name="source"]').forEach(r => r.addEventListener('change', updateSourceVisibility));
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const source = loadPluginSettings ? (pluginSettings.source || 'hackernews') : 'hackernews';
+        document.querySelector(`input[name="source"][value="${source}"]`).checked = true;
+        updateSourceVisibility();
+        if (loadPluginSettings) {
+            document.getElementById('feed').value = pluginSettings.feed || 'top';
+            document.getElementById('subreddit').value = pluginSettings.subreddit || 'programming';
+            document.getElementById('count').value = pluginSettings.count || '10';
+        }
+    });
+</script>

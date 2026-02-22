@@ -1,0 +1,61 @@
+{% extends "plugin.html" %}
+
+{% block content %}
+
+<div class="finance-sparklines">
+    <table class="sparklines-table">
+        <thead>
+            <tr>
+                <th class="col-symbol">Asset</th>
+                <th class="col-price">Price</th>
+                <th class="col-change">{{ timeframe }}</th>
+                <th class="col-chart">Chart</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for asset in assets %}
+            <tr>
+                <td class="col-symbol">
+                    <span class="asset-name">{{ asset.name }}</span>
+                    <span class="asset-ticker">{{ asset.symbol }}</span>
+                </td>
+                <td class="col-price">
+                    {% if asset.price_display is not none %}
+                        {{ currency_symbol }}{{ asset.price_display }}
+                    {% else %}
+                        N/A
+                    {% endif %}
+                </td>
+                <td class="col-change {% if asset.change is not none and asset.change >= 0 %}positive{% else %}negative{% endif %}">
+                    {% if asset.change is not none %}
+                        {% if asset.change >= 0 %}&#9650;{% else %}&#9660;{% endif %}
+                        {{ "%.2f"|format(asset.change|abs) }}%
+                    {% else %}
+                        --
+                    {% endif %}
+                </td>
+                <td class="col-chart">
+                    {% if asset.sparkline %}
+                    {% set ns = namespace(min_val=asset.sparkline[0], max_val=asset.sparkline[0]) %}
+                    {% for val in asset.sparkline %}
+                        {% if val < ns.min_val %}{% set ns.min_val = val %}{% endif %}
+                        {% if val > ns.max_val %}{% set ns.max_val = val %}{% endif %}
+                    {% endfor %}
+                    {% set range_val = ns.max_val - ns.min_val if ns.max_val != ns.min_val else 1 %}
+                    <svg viewBox="0 0 {{ asset.sparkline|length - 1 }} 20" preserveAspectRatio="none" class="sparkline-svg">
+                        <polyline
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.5"
+                            points="{% for val in asset.sparkline %}{{ loop.index0 }},{{ 20 - ((val - ns.min_val) / range_val * 18 + 1) }}{% if not loop.last %} {% endif %}{% endfor %}"
+                        />
+                    </svg>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% endblock %}

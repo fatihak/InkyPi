@@ -1,0 +1,14 @@
+{% extends "plugin.html" %}
+
+{% block content %}
+<div class="joke-container">
+    <div class="joke-category">{{ category }}</div>
+
+    {% if joke_type == "twopart" %}
+        <div class="joke-setup">{{ setup }}</div>
+        <div class="joke-delivery">{{ delivery }}</div>
+    {% else %}
+        <div class="joke-text">{{ joke }}</div>
+    {% endif %}
+</div>
+{% endblock %}

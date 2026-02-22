@@ -40,6 +40,16 @@ def load_plugins(plugins_config):
         except ImportError as e:
             logging.error(f"Failed to import plugin module {module_name}: {e}")
 
+def register_plugin_blueprints(app):
+    """Register Flask blueprints from plugins that expose a get_blueprint() method."""
+    for plugin_id, plugin_instance in PLUGIN_CLASSES.items():
+        if hasattr(plugin_instance, 'get_blueprint'):
+            bp = plugin_instance.get_blueprint()
+            if bp is not None:
+                app.register_blueprint(bp)
+                logger.info(f"Registered blueprint for plugin '{plugin_id}'")
+
+
 def get_plugin_instance(plugin_config):
     plugin_id = plugin_config.get("id")
     # Retrieve the plugin class factory function

@@ -1,0 +1,32 @@
+<div class="form-group">
+    <label for="assets" class="form-label">Assets (comma-separated)</label>
+    <input type="text" id="assets" name="assets" placeholder="bitcoin,atom,gold,AAPL" class="form-input">
+    <small class="form-text">Crypto: bitcoin, ethereum, solana, atom | Stocks: AAPL, MSFT | Commodities: gold, silver, oil | Indices: dow, nasdaq, sp500</small>
+</div>
+
+<div class="form-group">
+    <label for="currency" class="form-label">Currency</label>
+    <select id="currency" name="currency" class="form-input">
+        <option value="usd">USD ($)</option>
+        <option value="eur">EUR (&euro;)</option>
+        <option value="gbp">GBP (&pound;)</option>
+    </select>
+</div>
+
+<div class="form-group">
+    <label for="timeframe" class="form-label">Timeframe</label>
+    <select id="timeframe" name="timeframe" class="form-input">
+        <option value="24h">24 Hours</option>
+        <option value="7d">7 Days</option>
+    </select>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        if (loadPluginSettings) {
+            document.getElementById('assets').value = pluginSettings.assets || 'bitcoin,ethereum';
+            document.getElementById('currency').value = pluginSettings.currency || 'usd';
+            document.getElementById('timeframe').value = pluginSettings.timeframe || '24h';
+        }
+    });
+</script>

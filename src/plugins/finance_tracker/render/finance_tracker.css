@@ -1,0 +1,95 @@
+.finance-sparklines {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    font-family: "Jost";
+    padding: 1dvh 1dvw;
+}
+
+.sparklines-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+}
+
+.sparklines-table thead th {
+    font-size: min(3.5dvh, 3.5dvw);
+    font-weight: bold;
+    text-align: left;
+    padding-bottom: 1dvh;
+    border-bottom: 2px solid black;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.sparklines-table tbody tr {
+    border-bottom: 1px solid black;
+}
+
+.sparklines-table td {
+    padding: 1.2dvh 0.5dvw;
+    font-size: min(3.5dvh, 3.5dvw);
+    vertical-align: middle;
+}
+
+.col-symbol {
+    width: 28%;
+}
+
+.col-price {
+    width: 28%;
+    text-align: left;
+}
+
+.col-change {
+    width: 20%;
+    text-align: left;
+}
+
+.col-chart {
+    width: 24%;
+    text-align: center;
+}
+
+.asset-name {
+    font-weight: bold;
+    font-size: min(3.8dvh, 3.8dvw);
+    display: block;
+    line-height: 1.1;
+}
+
+.asset-ticker {
+    font-size: min(2.2dvh, 2.2dvw);
+    opacity: 0.6;
+}
+
+.sparkline-svg {
+    width: 100%;
+    height: min(5dvh, 5dvw);
+}
+
+.positive {
+    font-weight: bold;
+}
+
+.negative {
+    font-weight: bold;
+}
+
+/* Portrait orientation */
+@media (max-aspect-ratio: 1) {
+    .sparklines-table td {
+        font-size: min(4dvh, 4dvw);
+        padding: 1.5dvh 0.5dvw;
+    }
+
+    .sparklines-table thead th {
+        font-size: min(4dvh, 4dvw);
+    }
+
+    .asset-name {
+        font-size: min(4.2dvh, 4.2dvw);
+    }
+}

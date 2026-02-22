@@ -1,0 +1,100 @@
+<div class="form-group">
+    <label class="form-label">Exchanges</label>
+    <div class="checkbox-group">
+        <label><input type="checkbox" id="use_kraken"   name="use_kraken"   value="true"> Kraken</label>
+        <label><input type="checkbox" id="use_coinbase" name="use_coinbase" value="true"> Coinbase</label>
+    </div>
+</div>
+
+<hr>
+
+<div id="kraken-section">
+    <div class="form-group">
+        <label class="form-label">Kraken API Key</label>
+        <input type="text"     id="kraken_api_key"    name="kraken_api_key"    class="form-input" autocomplete="off">
+    </div>
+    <div class="form-group">
+        <label class="form-label">Kraken API Secret</label>
+        <input type="password" id="kraken_api_secret" name="kraken_api_secret" class="form-input" autocomplete="off">
+        <small style="opacity:0.6;">Requires permissions: Query Funds, Query Closed Orders &amp; Trades</small>
+    </div>
+</div>
+
+<div id="coinbase-section">
+    <div class="form-group">
+        <label class="form-label">Coinbase API Key</label>
+        <input type="text"     id="coinbase_api_key"    name="coinbase_api_key"    class="form-input" autocomplete="off">
+    </div>
+    <div class="form-group">
+        <label class="form-label">Coinbase API Secret</label>
+        <input type="password" id="coinbase_api_secret" name="coinbase_api_secret" class="form-input" autocomplete="off">
+        <small style="opacity:0.6;">Requires permissions: wallet:accounts:read, wallet:transactions:read</small>
+    </div>
+</div>
+
+<hr>
+
+<div class="form-group">
+    <label for="currency" class="form-label">Display Currency</label>
+    <select id="currency" name="currency" class="form-input">
+        <option value="USD">USD ($)</option>
+        <option value="EUR">EUR (€)</option>
+    </select>
+</div>
+
+<div class="form-group">
+    <label for="max_holdings" class="form-label">Max Holdings</label>
+    <select id="max_holdings" name="max_holdings" class="form-input">
+        <option value="5">5</option>
+        <option value="8">8</option>
+        <option value="10">10</option>
+    </select>
+</div>
+
+<div class="form-group">
+    <label class="form-label">Show Transactions</label>
+    <div class="radio-group">
+        <label><input type="radio" name="show_trades" value="true"> Yes</label>
+        <label><input type="radio" name="show_trades" value="false"> No</label>
+    </div>
+</div>
+
+<div class="form-group">
+    <label for="max_trades" class="form-label">Max Transactions</label>
+    <select id="max_trades" name="max_trades" class="form-input">
+        <option value="3">3</option>
+        <option value="5">5</option>
+        <option value="8">8</option>
+    </select>
+</div>
+
+<script>
+    function updateSections() {
+        document.getElementById('kraken-section').style.display =
+            document.getElementById('use_kraken').checked ? '' : 'none';
+        document.getElementById('coinbase-section').style.display =
+            document.getElementById('use_coinbase').checked ? '' : 'none';
+    }
+    document.getElementById('use_kraken').addEventListener('change', updateSections);
+    document.getElementById('use_coinbase').addEventListener('change', updateSections);
+
+    document.addEventListener('DOMContentLoaded', () => {
+        if (loadPluginSettings) {
+            document.getElementById('use_kraken').checked   = pluginSettings.use_kraken   === 'true';
+            document.getElementById('use_coinbase').checked = pluginSettings.use_coinbase === 'true';
+            document.getElementById('kraken_api_key').value    = pluginSettings.kraken_api_key    || '';
+            document.getElementById('kraken_api_secret').value = pluginSettings.kraken_api_secret || '';
+            document.getElementById('coinbase_api_key').value    = pluginSettings.coinbase_api_key    || '';
+            document.getElementById('coinbase_api_secret').value = pluginSettings.coinbase_api_secret || '';
+            document.getElementById('currency').value     = pluginSettings.currency     || 'USD';
+            document.getElementById('max_holdings').value = pluginSettings.max_holdings || '8';
+            document.getElementById('max_trades').value   = pluginSettings.max_trades   || '5';
+            const showTrades = pluginSettings.show_trades || 'true';
+            document.querySelector(`input[name="show_trades"][value="${showTrades}"]`).checked = true;
+        } else {
+            document.getElementById('use_kraken').checked = true;
+            document.querySelector('input[name="show_trades"][value="true"]').checked = true;
+        }
+        updateSections();
+    });
+</script>

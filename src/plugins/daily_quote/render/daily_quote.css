@@ -1,0 +1,76 @@
+.quote-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    font-family: "Jost";
+    padding: 4dvh 4dvw;
+    text-align: center;
+    position: relative;
+}
+
+.quote-mark {
+    font-size: min(20dvh, 20dvw);
+    line-height: 0.6;
+    opacity: 0.15;
+    font-family: Georgia, "Times New Roman", serif;
+    position: absolute;
+    top: 4dvh;
+    left: 4dvw;
+}
+
+.quote-text {
+    font-style: italic;
+    font-family: Georgia, "Times New Roman", serif;
+    line-height: 1.4;
+    max-width: 85%;
+    z-index: 1;
+}
+
+.quote-author {
+    margin-top: 3dvh;
+    font-weight: bold;
+    letter-spacing: 0.05em;
+    z-index: 1;
+}
+
+/* Font size variants */
+.font-small .quote-text {
+    font-size: min(4dvh, 4dvw);
+}
+.font-small .quote-author {
+    font-size: min(3dvh, 3dvw);
+}
+
+.font-normal .quote-text {
+    font-size: min(5.5dvh, 5.5dvw);
+}
+.font-normal .quote-author {
+    font-size: min(3.5dvh, 3.5dvw);
+}
+
+.font-large .quote-text {
+    font-size: min(7dvh, 7dvw);
+}
+.font-large .quote-author {
+    font-size: min(4.5dvh, 4.5dvw);
+}
+
+/* Portrait orientation adjustments */
+@media (max-aspect-ratio: 1) {
+    .quote-container {
+        padding: 6dvh 5dvw;
+    }
+
+    .font-small .quote-text {
+        font-size: min(3.5dvh, 5dvw);
+    }
+    .font-normal .quote-text {
+        font-size: min(4.5dvh, 6.5dvw);
+    }
+    .font-large .quote-text {
+        font-size: min(5.5dvh, 8dvw);
+    }
+}

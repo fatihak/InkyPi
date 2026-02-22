@@ -1,0 +1,61 @@
+.history-container {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    font-family: "Jost";
+    padding: 3dvh 4dvw;
+    gap: 2dvh;
+}
+
+.history-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    border-bottom: 2px solid currentColor;
+    padding-bottom: 1dvh;
+}
+
+.history-title {
+    font-size: min(3.5dvh, 3.5dvw);
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.history-date {
+    font-size: min(3dvh, 3dvw);
+    opacity: 0.6;
+}
+
+.event-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5dvh;
+    flex: 1;
+    overflow: hidden;
+}
+
+.event-item {
+    display: flex;
+    gap: 2dvw;
+    align-items: baseline;
+    border-bottom: 1px solid currentColor;
+    padding-bottom: 1.5dvh;
+    opacity: 0.9;
+}
+
+.event-year {
+    font-size: min(3dvh, 3dvw);
+    font-weight: bold;
+    min-width: 5dvw;
+    flex-shrink: 0;
+}
+
+.event-text {
+    font-size: min(2.8dvh, 2.8dvw);
+    line-height: 1.3;
+}

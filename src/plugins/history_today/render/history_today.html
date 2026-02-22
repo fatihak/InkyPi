@@ -1,0 +1,21 @@
+{% extends "plugin.html" %}
+
+{% block content %}
+<div class="history-container">
+    <div class="history-header">
+        <span class="history-title">This Day in History</span>
+        <span class="history-date">{{ month_day }}</span>
+    </div>
+
+    <ul class="event-list">
+        {% for event in events %}
+        <li class="event-item">
+            <span class="event-year">{{ event.year }}</span>
+            <span class="event-text">{{ event.text }}</span>
+        </li>
+        {% else %}
+        <li class="event-item">No events found for today.</li>
+        {% endfor %}
+    </ul>
+</div>
+{% endblock %}

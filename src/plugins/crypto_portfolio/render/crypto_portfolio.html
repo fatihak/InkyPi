@@ -1,0 +1,78 @@
+{% extends "plugin.html" %}
+
+{% block content %}
+<div class="cp-dashboard">
+
+    <!-- Header -->
+    <div class="cp-header">
+        <div class="cp-header-top">
+            <span class="cp-title">Crypto Portfolio</span>
+            <span class="cp-total">{{ total_value }}</span>
+        </div>
+        <div class="cp-header-sub">
+            <span class="cp-meta">{{ asset_count }} Asset{{ 's' if asset_count != 1 else '' }}{% if active_exchanges %} &middot; {{ active_exchanges | join(' &middot; ') }}{% endif %}</span>
+            <div class="cp-comp-wrap">
+                <div class="cp-comp-bar">
+                    {% if crypto_pct > 0 %}<div class="cp-comp-crypto" style="width:{{ crypto_pct }}%"></div>{% endif %}
+                    {% if stable_pct > 0 %}<div class="cp-comp-stable" style="width:{{ stable_pct }}%"></div>{% endif %}
+                    {% if fiat_pct   > 0 %}<div class="cp-comp-fiat"   style="width:{{ fiat_pct }}%"></div>{% endif %}
+                </div>
+                <span class="cp-comp-legend">
+                    {% if crypto_pct > 0 %}<span class="cpl-crypto">{{ crypto_pct }}% Crypto</span>{% endif %}
+                    {% if stable_pct > 0 %}<span class="cpl-sep">&middot;</span><span class="cpl-stable">{{ stable_pct }}% Stable</span>{% endif %}
+                    {% if fiat_pct   > 0 %}<span class="cpl-sep">&middot;</span><span class="cpl-fiat">{{ fiat_pct }}% Fiat</span>{% endif %}
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <div class="cp-body">
+
+        <!-- Holdings -->
+        <div class="cp-holdings">
+            <div class="section-title">Holdings</div>
+            <table class="holdings-table">
+                {% for h in holdings %}
+                <tr class="holding-row">
+                    <td class="h-symbol">{{ h.symbol }}</td>
+                    <td class="h-amount">{{ h.amount_fmt }}</td>
+                    <td class="h-value">{{ h.value_fmt }}</td>
+                    <td class="h-bar-cell">
+                        <div class="h-bar-bg">
+                            <div class="h-bar-fill" style="width:{{ h.pct }}%"></div>
+                        </div>
+                    </td>
+                    <td class="h-pct">{{ h.pct }}%</td>
+                </tr>
+                {% endfor %}
+            </table>
+        </div>
+
+        <!-- Transactions -->
+        {% if show_trades and trades %}
+        <div class="cp-trades">
+            <div class="section-title">Transactions</div>
+            <div class="trades-list">
+                {% for t in trades %}
+                <div class="trade-row">
+                    <span class="t-type t-{{ t.type | lower }}">{{ t.type }}</span>
+                    <span class="t-symbol">{{ t.symbol }}</span>
+                    <span class="t-amount">{{ "%.4f"|format(t.amount)|replace("0000","") }}{{ t.symbol }}</span>
+                    <span class="t-cost">{{ currency_symbol }}{{ "%.2f"|format(t.cost) }}</span>
+                    <span class="t-date">{{ t.date_str }}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+    </div>
+
+    {% if errors %}
+    <div class="cp-errors">
+        {% for e in errors %}<span class="cp-error">⚠ {{ e }}</span>{% endfor %}
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}

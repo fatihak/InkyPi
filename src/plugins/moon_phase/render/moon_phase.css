@@ -1,0 +1,116 @@
+.moon-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    font-family: "Jost";
+    padding: 3dvh 4dvw;
+    gap: 6dvw;
+}
+
+.moon-graphic {
+    flex-shrink: 0;
+}
+
+.moon-svg {
+    width: min(45dvh, 45dvw);
+    height: min(45dvh, 45dvw);
+}
+
+.moon-dark {
+    fill: currentColor;
+    opacity: 0.08;
+}
+
+.moon-light {
+    fill: currentColor;
+}
+
+.moon-ring {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+}
+
+.moon-info {
+    display: flex;
+    flex-direction: column;
+    gap: 3dvh;
+}
+
+.moon-phase-name {
+    font-size: min(5dvh, 5dvw);
+    font-weight: bold;
+    line-height: 1.2;
+}
+
+.moon-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5dvh;
+}
+
+.moon-stat {
+    display: flex;
+    align-items: baseline;
+    gap: 1.5dvw;
+}
+
+.stat-value {
+    font-size: min(4dvh, 4dvw);
+    font-weight: bold;
+}
+
+.stat-label {
+    font-size: min(2.5dvh, 2.5dvw);
+    opacity: 0.6;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* ── Moonrise / Moonset ── */
+.moon-riseset {
+    display: flex;
+    gap: 3dvw;
+    border-top: 1px solid currentColor;
+    padding-top: 1.5dvh;
+}
+
+.riseset-item {
+    display: flex;
+    align-items: baseline;
+    gap: 0.8dvw;
+}
+
+.riseset-icon {
+    font-size: min(3dvh, 3dvw);
+    opacity: 0.7;
+}
+
+.riseset-value {
+    font-size: min(3.5dvh, 3.5dvw);
+    font-weight: bold;
+}
+
+.riseset-label {
+    font-size: min(2dvh, 2dvw);
+    opacity: 0.55;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* Portrait: stack vertically */
+@media (max-aspect-ratio: 1) {
+    .moon-container {
+        flex-direction: column;
+        gap: 3dvh;
+    }
+    .moon-stats {
+        flex-direction: row;
+        gap: 4dvw;
+    }
+    .moon-riseset {
+        gap: 6dvw;
+    }
+}
