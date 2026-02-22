@@ -1,0 +1,23 @@
+{% extends "plugin.html" %}
+
+{% block content %}
+<div class="stories-container">
+    <div class="stories-header">
+        <span class="stories-title">{{ source_label }}</span>
+    </div>
+
+    <ol class="stories-list">
+        {% for story in stories %}
+        <li class="story-item">
+            <span class="story-title">{{ story.title }}</span>
+            <span class="story-meta">
+                <span class="story-score">▲ {{ story.score }}</span>
+                <span class="story-comments">{{ story.comments }} comments</span>
+            </span>
+        </li>
+        {% else %}
+        <li class="story-item">Could not load stories.</li>
+        {% endfor %}
+    </ol>
+</div>
+{% endblock %}

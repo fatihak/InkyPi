@@ -1,0 +1,60 @@
+.stories-container {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    font-family: "Jost";
+    padding: 2dvh 3dvw;
+    gap: 1.5dvh;
+}
+
+.stories-header {
+    border-bottom: 2px solid currentColor;
+    padding-bottom: 1dvh;
+}
+
+.stories-title {
+    font-size: min(3.5dvh, 3.5dvw);
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.stories-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    flex: 1;
+    overflow: hidden;
+}
+
+.story-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 2dvw;
+    padding: 1dvh 0;
+    border-bottom: 1px solid currentColor;
+    opacity: 0.9;
+}
+
+.story-title {
+    font-size: min(2.8dvh, 2.8dvw);
+    line-height: 1.2;
+    flex: 1;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+}
+
+.story-meta {
+    display: flex;
+    gap: 1.5dvw;
+    flex-shrink: 0;
+    font-size: min(2.2dvh, 2.2dvw);
+    opacity: 0.6;
+}
