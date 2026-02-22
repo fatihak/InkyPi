@@ -1,0 +1,229 @@
+.cp-dashboard {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    font-family: "Jost";
+    padding: 2dvh 3dvw;
+    gap: 1.5dvh;
+    box-sizing: border-box;
+}
+
+/* ── Header ── */
+.cp-header {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6dvh;
+    border-bottom: 2px solid currentColor;
+    padding-bottom: 1dvh;
+    flex-shrink: 0;
+}
+
+.cp-header-top {
+    display: flex;
+    align-items: baseline;
+    gap: 2dvw;
+}
+
+.cp-title {
+    font-size: min(3.5dvh, 3.5dvw);
+    font-weight: bold;
+    letter-spacing: 0.03em;
+}
+
+.cp-total {
+    font-size: min(4dvh, 4dvw);
+    font-weight: bold;
+    margin-left: auto;
+}
+
+/* ── Subheader: meta + composition ── */
+.cp-header-sub {
+    display: flex;
+    align-items: center;
+    gap: 2dvw;
+}
+
+.cp-meta {
+    font-size: min(2dvh, 2dvw);
+    opacity: 0.6;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.cp-comp-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3dvh;
+    flex: 1;
+}
+
+.cp-comp-bar {
+    display: flex;
+    width: 100%;
+    height: 0.8dvh;
+    border-radius: 999px;
+    overflow: hidden;
+    background: rgba(0,0,0,0.1);
+}
+
+.cp-comp-crypto { background: rgba(0,0,0,0.90); }
+.cp-comp-stable { background: rgba(0,0,0,0.40); }
+.cp-comp-fiat   { background: rgba(0,0,0,0.18); }
+
+.cp-comp-legend {
+    display: flex;
+    align-items: center;
+    gap: 0.5dvw;
+    font-size: min(1.7dvh, 1.7dvw);
+    opacity: 0.65;
+}
+
+.cpl-sep    { opacity: 0.4; }
+.cpl-crypto { font-weight: bold; }
+.cpl-stable {}
+.cpl-fiat   {}
+
+/* ── Body ── */
+.cp-body {
+    display: flex;
+    gap: 3dvw;
+    flex: 1;
+    overflow: hidden;
+}
+
+/* ── Holdings ── */
+.cp-holdings {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8dvh;
+    flex: 1;
+    overflow: hidden;
+}
+
+.section-title {
+    font-size: min(2dvh, 2dvw);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    opacity: 0.55;
+}
+
+.holdings-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.holding-row td {
+    padding: 0.4dvh 0.5dvw;
+    font-size: min(2.6dvh, 2.6dvw);
+    border-bottom: 1px solid currentColor;
+    opacity: 0.85;
+}
+
+.h-symbol {
+    font-weight: bold;
+    width: 18%;
+}
+
+.h-amount {
+    width: 22%;
+    opacity: 0.65 !important;
+    font-size: min(2.2dvh, 2.2dvw) !important;
+}
+
+.h-value {
+    width: 22%;
+    font-weight: bold;
+    text-align: right;
+}
+
+.h-bar-cell {
+    width: 28%;
+    padding: 0 1dvw !important;
+}
+
+.h-bar-bg {
+    width: 100%;
+    height: 0.7dvh;
+    background: rgba(0,0,0,0.12);
+    border-radius: 999px;
+    overflow: hidden;
+}
+
+.h-bar-fill {
+    height: 100%;
+    background: currentColor;
+    border-radius: 999px;
+    min-width: 2px;
+}
+
+.h-pct {
+    width: 10%;
+    text-align: right;
+    font-size: min(2dvh, 2dvw) !important;
+    opacity: 0.55 !important;
+}
+
+/* ── Transactions ── */
+.cp-trades {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8dvh;
+    width: 38%;
+    flex-shrink: 0;
+}
+
+.trades-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5dvh;
+}
+
+.trade-row {
+    display: grid;
+    grid-template-columns: auto auto 1fr auto auto;
+    align-items: center;
+    gap: 0.8dvw;
+    font-size: min(2.2dvh, 2.2dvw);
+    border-bottom: 1px solid currentColor;
+    padding-bottom: 0.4dvh;
+    opacity: 0.85;
+}
+
+.t-type {
+    font-weight: bold;
+    font-size: min(1.9dvh, 1.9dvw);
+    padding: 0.15dvh 0.6dvw;
+    border-radius: 3px;
+}
+
+.t-buy    { background: rgba(0,0,0,0.12); }
+.t-sell   { background: rgba(0,0,0,0.06); }
+.t-send   { background: rgba(0,0,0,0.06); }
+.t-receive{ background: rgba(0,0,0,0.12); }
+.t-trade  { background: rgba(0,0,0,0.08); }
+
+.t-symbol { font-weight: bold; }
+.t-amount { font-size: min(1.9dvh, 1.9dvw); opacity: 0.65; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.t-cost   { font-weight: bold; text-align: right; white-space: nowrap; }
+.t-date   { font-size: min(1.8dvh, 1.8dvw); opacity: 0.5; text-align: right; white-space: nowrap; }
+
+/* ── Errors ── */
+.cp-errors {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5dvw;
+    flex-shrink: 0;
+}
+
+.cp-error {
+    font-size: min(1.8dvh, 1.8dvw);
+    opacity: 0.6;
+}
+
+/* ── Portrait ── */
+@media (max-aspect-ratio: 1) {
+    .cp-body        { flex-direction: column; }
+    .cp-trades      { width: 100%; }
+    .holding-row td { font-size: min(3dvh, 3dvw); }
+}
