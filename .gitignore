@@ -166,9 +166,13 @@ cython_debug/
 # Development artifacts
 mock_display_output/
 
+# Device-specific config (local state only)
+src/config/device.json
+
 # IDE files
 .idea
 
 # Static Files added by install/update_vendors.sh
 /src/static/scripts/
 /src/static/styles/
+scripts/test_adguard.py
