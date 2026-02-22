@@ -1,5 +1,6 @@
 from plugins.base_plugin.base_plugin import BasePlugin
 from utils.http_client import get_http_session
+from urllib.parse import quote as urlquote
 import logging
 
 logger = logging.getLogger(__name__)
@@ -26,6 +27,22 @@ CRYPTO_IDS = {
 YAHOO_SYMBOLS = {
     "gold": "GC=F", "silver": "SI=F", "oil": "CL=F",
     "sp500": "^GSPC", "nasdaq": "^IXIC", "dow": "^DJI",
+    # Major crypto via Yahoo Finance (no API key required)
+    "bitcoin": "BTC-USD", "btc": "BTC-USD",
+    "ethereum": "ETH-USD", "eth": "ETH-USD",
+    "solana": "SOL-USD", "sol": "SOL-USD",
+    "cardano": "ADA-USD", "ada": "ADA-USD",
+    "dogecoin": "DOGE-USD", "doge": "DOGE-USD",
+    "ripple": "XRP-USD", "xrp": "XRP-USD",
+    "litecoin": "LTC-USD", "ltc": "LTC-USD",
+    "avalanche": "AVAX-USD", "avax": "AVAX-USD",
+    "chainlink": "LINK-USD", "link": "LINK-USD",
+    "bnb": "BNB-USD",
+    "cosmos": "ATOM-USD", "atom": "ATOM-USD",
+    "uniswap": "UNI-USD", "uni": "UNI-USD",
+    "algorand": "ALGO-USD", "algo": "ALGO-USD",
+    "near": "NEAR-USD",
+    "shib": "SHIB-USD", "shiba": "SHIB-USD",
 }
 
 # Display names: CoinGecko ID -> (Ticker, Full Name)
@@ -45,6 +62,14 @@ CRYPTO_DISPLAY = {
 YAHOO_DISPLAY = {
     "GC=F": ("GC", "Gold"), "SI=F": ("SI", "Silver"), "CL=F": ("CL", "Oil"),
     "^GSPC": ("SPX", "S&P 500"), "^IXIC": ("NDX", "Nasdaq"), "^DJI": ("DJI", "Dow Jones"),
+    "BTC-USD": ("BTC", "Bitcoin"), "ETH-USD": ("ETH", "Ethereum"),
+    "SOL-USD": ("SOL", "Solana"), "ADA-USD": ("ADA", "Cardano"),
+    "DOGE-USD": ("DOGE", "Dogecoin"), "XRP-USD": ("XRP", "Ripple"),
+    "LTC-USD": ("LTC", "Litecoin"), "AVAX-USD": ("AVAX", "Avalanche"),
+    "LINK-USD": ("LINK", "Chainlink"), "BNB-USD": ("BNB", "BNB"),
+    "ATOM-USD": ("ATOM", "Cosmos"), "UNI-USD": ("UNI", "Uniswap"),
+    "ALGO-USD": ("ALGO", "Algorand"), "NEAR-USD": ("NEAR", "Near"),
+    "SHIB-USD": ("SHIB", "Shiba Inu"),
 }
 
 # Symbols that should go through Yahoo Finance (stocks, ETFs, commodities)
@@ -97,6 +122,13 @@ class FinanceTracker(BasePlugin):
 
         if not assets_data:
             raise RuntimeError("No asset data could be retrieved. Check your asset list.")
+
+        for asset in assets_data:
+            price = asset.get("price")
+            if price is not None:
+                asset["price_display"] = f"{price:,.2f}" if price < 10000 else f"{price:,.0f}"
+            else:
+                asset["price_display"] = None
 
         template_params = {
             "assets": assets_data,
@@ -182,7 +214,7 @@ class FinanceTracker(BasePlugin):
         for attempt_range, attempt_interval in [(range_val, interval), ("5d", "1d")]:
             try:
                 resp = session.get(
-                    YAHOO_CHART_URL.format(symbol=symbol),
+                    YAHOO_CHART_URL.format(symbol=urlquote(symbol, safe='')),
                     params={"interval": attempt_interval, "range": attempt_range},
                     headers={"User-Agent": "Mozilla/5.0"},
                     timeout=30,

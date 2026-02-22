@@ -20,8 +20,8 @@
                     <span class="asset-ticker">{{ asset.symbol }}</span>
                 </td>
                 <td class="col-price">
-                    {% if asset.price is not none %}
-                        {{ currency_symbol }}{{ "%.2f"|format(asset.price) if asset.price < 10000 else "%,.0f"|format(asset.price) }}
+                    {% if asset.price_display is not none %}
+                        {{ currency_symbol }}{{ asset.price_display }}
                     {% else %}
                         N/A
                     {% endif %}
@@ -45,7 +45,7 @@
                     <svg viewBox="0 0 {{ asset.sparkline|length - 1 }} 20" preserveAspectRatio="none" class="sparkline-svg">
                         <polyline
                             fill="none"
-                            stroke="black"
+                            stroke="currentColor"
                             stroke-width="1.5"
                             points="{% for val in asset.sparkline %}{{ loop.index0 }},{{ 20 - ((val - ns.min_val) / range_val * 18 + 1) }}{% if not loop.last %} {% endif %}{% endfor %}"
                         />
