@@ -1,0 +1,67 @@
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+<div class="form-group">
+    <label class="form-label">Location <span style="opacity:0.55;font-size:0.9em;">(optional — required for moonrise &amp; moonset)</span></label>
+    <div class="form-group">
+        <span>Latitude</span>
+        <input readonly type="text" id="latitude" name="latitude" class="form-input" placeholder="48.1351" />
+    </div>
+    <div class="form-group">
+        <span>Longitude</span>
+        <input readonly type="text" id="longitude" name="longitude" class="form-input" placeholder="11.5820" />
+    </div>
+    <button type="button" id="openMap" class="action-button compact">Select Location</button>
+</div>
+
+<div class="form-group">
+    <label for="timezone" class="form-label">Timezone</label>
+    <input type="text" id="timezone" name="timezone" class="form-input" placeholder="Europe/Berlin" />
+    <small style="opacity:0.55;">IANA timezone name, e.g. Europe/Berlin, America/New_York, UTC</small>
+</div>
+
+<div id="mapModal" class="modal">
+    <div class="modal-content">
+        <span class="close-button" onclick="closeModal('mapModal')">×</span>
+        <h2>Select Location</h2>
+        <div class="separator"></div>
+        <div id="map" style="width:100%;height:200px;margin:10px 0;"></div>
+        <button id="closeMap" class="action-button">Save</button>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const $lat = document.getElementById('latitude');
+        const $lon = document.getElementById('longitude');
+        let map, marker;
+
+        document.getElementById('openMap').addEventListener('click', () => {
+            openModal('mapModal');
+            setTimeout(() => {
+                if (!map) {
+                    const lat = parseFloat($lat.value) || 48.1351;
+                    const lon = parseFloat($lon.value) || 11.5820;
+                    const zoom = $lat.value ? 4.5 : 2.5;
+                    map = L.map('map').setView([lat, lon], zoom);
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+                    marker = L.marker([lat, lon], { draggable: true }).addTo(map);
+                    map.on('click', e => marker.setLatLng(e.latlng));
+                }
+            }, 100);
+        });
+
+        document.getElementById('closeMap').addEventListener('click', () => {
+            const pos = marker.getLatLng().wrap();
+            $lat.value = pos.lat.toFixed(4);
+            $lon.value = pos.lng.toFixed(4);
+            closeModal('mapModal');
+        });
+
+        if (loadPluginSettings) {
+            $lat.value = pluginSettings.latitude || '';
+            $lon.value = pluginSettings.longitude || '';
+            document.getElementById('timezone').value = pluginSettings.timezone || '';
+        }
+    });
+</script>

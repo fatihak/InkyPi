@@ -1,0 +1,42 @@
+.joke-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    font-family: "Jost";
+    padding: 5dvh 5dvw;
+    text-align: center;
+    gap: 4dvh;
+}
+
+.joke-category {
+    font-size: min(2.5dvh, 2.5dvw);
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    opacity: 0.5;
+}
+
+.joke-setup {
+    font-size: min(5dvh, 5dvw);
+    font-family: Georgia, serif;
+    font-style: italic;
+    line-height: 1.4;
+    max-width: 90%;
+}
+
+.joke-delivery {
+    font-size: min(5.5dvh, 5.5dvw);
+    font-weight: bold;
+    line-height: 1.3;
+    max-width: 90%;
+}
+
+.joke-text {
+    font-size: min(5dvh, 5dvw);
+    font-family: Georgia, serif;
+    font-style: italic;
+    line-height: 1.5;
+    max-width: 90%;
+}

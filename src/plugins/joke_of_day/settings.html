@@ -1,0 +1,28 @@
+<div class="form-group">
+    <label for="category" class="form-label">Category</label>
+    <select id="category" name="category" class="form-input">
+        {% for cat in categories %}
+        <option value="{{ cat }}">{{ cat }}</option>
+        {% endfor %}
+    </select>
+</div>
+
+<div class="form-group">
+    <label class="form-label">Safe Mode</label>
+    <div class="radio-group">
+        <label><input type="radio" name="safe_mode" value="true"> On</label>
+        <label><input type="radio" name="safe_mode" value="false"> Off</label>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        if (loadPluginSettings) {
+            document.getElementById('category').value = pluginSettings.category || 'Any';
+            const safeMode = pluginSettings.safe_mode || 'true';
+            document.querySelector(`input[name="safe_mode"][value="${safeMode}"]`).checked = true;
+        } else {
+            document.querySelector('input[name="safe_mode"][value="true"]').checked = true;
+        }
+    });
+</script>
