@@ -30,28 +30,15 @@ class ImmichProvider:
         return matching_albums[0]["id"]
 
     def get_assets(self, album_id: str) -> list[dict]:
-        """Fetch all assets from album."""
-        all_items = []
-        page_items = [1]
-        page = 1
+        """Fetch all assets from album using the album details endpoint."""
+        logger.debug(f"Fetching assets from album {album_id} via /api/albums/{album_id}")
+        r2 = self.session.get(f"{self.base_url}/api/albums/{album_id}", headers=self.headers)
+        r2.raise_for_status()
+        album_data = r2.json()
 
-        logger.debug(f"Fetching assets from album {album_id}")
-        while page_items:
-            body = {
-                "albumIds": [album_id],
-                "size": 1000,
-                "page": page
-            }
-            r2 = self.session.post(f"{self.base_url}/api/search/metadata", json=body, headers=self.headers)
-            r2.raise_for_status()
-            assets_data = r2.json()
-
-            page_items = assets_data.get("assets", {}).get("items", [])
-            all_items.extend(page_items)
-            page += 1
-
-        logger.debug(f"Found {len(all_items)} total assets in album")
-        return all_items
+        assets = album_data.get("assets", []) or []
+        logger.debug(f"Found {len(assets)} total assets in album")
+        return assets
 
     def get_image(self, album: str, dimensions: tuple[int, int], resize: bool = True) -> Image.Image | None:
         """
