@@ -141,21 +141,25 @@ enable_interfaces(){
 }
 
 show_loader() {
-  local pid=$!
+  local message="$1"
+  local pid="${2:-$!}"
+
+  if [[ -z "$pid" ]]; then
+    echo_success "$message"
+    return 0
+  fi
+
   local delay=0.1
   local spinstr='|/-\'
-  printf "$1 [${spinstr:0:1}] "
-  while ps a | awk '{print $1}' | grep -q "${pid}"; do
+  printf "$message [${spinstr:0:1}] "
+  while kill -0 "$pid" 2>/dev/null; do
     local temp=${spinstr#?}
-    printf "\r$1 [${temp:0:1}] "
+    printf "\r$message [${temp:0:1}] "
     spinstr=${temp}${spinstr%"${temp}"}
     sleep ${delay}
   done
-  if [[ $? -eq 0 ]]; then
-    printf "\r$1 [\e[32m\xE2\x9C\x94\e[0m]\n"
-  else
-    printf "\r$1 [\e[31m\xE2\x9C\x98\e[0m]\n"
-  fi
+
+  printf "\r$message [\e[32m\xE2\x9C\x94\e[0m]\n"
 }
 
 echo_success() {
@@ -289,8 +293,12 @@ install_config() {
 
   # Check and copy device.config if it doesn't exist
   if [ ! -f "$CONFIG_DIR/device.json" ]; then
-    cp "$CONFIG_BASE_DIR/device.json" "$CONFIG_DIR/"
-    show_loader "\tCopying device.config to $CONFIG_DIR"
+    if cp "$CONFIG_BASE_DIR/device.json" "$CONFIG_DIR/"; then
+      echo_success "\tCopying device.config to $CONFIG_DIR"
+    else
+      echo_error "ERROR: Failed to copy device.config to $CONFIG_DIR"
+      exit 1
+    fi
   else
     echo_success "\tdevice.json already exists in $CONFIG_DIR"
   fi
@@ -326,7 +334,8 @@ stop_service() {
     if /usr/bin/systemctl is-active --quiet $SERVICE_FILE
     then
       /usr/bin/systemctl stop $SERVICE_FILE > /dev/null &
-      show_loader "Stopping $APPNAME service"
+      local stop_pid=$!
+      show_loader "Stopping $APPNAME service" "$stop_pid"
     else  
       echo_success "\t$SERVICE_FILE not running"
     fi
@@ -341,14 +350,22 @@ install_src() {
   # Check if an existing installation is present
   echo "Installing $APPNAME to $INSTALL_PATH"
   if [[ -d $INSTALL_PATH ]]; then
-    rm -rf "$INSTALL_PATH" > /dev/null
-    show_loader "\tRemoving existing installation found at $INSTALL_PATH"
+    if rm -rf "$INSTALL_PATH" > /dev/null; then
+      echo_success "\tRemoving existing installation found at $INSTALL_PATH"
+    else
+      echo_error "ERROR: Failed to remove existing installation at $INSTALL_PATH"
+      exit 1
+    fi
   fi
 
   mkdir -p "$INSTALL_PATH"
 
-  ln -sf "$SRC_PATH" "$INSTALL_PATH/src"
-  show_loader "\tCreating symlink from $SRC_PATH to $INSTALL_PATH/src"
+  if ln -sf "$SRC_PATH" "$INSTALL_PATH/src"; then
+    echo_success "\tCreating symlink from $SRC_PATH to $INSTALL_PATH/src"
+  else
+    echo_error "ERROR: Failed to create symlink from $SRC_PATH to $INSTALL_PATH/src"
+    exit 1
+  fi
 }
 
 install_cli() {
