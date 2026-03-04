@@ -181,11 +181,30 @@ echo_blue() {
 
 install_debian_dependencies() {
   if [ -f "$APT_REQUIREMENTS_FILE" ]; then
-    sudo apt-get update > /dev/null &
-    show_loader "Fetch available system dependencies updates. " 
+    echo "Repairing interrupted package operations (if any)."
+    if ! sudo dpkg --configure -a; then
+      echo_error "ERROR: Failed to repair interrupted dpkg state. Please run 'sudo dpkg --configure -a' manually."
+      exit 1
+    fi
 
-    xargs -a "$APT_REQUIREMENTS_FILE" sudo apt-get install -y > /dev/null &
-    show_loader "Installing system dependencies. "
+    if ! sudo apt-get -f install -y > /dev/null; then
+      echo_error "ERROR: apt failed to repair broken dependencies."
+      exit 1
+    fi
+
+    echo "Fetching available system dependency updates."
+    if ! sudo apt-get update > /dev/null; then
+      echo_error "ERROR: Failed to fetch package updates via apt-get update."
+      exit 1
+    fi
+    echo_success "\tSystem package index updated"
+
+    echo "Installing system dependencies."
+    if ! xargs -a "$APT_REQUIREMENTS_FILE" sudo apt-get install -y > /dev/null; then
+      echo_error "ERROR: Failed to install one or more system dependencies from $APT_REQUIREMENTS_FILE"
+      exit 1
+    fi
+    echo_success "\tSystem dependencies installed"
   else
     echo "ERROR: System dependencies file $APT_REQUIREMENTS_FILE not found!"
     exit 1
@@ -194,29 +213,53 @@ install_debian_dependencies() {
 
 setup_zramswap_service() {
   echo "Enabling and starting zramswap service."
-  sudo apt-get install -y zram-tools > /dev/null
+  if ! sudo apt-get install -y zram-tools > /dev/null; then
+    echo_error "ERROR: Failed to install zram-tools."
+    exit 1
+  fi
   echo -e "ALGO=zstd\nPERCENT=60" | sudo tee /etc/default/zramswap > /dev/null
-  sudo systemctl enable --now zramswap
+  if ! sudo systemctl enable --now zramswap; then
+    echo_error "ERROR: Failed to enable/start zramswap service."
+    exit 1
+  fi
 }
 
 setup_earlyoom_service() {
   echo "Enabling and starting earlyoom service."
-  sudo apt-get install -y earlyoom > /dev/null
-  sudo systemctl enable --now earlyoom
+  if ! sudo apt-get install -y earlyoom > /dev/null; then
+    echo_error "ERROR: Failed to install earlyoom package."
+    exit 1
+  fi
+
+  if ! sudo systemctl enable --now earlyoom; then
+    echo_error "ERROR: Failed to enable/start earlyoom service."
+    exit 1
+  fi
 }
 
 create_venv(){
   echo "Creating python virtual environment. "
   python3 -m venv "$VENV_PATH"
-  $VENV_PATH/bin/python -m pip install --upgrade pip setuptools wheel > /dev/null
-  $VENV_PATH/bin/python -m pip install -r $PIP_REQUIREMENTS_FILE -qq > /dev/null &
-  show_loader "\tInstalling python dependencies. "
+  if ! $VENV_PATH/bin/python -m pip install --upgrade pip setuptools wheel > /dev/null; then
+    echo_error "ERROR: Failed to upgrade pip tooling inside virtual environment."
+    exit 1
+  fi
+
+  echo "Installing python dependencies."
+  if ! $VENV_PATH/bin/python -m pip install -r "$PIP_REQUIREMENTS_FILE" -qq > /dev/null; then
+    echo_error "ERROR: Failed to install Python dependencies from $PIP_REQUIREMENTS_FILE"
+    exit 1
+  fi
+  echo_success "\tPython dependencies installed"
 
   # do additional dependencies for Waveshare support.
   if [[ -n "$WS_TYPE" ]]; then
     echo "Adding additional dependencies for waveshare to the python virtual environment. "
-    $VENV_PATH/bin/python -m pip install -r $WS_REQUIREMENTS_FILE > ws_pip_install.log &
-    show_loader "\tInstalling additional Waveshare python dependencies. "
+    if ! $VENV_PATH/bin/python -m pip install -r "$WS_REQUIREMENTS_FILE" > ws_pip_install.log; then
+      echo_error "ERROR: Failed to install Waveshare Python dependencies from $WS_REQUIREMENTS_FILE"
+      exit 1
+    fi
+    echo_success "\tAdditional Waveshare python dependencies installed"
   fi
 
 }
