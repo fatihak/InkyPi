@@ -151,15 +151,23 @@ show_loader() {
 
   local delay=0.1
   local spinstr='|/-\'
-  printf "$message [${spinstr:0:1}] "
+  printf '%s [%s] ' "$message" "${spinstr:0:1}"
   while kill -0 "$pid" 2>/dev/null; do
     local temp=${spinstr#?}
-    printf "\r$message [${temp:0:1}] "
+    printf '\r%s [%s] ' "$message" "${temp:0:1}"
     spinstr=${temp}${spinstr%"${temp}"}
     sleep ${delay}
   done
 
-  printf "\r$message [\e[32m\xE2\x9C\x94\e[0m]\n"
+  wait "$pid"
+  local status=$?
+  if [[ $status -eq 0 ]]; then
+    printf '\r%s [\e[32m\xE2\x9C\x94\e[0m]\n' "$message"
+  else
+    printf '\r%s [\e[31m\xE2\x9C\x98\e[0m]\n' "$message"
+  fi
+
+  return "$status"
 }
 
 echo_success() {
@@ -291,12 +299,12 @@ install_config() {
   CONFIG_DIR="$SRC_PATH/config"
   echo "Copying config files to $CONFIG_DIR"
 
-  # Check and copy device.config if it doesn't exist
+  # Check and copy device.json if it doesn't exist
   if [ ! -f "$CONFIG_DIR/device.json" ]; then
     if cp "$CONFIG_BASE_DIR/device.json" "$CONFIG_DIR/"; then
-      echo_success "\tCopying device.config to $CONFIG_DIR"
+      echo_success "\tCopying device.json to $CONFIG_DIR"
     else
-      echo_error "ERROR: Failed to copy device.config to $CONFIG_DIR"
+      echo_error "ERROR: Failed to copy device.json to $CONFIG_DIR"
       exit 1
     fi
   else
@@ -335,7 +343,10 @@ stop_service() {
     then
       /usr/bin/systemctl stop $SERVICE_FILE > /dev/null &
       local stop_pid=$!
-      show_loader "Stopping $APPNAME service" "$stop_pid"
+      if ! show_loader "Stopping $APPNAME service" "$stop_pid"; then
+        echo_error "ERROR: Failed to stop $SERVICE_FILE"
+        exit 1
+      fi
     else  
       echo_success "\t$SERVICE_FILE not running"
     fi
