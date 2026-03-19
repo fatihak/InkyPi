@@ -296,7 +296,13 @@ class PluginInstance:
     def should_refresh(self, current_time):
         """Checks whether the plugin should be refreshed based on its refresh settings and the current time."""
         latest_refresh_dt = self.get_latest_refresh_dt()
+
+        # If never refreshed, check scheduled time before allowing refresh
         if not latest_refresh_dt:
+            if "scheduled" in self.refresh:
+                scheduled_time_str = self.refresh.get("scheduled")
+                scheduled_time = datetime.strptime(scheduled_time_str, "%H:%M").time()
+                return current_time.time() >= scheduled_time
             return True
 
         # Check for interval-based refresh
@@ -306,14 +312,6 @@ class PluginInstance:
                 return True
 
         # Check for scheduled refresh (HH:MM format)
-        if "scheduled" in self.refresh:
-            scheduled_time_str = self.refresh.get("scheduled")
-            latest_refresh_str = latest_refresh_dt.strftime("%H:%M")
-
-            # If the latest refresh is before the scheduled time today
-            if latest_refresh_str < scheduled_time_str:
-                return True
-        
         if "scheduled" in self.refresh:
             scheduled_time_str = self.refresh.get("scheduled")
             scheduled_time = datetime.strptime(scheduled_time_str, "%H:%M").time()

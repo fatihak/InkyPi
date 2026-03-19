@@ -75,7 +75,11 @@
 
         <!-- Display the current image -->
         <div class="image-container">
-            <img src="{{ url_for('static', filename='images/current_image.png') }}" alt="Current Image">
+            <img src="{{ url_for('static', filename='images/current_image.png') }}" alt="Current Image"
+                 onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+            <div style="display:none; width:100%; aspect-ratio:5/3; background:var(--bg-secondary, #f0f0f0); border-radius:8px; align-items:center; justify-content:center; color:var(--text-secondary, #888); font-size:14px;">
+                No image displayed yet
+            </div>
         </div>
 
         <!-- Separator -->
