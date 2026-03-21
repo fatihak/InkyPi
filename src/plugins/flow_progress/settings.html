@@ -7,21 +7,37 @@
 </div>
 
 <div class="form-group">
-    <label for="numDots" class="form-label">Dots per Bar:</label>
-    <input type="number" id="numDots" name="numDots" class="form-input" value="15" min="5" max="40" />
+    <label for="numBars" class="form-label">Loading Bar Rows:</label>
+    <select id="numBars" name="numBars" class="form-input">
+        <option value="1">1</option>
+        <option value="2">2</option>
+        <option value="3">3</option>
+    </select>
 </div>
 
 <div class="form-group">
-    <label for="cornerRadius" class="form-label">Corner Radius:</label>
-    <input type="number" id="cornerRadius" name="cornerRadius" class="form-input" value="20" min="0" max="60" />
+    <label for="numDots" class="form-label">Dots per Bar:</label>
+    <input type="number" id="numDots" name="numDots" class="form-input" min="5" max="40" />
 </div>
 
 <script>
     document.addEventListener('DOMContentLoaded', () => {
-        if (loadPluginSettings) {
-            document.getElementById('language').value = pluginSettings.language || 'en';
-            document.getElementById('numDots').value = pluginSettings.numDots || '15';
-            document.getElementById('cornerRadius').value = pluginSettings.cornerRadius || '20';
+        const languageEl = document.getElementById('language');
+        const numBarsEl = document.getElementById('numBars');
+        const numDotsEl = document.getElementById('numDots');
+
+        // Helper function to safely get value from pluginSettings
+        function getSafeValue(key, defaultValue) {
+            if (typeof pluginSettings !== 'object' || pluginSettings === null) {
+                return defaultValue;
+            }
+            const val = pluginSettings[key];
+            return (val !== undefined && val !== null && val !== '') ? String(val) : defaultValue;
         }
+
+        // Set initial values with defaults
+        languageEl.value = getSafeValue('language', 'en');
+        numBarsEl.value = getSafeValue('numBars', '2');
+        numDotsEl.value = getSafeValue('numDots', '20');
     });
 </script>

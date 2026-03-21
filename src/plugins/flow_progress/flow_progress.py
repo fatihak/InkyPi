@@ -9,6 +9,10 @@ import pytz
 
 logger = logging.getLogger(__name__)
 
+DEFAULT_NUM_BARS = 2
+DEFAULT_NUM_DOTS = 20
+FIXED_CORNER_RADIUS = 20
+
 PT_DAYS = ["SEGUNDA", "TERCA", "QUARTA", "QUINTA", "SEXTA", "SABADO", "DOMINGO"]
 PT_MONTHS = [
     "JANEIRO", "FEVEREIRO", "MARCO", "ABRIL", "MAIO", "JUNHO",
@@ -78,14 +82,33 @@ def render_dots(draw, dots, x, y, spacing, radius, color):
         )
 
 class FlowProgress(BasePlugin):
+    def generate_settings_template(self):
+        template_params = super().generate_settings_template()
+        template_params['style_settings'] = False
+        return template_params
+
     def generate_image(self, settings, device_config):
         dimensions = device_config.get_resolution()
         if device_config.get_config("orientation") == "vertical":
             dimensions = dimensions[::-1]
+        
         width, height = dimensions
-        language = settings.get("language", "en")
-        num_dots = int(settings.get("numDots", 15))
-        corner_radius = int(settings.get("cornerRadius", 20))
+        
+        # Safely extract and validate settings
+        language = str(settings.get("language", "en")).strip() or "en"
+        
+        try:
+            num_dots = int(settings.get("numDots", DEFAULT_NUM_DOTS))
+            num_dots = max(5, min(40, num_dots))
+        except (TypeError, ValueError):
+            num_dots = DEFAULT_NUM_DOTS
+        
+        try:
+            num_bars = int(settings.get("numBars", DEFAULT_NUM_BARS))
+            num_bars = max(1, min(3, num_bars))
+        except (TypeError, ValueError):
+            num_bars = DEFAULT_NUM_BARS
+        
         tz_name = device_config.get_config("timezone", default="America/New_York")
         tz = pytz.timezone(tz_name)
         now = datetime.now(tz)
@@ -107,7 +130,7 @@ class FlowProgress(BasePlugin):
         m = int(min(rw, rh) * 0.03)
         draw.rounded_rectangle(
             [m, m, rw - m, rh - m],
-            radius=corner_radius * scale,
+            radius=FIXED_CORNER_RADIUS * scale,
             fill=CARD,
         )
         font = get_font("Dogica", 8, font_weight="bold") or get_font("Dogica", 8)
@@ -116,17 +139,22 @@ class FlowProgress(BasePlugin):
         pad_x = int(rw * 0.05)
         pad_y = int(rh * 0.10)
         content_h = rh - 2 * pad_y
-        row_h = content_h / 4
+        item_count = len(labels)
+        row_h = content_h / item_count
         gap = rw * 0.025
-        label_info = [text_to_dots(labels[i], font) for i in range(4)]
-        pct_info = [text_to_dots(f"{pcts[i]}%", font) for i in range(4)]
+        label_info = [text_to_dots(label, font) for label in labels]
+        pct_info = [text_to_dots(f"{pct}%", font) for pct in pcts]
         max_label_pw = max((d[1] for d in label_info), default=1) or 1
         max_pct_pw = max((d[1] for d in pct_info), default=1) or 1
         max_ph = max(
             max((d[2] for d in label_info), default=7),
             max((d[2] for d in pct_info), default=7),
         ) or 7
-        h_spacing = (row_h * 0.42) / max_ph
+        bar_block_h = row_h * 0.34
+        bar_gap = max(row_h * 0.06, 4.0)
+        available_bar_h = max(bar_block_h - bar_gap * (num_bars - 1), row_h * 0.14)
+        single_bar_h = available_bar_h / num_bars
+        h_spacing = (row_h * 0.30) / max_ph
         min_bar_w = rw * 0.30
         w_spacing = (rw - 2 * pad_x - min_bar_w - 2 * gap) / (max_label_pw + max_pct_pw)
         dot_spacing = max(min(h_spacing, w_spacing), 3.0)
@@ -138,20 +166,24 @@ class FlowProgress(BasePlugin):
         bar_end = rw - pad_x - max_pw - gap
         bar_width = bar_end - bar_start
         bar_dot_sp = bar_width / max(num_dots, 1)
-        bar_dot_r = bar_dot_sp * 0.44
-        for i in range(4):
+        bar_dot_r = min(bar_dot_sp * 0.32, single_bar_h * 0.45)
+        for i in range(item_count):
             cy = pad_y + i * row_h + row_h / 2
             ty = cy - text_h / 2
             l_dots, _, _ = label_info[i]
             render_dots(draw, l_dots, pad_x, ty, dot_spacing, dot_radius, WHITE)
             filled = round(num_dots * pcts[i] / 100)
-            for j in range(num_dots):
-                cx = bar_start + j * bar_dot_sp + bar_dot_sp / 2
-                c = WHITE if j < filled else DIM
-                draw.ellipse(
-                    [cx - bar_dot_r, cy - bar_dot_r, cx + bar_dot_r, cy + bar_dot_r],
-                    fill=c,
-                )
+            bars_total_h = num_bars * (bar_dot_r * 2) + (num_bars - 1) * bar_gap
+            top_y = cy - bars_total_h / 2 + bar_dot_r
+            for bar_index in range(num_bars):
+                bar_y = top_y + bar_index * (bar_dot_r * 2 + bar_gap)
+                for j in range(num_dots):
+                    cx = bar_start + j * bar_dot_sp + bar_dot_sp / 2
+                    c = WHITE if j < filled else DIM
+                    draw.ellipse(
+                        [cx - bar_dot_r, bar_y - bar_dot_r, cx + bar_dot_r, bar_y + bar_dot_r],
+                        fill=c,
+                    )
             p_dots, p_pw, _ = pct_info[i]
             px = rw - pad_x - p_pw * dot_spacing
             render_dots(draw, p_dots, px, ty, dot_spacing, dot_radius, WHITE)
