@@ -9,8 +9,6 @@ from utils.app_utils import get_font
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_TIMEZONE = "US/Eastern"
-
 # Colors matching the reference widget
 BG_COLOR = (0, 0, 0)
 WHITE = (255, 255, 255)
@@ -26,9 +24,11 @@ class Today(BasePlugin):
         if device_config.get_config("orientation") == "vertical":
             dimensions = dimensions[::-1]
 
-        tz_name = device_config.get_config("timezone") or DEFAULT_TIMEZONE
+        tz_name = device_config.get_config("timezone") or "UTC"
         tz = pytz.timezone(tz_name)
         now = datetime.now(tz)
+
+        time_format = device_config.get_config("time_format", default="12h")
 
         # Full day progress (00:00 to 23:59)
         total_day = 23 * 60 + 59
@@ -36,17 +36,21 @@ class Today(BasePlugin):
         progress = min(cur / total_day, 1.0)
         remaining = max(total_day - cur, 0)
 
-        # Format time (12h, no leading zero on hour)
-        hour = now.hour % 12 or 12
-        period = "AM" if now.hour < 12 else "PM"
-        time_digits = f"{hour}:{now.minute:02d}"
+        # Format time based on system time format setting
+        if time_format == "24h":
+            time_digits = f"{now.hour:02d}:{now.minute:02d}"
+            period = ""
+        else:
+            hour = now.hour % 12 or 12
+            period = "AM" if now.hour < 12 else "PM"
+            time_digits = f"{hour}:{now.minute:02d}"
 
         # Date in uppercase: MONDAY, MAR 2
         date_str = now.strftime("%A, %b %-d").upper()
 
         # Remaining time
         h, m = divmod(remaining, 60)
-        remain_str = f"{h}h {m:02d}m left" if h > 0 else f"{m}m left"
+        remain_str = f"{h}h {m:02d}m remaining" if h > 0 else f"{m}m remaining"
 
         return self._render(dimensions, time_digits, period, date_str, progress, remain_str)
 
@@ -83,9 +87,13 @@ class Today(BasePlugin):
 
         # --- Clock ---
         d_w = draw.textlength(time_digits, font=clock_fnt)
-        p_w = draw.textlength(period, font=period_fnt)
         gap = int(dim * 0.015)
-        total_w = d_w + gap + p_w
+        if period:
+            p_w = draw.textlength(period, font=period_fnt)
+            total_w = d_w + gap + p_w
+        else:
+            p_w = 0
+            total_w = d_w
         sx = cx - total_w / 2
 
         # Ghost digits (dim segments behind active digits)
@@ -95,8 +103,9 @@ class Today(BasePlugin):
         # Active time digits
         draw.text((sx, y_clock), time_digits, font=clock_fnt, fill=WHITE, anchor="lm")
 
-        # AM/PM — smaller, aligned to digit baseline area
-        draw.text((sx + d_w + gap, y_clock), period, font=period_fnt, fill=WHITE, anchor="lm")
+        # AM/PM — only rendered in 12h mode
+        if period:
+            draw.text((sx + d_w + gap, y_clock), period, font=period_fnt, fill=WHITE, anchor="lm")
 
         # --- Date line in light gray ---
         draw.text((cx, y_date), date_str, font=date_fnt, fill=LIGHT_GRAY, anchor="mm")
