@@ -13,11 +13,54 @@ DEFAULT_NUM_BARS = 2
 DEFAULT_NUM_DOTS = 20
 FIXED_CORNER_RADIUS = 20
 
-PT_DAYS = ["SEGUNDA", "TERCA", "QUARTA", "QUINTA", "SEXTA", "SABADO", "DOMINGO"]
-PT_MONTHS = [
-    "JANEIRO", "FEVEREIRO", "MARCO", "ABRIL", "MAIO", "JUNHO",
-    "JULHO", "AGOSTO", "SETEMBRO", "OUTUBRO", "NOVEMBRO", "DEZEMBRO",
-]
+# Hardcoded locale data for languages that render cleanly in Dogica (ASCII-only pixel font).
+# All text must be accent-free uppercase. Languages where accent-stripping produces
+# unrecognisable words (e.g. Polish, Turkish) are intentionally excluded.
+LOCALE_DATA = {
+    "de": {
+        "days": ["MONTAG", "DIENSTAG", "MITTWOCH", "DONNERSTAG", "FREITAG", "SAMSTAG", "SONNTAG"],
+        "months": ["JANUAR", "FEBRUAR", "MARZ", "APRIL", "MAI", "JUNI",
+                   "JULI", "AUGUST", "SEPTEMBER", "OKTOBER", "NOVEMBER", "DEZEMBER"],
+        "week": "WOCHE",
+    },
+    "en": None,  # English uses strftime directly
+    "es": {
+        "days": ["LUNES", "MARTES", "MIERCOLES", "JUEVES", "VIERNES", "SABADO", "DOMINGO"],
+        "months": ["ENERO", "FEBRERO", "MARZO", "ABRIL", "MAYO", "JUNIO",
+                   "JULIO", "AGOSTO", "SEPTIEMBRE", "OCTUBRE", "NOVIEMBRE", "DICIEMBRE"],
+        "week": "SEMANA",
+    },
+    "fr": {
+        "days": ["LUNDI", "MARDI", "MERCREDI", "JEUDI", "VENDREDI", "SAMEDI", "DIMANCHE"],
+        "months": ["JANVIER", "FEVRIER", "MARS", "AVRIL", "MAI", "JUIN",
+                   "JUILLET", "AOUT", "SEPTEMBRE", "OCTOBRE", "NOVEMBRE", "DECEMBRE"],
+        "week": "SEMAINE",
+    },
+    "id": {
+        "days": ["SENIN", "SELASA", "RABU", "KAMIS", "JUMAT", "SABTU", "MINGGU"],
+        "months": ["JANUARI", "FEBRUARI", "MARET", "APRIL", "MEI", "JUNI",
+                   "JULI", "AGUSTUS", "SEPTEMBER", "OKTOBER", "NOVEMBER", "DESEMBER"],
+        "week": "MINGGU KE",
+    },
+    "it": {
+        "days": ["LUNEDI", "MARTEDI", "MERCOLEDI", "GIOVEDI", "VENERDI", "SABATO", "DOMENICA"],
+        "months": ["GENNAIO", "FEBBRAIO", "MARZO", "APRILE", "MAGGIO", "GIUGNO",
+                   "LUGLIO", "AGOSTO", "SETTEMBRE", "OTTOBRE", "NOVEMBRE", "DICEMBRE"],
+        "week": "SETTIMANA",
+    },
+    "nl": {
+        "days": ["MAANDAG", "DINSDAG", "WOENSDAG", "DONDERDAG", "VRIJDAG", "ZATERDAG", "ZONDAG"],
+        "months": ["JANUARI", "FEBRUARI", "MAART", "APRIL", "MEI", "JUNI",
+                   "JULI", "AUGUSTUS", "SEPTEMBER", "OKTOBER", "NOVEMBER", "DECEMBER"],
+        "week": "WEEK",
+    },
+    "pt": {
+        "days": ["SEGUNDA", "TERCA", "QUARTA", "QUINTA", "SEXTA", "SABADO", "DOMINGO"],
+        "months": ["JANEIRO", "FEVEREIRO", "MARCO", "ABRIL", "MAIO", "JUNHO",
+                   "JULHO", "AGOSTO", "SETEMBRO", "OUTUBRO", "NOVEMBRO", "DEZEMBRO"],
+        "week": "SEMANA",
+    },
+}
 
 
 def calc_day_progress(dt):
@@ -41,13 +84,15 @@ def calc_year_progress(dt):
     return min(round(elapsed / total * 100), 100)
 
 def get_labels(dt, language):
-    if language == "pt":
+    locale = LOCALE_DATA.get(language)
+    if locale:
         return [
-            PT_DAYS[dt.weekday()],
-            f"SEMANA {dt.isocalendar()[1]}",
-            PT_MONTHS[dt.month - 1],
+            locale["days"][dt.weekday()],
+            f"{locale['week']} {dt.isocalendar()[1]}",
+            locale["months"][dt.month - 1],
             str(dt.year),
         ]
+    # English (default) — use strftime with accent stripping as safety net
     return [
         _strip_accents(dt.strftime("%A").upper()),
         f"WEEK {dt.isocalendar()[1]}",
