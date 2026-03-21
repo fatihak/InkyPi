@@ -26,6 +26,17 @@
     <input type="number" id="numDots" name="numDots" class="form-input" min="5" max="40" value="20" />
 </div>
 
+<div class="form-group">
+    <div class="form-group">
+        <label for="primaryColor" class="form-label">Primary Color:</label>
+        <input type="color" name="primaryColor" class="color-picker" value="#000000"/>
+    </div>
+    <div class="form-group">
+        <label for="secondaryColor" class="form-label">Secondary Color:</label>
+        <input type="color" name="secondaryColor" class="color-picker" value="#ffffff"/>
+    </div>
+</div>
+
 <script>
     document.addEventListener('DOMContentLoaded', () => {
         // Always set defaults in JS, not via selected attribute
@@ -40,6 +51,12 @@
             }
             numBars.value = pluginSettings.numBars || '2';
             numDots.value = pluginSettings.numDots || '20';
+            if (pluginSettings.primaryColor) {
+                document.querySelector("[name=primaryColor]").value = pluginSettings.primaryColor;
+            }
+            if (pluginSettings.secondaryColor) {
+                document.querySelector("[name=secondaryColor]").value = pluginSettings.secondaryColor;
+            }
         } else {
             language.value = 'en';
             numBars.value = '2';

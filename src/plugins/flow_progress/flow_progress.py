@@ -1,5 +1,5 @@
 from plugins.base_plugin.base_plugin import BasePlugin
-from PIL import Image, ImageDraw
+from PIL import Image, ImageColor, ImageDraw
 from utils.app_utils import get_font
 import calendar
 import logging
@@ -154,6 +154,13 @@ class FlowProgress(BasePlugin):
         except (TypeError, ValueError):
             num_bars = DEFAULT_NUM_BARS
         
+        primary_color = settings.get("primaryColor", "#000000")
+        secondary_color = settings.get("secondaryColor", "#ffffff")
+        BG = ImageColor.getrgb(primary_color)
+        TEXT = ImageColor.getrgb(secondary_color)
+        # DIM is a muted version between background and secondary
+        DIM = tuple((bg + fg) // 4 for bg, fg in zip(BG, TEXT))
+
         tz_name = device_config.get_config("timezone", default="America/New_York")
         tz = pytz.timezone(tz_name)
         now = datetime.now(tz)
@@ -166,18 +173,8 @@ class FlowProgress(BasePlugin):
         ]
         scale = 2
         rw, rh = width * scale, height * scale
-        BG = (0, 0, 0)
-        CARD = (18, 18, 18)
-        WHITE = (255, 255, 255)
-        DIM = (65, 65, 65)
         img = Image.new("RGB", (rw, rh), BG)
         draw = ImageDraw.Draw(img)
-        m = int(min(rw, rh) * 0.03)
-        draw.rounded_rectangle(
-            [m, m, rw - m, rh - m],
-            radius=FIXED_CORNER_RADIUS * scale,
-            fill=CARD,
-        )
         font = get_font("Dogica", 8, font_weight="bold") or get_font("Dogica", 8)
         if font is None:
             raise RuntimeError("Required font 'Dogica' not found.")
@@ -216,7 +213,7 @@ class FlowProgress(BasePlugin):
             cy = pad_y + i * row_h + row_h / 2
             ty = cy - text_h / 2
             l_dots, _, _ = label_info[i]
-            render_dots(draw, l_dots, pad_x, ty, dot_spacing, dot_radius, WHITE)
+            render_dots(draw, l_dots, pad_x, ty, dot_spacing, dot_radius, TEXT)
             filled = round(num_dots * pcts[i] / 100)
             bars_total_h = num_bars * (bar_dot_r * 2) + (num_bars - 1) * bar_gap
             top_y = cy - bars_total_h / 2 + bar_dot_r
@@ -224,13 +221,13 @@ class FlowProgress(BasePlugin):
                 bar_y = top_y + bar_index * (bar_dot_r * 2 + bar_gap)
                 for j in range(num_dots):
                     cx = bar_start + j * bar_dot_sp + bar_dot_sp / 2
-                    c = WHITE if j < filled else DIM
+                    c = TEXT if j < filled else DIM
                     draw.ellipse(
                         [cx - bar_dot_r, bar_y - bar_dot_r, cx + bar_dot_r, bar_y + bar_dot_r],
                         fill=c,
                     )
             p_dots, p_pw, _ = pct_info[i]
             px = rw - pad_x - p_pw * dot_spacing
-            render_dots(draw, p_dots, px, ty, dot_spacing, dot_radius, WHITE)
+            render_dots(draw, p_dots, px, ty, dot_spacing, dot_radius, TEXT)
         img = img.resize(dimensions, Image.LANCZOS)
         return img
