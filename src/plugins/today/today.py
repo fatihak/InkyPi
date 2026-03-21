@@ -17,6 +17,71 @@ LIGHT_GRAY = (180, 180, 180)
 TRACK = (50, 50, 50)
 GHOST = (25, 25, 25)
 
+# Hardcoded locale data for Latin-script languages commonly used by the InkyPi
+# community (hobbyists/tech in Europe and Americas). Jost font supports accented chars.
+LOCALE_DATA = {
+    "da": {
+        "title": "I DAG",
+        "days": ["Mandag", "Tirsdag", "Onsdag", "Torsdag", "Fredag", "Lørdag", "Søndag"],
+        "months_short": ["Jan", "Feb", "Mar", "Apr", "Maj", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dec"],
+        "remaining": "tilbage",
+    },
+    "de": {
+        "title": "HEUTE",
+        "days": ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"],
+        "months_short": ["Jan", "Feb", "Mär", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"],
+        "remaining": "verbleibend",
+    },
+    "en": {
+        "title": "TODAY",
+        "days": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+        "months_short": ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
+        "remaining": "remaining",
+    },
+    "es": {
+        "title": "HOY",
+        "days": ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"],
+        "months_short": ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"],
+        "remaining": "restantes",
+    },
+    "fr": {
+        "title": "AUJOURD'HUI",
+        "days": ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"],
+        "months_short": ["Jan", "Fév", "Mar", "Avr", "Mai", "Jun", "Jul", "Aoû", "Sep", "Oct", "Nov", "Déc"],
+        "remaining": "restant",
+    },
+    "it": {
+        "title": "OGGI",
+        "days": ["Lunedì", "Martedì", "Mercoledì", "Giovedì", "Venerdì", "Sabato", "Domenica"],
+        "months_short": ["Gen", "Feb", "Mar", "Apr", "Mag", "Giu", "Lug", "Ago", "Set", "Ott", "Nov", "Dic"],
+        "remaining": "rimanenti",
+    },
+    "nb": {
+        "title": "I DAG",
+        "days": ["Mandag", "Tirsdag", "Onsdag", "Torsdag", "Fredag", "Lørdag", "Søndag"],
+        "months_short": ["Jan", "Feb", "Mar", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Des"],
+        "remaining": "igjen",
+    },
+    "nl": {
+        "title": "VANDAAG",
+        "days": ["Maandag", "Dinsdag", "Woensdag", "Donderdag", "Vrijdag", "Zaterdag", "Zondag"],
+        "months_short": ["Jan", "Feb", "Mrt", "Apr", "Mei", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dec"],
+        "remaining": "resterend",
+    },
+    "pt": {
+        "title": "HOJE",
+        "days": ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"],
+        "months_short": ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"],
+        "remaining": "restantes",
+    },
+    "sv": {
+        "title": "IDAG",
+        "days": ["Måndag", "Tisdag", "Onsdag", "Torsdag", "Fredag", "Lördag", "Söndag"],
+        "months_short": ["Jan", "Feb", "Mar", "Apr", "Maj", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dec"],
+        "remaining": "kvar",
+    },
+}
+
 
 class Today(BasePlugin):
     def generate_image(self, settings, device_config):
@@ -29,6 +94,8 @@ class Today(BasePlugin):
         now = datetime.now(tz)
 
         time_format = device_config.get_config("time_format", default="12h")
+        language = str(settings.get("language") or "en").strip().lower()
+        locale = LOCALE_DATA.get(language, LOCALE_DATA["en"])
 
         # Full day progress (00:00 to 23:59)
         total_day = 23 * 60 + 59
@@ -45,16 +112,19 @@ class Today(BasePlugin):
             period = "AM" if now.hour < 12 else "PM"
             time_digits = f"{hour}:{now.minute:02d}"
 
-        # Date in uppercase: MONDAY, MAR 2
-        date_str = now.strftime("%A, %b %-d").upper()
+        # Date: WEEKDAY, MONTH_ABBR DAY
+        day_name = locale["days"][now.weekday()].upper()
+        month_abbr = locale["months_short"][now.month - 1].upper()
+        date_str = f"{day_name}, {month_abbr} {now.day}"
 
         # Remaining time
         h, m = divmod(remaining, 60)
-        remain_str = f"{h}h {m:02d}m remaining" if h > 0 else f"{m}m remaining"
+        remain_word = locale["remaining"]
+        remain_str = f"{h}h {m:02d}m {remain_word}" if h > 0 else f"{m}m {remain_word}"
 
-        return self._render(dimensions, time_digits, period, date_str, progress, remain_str)
+        return self._render(dimensions, locale["title"], time_digits, period, date_str, progress, remain_str)
 
-    def _render(self, dimensions, time_digits, period, date_str, progress, remain_str):
+    def _render(self, dimensions, title, time_digits, period, date_str, progress, remain_str):
         w, h = dimensions
         img = Image.new("RGBA", (w, h), BG_COLOR + (255,))
         draw = ImageDraw.Draw(img)
@@ -82,8 +152,8 @@ class Today(BasePlugin):
         y_bar = y_date + int(ch * 0.16)
         y_remain = y_bar + int(ch * 0.14)
 
-        # --- TODAY label ---
-        draw.text((cx, y_title), "TODAY", font=title_fnt, fill=WHITE, anchor="mm")
+        # --- Title label ---
+        draw.text((cx, y_title), title, font=title_fnt, fill=WHITE, anchor="mm")
 
         # --- Clock ---
         d_w = draw.textlength(time_digits, font=clock_fnt)
