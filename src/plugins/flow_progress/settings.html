@@ -17,27 +17,23 @@
 
 <div class="form-group">
     <label for="numDots" class="form-label">Dots per Bar:</label>
-    <input type="number" id="numDots" name="numDots" class="form-input" min="5" max="40" />
+    <input type="number" id="numDots" name="numDots" class="form-input" min="5" max="40" value="20" />
 </div>
 
 <script>
     document.addEventListener('DOMContentLoaded', () => {
-        const languageEl = document.getElementById('language');
-        const numBarsEl = document.getElementById('numBars');
-        const numDotsEl = document.getElementById('numDots');
-
-        // Helper function to safely get value from pluginSettings
-        function getSafeValue(key, defaultValue) {
-            if (typeof pluginSettings !== 'object' || pluginSettings === null) {
-                return defaultValue;
-            }
-            const val = pluginSettings[key];
-            return (val !== undefined && val !== null && val !== '') ? String(val) : defaultValue;
+        // Always set defaults in JS, not via selected attribute
+        const language = document.getElementById('language');
+        const numBars = document.getElementById('numBars');
+        const numDots = document.getElementById('numDots');
+        if (typeof pluginSettings === 'object' && pluginSettings !== null) {
+            language.value = pluginSettings.language || 'en';
+            numBars.value = pluginSettings.numBars || '2';
+            numDots.value = pluginSettings.numDots || '20';
+        } else {
+            language.value = 'en';
+            numBars.value = '2';
+            numDots.value = '20';
         }
-
-        // Set initial values with defaults
-        languageEl.value = getSafeValue('language', 'en');
-        numBarsEl.value = getSafeValue('numBars', '2');
-        numDotsEl.value = getSafeValue('numDots', '20');
     });
 </script>
