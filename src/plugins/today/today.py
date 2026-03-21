@@ -2,20 +2,17 @@ import logging
 from datetime import datetime
 
 import pytz
-from PIL import Image, ImageDraw
+from PIL import Image, ImageColor, ImageDraw
 
 from plugins.base_plugin.base_plugin import BasePlugin
 from utils.app_utils import get_font
 
 logger = logging.getLogger(__name__)
 
-# Colors matching the reference widget
-BG_COLOR = (0, 0, 0)
-WHITE = (255, 255, 255)
-RED = (204, 50, 50)
-LIGHT_GRAY = (180, 180, 180)
-TRACK = (50, 50, 50)
-GHOST = (25, 25, 25)
+# Default colors
+DEFAULT_PRIMARY = "#000000"
+DEFAULT_SECONDARY = "#ffffff"
+DEFAULT_PROGRESS_BAR = "#cc3232"
 
 # Hardcoded locale data for Latin-script languages commonly used by the InkyPi
 # community (hobbyists/tech in Europe and Americas). Jost font supports accented chars.
@@ -97,6 +94,10 @@ class Today(BasePlugin):
         language = str(settings.get("language") or "en").strip().lower()
         locale = LOCALE_DATA.get(language, LOCALE_DATA["en"])
 
+        primary_color = ImageColor.getcolor(settings.get("primaryColor") or DEFAULT_PRIMARY, "RGB")
+        secondary_color = ImageColor.getcolor(settings.get("secondaryColor") or DEFAULT_SECONDARY, "RGB")
+        progress_bar_color = ImageColor.getcolor(settings.get("progressBarColor") or DEFAULT_PROGRESS_BAR, "RGB")
+
         # Full day progress (00:00 to 23:59)
         total_day = 23 * 60 + 59
         cur = now.hour * 60 + now.minute
@@ -122,18 +123,26 @@ class Today(BasePlugin):
         remain_word = locale["remaining"]
         remain_str = f"{h}h {m:02d}m {remain_word}" if h > 0 else f"{m}m {remain_word}"
 
-        return self._render(dimensions, locale["title"], time_digits, period, date_str, progress, remain_str)
+        return self._render(dimensions, locale["title"], time_digits, period, date_str, progress, remain_str,
+                           primary_color, secondary_color, progress_bar_color)
 
-    def _render(self, dimensions, title, time_digits, period, date_str, progress, remain_str):
+    def _render(self, dimensions, title, time_digits, period, date_str, progress, remain_str,
+                primary_color, secondary_color, progress_bar_color):
         w, h = dimensions
-        img = Image.new("RGBA", (w, h), BG_COLOR + (255,))
+
+        # Derive helper colors from the user-chosen palette
+        ghost_color = tuple(max(c - 25, 0) if c >= 128 else min(c + 25, 255) for c in primary_color)
+        track_color = tuple(max(c - 50, 0) if c >= 128 else min(c + 50, 255) for c in primary_color)
+        date_color = tuple((p + s) // 2 for p, s in zip(primary_color, secondary_color))
+
+        img = Image.new("RGBA", (w, h), primary_color + (255,))
         draw = ImageDraw.Draw(img)
 
-        # Flat black card with rounded corners
+        # Flat card with rounded corners
         mx, my = int(w * 0.04), int(h * 0.04)
         cw, ch = w - 2 * mx, h - 2 * my
         radius = int(min(cw, ch) * 0.06)
-        draw.rounded_rectangle([mx, my, mx + cw, my + ch], radius=radius, fill=BG_COLOR)
+        draw.rounded_rectangle([mx, my, mx + cw, my + ch], radius=radius, fill=primary_color)
 
         cx = w // 2
         dim = min(cw, ch)
@@ -151,7 +160,7 @@ class Today(BasePlugin):
         y_remain = y_bar + int(ch * 0.14)
 
         # --- Title label ---
-        draw.text((cx, y_title), title, font=title_fnt, fill=WHITE, anchor="mm")
+        draw.text((cx, y_title), title, font=title_fnt, fill=secondary_color, anchor="mm")
 
         # --- Clock (auto-scale to fit card width) ---
         max_clock_w = cw * 0.90
@@ -177,17 +186,17 @@ class Today(BasePlugin):
         sx = cx - total_w / 2
 
         # Ghost digits (dim segments behind active digits)
-        draw.text((sx, y_clock), ghost, font=clock_fnt, fill=GHOST, anchor="lm")
+        draw.text((sx, y_clock), ghost, font=clock_fnt, fill=ghost_color, anchor="lm")
 
         # Active time digits
-        draw.text((sx, y_clock), time_digits, font=clock_fnt, fill=WHITE, anchor="lm")
+        draw.text((sx, y_clock), time_digits, font=clock_fnt, fill=secondary_color, anchor="lm")
 
         # AM/PM — only rendered in 12h mode
         if period:
-            draw.text((sx + d_w + gap, y_clock), period, font=period_fnt, fill=WHITE, anchor="lm")
+            draw.text((sx + d_w + gap, y_clock), period, font=period_fnt, fill=secondary_color, anchor="lm")
 
-        # --- Date line in light gray ---
-        draw.text((cx, y_date), date_str, font=date_fnt, fill=LIGHT_GRAY, anchor="mm")
+        # --- Date line ---
+        draw.text((cx, y_date), date_str, font=date_fnt, fill=date_color, anchor="mm")
 
         # --- Progress bar ---
         bar_w = int(cw * 0.60)
@@ -198,7 +207,7 @@ class Today(BasePlugin):
         # Track
         draw.rounded_rectangle(
             [bar_x, y_bar - bar_h // 2, bar_x + bar_w, y_bar + bar_h // 2],
-            radius=bar_r, fill=TRACK + (255,)
+            radius=bar_r, fill=track_color + (255,)
         )
 
         # Fill
@@ -206,10 +215,10 @@ class Today(BasePlugin):
             fill_w = max(int(bar_w * progress), bar_h)
             draw.rounded_rectangle(
                 [bar_x, y_bar - bar_h // 2, bar_x + fill_w, y_bar + bar_h // 2],
-                radius=bar_r, fill=RED + (255,)
+                radius=bar_r, fill=progress_bar_color + (255,)
             )
 
         # --- Remaining time ---
-        draw.text((cx, y_remain), remain_str, font=remain_fnt, fill=WHITE, anchor="mm")
+        draw.text((cx, y_remain), remain_str, font=remain_fnt, fill=secondary_color, anchor="mm")
 
         return img.convert("RGB")
