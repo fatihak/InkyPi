@@ -140,8 +140,6 @@ class Today(BasePlugin):
 
         # Fonts — pushed slightly larger while preserving hierarchy
         title_fnt = get_font("Jost", int(dim * 0.09), "bold")
-        clock_fnt = get_font("DS-Digital", int(dim * 0.50))
-        period_fnt = get_font("Jost", int(dim * 0.082), "bold")
         date_fnt = get_font("Jost", int(dim * 0.10), "bold")
         remain_fnt = get_font("Jost", int(dim * 0.072))
 
@@ -155,19 +153,30 @@ class Today(BasePlugin):
         # --- Title label ---
         draw.text((cx, y_title), title, font=title_fnt, fill=WHITE, anchor="mm")
 
-        # --- Clock ---
+        # --- Clock (auto-scale to fit card width) ---
+        max_clock_w = cw * 0.90
+        ghost = ''.join('8' if c.isdigit() else c for c in time_digits)
+        clock_size = int(dim * 0.50)
+        while clock_size > 16:
+            clock_fnt = get_font("DS-Digital", clock_size)
+            period_fnt = get_font("Jost", int(clock_size * 0.164), "bold")
+            gap = int(dim * 0.015)
+            test_w = draw.textlength(ghost, font=clock_fnt)
+            if period:
+                test_w += gap + draw.textlength(period, font=period_fnt)
+            if test_w <= max_clock_w:
+                break
+            clock_size -= 2
+
         d_w = draw.textlength(time_digits, font=clock_fnt)
-        gap = int(dim * 0.015)
         if period:
             p_w = draw.textlength(period, font=period_fnt)
             total_w = d_w + gap + p_w
         else:
-            p_w = 0
             total_w = d_w
         sx = cx - total_w / 2
 
         # Ghost digits (dim segments behind active digits)
-        ghost = ''.join('8' if c.isdigit() else c for c in time_digits)
         draw.text((sx, y_clock), ghost, font=clock_fnt, fill=GHOST, anchor="lm")
 
         # Active time digits
