@@ -2,6 +2,7 @@ import logging
 
 import pytz
 import requests
+from datetime import datetime
 
 from plugins.weather.weather import UNITS, Weather
 
@@ -11,6 +12,45 @@ REVERSE_GEOCODE_URL = (
     "https://nominatim.openstreetmap.org/reverse"
     "?lat={lat}&lon={long}&format=jsonv2&addressdetails=1&zoom=10"
 )
+
+LANGUAGE_LABELS = {
+    "de": {
+        "now": "JETZT",
+        "days": ["MO", "DI", "MI", "DO", "FR", "SA", "SO"],
+    },
+    "en": {
+        "now": "NOW",
+        "days": ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"],
+    },
+    "es": {
+        "now": "AHORA",
+        "days": ["LUN", "MAR", "MIE", "JUE", "VIE", "SAB", "DOM"],
+    },
+    "fr": {
+        "now": "MAINT",
+        "days": ["LUN", "MAR", "MER", "JEU", "VEN", "SAM", "DIM"],
+    },
+    "id": {
+        "now": "SEK",
+        "days": ["SEN", "SEL", "RAB", "KAM", "JUM", "SAB", "MIN"],
+    },
+    "it": {
+        "now": "ORA",
+        "days": ["LUN", "MAR", "MER", "GIO", "VEN", "SAB", "DOM"],
+    },
+    "nl": {
+        "now": "NU",
+        "days": ["MA", "DI", "WO", "DO", "VR", "ZAT", "ZON"],
+    },
+    "pt": {
+        "now": "AGORA",
+        "days": ["SEG", "TER", "QUA", "QUI", "SEX", "SÁB", "DOM"],
+    },
+}
+
+
+def get_language_labels(language):
+    return LANGUAGE_LABELS.get(language, LANGUAGE_LABELS["en"])
 
 
 class MiniWeather(Weather):
@@ -27,6 +67,7 @@ class MiniWeather(Weather):
         if units not in UNITS:
             raise RuntimeError("Units are required.")
 
+        language = str(settings.get("language", "en")).strip() or "en"
         weather_provider = settings.get("weatherProvider", "OpenMeteo")
         timezone_name = device_config.get_config("timezone", default="America/New_York")
         time_format = device_config.get_config("time_format", default="12h")
@@ -54,14 +95,15 @@ class MiniWeather(Weather):
 
         current_day = forecast[0]
         forecast_rows = forecast[1:5] if len(forecast) > 1 else forecast[:4]
+        labels = get_language_labels(language)
 
         template_params.update(
             {
                 "title": title,
-                "current_label": "NOW",
+                "current_label": labels["now"],
                 "current_high": current_day["high"],
                 "current_low": current_day["low"],
-                "forecast_rows": forecast_rows,
+                "forecast_rows": self._localize_forecast_rows(forecast_rows, labels),
                 "provider_timezone": provider_tz.zone,
                 "plugin_settings": settings,
             }
@@ -75,6 +117,19 @@ class MiniWeather(Weather):
         if not image:
             raise RuntimeError("Failed to take screenshot, please check logs.")
         return image
+
+    def _localize_forecast_rows(self, forecast_rows, labels):
+        localized_rows = []
+        for row in forecast_rows:
+            row_copy = dict(row)
+            weekday_index = row_copy.get("weekday_index")
+
+            if isinstance(weekday_index, int):
+                row_copy["day"] = labels["days"][weekday_index % 7]
+
+            localized_rows.append(row_copy)
+
+        return localized_rows
 
     def _get_template_params(
         self,

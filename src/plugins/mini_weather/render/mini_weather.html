@@ -21,7 +21,7 @@
             <div class="forecast-row">
                 <div class="forecast-left">
                     <img class="forecast-icon" src="{{ day.icon }}" alt="{{ day.day }} icon">
-                    <span class="forecast-day">{{ day.day[:3] | upper }}</span>
+                    <span class="forecast-day">{{ day.day }}</span>
                 </div>
                 <div class="forecast-range">
                     <span class="range-high">▲ {{ day.high }}{% if units != "standard" %}°{% endif %}</span>
