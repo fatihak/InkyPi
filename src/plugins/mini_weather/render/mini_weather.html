@@ -1,0 +1,35 @@
+{% extends "plugin.html" %}
+
+{% block content %}
+<div class="mini-weather-shell">
+    <div class="mini-weather-title">{{ title }}</div>
+
+    <div class="mini-weather-layout">
+        <section class="current-card">
+            <div class="current-label">{{ current_label }}</div>
+            <div class="current-temp">
+                {{ current_temperature }}{% if units != "standard" %}°{% endif %}
+            </div>
+            <div class="current-range">
+                <span class="range-high">▲ {{ current_high }}{% if units != "standard" %}°{% endif %}</span>
+                <span class="range-low">▼ {{ current_low }}{% if units != "standard" %}°{% endif %}</span>
+            </div>
+        </section>
+
+        <section class="forecast-list">
+            {% for day in forecast_rows %}
+            <div class="forecast-row">
+                <div class="forecast-left">
+                    <img class="forecast-icon" src="{{ day.icon }}" alt="{{ day.day }} icon">
+                    <span class="forecast-day">{{ day.day[:3] | upper }}</span>
+                </div>
+                <div class="forecast-range">
+                    <span class="range-high">▲ {{ day.high }}{% if units != "standard" %}°{% endif %}</span>
+                    <span class="range-low">▼ {{ day.low }}{% if units != "standard" %}°{% endif %}</span>
+                </div>
+            </div>
+            {% endfor %}
+        </section>
+    </div>
+</div>
+{% endblock %}
