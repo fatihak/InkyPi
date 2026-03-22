@@ -1,4 +1,6 @@
 import logging
+import re
+import unicodedata
 
 import pytz
 import requests
@@ -25,6 +27,11 @@ QUICK_LOCATION_LABELS = {
     "41.9028,12.4964": "Rome",
     "-23.5505,-46.6333": "São Paulo",
     "35.6762,139.6503": "Tokyo",
+}
+
+QUICK_LOCATION_COORDS = {
+    city: tuple(map(float, coords.split(",")))
+    for coords, city in QUICK_LOCATION_LABELS.items()
 }
 
 LANGUAGE_LABELS = {
@@ -65,6 +72,36 @@ LANGUAGE_LABELS = {
 
 def get_language_labels(language):
     return LANGUAGE_LABELS.get(language, LANGUAGE_LABELS["en"])
+
+
+def is_valid_title(value):
+    if value is None:
+        return False
+
+    title = str(value).strip()
+    if len(title) < 2:
+        return False
+
+    # Require at least one letter/number to avoid titles like "," or "'".
+    return bool(re.search(r"\w", title, flags=re.UNICODE))
+
+
+def is_supported_title(value):
+    if not is_valid_title(value):
+        return False
+
+    title = str(value).strip()
+    has_letter = False
+
+    for char in title:
+        if not char.isalpha():
+            continue
+
+        has_letter = True
+        if "LATIN" not in unicodedata.name(char, ""):
+            return False
+
+    return has_letter
 
 
 class MiniWeather(Weather):
@@ -197,7 +234,7 @@ class MiniWeather(Weather):
     def _resolve_title_with_fallback(self, settings, weather_provider, lat, long, api_key):
         try:
             title = self._resolve_title(settings, weather_provider, lat, long, api_key)
-            if title and str(title).strip():
+            if is_supported_title(title):
                 return title
         except Exception as exc:
             logger.warning("Mini Weather title resolution failed, using fallback: %s", exc)
@@ -207,7 +244,17 @@ class MiniWeather(Weather):
         if quick_location_label:
             return quick_location_label
 
+        matched_city = self._match_quick_location_by_coordinates(lat, long)
+        if matched_city:
+            return matched_city
+
         return self.format_coordinates(lat, long)
+
+    def _match_quick_location_by_coordinates(self, lat, long, tolerance=0.02):
+        for city, (city_lat, city_long) in QUICK_LOCATION_COORDS.items():
+            if abs(lat - city_lat) <= tolerance and abs(long - city_long) <= tolerance:
+                return city
+        return None
 
     def parse_open_meteo_timezone(self, weather_data):
         timezone_name = weather_data.get("timezone")
