@@ -386,8 +386,8 @@ class SimpleCalendar(BasePlugin):
         day_dot_spacing = max(int(ref * 0.014), 1)
 
         # Weekday — smaller dots
-        wk_dot_r = max(int(ref * 0.016), 1)
-        wk_dot_spacing = max(int(ref * 0.010), 1)
+        wk_dot_r = max(int(ref * 0.013), 1)
+        wk_dot_spacing = max(int(ref * 0.008), 1)
 
         # Vertical arrangement: day number above centre, weekday below
         day_cell = day_dot_r * 2 + day_dot_spacing
@@ -427,10 +427,12 @@ class SimpleCalendar(BasePlugin):
 
         # Scale fonts proportionally to column width (fits 2-digit numbers)
         month_font_size = max(int(col_w * 0.72), 12)
+        year_font_size = max(int(col_w * 0.46), 10)
         header_font_size = max(int(col_w * 0.42), 10)
-        day_font_size = max(int(col_w * 0.48), 10)
+        day_font_size = max(int(col_w * 0.42), 10)
 
         month_font = get_font("Jost", month_font_size, "bold")
+        year_font = get_font("Jost", year_font_size)
         header_font = get_font("Jost", header_font_size)
         day_font = get_font("Jost", day_font_size)
 
@@ -438,11 +440,25 @@ class SimpleCalendar(BasePlugin):
         top_pad = int(card_h * 0.08)
         month_y = card_top + top_pad
 
-        # Month name
+        # Month and year
         month_name = now.strftime("%B").upper()
+        year_text = str(now.year)
+        month_bbox = draw.textbbox((0, 0), month_name, font=month_font)
+        year_bbox = draw.textbbox((0, 0), year_text, font=year_font)
+        month_width = month_bbox[2] - month_bbox[0]
+        year_width = year_bbox[2] - year_bbox[0]
+        header_gap = max(int(col_w * 0.5), 10)
+        total_width = month_width + header_gap + year_width
+        header_left = right_cx - total_width / 2
+
         draw.text(
-            (right_cx, month_y), month_name,
-            fill=text_color, font=month_font, anchor="mt",
+            (header_left, month_y), month_name,
+            fill=text_color, font=month_font, anchor="lt",
+        )
+        draw.text(
+            (header_left + month_width + header_gap, month_y + max((month_font_size - year_font_size) // 2, 0)),
+            year_text,
+            fill=(138, 138, 138), font=year_font, anchor="lt",
         )
 
         # Weekday header row
