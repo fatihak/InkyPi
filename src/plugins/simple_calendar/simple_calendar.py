@@ -23,7 +23,7 @@ LOCALE_DATA = {
         "months": ["JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE", "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER"],
     },
     "es": {
-        "weekday_abbrev": ["LUN", "MAR", "MIE", "JUE", "VIE", "SAB", "DOM"],
+        "weekday_abbrev": ["LUN", "MAR", "MIÉ", "JUE", "VIE", "SÁB", "DOM"],
         "headers": ["D", "L", "M", "M", "J", "V", "S"],
         "months": ["ENERO", "FEBRERO", "MARZO", "ABRIL", "MAYO", "JUNIO", "JULIO", "AGOSTO", "SEPTIEMBRE", "OCTUBRE", "NOVIEMBRE", "DICIEMBRE"],
     },
@@ -48,7 +48,7 @@ LOCALE_DATA = {
         "months": ["JANUARI", "FEBRUARI", "MAART", "APRIL", "MEI", "JUNI", "JULI", "AUGUSTUS", "SEPTEMBER", "OKTOBER", "NOVEMBER", "DECEMBER"],
     },
     "pt": {
-        "weekday_abbrev": ["SEG", "TER", "QUA", "QUI", "SEX", "SAB", "DOM"],
+        "weekday_abbrev": ["SEG", "TER", "QUA", "QUI", "SEX", "SÁB", "DOM"],
         "headers": ["D", "S", "T", "Q", "Q", "S", "S"],
         "months": ["JANEIRO", "FEVEREIRO", "MARÇO", "ABRIL", "MAIO", "JUNHO", "JULHO", "AGOSTO", "SETEMBRO", "OUTUBRO", "NOVEMBRO", "DEZEMBRO"],
     },
@@ -376,16 +376,28 @@ _LETTER_PATTERNS = {
     ],
 }
 
-
-def _get_dot_positions(char):
+def _get_dot_positions(char, reserve_accent_row=False):
     """Return list of (row, col) positions for a character glyph."""
-    patterns = _DIGIT_PATTERNS if char.isdigit() else _LETTER_PATTERNS
-    rows = patterns.get(char.upper(), [])
+    accent_positions = []
+    base_char = char.upper()
+
+    if base_char == "Á":
+        base_char = "A"
+        accent_positions = [(0, 3)]
+    elif base_char == "É":
+        base_char = "E"
+        accent_positions = [(0, 3)]
+
+    patterns = _DIGIT_PATTERNS if base_char.isdigit() else _LETTER_PATTERNS
+    rows = patterns.get(base_char.upper(), [])
     positions = []
     for r, row_str in enumerate(rows):
         for c, ch in enumerate(row_str):
             if ch == "1":
-                positions.append((r, c))
+                positions.append((r + (1 if reserve_accent_row else 0), c))
+
+    positions.extend(accent_positions)
+
     return positions
 
 
@@ -397,7 +409,8 @@ def _draw_dotmatrix_text(draw, text, center_x, center_y, dot_radius, dot_spacing
     char_width_px = glyph_w * cell
     gap_px = char_gap_dots * cell
     total_width = len(text) * char_width_px + (len(text) - 1) * gap_px
-    total_height = glyph_h * cell
+    accent_row = any(ch.upper() in {"Á", "É"} for ch in text)
+    total_height = (glyph_h + (1 if accent_row else 0)) * cell
 
     start_x = center_x - total_width / 2
     start_y = center_y - total_height / 2
@@ -405,7 +418,7 @@ def _draw_dotmatrix_text(draw, text, center_x, center_y, dot_radius, dot_spacing
     for i, ch in enumerate(text):
         ox = start_x + i * (char_width_px + gap_px)
         oy = start_y
-        for r, c in _get_dot_positions(ch):
+        for r, c in _get_dot_positions(ch, reserve_accent_row=accent_row):
             cx = ox + c * cell + dot_radius
             cy = oy + r * cell + dot_radius
             draw.ellipse(
@@ -527,6 +540,8 @@ class SimpleCalendar(BasePlugin):
 
         day_center_y = content_top + day_block_h // 2
         wk_center_y = content_top + day_block_h + gap + wk_block_h // 2
+        if any(ch in {"Á", "É"} for ch in weekday_str.upper()):
+            wk_center_y -= int(wk_cell * 0.45)
 
         _draw_dotmatrix_text(
             draw, day_str, left_cx, day_center_y,
@@ -578,7 +593,7 @@ class SimpleCalendar(BasePlugin):
         total_width = month_width + header_gap + year_width
         header_left = right_cx - total_width / 2
 
-        # Baseline anchoring: accented glyphs (É, Ä) extend upward
+        # Baseline anchoring: accented glyphs (Á, É) extend upward
         # without shifting letter positions or downstream layout.
         baseline_y = month_y + month_font.getmetrics()[0]
         title_lift = max(int(month_font_size * 0.30), 8)
@@ -661,8 +676,8 @@ class SimpleCalendar(BasePlugin):
 
     def _get_weekday_abbrev(self, now, locale_data, language):
         if locale_data:
-            return self._strip_accents(locale_data["weekday_abbrev"][now.weekday()]).upper()
-        return self._strip_accents(now.strftime("%a").upper())[:3]
+            return locale_data["weekday_abbrev"][now.weekday()].upper()
+        return now.strftime("%a").upper()[:3]
 
     def _get_month_name(self, now, locale_data, language):
         if locale_data:
