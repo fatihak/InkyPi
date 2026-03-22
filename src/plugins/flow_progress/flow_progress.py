@@ -73,8 +73,28 @@ def calc_month_progress(dt):
     return min(round(elapsed / days_in_month * 100), 100)
 
 def calc_year_progress(dt):
-    start = datetime(dt.year, 1, 1, tzinfo=dt.tzinfo)
-    end = datetime(dt.year + 1, 1, 1, tzinfo=dt.tzinfo)
+    # Handle naive and timezone-aware datetimes safely.
+    # For naive datetimes, keep naive arithmetic.
+    if dt.tzinfo is None:
+        start = datetime(dt.year, 1, 1)
+        end = datetime(dt.year + 1, 1, 1)
+        total = (end - start).total_seconds()
+        elapsed = (dt - start).total_seconds()
+        return min(round(elapsed / total * 100), 100)
+
+    # For tz-aware datetimes, prefer using the timezone object to localize
+    # the naive boundary datetimes. This avoids incorrect offsets with pytz
+    # when reusing a tzinfo instance from a different date.
+    tz = dt.tzinfo
+    try:
+        # pytz provides `localize` for correct localization
+        start = tz.localize(datetime(dt.year, 1, 1))
+        end = tz.localize(datetime(dt.year + 1, 1, 1))
+    except Exception:
+        # Fallback: construct with tzinfo (works for zoneinfo / stdlib tzinfo)
+        start = datetime(dt.year, 1, 1, tzinfo=tz)
+        end = datetime(dt.year + 1, 1, 1, tzinfo=tz)
+
     total = (end - start).total_seconds()
     elapsed = (dt - start).total_seconds()
     return min(round(elapsed / total * 100), 100)
