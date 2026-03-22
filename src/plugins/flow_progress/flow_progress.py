@@ -150,15 +150,15 @@ class FlowProgress(BasePlugin):
         except (TypeError, ValueError):
             num_bars = DEFAULT_NUM_BARS
         
-        # `primaryColor` represents the active/filled color (foreground)
-        # `secondaryColor` represents the remaining/unfilled color (background)
-        # Default: primary (filled) = white, secondary (background/unfilled) = black
+        # `primaryColor` represents the active/filled color.
+        # `secondaryColor` represents the background color.
+        # Unfilled dots use a muted blend between filled and background.
         primary_color = settings.get("primaryColor", "#ffffff")
         secondary_color = settings.get("secondaryColor", "#000000")
         BG = ImageColor.getrgb(secondary_color)
-        TEXT = ImageColor.getrgb(primary_color)
-        # DIM is the unfilled color; align it with the chosen secondary color
-        DIM = ImageColor.getrgb(secondary_color)
+        FILLED = ImageColor.getrgb(primary_color)
+        TEXT = FILLED
+        DIM = tuple((fg * 2 + bg * 6) // 8 for fg, bg in zip(FILLED, BG))
 
         tz_name = device_config.get_config("timezone", default="America/New_York")
         tz = pytz.timezone(tz_name)
@@ -220,7 +220,7 @@ class FlowProgress(BasePlugin):
                 bar_y = top_y + bar_index * (bar_dot_r * 2 + bar_gap)
                 for j in range(num_dots):
                     cx = bar_start + j * bar_dot_sp + bar_dot_sp / 2
-                    c = TEXT if j < filled else DIM
+                    c = FILLED if j < filled else DIM
                     draw.ellipse(
                         [cx - bar_dot_r, bar_y - bar_dot_r, cx + bar_dot_r, bar_y + bar_dot_r],
                         fill=c,
