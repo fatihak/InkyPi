@@ -17,6 +17,7 @@
         "image_album",
         "image_folder",
         "image_upload",
+        "mini_weather",
         "apod",
         "image_url",
         "newspaper",
