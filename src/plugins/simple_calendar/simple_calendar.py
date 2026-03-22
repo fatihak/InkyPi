@@ -307,10 +307,7 @@ class SimpleCalendar(BasePlugin):
         selected_date = self._get_selected_date(settings, tz)
 
         primary_color = self._parse_color(settings.get("primaryColor"), (230, 26, 26))
-        highlight_color = self._parse_color(
-            settings.get("highlightColor") or settings.get("secondaryColor"),
-            (163, 13, 13),
-        )
+        highlight_color = self._parse_color(settings.get("highlightColor"), (163, 13, 13))
 
         return self._render_calendar(dimensions, selected_date, primary_color, highlight_color)
 
