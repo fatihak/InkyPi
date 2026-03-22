@@ -3,7 +3,7 @@ import logging
 from datetime import datetime
 
 import pytz
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageColor, ImageDraw
 
 from plugins.base_plugin.base_plugin import BasePlugin
 from utils.app_utils import get_font
@@ -292,6 +292,10 @@ def _draw_dotmatrix_text(draw, text, center_x, center_y, dot_radius, dot_spacing
 
 class SimpleCalendar(BasePlugin):
 
+    def generate_settings_template(self):
+        template_params = super().generate_settings_template()
+        return template_params
+
     def generate_image(self, settings, device_config):
         dimensions = device_config.get_resolution()
         if device_config.get_config("orientation") == "vertical":
@@ -301,21 +305,27 @@ class SimpleCalendar(BasePlugin):
         tz = pytz.timezone(timezone_name)
         now = datetime.now(tz)
 
-        return self._render_calendar(dimensions, now)
+        primary_color = self._parse_color(settings.get("primaryColor"), (230, 26, 26))
+        highlight_color = self._parse_color(
+            settings.get("highlightColor") or settings.get("secondaryColor"),
+            (163, 13, 13),
+        )
+
+        return self._render_calendar(dimensions, now, primary_color, highlight_color)
 
     # ------------------------------------------------------------------
     # Core rendering
     # ------------------------------------------------------------------
 
-    def _render_calendar(self, dimensions, now):
+    def _render_calendar(self, dimensions, now, primary_color, highlight_color):
         W, H = dimensions
 
         # Colours
-        dark = (30, 30, 30)
+        dark = primary_color
         light_bg = (245, 245, 245)
         white = (255, 255, 255)
-        mid_gray = (180, 180, 180)
-        text_color = (50, 50, 50)
+        mid_gray = (178, 178, 178)
+        text_color = (56, 56, 56)
 
         img = Image.new("RGB", (W, H), white)
         draw = ImageDraw.Draw(img)
@@ -466,11 +476,11 @@ class SimpleCalendar(BasePlugin):
                 col_cx = grid_left + col_w * dow + col_w / 2
 
                 if day == now.day:
-                    # Today highlight: dark filled circle
+                    # Today highlight: filled circle using the configured accent color
                     draw.ellipse(
                         [col_cx - today_circle_r, row_cy - today_circle_r,
                          col_cx + today_circle_r, row_cy + today_circle_r],
-                        fill=dark,
+                        fill=highlight_color,
                     )
                     draw.text(
                         (col_cx, row_cy), str(day),
@@ -483,3 +493,21 @@ class SimpleCalendar(BasePlugin):
                     )
 
         return img
+
+    @staticmethod
+    def _parse_color(value, fallback):
+        if not value:
+            return fallback
+
+        try:
+            return ImageColor.getrgb(value)
+        except Exception:
+            return fallback
+
+    @staticmethod
+    def _mix_colors(color_a, color_b, ratio):
+        ratio = max(0.0, min(1.0, ratio))
+        return tuple(
+            int(color_a[index] * ratio + color_b[index] * (1 - ratio))
+            for index in range(3)
+        )
