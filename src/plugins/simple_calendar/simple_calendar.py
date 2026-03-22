@@ -294,6 +294,7 @@ class SimpleCalendar(BasePlugin):
 
     def generate_settings_template(self):
         template_params = super().generate_settings_template()
+        template_params['style_settings'] = False
         return template_params
 
     def generate_image(self, settings, device_config):
@@ -303,7 +304,7 @@ class SimpleCalendar(BasePlugin):
 
         timezone_name = device_config.get_config("timezone", default="America/New_York")
         tz = pytz.timezone(timezone_name)
-        now = datetime.now(tz)
+        selected_date = self._get_selected_date(settings, tz)
 
         primary_color = self._parse_color(settings.get("primaryColor"), (230, 26, 26))
         highlight_color = self._parse_color(
@@ -311,7 +312,7 @@ class SimpleCalendar(BasePlugin):
             (163, 13, 13),
         )
 
-        return self._render_calendar(dimensions, now, primary_color, highlight_color)
+        return self._render_calendar(dimensions, selected_date, primary_color, highlight_color)
 
     # ------------------------------------------------------------------
     # Core rendering
@@ -384,8 +385,8 @@ class SimpleCalendar(BasePlugin):
         ref = min(card_h, left_panel_w)
 
         # Day number — large dots
-        day_dot_r = max(int(ref * 0.028), 2)
-        day_dot_spacing = max(int(ref * 0.016), 1)
+        day_dot_r = max(int(ref * 0.024), 2)
+        day_dot_spacing = max(int(ref * 0.014), 1)
 
         # Weekday — smaller dots
         wk_dot_r = max(int(ref * 0.016), 1)
@@ -495,6 +496,14 @@ class SimpleCalendar(BasePlugin):
         return img
 
     @staticmethod
+    def _get_selected_date(settings, tz):
+        custom_date = settings.get("customDate")
+        if custom_date:
+            return datetime.strptime(custom_date, "%Y-%m-%d").date()
+
+        return datetime.now(tz).date()
+
+    @staticmethod
     def _parse_color(value, fallback):
         if not value:
             return fallback
@@ -503,11 +512,3 @@ class SimpleCalendar(BasePlugin):
             return ImageColor.getrgb(value)
         except Exception:
             return fallback
-
-    @staticmethod
-    def _mix_colors(color_a, color_b, ratio):
-        ratio = max(0.0, min(1.0, ratio))
-        return tuple(
-            int(color_a[index] * ratio + color_b[index] * (1 - ratio))
-            for index in range(3)
-        )

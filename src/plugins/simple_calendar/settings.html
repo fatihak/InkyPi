@@ -1,3 +1,9 @@
+<span style="color: var(--text-primary);">If the date field is blank it will default to today's date.</span>
+<div class="form-group">
+	<label for="customDate" class="form-label">Date (optional)</label>
+	<input type="date" id="customDate" name="customDate" class="form-input" />
+</div>
+
 <div class="form-group">
 	<div class="form-group">
 		<label for="primaryColor" class="form-label">Primary Color:</label>
@@ -12,15 +18,9 @@
 <script>
 	document.addEventListener('DOMContentLoaded', () => {
 		if (loadPluginSettings) {
-			if (pluginSettings.primaryColor) {
-				document.querySelector('[name=primaryColor]').value = pluginSettings.primaryColor;
-			}
-
-			if (pluginSettings.highlightColor) {
-				document.querySelector('[name=highlightColor]').value = pluginSettings.highlightColor;
-			} else if (pluginSettings.secondaryColor) {
-				document.querySelector('[name=highlightColor]').value = pluginSettings.secondaryColor;
-			}
+			document.getElementById('customDate').value = pluginSettings.customDate || '';
+			document.querySelector('[name=primaryColor]').value = pluginSettings.primaryColor || '#e61a1a';
+			document.querySelector('[name=highlightColor]').value = pluginSettings.highlightColor || pluginSettings.secondaryColor || '#a30d0d';
 		}
 	});
 </script>
