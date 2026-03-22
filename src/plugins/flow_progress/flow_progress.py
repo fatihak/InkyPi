@@ -150,12 +150,15 @@ class FlowProgress(BasePlugin):
         except (TypeError, ValueError):
             num_bars = DEFAULT_NUM_BARS
         
-        primary_color = settings.get("primaryColor", "#000000")
-        secondary_color = settings.get("secondaryColor", "#ffffff")
-        BG = ImageColor.getrgb(primary_color)
-        TEXT = ImageColor.getrgb(secondary_color)
-        # DIM is a muted version between background and secondary
-        DIM = tuple((bg + fg) // 4 for bg, fg in zip(BG, TEXT))
+        # `primaryColor` represents the active/filled color (foreground)
+        # `secondaryColor` represents the remaining/unfilled color (background)
+        # Default: primary (filled) = white, secondary (background/unfilled) = black
+        primary_color = settings.get("primaryColor", "#ffffff")
+        secondary_color = settings.get("secondaryColor", "#000000")
+        BG = ImageColor.getrgb(secondary_color)
+        TEXT = ImageColor.getrgb(primary_color)
+        # DIM is the unfilled color; align it with the chosen secondary color
+        DIM = ImageColor.getrgb(secondary_color)
 
         tz_name = device_config.get_config("timezone", default="America/New_York")
         tz = pytz.timezone(tz_name)
