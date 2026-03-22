@@ -5,6 +5,20 @@
 </div>
 
 <div class="form-group">
+	<label for="locale" class="form-label">Locale:</label>
+	<select id="locale" name="locale" class="form-input">
+		<option value="nl">Dutch</option>
+		<option value="en">English</option>
+		<option value="fr">French</option>
+		<option value="de">German</option>
+		<option value="id">Indonesian</option>
+		<option value="it">Italian</option>
+		<option value="pt">Portuguese</option>
+		<option value="es">Spanish</option>
+	</select>
+</div>
+
+<div class="form-group">
 	<div class="form-group">
 		<label for="primaryColor" class="form-label">Primary Color:</label>
 		<input type="color" name="primaryColor" class="color-picker" value="#e61a1a" />
@@ -19,6 +33,11 @@
 	document.addEventListener('DOMContentLoaded', () => {
 		if (loadPluginSettings) {
 			document.getElementById('customDate').value = pluginSettings.customDate || '';
+			const locale = document.getElementById('locale');
+			locale.value = pluginSettings.locale || pluginSettings.language || 'en';
+			if (!locale.querySelector(`option[value="${pluginSettings.locale || pluginSettings.language}"]`)) {
+				locale.value = 'en';
+			}
 			document.querySelector('[name=primaryColor]').value = pluginSettings.primaryColor || '#e61a1a';
 			document.querySelector('[name=highlightColor]').value = pluginSettings.highlightColor || '#a30d0d';
 		}

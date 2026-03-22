@@ -1,5 +1,6 @@
 import calendar
 import logging
+import unicodedata
 from datetime import datetime
 
 import pytz
@@ -9,6 +10,49 @@ from plugins.base_plugin.base_plugin import BasePlugin
 from utils.app_utils import get_font
 
 logger = logging.getLogger(__name__)
+
+LOCALE_DATA = {
+    "de": {
+        "weekday_abbrev": ["MON", "DIE", "MIT", "DON", "FRE", "SAM", "SON"],
+        "headers": ["S", "M", "D", "M", "D", "F", "S"],
+        "months": ["JANUAR", "FEBRUAR", "MÄRZ", "APRIL", "MAI", "JUNI", "JULI", "AUGUST", "SEPTEMBER", "OKTOBER", "NOVEMBER", "DEZEMBER"],
+    },
+    "en": {
+        "weekday_abbrev": ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"],
+        "headers": ["S", "M", "T", "W", "T", "F", "S"],
+        "months": ["JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE", "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER"],
+    },
+    "es": {
+        "weekday_abbrev": ["LUN", "MAR", "MIE", "JUE", "VIE", "SAB", "DOM"],
+        "headers": ["D", "L", "M", "M", "J", "V", "S"],
+        "months": ["ENERO", "FEBRERO", "MARZO", "ABRIL", "MAYO", "JUNIO", "JULIO", "AGOSTO", "SEPTIEMBRE", "OCTUBRE", "NOVIEMBRE", "DICIEMBRE"],
+    },
+    "fr": {
+        "weekday_abbrev": ["LUN", "MAR", "MER", "JEU", "VEN", "SAM", "DIM"],
+        "headers": ["D", "L", "M", "M", "J", "V", "S"],
+        "months": ["JANVIER", "FÉVRIER", "MARS", "AVRIL", "MAI", "JUIN", "JUILLET", "AOÛT", "SEPTEMBRE", "OCTOBRE", "NOVEMBRE", "DÉCEMBRE"],
+    },
+    "id": {
+        "weekday_abbrev": ["SEN", "SEL", "RAB", "KAM", "JUM", "SAB", "MIN"],
+        "headers": ["M", "S", "S", "R", "K", "J", "S"],
+        "months": ["JANUARI", "FEBRUARI", "MARET", "APRIL", "MEI", "JUNI", "JULI", "AGUSTUS", "SEPTEMBER", "OKTOBER", "NOVEMBER", "DESEMBER"],
+    },
+    "it": {
+        "weekday_abbrev": ["LUN", "MAR", "MER", "GIO", "VEN", "SAB", "DOM"],
+        "headers": ["D", "L", "M", "M", "G", "V", "S"],
+        "months": ["GENNAIO", "FEBBRAIO", "MARZO", "APRILE", "MAGGIO", "GIUGNO", "LUGLIO", "AGOSTO", "SETTEMBRE", "OTTOBRE", "NOVEMBRE", "DICEMBRE"],
+    },
+    "nl": {
+        "weekday_abbrev": ["MAA", "DIN", "WOE", "DON", "VRI", "ZAT", "ZON"],
+        "headers": ["Z", "M", "D", "W", "D", "V", "Z"],
+        "months": ["JANUARI", "FEBRUARI", "MAART", "APRIL", "MEI", "JUNI", "JULI", "AUGUSTUS", "SEPTEMBER", "OKTOBER", "NOVEMBER", "DECEMBER"],
+    },
+    "pt": {
+        "weekday_abbrev": ["SEG", "TER", "QUA", "QUI", "SEX", "SAB", "DOM"],
+        "headers": ["D", "S", "T", "Q", "Q", "S", "S"],
+        "months": ["JANEIRO", "FEVEREIRO", "MARÇO", "ABRIL", "MAIO", "JUNHO", "JULHO", "AGOSTO", "SETEMBRO", "OUTUBRO", "NOVEMBRO", "DEZEMBRO"],
+    },
+}
 
 # ---------------------------------------------------------------------------
 # Dot-matrix glyph definitions (5 wide × 7 tall for digits, variable for letters)
@@ -249,6 +293,87 @@ _LETTER_PATTERNS = {
         "10000",
         "10000",
     ],
+    "Q": [
+        "01110",
+        "10001",
+        "10001",
+        "10001",
+        "10001",
+        "10011",
+        "01111",
+    ],
+    "B": [
+        "11110",
+        "10001",
+        "10001",
+        "11110",
+        "10001",
+        "10001",
+        "11110",
+    ],
+    "G": [
+        "01110",
+        "10001",
+        "10000",
+        "10111",
+        "10001",
+        "10001",
+        "01110",
+    ],
+    "J": [
+        "00111",
+        "00010",
+        "00010",
+        "00010",
+        "00010",
+        "10010",
+        "01100",
+    ],
+    "K": [
+        "10001",
+        "10010",
+        "10100",
+        "11000",
+        "10100",
+        "10010",
+        "10001",
+    ],
+    "L": [
+        "10000",
+        "10000",
+        "10000",
+        "10000",
+        "10000",
+        "10000",
+        "11111",
+    ],
+    "V": [
+        "10001",
+        "10001",
+        "10001",
+        "10001",
+        "10001",
+        "01010",
+        "00100",
+    ],
+    "X": [
+        "10001",
+        "10001",
+        "01010",
+        "00100",
+        "01010",
+        "10001",
+        "10001",
+    ],
+    "Z": [
+        "11111",
+        "00001",
+        "00010",
+        "00100",
+        "01000",
+        "10000",
+        "11111",
+    ],
 }
 
 
@@ -305,17 +430,19 @@ class SimpleCalendar(BasePlugin):
         timezone_name = device_config.get_config("timezone", default="America/New_York")
         tz = pytz.timezone(timezone_name)
         selected_date = self._get_selected_date(settings, tz)
+        language = self._get_locale_key(settings.get("locale") or settings.get("language", "en"))
+        locale_data = LOCALE_DATA.get(language)
 
         primary_color = self._parse_color(settings.get("primaryColor"), (230, 26, 26))
         highlight_color = self._parse_color(settings.get("highlightColor"), (163, 13, 13))
 
-        return self._render_calendar(dimensions, selected_date, primary_color, highlight_color)
+        return self._render_calendar(dimensions, selected_date, primary_color, highlight_color, locale_data, language)
 
     # ------------------------------------------------------------------
     # Core rendering
     # ------------------------------------------------------------------
 
-    def _render_calendar(self, dimensions, now, primary_color, highlight_color):
+    def _render_calendar(self, dimensions, now, primary_color, highlight_color, locale_data, language):
         W, H = dimensions
 
         # Colours
@@ -376,7 +503,7 @@ class SimpleCalendar(BasePlugin):
         left_cy = card_top + card_h // 2
 
         day_str = str(now.day)
-        weekday_str = now.strftime("%a").upper()[:3]
+        weekday_str = self._get_weekday_abbrev(now, locale_data, language)
 
         # Scale dots relative to card height for consistent sizing
         ref = min(card_h, left_panel_w)
@@ -441,7 +568,7 @@ class SimpleCalendar(BasePlugin):
         month_y = card_top + top_pad
 
         # Month and year
-        month_name = now.strftime("%B").upper()
+        month_name = self._get_month_name(now, locale_data, language)
         year_text = str(now.year)
         month_bbox = draw.textbbox((0, 0), month_name, font=month_font)
         year_bbox = draw.textbbox((0, 0), year_text, font=year_font)
@@ -451,18 +578,24 @@ class SimpleCalendar(BasePlugin):
         total_width = month_width + header_gap + year_width
         header_left = right_cx - total_width / 2
 
+        # Baseline anchoring: accented glyphs (É, Ä) extend upward
+        # without shifting letter positions or downstream layout.
+        baseline_y = month_y + month_font.getmetrics()[0]
+        title_lift = max(int(month_font_size * 0.30), 8)
+
         draw.text(
-            (header_left, month_y), month_name,
-            fill=text_color, font=month_font, anchor="lt",
+            (header_left, baseline_y - title_lift), month_name,
+            fill=text_color, font=month_font, anchor="ls",
         )
+        year_y = baseline_y - int(month_font_size * 0.15) - title_lift
         draw.text(
-            (header_left + month_width + header_gap, month_y + max((month_font_size - year_font_size) // 2, 0)),
+            (header_left + month_width + header_gap, year_y),
             year_text,
-            fill=(138, 138, 138), font=year_font, anchor="lt",
+            fill=(138, 138, 138), font=year_font, anchor="ls",
         )
 
         # Weekday header row
-        header_labels = ["S", "M", "T", "W", "T", "F", "S"]
+        header_labels = self._get_weekday_headers(locale_data, language)
         header_y = month_y + int(month_font_size * 1.6)
 
         for i, label in enumerate(header_labels):
@@ -476,7 +609,7 @@ class SimpleCalendar(BasePlugin):
         grid_top_y = header_y + int(header_font_size * 2.0)
         available_grid_h = card_bottom - grid_top_y - int(card_h * 0.04)
 
-        cal = calendar.monthcalendar(now.year, now.month)
+        cal = calendar.Calendar(firstweekday=6).monthdayscalendar(now.year, now.month)
         num_weeks = len(cal)
         row_h = available_grid_h / num_weeks
 
@@ -515,6 +648,31 @@ class SimpleCalendar(BasePlugin):
             return datetime.strptime(custom_date, "%Y-%m-%d").date()
 
         return datetime.now(tz).date()
+
+    @staticmethod
+    def _get_locale_key(language):
+        language = str(language or "en").strip().lower()
+        return language if language in LOCALE_DATA else "en"
+
+    @staticmethod
+    def _strip_accents(text):
+        normalized = unicodedata.normalize("NFKD", text)
+        return "".join(char for char in normalized if not unicodedata.combining(char))
+
+    def _get_weekday_abbrev(self, now, locale_data, language):
+        if locale_data:
+            return self._strip_accents(locale_data["weekday_abbrev"][now.weekday()]).upper()
+        return self._strip_accents(now.strftime("%a").upper())[:3]
+
+    def _get_month_name(self, now, locale_data, language):
+        if locale_data:
+            return locale_data["months"][now.month - 1]
+        return self._strip_accents(now.strftime("%B").upper())
+
+    def _get_weekday_headers(self, locale_data, language):
+        if locale_data:
+            return locale_data["headers"]
+        return ["S", "M", "T", "W", "T", "F", "S"]
 
     @staticmethod
     def _parse_color(value, fallback):
