@@ -2,7 +2,6 @@ import logging
 
 import pytz
 import requests
-from datetime import datetime
 
 from plugins.weather.weather import UNITS, Weather
 
@@ -12,6 +11,21 @@ REVERSE_GEOCODE_URL = (
     "https://nominatim.openstreetmap.org/reverse"
     "?lat={lat}&lon={long}&format=jsonv2&addressdetails=1&zoom=10"
 )
+
+QUICK_LOCATION_LABELS = {
+    "52.3676,4.9041": "Amsterdam",
+    "52.5200,13.4050": "Berlin",
+    "-34.6037,-58.3816": "Buenos Aires",
+    "-6.2088,106.8456": "Jakarta",
+    "51.5074,-0.1278": "London",
+    "40.4168,-3.7038": "Madrid",
+    "40.7128,-74.0060": "New York",
+    "48.8566,2.3522": "Paris",
+    "-22.9068,-43.1729": "Rio de Janeiro",
+    "41.9028,12.4964": "Rome",
+    "-23.5505,-46.6333": "São Paulo",
+    "35.6762,139.6503": "Tokyo",
+}
 
 LANGUAGE_LABELS = {
     "de": {
@@ -84,10 +98,11 @@ class MiniWeather(Weather):
                 time_format,
                 device_config,
             )
-            title = self._resolve_title(settings, weather_provider, lat, long, api_key)
         except Exception as exc:
             logger.error("%s request failed: %s", weather_provider, exc)
             raise RuntimeError(f"{weather_provider} request failure, please check logs.") from exc
+
+        title = self._resolve_title_with_fallback(settings, weather_provider, lat, long, api_key)
 
         forecast = template_params.get("forecast", [])
         if not forecast:
@@ -178,6 +193,21 @@ class MiniWeather(Weather):
             return self.get_location(api_key, lat, long)
 
         return self.get_reverse_geocoded_location(lat, long)
+
+    def _resolve_title_with_fallback(self, settings, weather_provider, lat, long, api_key):
+        try:
+            title = self._resolve_title(settings, weather_provider, lat, long, api_key)
+            if title and str(title).strip():
+                return title
+        except Exception as exc:
+            logger.warning("Mini Weather title resolution failed, using fallback: %s", exc)
+
+        quick_location = (settings.get("quickLocation") or "").strip()
+        quick_location_label = QUICK_LOCATION_LABELS.get(quick_location)
+        if quick_location_label:
+            return quick_location_label
+
+        return self.format_coordinates(lat, long)
 
     def parse_open_meteo_timezone(self, weather_data):
         timezone_name = weather_data.get("timezone")

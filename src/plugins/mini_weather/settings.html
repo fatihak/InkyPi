@@ -2,19 +2,6 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 
 <div class="form-group">
-    <label class="form-label">Location: </label>
-    <div class="form-group">
-        <span>Latitude </span>
-        <input readonly type="text" id="latitude" name="latitude" class="form-input" />
-    </div>
-    <div class="form-group">
-        <span>Longitude </span>
-        <input readonly type="text" id="longitude" name="longitude" class="form-input" />
-    </div>
-    <button type="button" id="openMap" class="action-button compact">Select Location</button>
-</div>
-
-<div class="form-group">
     <label for="language" class="form-label">Language:</label>
     <select id="language" name="language" class="form-input">
         <option value="nl">Dutch</option>
@@ -26,6 +13,38 @@
         <option value="pt">Portuguese</option>
         <option value="es">Spanish</option>
     </select>
+</div>
+
+<div class="form-group">
+    <label for="quickLocation" class="form-label">Quick Location:</label>
+    <select id="quickLocation" name="quickLocation" class="form-input">
+        <option value="">Select a city...</option>
+        <option value="52.3676,4.9041">Amsterdam</option>
+        <option value="52.5200,13.4050">Berlin</option>
+        <option value="-34.6037,-58.3816">Buenos Aires</option>
+        <option value="-6.2088,106.8456">Jakarta</option>
+        <option value="51.5074,-0.1278">London</option>
+        <option value="40.4168,-3.7038">Madrid</option>
+        <option value="40.7128,-74.0060">New York</option>
+        <option value="48.8566,2.3522">Paris</option>
+        <option value="-22.9068,-43.1729">Rio de Janeiro</option>
+        <option value="41.9028,12.4964">Rome</option>
+        <option value="-23.5505,-46.6333">São Paulo</option>
+        <option value="35.6762,139.6503">Tokyo</option>
+    </select>
+</div>
+
+<div class="form-group">
+    <label class="form-label">Location: </label>
+    <div class="form-group">
+        <span>Latitude </span>
+        <input type="text" id="latitude" name="latitude" class="form-input" />
+    </div>
+    <div class="form-group">
+        <span>Longitude </span>
+        <input type="text" id="longitude" name="longitude" class="form-input" />
+    </div>
+    <button type="button" id="openMap" class="action-button compact">Select Location</button>
 </div>
 
 <div class="form-group">
@@ -102,6 +121,7 @@
         const $closeMap = document.querySelector('#closeMap');
         const $weatherProvider = document.querySelector('#weatherProvider');
         const $language = document.querySelector('#language');
+        const $quickLocation = document.querySelector('#quickLocation');
 
         let latitude = Number($latitude.value) || 0;
         let longitude = Number($longitude.value) || 0;
@@ -144,10 +164,28 @@
             closeModal('mapModal');
         });
 
+        $quickLocation.addEventListener('change', () => {
+            if (!$quickLocation.value) {
+                return;
+            }
+
+            const [quickLat, quickLong] = $quickLocation.value.split(',').map(Number);
+            if (Number.isFinite(quickLat) && Number.isFinite(quickLong)) {
+                latitude = quickLat;
+                longitude = quickLong;
+                $latitude.value = quickLat.toFixed(4);
+                $longitude.value = quickLong.toFixed(4);
+            }
+        });
+
         if (loadPluginSettings) {
             document.getElementById('language').value = pluginSettings.language || 'en';
             if (!$language.querySelector(`option[value="${pluginSettings.language}"]`)) {
                 $language.value = 'en';
+            }
+            document.getElementById('quickLocation').value = pluginSettings.quickLocation || '';
+            if (!$quickLocation.querySelector(`option[value="${pluginSettings.quickLocation}"]`)) {
+                $quickLocation.value = '';
             }
             document.getElementById('latitude').value = pluginSettings.latitude || '';
             document.getElementById('longitude').value = pluginSettings.longitude || '';
@@ -160,6 +198,7 @@
             document.getElementById('customTitle').value = pluginSettings.customTitle || '';
         } else {
             document.getElementById('language').value = 'en';
+            document.getElementById('quickLocation').value = '';
             document.getElementById('units').value = 'imperial';
             document.getElementById('weatherTimeZone').value = 'locationTimeZone';
         }
