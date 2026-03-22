@@ -2,16 +2,12 @@ from plugins.base_plugin.base_plugin import BasePlugin
 from PIL import Image, ImageColor, ImageDraw
 from utils.app_utils import get_font
 import calendar
-import logging
 import unicodedata
 from datetime import datetime
 import pytz
 
-logger = logging.getLogger(__name__)
-
 DEFAULT_NUM_BARS = 2
 DEFAULT_NUM_DOTS = 20
-FIXED_CORNER_RADIUS = 20
 
 # Hardcoded locale data for languages that render cleanly in Dogica.
 # Text stays uppercase, preserving accents that are known to render correctly.
