@@ -48,4 +48,48 @@
         </section>
     </div>
 </div>
+
+<script>
+    (function () {
+        function fitMiniWeatherTitle() {
+            const title = document.querySelector('.mini-weather-title');
+            if (!title) return;
+
+            const computed = window.getComputedStyle(title);
+            const originalSize = parseFloat(computed.fontSize);
+            const minScale = parseFloat(computed.getPropertyValue('--title-min-scale')) || 0.62;
+            const minSize = originalSize * minScale;
+
+            // Reset to original size before measuring.
+            title.style.fontSize = '';
+
+            // Keep one line when possible; only shrink if it overflows horizontally.
+            if (title.scrollWidth <= title.clientWidth) return;
+
+            let low = minSize;
+            let high = originalSize;
+
+            while (high - low > 0.5) {
+                const mid = (low + high) / 2;
+                title.style.fontSize = mid + 'px';
+
+                if (title.scrollWidth > title.clientWidth) {
+                    high = mid;
+                } else {
+                    low = mid;
+                }
+            }
+
+            title.style.fontSize = Math.max(minSize, low) + 'px';
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', fitMiniWeatherTitle, { once: true });
+        } else {
+            fitMiniWeatherTitle();
+        }
+
+        window.addEventListener('resize', fitMiniWeatherTitle);
+    })();
+</script>
 {% endblock %}

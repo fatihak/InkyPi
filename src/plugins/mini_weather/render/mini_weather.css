@@ -20,6 +20,10 @@
   font-size: min(7.15dvh, 6.6dvw);
   font-weight: 700;
   line-height: 1;
+  white-space: nowrap;
+  width: 100%;
+  /* minimum readable size used by title auto-fit script */
+  --title-min-scale: 0.62;
 }
 
 .mini-weather-layout {
