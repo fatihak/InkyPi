@@ -17,9 +17,14 @@
                                 {% else %}
                                     {% set temp_class = temp_digits %}
                                 {% endif %}
-                                <div class="current-temp digits-{{ temp_class }}">
-                                        {{ current_temperature }}{% if units != "standard" %}°{% endif %}
-                                </div>
+                                {% if units == 'metric' %}
+                                    {% set unit_symbol = '°C' %}
+                                {% elif units == 'imperial' %}
+                                    {% set unit_symbol = '°F' %}
+                                {% else %}
+                                    {% set unit_symbol = 'K' %}
+                                {% endif %}
+                                <div class="current-temp digits-{{ temp_class }}">{{ current_temperature }}<span class="unit">{{ unit_symbol }}</span></div>
                         </div>
             <div class="current-range">
                 <span class="range-high">▲ {{ current_high }}{% if units != "standard" %}°{% endif %}</span>

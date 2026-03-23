@@ -82,23 +82,27 @@
 }
 
 .current-temp {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: var(--temp-base);
+  display: inline-flex;
+  align-items: baseline;
+  font-size: calc(var(--temp-base) * 0.82);
   font-weight: 700;
   line-height: 0.92;
   white-space: nowrap;
-  /* temperature can scale down via digit classes to avoid overflow */
   flex: 0 0 auto;
 }
 
-/* Scale temperature for different digit counts so content fits inside fixed card */
+.current-temp .unit {
+  font-size: 0.55em;
+  font-weight: 600;
+  line-height: 1;
+}
+
+/* Scale temperature for different digit counts so value+unit fits inside fixed card */
 .current-temp.digits-2 {
-  font-size: calc(var(--temp-base) * 0.92);
+  font-size: calc(var(--temp-base) * 0.76);
 }
 .current-temp.digits-3 {
-  font-size: calc(var(--temp-base) * 0.72);
+  font-size: calc(var(--temp-base) * 0.58);
 }
 
 .current-range,
