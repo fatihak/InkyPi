@@ -24,6 +24,7 @@
 
 .mini-weather-layout {
   display: grid;
+  /* keep stable column proportions so cards do not expand */
   grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.9fr);
   gap: 2.2dvw;
   align-items: stretch;
@@ -41,7 +42,14 @@
   flex-direction: column;
   justify-content: space-between;
   min-height: 0;
-  padding: 3.08dvh 1.98dvw 1.76dvh;
+  padding: 2.42dvh 1.98dvw 1.54dvh;
+  /* fixed card width to keep layout stable */
+  width: 28dvw;
+  min-width: 28dvw;
+  max-width: 28dvw;
+  overflow: hidden;
+  /* base temp font-size for scaling rules below */
+  --temp-base: min(16.72dvh, 15.29dvw);
 }
 
 .current-label {
@@ -52,14 +60,45 @@
   letter-spacing: 0.04em;
 }
 
+.current-main {
+  display: flex;
+  flex: 1;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 0.77dvw;
+  /* keep icon and temperature on same line */
+  white-space: nowrap;
+  min-height: 0;
+}
+
+.current-icon {
+  width: min(18.32dvh, 16.54dvw);
+  height: min(18.32dvh, 16.54dvw);
+  object-fit: contain;
+  flex: 0 0 auto;
+  filter: grayscale(1) brightness(0.68) contrast(0.9);
+  opacity: 0.88;
+}
+
 .current-temp {
   display: flex;
   align-items: center;
   justify-content: center;
-  flex: 1;
-  font-size: min(16.72dvh, 15.29dvw);
+  font-size: var(--temp-base);
   font-weight: 700;
   line-height: 0.92;
+  white-space: nowrap;
+  /* temperature can scale down via digit classes to avoid overflow */
+  flex: 0 0 auto;
+}
+
+/* Scale temperature for different digit counts so content fits inside fixed card */
+.current-temp.digits-2 {
+  font-size: calc(var(--temp-base) * 0.92);
+}
+.current-temp.digits-3 {
+  font-size: calc(var(--temp-base) * 0.72);
 }
 
 .current-range,
@@ -144,6 +183,10 @@
 
   .current-card {
     min-height: 30.8dvh;
+  }
+
+  .current-main {
+    gap: 1.21dvw;
   }
 
   .forecast-row {

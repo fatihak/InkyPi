@@ -7,9 +7,20 @@
     <div class="mini-weather-layout">
         <section class="current-card">
             <div class="current-label">{{ current_label }}</div>
-            <div class="current-temp">
-                {{ current_temperature }}{% if units != "standard" %}°{% endif %}
-            </div>
+                        <div class="current-main">
+                                <img class="current-icon" src="{{ current_day_icon }}" alt="Current weather icon">
+                                {# determine number of digits (ignore leading '-') and clamp to 3 #}
+                                {% set temp_str = current_temperature|string %}
+                                {% set temp_digits = (temp_str|replace('-', ''))|length %}
+                                {% if temp_digits > 3 %}
+                                    {% set temp_class = 3 %}
+                                {% else %}
+                                    {% set temp_class = temp_digits %}
+                                {% endif %}
+                                <div class="current-temp digits-{{ temp_class }}">
+                                        {{ current_temperature }}{% if units != "standard" %}°{% endif %}
+                                </div>
+                        </div>
             <div class="current-range">
                 <span class="range-high">▲ {{ current_high }}{% if units != "standard" %}°{% endif %}</span>
                 <span class="range-low">▼ {{ current_low }}{% if units != "standard" %}°{% endif %}</span>
