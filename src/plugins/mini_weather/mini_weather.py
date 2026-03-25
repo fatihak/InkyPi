@@ -197,16 +197,37 @@ def format_localized_date(language, dt):
     """
     lang = (language or "").lower()
     months = MONTH_NAMES.get(lang, MONTH_NAMES.get("en"))
-    month = months[dt.month - 1]
-
-    # Capitalize month where appropriate (some entries are lowercase)
-    month_cap = month[0].upper() + month[1:]
+    raw_month = months[dt.month - 1]
 
     day = dt.day
     year = dt.year
 
-    # Use month-name first format for all languages: "Month day, year"
-    return f"{month_cap} {day}, {year}"
+    # Capitalization rules
+    # - English: capitalize month (e.g., March)
+    # - French: lowercase month (e.g., mars)
+    # - Portuguese: keep month as provided in MONTH_NAMES (typically lowercase)
+    if lang == "en" or lang.startswith("en-"):
+        month = raw_month[0].upper() + raw_month[1:]
+    elif lang == "fr" or lang.startswith("fr-"):
+        month = raw_month.lower()
+    else:
+        month = raw_month
+
+    # Formatting rules per language
+    if lang == "en" or lang.startswith("en-"):
+        # Month Day, Year -> March 25, 2026
+        return f"{month} {day}, {year}"
+
+    if lang == "fr" or lang.startswith("fr-"):
+        # Day Month Year -> 25 mars 2026 (no commas/connectors)
+        return f"{day} {month} {year}"
+
+    if lang == "pt" or lang.startswith("pt-"):
+        # Portuguese: Day de month de Year -> 25 de março de 2026
+        return f"{day} de {month} de {year}"
+
+    # Fallback: use English-style month-first formatting
+    return f"{month} {day}, {year}"
 
 
 def get_language_labels(language):
