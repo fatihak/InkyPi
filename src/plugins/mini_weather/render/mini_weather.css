@@ -189,9 +189,11 @@
 }
 
 @media (max-aspect-ratio: 1) {
+  /* Adjust layout for vertical/portrait orientation only. Keeps horizontal layout unchanged. */
   .mini-weather-shell {
     gap: 2.2dvh;
     padding: 3.3dvh 3.85dvw;
+    overflow-x: hidden; /* prevent any horizontal clipping/scroll */
   }
 
   .mini-weather-layout {
@@ -199,16 +201,40 @@
     gap: 2.2dvh;
   }
 
+  /* Make the NOW card full-width and centered horizontally */
   .current-card {
     min-height: 30.8dvh;
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+    margin: 0 auto;
+    padding: 2.42dvh 3.85dvw 1.54dvh; /* give a bit more horizontal breathing room */
   }
 
+  /* Allow the main content inside the current card to wrap and center when needed */
   .current-main {
     gap: 1.21dvw;
+    white-space: normal; /* prevent long content from forcing horizontal overflow */
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  /* Forecast list sits below the NOW card and uses full width */
+  .forecast-list {
+    width: 100%;
+    padding: 0;
   }
 
   .forecast-row {
     padding: 1.43dvh 1.98dvw;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  /* Ensure icons/text inside forecast rows don't overflow horizontally */
+  .forecast-left,
+  .forecast-range {
+    min-width: 0;
   }
 }
 
