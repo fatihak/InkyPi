@@ -4,6 +4,7 @@ import unicodedata
 
 import pytz
 import requests
+import datetime
 
 from plugins.weather.weather import UNITS, Weather
 
@@ -68,6 +69,144 @@ LANGUAGE_LABELS = {
         "days": ["SEG", "TER", "QUA", "QUI", "SEX", "SÁB", "DOM"],
     },
 }
+
+# month names for a handful of supported languages; keep capitalized first letter
+MONTH_NAMES = {
+    "en": [
+        "January",
+        "February",
+        "March",
+        "April",
+        "May",
+        "June",
+        "July",
+        "August",
+        "September",
+        "October",
+        "November",
+        "December",
+    ],
+    "pt": [
+        "janeiro",
+        "fevereiro",
+        "março",
+        "abril",
+        "maio",
+        "junho",
+        "julho",
+        "agosto",
+        "setembro",
+        "outubro",
+        "novembro",
+        "dezembro",
+    ],
+    "es": [
+        "enero",
+        "febrero",
+        "marzo",
+        "abril",
+        "mayo",
+        "junio",
+        "julio",
+        "agosto",
+        "septiembre",
+        "octubre",
+        "noviembre",
+        "diciembre",
+    ],
+    "fr": [
+        "janvier",
+        "février",
+        "mars",
+        "avril",
+        "mai",
+        "juin",
+        "juillet",
+        "août",
+        "septembre",
+        "octobre",
+        "novembre",
+        "décembre",
+    ],
+    "de": [
+        "Januar",
+        "Februar",
+        "März",
+        "April",
+        "Mai",
+        "Juni",
+        "Juli",
+        "August",
+        "September",
+        "Oktober",
+        "November",
+        "Dezember",
+    ],
+    "it": [
+        "gennaio",
+        "febbraio",
+        "marzo",
+        "aprile",
+        "maggio",
+        "giugno",
+        "luglio",
+        "agosto",
+        "settembre",
+        "ottobre",
+        "novembre",
+        "dicembre",
+    ],
+    "nl": [
+        "januari",
+        "februari",
+        "maart",
+        "april",
+        "mei",
+        "juni",
+        "juli",
+        "augustus",
+        "september",
+        "oktober",
+        "november",
+        "december",
+    ],
+    "id": [
+        "Januari",
+        "Februari",
+        "Maret",
+        "April",
+        "Mei",
+        "Juni",
+        "Juli",
+        "Agustus",
+        "September",
+        "Oktober",
+        "November",
+        "Desember",
+    ],
+}
+
+
+def format_localized_date(language, dt):
+    """Return a short localized date string for the given language and datetime.
+
+    Examples:
+      en -> "March 25, 2026"
+      pt -> "Março, 25 de 2026" (keeps month-first style as requested)
+      fr/de/it/nl -> "25 mars 2026"
+    """
+    lang = (language or "").lower()
+    months = MONTH_NAMES.get(lang, MONTH_NAMES.get("en"))
+    month = months[dt.month - 1]
+
+    # Capitalize month where appropriate (some entries are lowercase)
+    month_cap = month[0].upper() + month[1:]
+
+    day = dt.day
+    year = dt.year
+
+    # Use month-name first format for all languages: "Month day, year"
+    return f"{month_cap} {day}, {year}"
 
 
 def get_language_labels(language):
@@ -149,10 +288,15 @@ class MiniWeather(Weather):
         forecast_rows = forecast[1:5] if len(forecast) > 1 else forecast[:4]
         labels = get_language_labels(language)
 
+        # localized date string
+        now = datetime.datetime.now(local_tz)
+        localized_date = format_localized_date(language, now)
+
         template_params.update(
             {
                 "title": title,
                 "current_label": labels["now"],
+                "date": localized_date,
                 "current_high": current_day["high"],
                 "current_low": current_day["low"],
                 "forecast_rows": self._localize_forecast_rows(forecast_rows, labels),

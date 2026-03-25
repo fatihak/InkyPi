@@ -26,6 +26,16 @@
   --title-min-scale: 0.62;
 }
 
+.mini-weather-date {
+  text-align: center;
+  /* smaller than title and a lighter gray */
+  color: #6c6c6c;
+  /* match forecast day text size for better balance */
+  font-size: min(4.95dvh, 4.4dvw);
+  font-weight: 500;
+  margin-top: 0.6dvh;
+}
+
 .mini-weather-layout {
   display: grid;
   /* keep stable column proportions so cards do not expand */
