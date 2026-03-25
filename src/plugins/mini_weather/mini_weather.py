@@ -38,35 +38,35 @@ QUICK_LOCATION_COORDS = {
 LANGUAGE_LABELS = {
     "de": {
         "now": "JETZT",
-        "days": ["MO", "DI", "MI", "DO", "FR", "SA", "SO"],
+        "days": ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"],
     },
     "en": {
         "now": "NOW",
-        "days": ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"],
+        "days": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
     },
     "es": {
         "now": "AHORA",
-        "days": ["LUN", "MAR", "MIE", "JUE", "VIE", "SAB", "DOM"],
+        "days": ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"],
     },
     "fr": {
         "now": "MAINT",
-        "days": ["LUN", "MAR", "MER", "JEU", "VEN", "SAM", "DIM"],
+        "days": ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"],
     },
     "id": {
         "now": "SEK",
-        "days": ["SEN", "SEL", "RAB", "KAM", "JUM", "SAB", "MIN"],
+        "days": ["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"],
     },
     "it": {
         "now": "ORA",
-        "days": ["LUN", "MAR", "MER", "GIO", "VEN", "SAB", "DOM"],
+        "days": ["Lun", "Mar", "Mer", "Gio", "Ven", "Sab", "Dom"],
     },
     "nl": {
         "now": "NU",
-        "days": ["MA", "DI", "WO", "DO", "VR", "ZAT", "ZON"],
+        "days": ["Ma", "Di", "Wo", "Do", "Vr", "Za", "Zo"],
     },
     "pt": {
         "now": "AGORA",
-        "days": ["SEG", "TER", "QUA", "QUI", "SEX", "SÁB", "DOM"],
+        "days": ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"],
     },
 }
 
@@ -231,7 +231,16 @@ def format_localized_date(language, dt):
 
 
 def get_language_labels(language):
-    return LANGUAGE_LABELS.get(language, LANGUAGE_LABELS["en"])
+    lang = (language or "").lower()
+    # exact key
+    if lang in LANGUAGE_LABELS:
+        return LANGUAGE_LABELS[lang]
+    # try prefix like en-US -> en
+    short = lang.split("-")[0].split("_")[0]
+    if short in LANGUAGE_LABELS:
+        return LANGUAGE_LABELS[short]
+    # fallback to English
+    return LANGUAGE_LABELS["en"]
 
 
 def is_valid_title(value):
@@ -337,9 +346,29 @@ class MiniWeather(Weather):
 
     def _localize_forecast_rows(self, forecast_rows, labels):
         localized_rows = []
+        # English abbreviations and full names used as fallback mapping
+        EN_ABBR = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+        EN_FULL = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+
         for row in forecast_rows:
             row_copy = dict(row)
             weekday_index = row_copy.get("weekday_index")
+
+            # If weekday_index not present, try to derive it from the day label
+            if weekday_index is None:
+                day_lbl = str(row_copy.get("day", "")).strip()
+                if day_lbl:
+                    # try to match common 3-letter English abbreviations
+                    for idx, abbr in enumerate(EN_ABBR):
+                        if day_lbl.startswith(abbr) or day_lbl.lower().startswith(abbr.lower()):
+                            weekday_index = idx
+                            break
+                    else:
+                        # try full English name
+                        for idx, full in enumerate(EN_FULL):
+                            if day_lbl.lower().startswith(full.lower()):
+                                weekday_index = idx
+                                break
 
             if isinstance(weekday_index, int):
                 row_copy["day"] = labels["days"][weekday_index % 7]
