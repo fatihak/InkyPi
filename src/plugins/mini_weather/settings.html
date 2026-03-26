@@ -137,6 +137,23 @@
         $weatherProvider.addEventListener('change', updateProviderState);
 
         $openMap.addEventListener('click', () => {
+            // Re-read the current latitude/longitude inputs in case the user
+            // edited them manually after the page loaded. This ensures the map
+            // opens centered on the user-entered coordinates rather than stale
+            // values captured on DOMContentLoaded.
+            const latInput = document.getElementById('latitude').value;
+            const longInput = document.getElementById('longitude').value;
+            const parsedLat = Number(latInput);
+            const parsedLong = Number(longInput);
+
+            if (Number.isFinite(parsedLat) && Number.isFinite(parsedLong)) {
+                latitude = parsedLat;
+                longitude = parsedLong;
+            }
+
+            // Recompute zoom based on whether coordinates are present
+            zoom = (document.getElementById('latitude').value && document.getElementById('longitude').value) ? 4.5 : 2.5;
+
             openModal('mapModal');
             setTimeout(() => {
                 if (!map) {
