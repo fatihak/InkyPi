@@ -276,6 +276,14 @@ def is_supported_title(value):
 
 
 class MiniWeather(Weather):
+    def generate_settings_template(self):
+        template_params = super().generate_settings_template()
+        template_params['api_key'] = {
+            "required": True,
+            "service": "OpenWeatherMap",
+            "expected_key": "OPEN_WEATHER_MAP_SECRET"
+        }
+        return template_params
     def generate_image(self, settings, device_config):
         lat_value = settings.get("latitude")
         long_value = settings.get("longitude")
