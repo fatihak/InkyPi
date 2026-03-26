@@ -15,6 +15,15 @@ REVERSE_GEOCODE_URL = (
     "?lat={lat}&lon={long}&format=jsonv2&addressdetails=1&zoom=10"
 )
 
+# Simple in-memory cache for reverse-geocoded titles to avoid hitting Nominatim
+# on every refresh. Keys are rounded coordinate pairs to tolerate tiny changes.
+REVERSE_GEOCODE_CACHE = {}
+# TTL for successful reverse geocode results (seconds)
+REVERSE_GEOCODE_SUCCESS_TTL = 7 * 24 * 60 * 60  # 7 days
+# TTL for failed attempts (seconds) to avoid tight retry loops
+REVERSE_GEOCODE_FAIL_TTL = 60 * 60  # 1 hour
+REVERSE_GEOCODE_ROUND_DECIMALS = 4
+
 QUICK_LOCATION_LABELS = {
     "52.3676,4.9041": "Amsterdam",
     "52.5200,13.4050": "Berlin",
@@ -482,18 +491,44 @@ class MiniWeather(Weather):
         return pytz.timezone(timezone_name)
 
     def get_reverse_geocoded_location(self, lat, long):
-        headers = {"User-Agent": "InkyPi Mini Weather/1.0"}
-        response = requests.get(
-            REVERSE_GEOCODE_URL.format(lat=lat, long=long),
-            headers=headers,
-            timeout=30,
-        )
+        # Use rounded coordinates as cache key to avoid tiny float differences
+        key = (round(float(lat), REVERSE_GEOCODE_ROUND_DECIMALS), round(float(long), REVERSE_GEOCODE_ROUND_DECIMALS))
+
+        now_ts = datetime.datetime.now().timestamp()
+        cached = REVERSE_GEOCODE_CACHE.get(key)
+        if cached:
+            age = now_ts - cached.get("ts", 0)
+            if cached.get("title") and age < REVERSE_GEOCODE_SUCCESS_TTL:
+                return cached["title"]
+            if cached.get("failed") and age < REVERSE_GEOCODE_FAIL_TTL:
+                # recent failure — avoid retrying too quickly
+                return self.format_coordinates(lat, long)
+
+        headers = {"User-Agent": "InkyPi Mini Weather/1.0 (+https://github.com/inkypi)"}
+        try:
+            response = requests.get(
+                REVERSE_GEOCODE_URL.format(lat=lat, long=long),
+                headers=headers,
+                timeout=30,
+            )
+        except Exception as exc:
+            logger.warning("Reverse geocode request failed: %s", exc)
+            # store a failed marker to avoid hammering the service
+            REVERSE_GEOCODE_CACHE[key] = {"failed": True, "ts": now_ts}
+            return self.format_coordinates(lat, long)
 
         if not 200 <= response.status_code < 300:
             logger.warning("Failed to reverse geocode location: %s", response.content)
+            REVERSE_GEOCODE_CACHE[key] = {"failed": True, "ts": now_ts}
             return self.format_coordinates(lat, long)
 
-        location_data = response.json()
+        try:
+            location_data = response.json()
+        except Exception as exc:
+            logger.warning("Invalid JSON from reverse geocode: %s", exc)
+            REVERSE_GEOCODE_CACHE[key] = {"failed": True, "ts": now_ts}
+            return self.format_coordinates(lat, long)
+
         address = location_data.get("address", {})
 
         city = (
@@ -506,17 +541,21 @@ class MiniWeather(Weather):
         region = address.get("state") or address.get("country")
 
         if city and region:
-            return f"{city}, {region}"
-        if city:
-            return city
-        if region:
-            return region
+            title = f"{city}, {region}"
+        elif city:
+            title = city
+        elif region:
+            title = region
+        else:
+            display_name = location_data.get("display_name", "")
+            if display_name:
+                title = ", ".join(display_name.split(", ")[:2])
+            else:
+                title = self.format_coordinates(lat, long)
 
-        display_name = location_data.get("display_name", "")
-        if display_name:
-            return ", ".join(display_name.split(", ")[:2])
-
-        return self.format_coordinates(lat, long)
+        # Cache successful result
+        REVERSE_GEOCODE_CACHE[key] = {"title": title, "ts": now_ts}
+        return title
 
     def format_coordinates(self, lat, long):
         return f"{lat:.2f}, {long:.2f}"
