@@ -6,6 +6,20 @@
     <div class="mini-weather-date">{{ date }}</div>
 
     <div class="mini-weather-layout">
+        {# Determine unit symbols for current and range displays.
+           - Metric/Imperial: current shows °C/°F, ranges show only °
+           - Standard (Kelvin): both current and ranges show K
+        #}
+        {% if units == 'metric' %}
+            {% set unit_symbol_current = '°C' %}
+            {% set unit_symbol_range = '°' %}
+        {% elif units == 'imperial' %}
+            {% set unit_symbol_current = '°F' %}
+            {% set unit_symbol_range = '°' %}
+        {% else %}
+            {% set unit_symbol_current = 'K' %}
+            {% set unit_symbol_range = 'K' %}
+        {% endif %}
         <section class="current-card">
             <div class="current-label">{{ current_label }}</div>
                         <div class="current-main">
@@ -18,18 +32,11 @@
                                 {% else %}
                                     {% set temp_class = temp_digits %}
                                 {% endif %}
-                                {% if units == 'metric' %}
-                                    {% set unit_symbol = '°C' %}
-                                {% elif units == 'imperial' %}
-                                    {% set unit_symbol = '°F' %}
-                                {% else %}
-                                    {% set unit_symbol = 'K' %}
-                                {% endif %}
-                                <div class="current-temp digits-{{ temp_class }}">{{ current_temperature }}<span class="unit">{{ unit_symbol }}</span></div>
+                                <div class="current-temp digits-{{ temp_class }}">{{ current_temperature }}<span class="unit">{{ unit_symbol_current }}</span></div>
                         </div>
             <div class="current-range">
-                <span class="range-high">▲ {{ current_high }}{% if units != "standard" %}°{% endif %}</span>
-                <span class="range-low">▼ {{ current_low }}{% if units != "standard" %}°{% endif %}</span>
+                <span class="range-high">▲ {{ current_high }}<span class="unit">{{ unit_symbol_range }}</span></span>
+                <span class="range-low">▼ {{ current_low }}<span class="unit">{{ unit_symbol_range }}</span></span>
             </div>
         </section>
 
@@ -41,8 +48,8 @@
                     <span class="forecast-day">{{ day.day }}</span>
                 </div>
                 <div class="forecast-range">
-                    <span class="range-high">▲ {{ day.high }}{% if units != "standard" %}°{% endif %}</span>
-                    <span class="range-low">▼ {{ day.low }}{% if units != "standard" %}°{% endif %}</span>
+                    <span class="range-high">▲ {{ day.high }}<span class="unit">{{ unit_symbol_range }}</span></span>
+                    <span class="range-low">▼ {{ day.low }}<span class="unit">{{ unit_symbol_range }}</span></span>
                 </div>
             </div>
             {% endfor %}
