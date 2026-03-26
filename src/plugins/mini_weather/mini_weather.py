@@ -290,8 +290,18 @@ class MiniWeather(Weather):
         if lat_value in (None, "") or long_value in (None, ""):
             raise RuntimeError("Latitude and Longitude are required.")
 
-        lat = float(lat_value)
-        long = float(long_value)
+        # Validate and parse numeric coordinates with clear error messages.
+        try:
+            lat = float(str(lat_value).strip())
+            long = float(str(long_value).strip())
+        except (ValueError, TypeError):
+            raise RuntimeError("Latitude and Longitude must be valid numeric values.")
+
+        # Range checks: latitude [-90, 90], longitude [-180, 180]
+        if not (-90.0 <= lat <= 90.0):
+            raise RuntimeError("Latitude must be between -90 and 90.")
+        if not (-180.0 <= long <= 180.0):
+            raise RuntimeError("Longitude must be between -180 and 180.")
 
         units = settings.get("units")
         if units not in UNITS:
