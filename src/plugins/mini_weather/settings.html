@@ -178,6 +178,14 @@
             longitude = position.lng;
             $latitude.value = latitude;
             $longitude.value = longitude;
+
+            // Clear the quick location selection so it doesn't conflict
+            // with manually-entered coordinates (selects the empty "Select a city..." option).
+            if ($quickLocation) {
+                $quickLocation.value = '';
+                $quickLocation.dispatchEvent(new Event('change'));
+            }
+
             closeModal('mapModal');
         });
 
