@@ -192,11 +192,13 @@ def format_localized_date(language, dt):
 
     Examples:
       en -> "March 25, 2026"
-      pt -> "Março, 25 de 2026" (keeps month-first style as requested)
-      fr/de/it/nl -> "25 mars 2026"
+      pt -> "25 de março de 2026"
+      fr/de/it/nl/es/id -> "25 mars 2026"
     """
     lang = (language or "").lower()
-    months = MONTH_NAMES.get(lang, MONTH_NAMES.get("en"))
+    # Support full locale codes like en-US or de-DE by normalizing to the short prefix
+    short = lang.split("-")[0].split("_")[0]
+    months = MONTH_NAMES.get(short, MONTH_NAMES.get("en"))
     raw_month = months[dt.month - 1]
 
     day = dt.day
@@ -205,24 +207,24 @@ def format_localized_date(language, dt):
     # Capitalization rules
     # - English: capitalize month (e.g., March)
     # - French: lowercase month (e.g., mars)
-    # - Portuguese: keep month as provided in MONTH_NAMES (typically lowercase)
-    if lang == "en" or lang.startswith("en-"):
+    # - Other languages: use the form provided in MONTH_NAMES
+    if short == "en":
         month = raw_month[0].upper() + raw_month[1:]
-    elif lang == "fr" or lang.startswith("fr-"):
+    elif short == "fr":
         month = raw_month.lower()
     else:
         month = raw_month
 
     # Formatting rules per language
-    if lang == "en" or lang.startswith("en-"):
+    if short == "en":
         # Month Day, Year -> March 25, 2026
         return f"{month} {day}, {year}"
 
-    if lang == "fr" or lang.startswith("fr-"):
+    if short in ("fr", "de", "it", "nl", "es", "id"):
         # Day Month Year -> 25 mars 2026 (no commas/connectors)
         return f"{day} {month} {year}"
 
-    if lang == "pt" or lang.startswith("pt-"):
+    if short == "pt":
         # Portuguese: Day de month de Year -> 25 de março de 2026
         return f"{day} de {month} de {year}"
 
