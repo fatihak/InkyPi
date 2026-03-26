@@ -321,7 +321,10 @@ class MiniWeather(Weather):
         labels = get_language_labels(language)
 
         # localized date string
-        now = datetime.datetime.now(local_tz)
+        # Use the provider timezone that was returned from _get_template_params.
+        # This matches the timezone used to parse the forecast and respects the
+        # user's `weatherTimeZone` selection (locationTimeZone vs device timezone).
+        now = datetime.datetime.now(provider_tz)
         localized_date = format_localized_date(language, now)
 
         template_params.update(
