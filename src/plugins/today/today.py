@@ -131,7 +131,7 @@ class Today(BasePlugin):
         w, h = dimensions
 
         # Derive helper colors from the user-chosen palette
-        ghost_color = tuple(max(c - 25, 0) if c >= 128 else min(c + 25, 255) for c in primary_color)
+        ghost_color = tuple(max(c - 15, 0) if c >= 128 else min(c + 15, 255) for c in primary_color)
         track_color = tuple(max(c - 50, 0) if c >= 128 else min(c + 50, 255) for c in primary_color)
         date_color = tuple((p + s) // 2 for p, s in zip(primary_color, secondary_color))
 
