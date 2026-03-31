@@ -10,8 +10,8 @@ from utils.app_utils import get_font
 logger = logging.getLogger(__name__)
 
 # Default colors
-DEFAULT_PRIMARY = "#000000"
-DEFAULT_SECONDARY = "#ffffff"
+DEFAULT_PRIMARY = "#ffffff"
+DEFAULT_SECONDARY = "#000000"
 DEFAULT_PROGRESS_BAR = "#cc3232"
 
 # Hardcoded locale data for Latin-script languages commonly used by the InkyPi
