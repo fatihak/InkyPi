@@ -200,7 +200,7 @@ class Today(BasePlugin):
 
         # --- Progress bar ---
         bar_w = int(cw * 0.60)
-        bar_h = int(dim * 0.04)
+        bar_h = int(dim * 0.055)
         bar_x = cx - bar_w // 2
         bar_r = bar_h // 2
 
