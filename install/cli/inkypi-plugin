@@ -10,6 +10,7 @@ usage() {
     echo ""
     echo "Plugin commands:"
     echo "  inkypi plugin install <plugin_id> <git_repository_url>"
+    echo "  inkypi plugin update <plugin_id>"
     echo "  inkypi plugin remove <plugin_id>"
     echo "  inkypi plugin list"
     echo ""
@@ -18,6 +19,14 @@ usage() {
 require_plugins_dir() {
     if [[ ! -d "$PLUGINS_DIR" ]]; then
         echo "Plugins directory does not exist: $PLUGINS_DIR"
+        exit 1
+    fi
+}
+
+validate_plugin_id() {
+    local id="$1"
+    if [[ ! "$id" =~ ^[a-z0-9_-]+$ ]]; then
+        echo "[ERROR] Invalid plugin_id '$id'. Only lowercase letters, digits, underscores, and hyphens are allowed."
         exit 1
     fi
 }
@@ -35,6 +44,7 @@ install_plugin() {
     REPO_URL="$2"
     DEST_DIR="$PLUGINS_DIR/$PLUGIN_ID"
 
+    validate_plugin_id "$PLUGIN_ID"
     require_plugins_dir
 
     # Workaround for .pyc files created by inkypi app with sudo
@@ -58,13 +68,12 @@ install_plugin() {
         exit 1
     fi
 
-    cd "$DEST_DIR"
-    git sparse-checkout set "$PLUGIN_ID" &>/dev/null
+    git -C "$DEST_DIR" sparse-checkout set "$PLUGIN_ID" &>/dev/null
 
     # Move plugin files to root of DEST_DIR
     shopt -s dotglob
-    mv "$PLUGIN_ID"/* ./
-    rm -rf "$PLUGIN_ID"
+    mv "$DEST_DIR/$PLUGIN_ID"/* "$DEST_DIR/"
+    rm -rf "$DEST_DIR/$PLUGIN_ID"
 
     echo "[INFO] Plugin copied to $DEST_DIR"
 
@@ -106,6 +115,7 @@ uninstall_plugin() {
     PLUGIN_ID="$1"
     DEST_DIR="$PLUGINS_DIR/$PLUGIN_ID"
 
+    validate_plugin_id "$PLUGIN_ID"
     require_plugins_dir
 
     if [[ ! -d "$DEST_DIR" ]]; then
@@ -158,12 +168,141 @@ list_plugins() {
     } | column -t -s $'\t'
 }
 # ----------------------------
+# UPDATE
+# ----------------------------
+update_plugin() {
+    if [[ $# -ne 1 ]]; then
+        echo "Usage: inkypi plugin update <plugin_id>"
+        exit 1
+    fi
+
+    PLUGIN_ID="$1"
+    DEST_DIR="$PLUGINS_DIR/$PLUGIN_ID"
+    INFO_FILE="$DEST_DIR/plugin-info.json"
+
+    validate_plugin_id "$PLUGIN_ID"
+    require_plugins_dir
+
+    # Check plugin is installed
+    if [[ ! -d "$DEST_DIR" ]]; then
+        echo "[ERROR] Plugin '$PLUGIN_ID' is not installed."
+        exit 1
+    fi
+
+    # Check plugin-info.json exists
+    if [[ ! -f "$INFO_FILE" ]]; then
+        echo "[ERROR] Plugin '$PLUGIN_ID' has no plugin-info.json."
+        exit 1
+    fi
+
+    # Read repository URL from plugin-info.json
+    REPO_URL=$(jq -r '.repository // empty' "$INFO_FILE")
+
+    if [[ -z "$REPO_URL" ]]; then
+        echo "[ERROR] Plugin '$PLUGIN_ID' has no repository URL in plugin-info.json."
+        echo "[ERROR] Only third-party plugins with a saved repository can be updated."
+        exit 1
+    fi
+
+    echo "[INFO] Updating plugin '$PLUGIN_ID' from $REPO_URL"
+
+    # Clone into a temporary directory to validate before touching DEST_DIR
+    TMP_DIR=$(mktemp -d)
+    trap 'rm -rf "$TMP_DIR"' EXIT
+
+    if ! git clone --depth 1 --filter=blob:none --sparse "$REPO_URL" "$TMP_DIR/repo" &>/dev/null; then
+        echo "[ERROR] Failed to clone repository: $REPO_URL"
+        exit 1
+    fi
+
+    # Check if the plugin folder exists in the repo
+    DEFAULT_BRANCH=$(git -C "$TMP_DIR/repo" symbolic-ref --short HEAD 2>/dev/null || echo main)
+    if ! git -C "$TMP_DIR/repo" ls-tree --name-only "$DEFAULT_BRANCH" | grep -qx "$PLUGIN_ID"; then
+        echo "[ERROR] Plugin '$PLUGIN_ID' does not exist in the repository."
+        exit 1
+    fi
+
+    git -C "$TMP_DIR/repo" sparse-checkout set "$PLUGIN_ID" &>/dev/null
+
+    if [[ ! -d "$TMP_DIR/repo/$PLUGIN_ID" ]]; then
+        echo "[ERROR] Failed to checkout plugin files."
+        exit 1
+    fi
+
+    # Prepare new plugin files in staging
+    mkdir -p "$TMP_DIR/staging"
+    shopt -s dotglob
+    mv "$TMP_DIR/repo/$PLUGIN_ID"/* "$TMP_DIR/staging/"
+
+    # Validate staged plugin structure before replacing existing installation
+    if [[ ! -f "$TMP_DIR/staging/plugin-info.json" ]]; then
+        echo "[ERROR] Downloaded plugin is missing required file 'plugin-info.json'. Aborting update."
+        exit 1
+    fi
+    if [[ ! -f "$TMP_DIR/staging/$PLUGIN_ID.py" ]]; then
+        echo "[ERROR] Downloaded plugin is missing required entrypoint '$PLUGIN_ID.py'. Aborting update."
+        exit 1
+    fi
+
+    # All validated — now replace DEST_DIR
+    if [[ -d "$DEST_DIR" ]]; then
+        sudo chown -R "$(whoami)":"$(whoami)" "$DEST_DIR" 2>/dev/null || true
+        chmod -R u+rw "$DEST_DIR" 2>/dev/null || true
+    fi
+
+    rm -rf "$DEST_DIR"
+    mkdir -p "$DEST_DIR"
+    cp -a "$TMP_DIR/staging"/. "$DEST_DIR/"
+    git -C "$DEST_DIR" init -q
+
+    # Ensure repository URL is preserved in plugin-info.json
+    if [[ -f "$DEST_DIR/plugin-info.json" ]]; then
+        CURRENT_REPO=$(jq -r '.repository // empty' "$DEST_DIR/plugin-info.json")
+        if [[ -z "$CURRENT_REPO" ]]; then
+            TMP_INFO=$(mktemp)
+            jq --arg repo "$REPO_URL" '.repository = $repo' "$DEST_DIR/plugin-info.json" > "$TMP_INFO"
+            mv "$TMP_INFO" "$DEST_DIR/plugin-info.json"
+        fi
+    fi
+
+    echo "[INFO] Plugin files updated at $DEST_DIR"
+
+    # Install requirements if any
+    REQ_FILE="$DEST_DIR/requirements.txt"
+
+    if [[ -f "$REQ_FILE" ]]; then
+        echo "[INFO] requirements.txt found, installing dependencies..."
+
+        if [[ ! -d "$VENV_PATH" ]]; then
+            echo "[ERROR] Virtual environment not found at $VENV_PATH"
+            exit 1
+        fi
+
+        source "$VENV_PATH/bin/activate"
+        pip install -r "$REQ_FILE"
+        deactivate
+
+        echo "[INFO] Dependencies installed"
+    else
+        echo "[INFO] No requirements.txt found, skipping dependency install"
+    fi
+
+    echo "[INFO] Restarting $APPNAME service."
+    sudo systemctl restart "$APPNAME.service"
+
+    echo "[INFO] Updated plugin '$PLUGIN_ID' from $REPO_URL"
+}
+
+# ----------------------------
 # COMMAND ROUTER
 # ----------------------------
 
 case "$command" in
     install)
         install_plugin "$@"
+        ;;
+    update)
+        update_plugin "$@"
         ;;
     uninstall)
         uninstall_plugin "$@"
