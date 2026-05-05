@@ -54,6 +54,17 @@ class BasePlugin:
     def generate_image(self, settings, device_config):
         raise NotImplementedError("generate_image must be implemented by subclasses")
 
+    # Optional playlist self-skip hook. Most plugins should not implement this.
+    # Implement it only when a plugin might have valid periods with nothing to
+    # display, such as a sports scoreboard during the offseason. Return None to
+    # proceed with normal display, or return a human-readable string explaining
+    # why the plugin should be skipped for this playlist cycle. If this method
+    # fetches data and then returns None, cache that data in settings using a
+    # plugin-private, JSON-serializable key so generate_image can reuse it
+    # instead of making the same external request again.
+    def skip_display_condition(self, settings, device_config, current_dt):
+        return None
+
     def cleanup(self, settings):
         """Optional cleanup method that plugins can override to delete associated resources.
 

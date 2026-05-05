@@ -88,7 +88,7 @@ def compute_image_hash(image):
     img_bytes = image.tobytes()
     return hashlib.sha256(img_bytes).hexdigest()
 
-def take_screenshot_html(html_str, dimensions, timeout_ms=None):
+def take_screenshot_html(html_str, dimensions, timeout_ms=None, virtual_time_budget_ms=None):
     image = None
     try:
         # Create a temporary HTML file
@@ -96,7 +96,7 @@ def take_screenshot_html(html_str, dimensions, timeout_ms=None):
             html_file.write(html_str.encode("utf-8"))
             html_file_path = html_file.name
 
-        image = take_screenshot(html_file_path, dimensions, timeout_ms)
+        image = take_screenshot(html_file_path, dimensions, timeout_ms, virtual_time_budget_ms)
 
         # Remove html file
         os.remove(html_file_path)
@@ -117,7 +117,7 @@ def _find_chromium_binary():
     return None
 
 
-def take_screenshot(target, dimensions, timeout_ms=None):
+def take_screenshot(target, dimensions, timeout_ms=None, virtual_time_budget_ms=None):
     image = None
     try:
         # Find available browser binary
@@ -153,6 +153,8 @@ def take_screenshot(target, dimensions, timeout_ms=None):
         ]
         if timeout_ms:
             command.append(f"--timeout={timeout_ms}")
+        if virtual_time_budget_ms:
+            command.append(f"--virtual-time-budget={virtual_time_budget_ms}")
         result = subprocess.run(command, capture_output=True, check=False)
 
         # Check if the process failed or the output file is missing
