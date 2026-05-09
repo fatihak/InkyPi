@@ -46,7 +46,7 @@ sudo systemctl restart inkypi.service
 If the InkyPi service is not running, try manually running the startup script to diagnose. This should output the logs to the terminal and make it easier to troubleshoot any errors:
 
 ```bash
-sudo /usr/local/bin/inkypi -d
+sudo /usr/local/bin/inkypi run -d
 ```
 
 ## API Key not configured
