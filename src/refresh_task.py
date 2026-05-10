@@ -24,6 +24,7 @@ class RefreshTask:
         self.condition = threading.Condition(self.lock)
         self.running = False
         self.manual_update_request = ()
+        self.playlist_cycle_requested = False
 
         self.refresh_event = threading.Event()
         self.refresh_event.set()
@@ -94,6 +95,17 @@ class RefreshTask:
                         logger.info("Manual update requested")
                         refresh_action = self.manual_update_request
                         self.manual_update_request = ()
+                    elif self.playlist_cycle_requested:
+                        logger.info("Manual playlist cycle requested")
+                        self.playlist_cycle_requested = False
+                        playlist, plugin_instance = self._determine_next_plugin(
+                            playlist_manager,
+                            latest_refresh,
+                            current_dt,
+                            ignore_cycle_interval=True
+                        )
+                        if plugin_instance:
+                            refresh_action = PlaylistRefresh(playlist, plugin_instance)
                     else:
 
                         if self.device_config.get_config("log_system_stats"):
@@ -149,6 +161,24 @@ class RefreshTask:
         else:
             logger.warning("Background refresh task is not running, unable to do a manual update")
 
+    def cycle_playlist_next(self, wait=False):
+        """Request an immediate cycle to the next plugin in the active playlist."""
+        if self.running:
+            with self.condition:
+                self.playlist_cycle_requested = True
+                self.refresh_result = {}
+                self.refresh_event.clear()
+                self.condition.notify_all()
+
+            if wait:
+                self.refresh_event.wait()
+                if self.refresh_result.get("exception"):
+                    raise self.refresh_result.get("exception")
+            return True
+
+        logger.warning("Background refresh task is not running, unable to cycle playlist")
+        return False
+
     def signal_config_change(self):
         """Notify the background thread that config has changed (e.g., interval updated)."""
         if self.running:
@@ -160,7 +190,7 @@ class RefreshTask:
         tz_str = self.device_config.get_config("timezone", default="UTC")
         return datetime.now(pytz.timezone(tz_str))
 
-    def _determine_next_plugin(self, playlist_manager, latest_refresh_info, current_dt):
+    def _determine_next_plugin(self, playlist_manager, latest_refresh_info, current_dt, ignore_cycle_interval=False):
         """Determines the next plugin to refresh based on the active playlist, plugin cycle interval, and current time."""
         playlist = playlist_manager.determine_active_playlist(current_dt)
         if not playlist:
@@ -175,7 +205,7 @@ class RefreshTask:
 
         latest_refresh_dt = latest_refresh_info.get_refresh_datetime()
         plugin_cycle_interval = self.device_config.get_config("plugin_cycle_interval_seconds", default=3600)
-        should_refresh = PlaylistManager.should_refresh(latest_refresh_dt, plugin_cycle_interval, current_dt)
+        should_refresh = ignore_cycle_interval or PlaylistManager.should_refresh(latest_refresh_dt, plugin_cycle_interval, current_dt)
 
         if not should_refresh:
             latest_refresh_str = latest_refresh_dt.strftime('%Y-%m-%d %H:%M:%S') if latest_refresh_dt else "None"
