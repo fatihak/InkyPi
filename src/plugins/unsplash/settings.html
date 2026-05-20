@@ -11,6 +11,16 @@
 </div>
 
 <div class="form-group">
+    <label for="asset_type" class="form-label">Content Type:</label>
+    <select id="asset_type" name="asset_type" class="form-input">
+        <option value="photo">Photos</option>
+        <option value="illustration">Illustrations from collections</option>
+        <option value="mixed">Photos and illustrations from collections</option>
+    </select>
+    <small style="width: 100%; color: var(--text-primary);">Illustrations and mixed mode require collection IDs and do not support search query.</small>
+</div>
+
+<div class="form-group">
     <div class="form-group">
         <label for="content_filter" class="form-label">Content Filter:</label>
         <select id="content_filter" name="content_filter" class="form-input">
@@ -53,6 +63,7 @@
         if (loadPluginSettings) {
             document.getElementById('search_query').value = pluginSettings.search_query || '';
             document.getElementById('collections').value = pluginSettings.collections || '';
+            document.getElementById('asset_type').value = pluginSettings.asset_type || 'photo';
             document.getElementById('content_filter').value = pluginSettings.content_filter || 'low';
             document.getElementById('color').value = pluginSettings.color || '';
             document.getElementById('orientation').value = pluginSettings.orientation || '';
