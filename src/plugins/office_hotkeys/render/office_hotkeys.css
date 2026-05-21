@@ -27,26 +27,27 @@
 
 .oh-hero {
   display: flex; align-items: center; gap: 2.2vw;
-  margin: 1.6vh 2.4vw 0.8vh;
-  padding: 1.6vh 2vw;
+  margin: 1.6vh 2.4vw 1vh;
+  padding: 1.8vh 2vw;
   border: 3px solid #1a1a1a; border-radius: 12px;
   background: #fdf3c4;
 }
 .oh-hero-text { flex: 1; min-width: 0; }
-.oh-topmove { font-size: 2.4vh; font-weight: 800; color: #c0301a; letter-spacing: 0.06em; }
-.oh-hero-desc { font-size: 4.4vh; font-weight: 700; line-height: 1.15; }
+.oh-topmove { font-size: 2.6vh; font-weight: 800; color: #c0301a; letter-spacing: 0.06em; }
+.oh-hero-desc { font-size: 5vh; font-weight: 700; line-height: 1.15; }
 
 .oh-list {
   flex: 1;
-  display: flex; flex-direction: column; justify-content: center;
+  display: flex; flex-direction: column;
   padding: 0 2.4vw;
 }
 .oh-row {
-  display: flex; align-items: center; gap: 1.8vw;
-  padding: 1.7vh 0;
+  flex: 1;
+  display: flex; align-items: center; gap: 2vw;
   border-bottom: 1px solid #1a1a1a;
-  font-size: 4vh;
+  font-size: 5.2vh;
 }
+.oh-row:last-child { border-bottom: none; }
 .oh-desc { font-weight: 600; }
 
 .oh-keys { white-space: nowrap; }
@@ -54,9 +55,9 @@
   display: inline-block;
   border: 2px solid #1a1a1a; border-radius: 7px; background: #ffffff;
   font-family: "Consolas", "Courier New", monospace; font-weight: 700;
-  font-size: 3.4vh; padding: 0.5vh 1.1vw; margin: 0 0.2vw;
+  font-size: 4.4vh; padding: 0.5vh 1.2vw; margin: 0 0.2vw;
 }
-.oh-keys-big .oh-kc { font-size: 4.4vh; padding: 0.7vh 1.4vw; }
+.oh-keys-big .oh-kc { font-size: 5vh; padding: 0.7vh 1.5vw; }
 .oh-plus { color: #1a1a1a; font-weight: 800; margin: 0 0.3vw; }
 
 .oh-footer {
