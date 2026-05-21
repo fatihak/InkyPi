@@ -68,7 +68,7 @@ def _level_below(level):
     return constants.LEVELS[index - 1] if index > 0 else None
 
 
-def select_for_screen(shortcuts, app, min_level, now=None, rng=None, list_size=8):
+def select_for_screen(shortcuts, app, min_level, now=None, rng=None, list_size=6):
     """Pick one category (rotating, with fall-through) and build a screen.
 
     The pool is the category's shortcuts at `min_level` or harder. If that pool
