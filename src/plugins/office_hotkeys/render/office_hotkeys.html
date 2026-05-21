@@ -1,0 +1,39 @@
+{% extends "plugin.html" %}
+
+{% block content %}
+<div class="oh-screen">
+  <div class="oh-header" style="background: {{ header_color }};">
+    <div class="oh-title">⌨ {{ app_label }}<span class="oh-cat"> · {{ category }}</span></div>
+    <div class="oh-meta">
+      <span class="oh-badge">◆ {{ level_label }}</span>
+      <span class="oh-count">{{ category_index }} / {{ category_count }}</span>
+    </div>
+  </div>
+
+  <div class="oh-hero">
+    <div class="oh-keys oh-keys-big">
+      {% for k in hero['keys'] %}<span class="oh-kc">{{ k }}</span>{% if not loop.last %}<span class="oh-plus">+</span>{% endif %}{% endfor %}
+    </div>
+    <div class="oh-hero-text">
+      <div class="oh-topmove">★ TOP MOVE</div>
+      <div class="oh-hero-desc">{{ hero.description }}</div>
+    </div>
+  </div>
+
+  <div class="oh-list">
+    {% for s in items %}
+    <div class="oh-row">
+      <span class="oh-keys">
+        {% for k in s['keys'] %}<span class="oh-kc">{{ k }}</span>{% if not loop.last %}<span class="oh-plus">+</span>{% endif %}{% endfor %}
+      </span>
+      <span class="oh-desc">{{ s.description }}</span>
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="oh-footer">
+    <span>⌨ Office Hotkeys</span>
+    <span>{{ shown_count }} of {{ pool_size }} {{ category }} shortcuts</span>
+  </div>
+</div>
+{% endblock %}

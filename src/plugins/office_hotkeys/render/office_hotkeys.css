@@ -1,0 +1,65 @@
+.oh-screen {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  font-family: "Jost", sans-serif;
+  color: #1a1a1a;
+  box-sizing: border-box;
+}
+
+.oh-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: #ffffff;
+  padding: 1.6vh 2.2vw;
+}
+.oh-title { font-size: 4.6vh; font-weight: 800; }
+.oh-cat   { font-weight: 600; }
+.oh-meta  { display: flex; align-items: center; gap: 1.4vw; }
+.oh-badge {
+  background: #ffffff; color: #1a1a1a;
+  font-size: 2.2vh; font-weight: 800; letter-spacing: 0.05em;
+  padding: 0.4vh 1vw; border-radius: 4px;
+}
+.oh-count { font-size: 2.2vh; font-weight: 700; }
+
+.oh-list { flex: 1; display: grid;
+  grid-template-columns: 1fr 1fr; gap: 0 3vw; align-content: center;
+  padding: 0 2.2vw; }
+
+.oh-row {
+  display: flex; align-items: center; gap: 1.2vw;
+  padding: 1.05vh 0;
+  border-bottom: 1px solid #1a1a1a;
+  font-size: 2.7vh;
+}
+
+.oh-hero {
+  display: flex; align-items: center; gap: 2vw;
+  margin: 1.6vh 2.2vw 0.4vh;
+  padding: 1.4vh 1.8vw;
+  border: 2px solid #1a1a1a; border-radius: 10px;
+  background: #fdf3c4;
+}
+.oh-hero-text { flex: 1; min-width: 0; }
+.oh-topmove { font-size: 2vh; font-weight: 800; color: #c0301a; letter-spacing: 0.06em; }
+.oh-hero-desc { font-size: 3.6vh; font-weight: 700; line-height: 1.15; }
+
+.oh-keys { white-space: nowrap; }
+.oh-kc {
+  display: inline-block;
+  border: 2px solid #1a1a1a; border-radius: 6px; background: #ffffff;
+  font-family: "Consolas", "Courier New", monospace; font-weight: 700;
+  font-size: 2.4vh; padding: 0.35vh 0.8vw; margin: 0 0.15vw;
+}
+.oh-keys-big .oh-kc { font-size: 3.4vh; padding: 0.6vh 1.1vw; }
+.oh-plus { color: #1a1a1a; font-weight: 800; margin: 0 0.2vw; }
+
+.oh-footer {
+  display: flex; justify-content: space-between;
+  font-size: 1.9vh; color: #1a1a1a; font-weight: 600;
+  padding: 0.9vh 2.2vw;
+  border-top: 1px solid #1a1a1a;
+}

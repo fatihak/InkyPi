@@ -1,0 +1,31 @@
+<div class="form-group">
+  <label for="app" class="form-label">Office app:</label>
+  <select id="app" name="app" class="form-input">
+    <option value="excel">Excel</option>
+    <option value="outlook">Outlook</option>
+    <option value="powerpoint">PowerPoint</option>
+  </select>
+</div>
+
+<div class="form-group">
+  <label for="skillLevel" class="form-label">Your skill level:</label>
+  <select id="skillLevel" name="skillLevel" class="form-input">
+    <option value="beginner">Beginner — show everything</option>
+    <option value="intermediate">Intermediate — skip the basics</option>
+    <option value="advanced">Advanced — power moves only</option>
+  </select>
+  <small class="form-hint">Shows shortcuts at this level and harder.</small>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    if (loadPluginSettings) {
+      if (pluginSettings.app) {
+        document.getElementById('app').value = pluginSettings.app;
+      }
+      if (pluginSettings.skillLevel) {
+        document.getElementById('skillLevel').value = pluginSettings.skillLevel;
+      }
+    }
+  });
+</script>
