@@ -1,5 +1,5 @@
 import requests
-from PIL import Image, ImageEnhance, ImageOps, ImageFilter
+from PIL import Image, ImageEnhance, ImageOps, ImageFilter, ImageStat
 from io import BytesIO
 import os
 import logging
@@ -180,3 +180,23 @@ def pad_image_blur(img: Image, dimensions: tuple[int, int]) -> Image:
     img_size = img.size
     bkg.paste(img, ((dimensions[0] - img_size[0]) // 2, (dimensions[1] - img_size[1]) // 2))
     return bkg
+
+def calculate_contrast_color(image: Image.Image, box: tuple[int, int, int, int]) -> str:
+    """
+    Calculates the average brightness of the specified region in the image 
+    and returns 'black' or 'white' to ensure good contrast.
+    """
+    try:
+        # Crop the region
+        region = image.crop(box)
+        # Convert to grayscale
+        grayscale = region.convert("L")
+        # Calculate average brightness
+        stat = ImageStat.Stat(grayscale)
+        avg_brightness = stat.mean[0]
+        
+        # If brightness > 128 (light), return black, else white
+        return "#000000" if avg_brightness > 128 else 'white'
+    except Exception as e:
+        logger.warning(f"Error calculating contrast: {e}")
+        return "#FFFFFF" # Default

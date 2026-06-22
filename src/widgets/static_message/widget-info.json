@@ -1,0 +1,7 @@
+{
+    "id": "static_message",
+    "name": "Static Message Widget",
+    "description": "Displays a static message",
+    "type": "widget",
+    "class": "StaticMessage"
+}

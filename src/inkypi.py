@@ -28,10 +28,12 @@ from refresh_task import RefreshTask
 from blueprints.main import main_bp
 from blueprints.settings import settings_bp
 from blueprints.plugin import plugin_bp
+from blueprints.widget import widget_bp
 from blueprints.playlist import playlist_bp
 from blueprints.apikeys import apikeys_bp
 from jinja2 import ChoiceLoader, FileSystemLoader
 from plugins.plugin_registry import load_plugins
+from widgets.widget_registry import load_widgets
 from waitress import serve
 
 
@@ -57,6 +59,7 @@ app = Flask(__name__)
 template_dirs = [
    os.path.join(os.path.dirname(__file__), "templates"),    # Default template folder
    os.path.join(os.path.dirname(__file__), "plugins"),      # Plugin templates
+   os.path.join(os.path.dirname(__file__), "widgets"),      # Widget templates
 ]
 app.jinja_loader = ChoiceLoader([FileSystemLoader(directory) for directory in template_dirs])
 
@@ -65,6 +68,7 @@ display_manager = DisplayManager(device_config)
 refresh_task = RefreshTask(device_config, display_manager)
 
 load_plugins(device_config.get_plugins())
+load_widgets(device_config.get_widgets())
 
 # Store dependencies
 app.config['DEVICE_CONFIG'] = device_config
@@ -78,6 +82,7 @@ app.config['MAX_FORM_PARTS'] = 10_000
 app.register_blueprint(main_bp)
 app.register_blueprint(settings_bp)
 app.register_blueprint(plugin_bp)
+app.register_blueprint(widget_bp)
 app.register_blueprint(playlist_bp)
 app.register_blueprint(apikeys_bp)
 
