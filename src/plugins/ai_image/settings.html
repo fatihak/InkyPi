@@ -10,9 +10,8 @@
     <div class="form-group">
         <label for="imageModel" class="form-label">Image Model:</label>
         <select id="imageModel" name="imageModel" class="form-input" onchange="toggleQualityDropdown()">
-            <option value="dall-e-2">DALL·E 2</option>
-            <option value="dall-e-3" selected>DALL·E 3</option>
-            <option value="gpt-image-1">GPT Image 1</option>
+            <option value="gpt-image-1" selected>GPT Image 1</option>
+            <option value="gpt-image-2">GPT Image 2</option>
         </select>
     </div>
 
@@ -42,14 +41,7 @@
         // Clear out old options
         qualityDropdown.innerHTML = "";
 
-        if (selectedModel === "dall-e-3") {
-            qualityDropdown.add(new Option("HD", "hd"));
-            qualityDropdown.add(new Option("Standard", "standard"));
-        } 
-        else if (selectedModel === "dall-e-2") {
-            qualityDropdown.add(new Option("Standard", "standard"));
-        } 
-        else if (selectedModel === "gpt-image-1") {
+        if (selectedModel === "gpt-image-1" || selectedModel === "gpt-image-2") {
             qualityDropdown.add(new Option("High", "high"));
             qualityDropdown.add(new Option("Medium", "medium"));
             qualityDropdown.add(new Option("Low", "low"));
@@ -63,8 +55,8 @@
     // populate form values from plugin settings
     document.addEventListener('DOMContentLoaded', () => {   
         // defaults
-        var imageModel = 'dall-e-2'
-        var quality = 'standard'
+        var imageModel = 'gpt-image-1'
+        var quality = 'medium'
 
         if (loadPluginSettings) {
             document.getElementById('textPrompt').value = pluginSettings.textPrompt || '';
