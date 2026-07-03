@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Keys</title>
+    <script>
+        (function() {
+            const theme = localStorage.getItem('inkypi-theme') || 
+                         (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+            if (theme === 'dark') {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            }
+        })();
+    </script>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='styles/main.css') }}">
+    <script src="{{ url_for('static', filename='scripts/dark_mode.js') }}"></script>
+    <script src="{{ url_for('static', filename='scripts/response_modal.js') }}"></script>
+    <style>
+        .apikeys-container {
+            max-width: 700px;
+            margin: 0 auto;
+        }
+        
+        .apikey-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 12px;
+            align-items: center;
+        }
+        
+        .apikey-key {
+            width: 200px;
+            padding: 10px 12px;
+            border: 1px solid var(--border-color, #ddd);
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 14px;
+            background: var(--input-bg, #fff);
+            color: var(--text-primary, #333);
+        }
+        
+        .apikey-value {
+            flex: 1;
+            padding: 10px 12px;
+            border: 1px solid var(--border-color, #ddd);
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 14px;
+            background: var(--input-bg, #fff);
+            color: var(--text-primary, #333);
+        }
+        
+        .apikey-value.masked {
+            color: var(--text-secondary, #888);
+            letter-spacing: 2px;
+            background: var(--bg-secondary, #f9f9f9);
+        }
+        
+        .apikey-value:focus {
+            outline: none;
+            border-color: var(--accent-primary, #1abc9c);
+            box-shadow: 0 0 0 2px rgba(26, 188, 156, 0.2);
+        }
+        
+        .btn-delete {
+            width: 36px;
+            height: 36px;
+            border: none;
+            background: #E53935;
+            color: white;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+        }
+        
+        .btn-delete:hover {
+            background: #C62828;
+        }
+        
+        .add-buttons-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 15px;
+        }
+
+        .btn-add {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            border: 2px dashed var(--border-color, #ddd);
+            background: transparent;
+            border-radius: 6px;
+            cursor: pointer;
+            color: var(--text-secondary, #666);
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        
+        .btn-add:hover {
+            border-color: var(--accent-primary, #1abc9c);
+            color: var(--accent-primary, #1abc9c);
+        }
+
+        .btn-preset {
+            padding: 8px 12px;
+            border: 1px solid var(--border-color, #ddd);
+            background: var(--bg-secondary, #f5f5f5);
+            border-radius: 6px;
+            cursor: pointer;
+            color: var(--text-secondary, #666);
+            font-size: 12px;
+            font-family: monospace;
+            transition: all 0.2s;
+        }
+
+        .btn-preset:hover {
+            border-color: #4CAF50;
+            background: rgba(76, 175, 80, 0.1);
+            color: #4CAF50;
+        }
+
+        [data-theme="dark"] .btn-preset {
+            background: #333;
+            border-color: #555;
+        }
+
+        [data-theme="dark"] .btn-preset:hover {
+            background: rgba(76, 175, 80, 0.2);
+        }
+        
+        .info-banner {
+            background: #FFF3E0;
+            border: 1px solid #FFE0B2;
+            border-radius: 8px;
+            padding: 12px 15px;
+            margin-top: 20px;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+        
+        .info-banner-icon {
+            font-size: 20px;
+        }
+        
+        .info-banner-text {
+            font-size: 13px;
+            color: #E65100;
+            line-height: 1.5;
+        }
+        
+        /* Dark mode */
+        [data-theme="dark"] .apikey-key,
+        [data-theme="dark"] .apikey-value {
+            background: #333;
+            border-color: #555;
+            color: #eee;
+        }
+        
+        [data-theme="dark"] .apikey-value.masked {
+            background: #2a2a2a;
+            color: #888;
+        }
+        
+        [data-theme="dark"] .info-banner {
+            background: #3E2723;
+            border-color: #5D4037;
+        }
+        
+        [data-theme="dark"] .info-banner-text {
+            color: #FFCC80;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-secondary, #666);
+        }
+        
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="frame">
+        <!-- Back Button -->
+        <button onclick="history.back()" class="back-button">← Back</button>
+        
+        <!-- Header -->
+        <div class="app-header">
+            <div class="header-content">
+                <div class="title-container">
+                    <span style="font-size: 28px; margin-right: 10px;">🔑</span>
+                    <h1 class="app-title">API Keys</h1>
+                </div>
+            </div>
+        </div>
+        <div class="separator"></div>
+        
+        <div class="apikeys-container">
+            <!-- API Keys List -->
+            <div id="apikeys-list">
+                {% if entries %}
+                    {% for entry in entries %}
+                    <div class="apikey-row" data-existing="true">
+                        <input type="text" class="apikey-key" value="{{ entry.key }}" placeholder="KEY_NAME" readonly>
+                        <input type="text" class="apikey-value masked" value="{{ entry.masked }}" placeholder="(unchanged)" readonly>
+                        <button type="button" class="btn-delete" onclick="deleteRow(this)" title="Delete">×</button>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="empty-state" id="empty-state">
+                        <div class="empty-state-icon">🔐</div>
+                        <p>No API keys configured yet.</p>
+                        <p>Add keys below to enable plugin features.</p>
+                    </div>
+                {% endif %}
+            </div>
+            
+            <!-- Add Buttons -->
+            <div class="add-buttons-grid">
+                <button type="button" class="btn-add" onclick="addRow()">
+                    <span>+</span> Add API Key
+                </button>
+                <button type="button" class="btn-preset" data-key="OPEN_WEATHER_MAP_SECRET" onclick="addPreset(this)">OPEN_WEATHER_MAP_SECRET</button>
+                <button type="button" class="btn-preset" data-key="OPEN_AI_SECRET" onclick="addPreset(this)">OPEN_AI_SECRET</button>
+                <button type="button" class="btn-preset" data-key="NASA_SECRET" onclick="addPreset(this)">NASA_SECRET</button>
+                <button type="button" class="btn-preset" data-key="UNSPLASH_ACCESS_KEY" onclick="addPreset(this)">UNSPLASH_ACCESS_KEY</button>
+                <button type="button" class="btn-preset" data-key="GITHUB_SECRET" onclick="addPreset(this)">GITHUB_SECRET</button>
+            </div>
+            
+            <!-- Info Banner -->
+            <div class="info-banner">
+                <span class="info-banner-icon">ℹ️</span>
+                <span class="info-banner-text">
+                    API keys are stored in the <code>.env</code> file on the device.
+                    For security, existing values are never displayed. To change a key, delete it and add a new one.
+                    Some plugins may require a restart after changing keys.
+                </span>
+            </div>
+        </div>
+        
+        <!-- Save Button -->
+        <div class="buttons-container">
+            <button type="button" onclick="saveKeys()" class="action-button">Save</button>
+        </div>
+    </div>
+    
+    <!-- Modal -->
+    {% include 'response_modal.html' %}
+    
+    <script>
+        function addRow(key = '', value = '') {
+            // Remove empty state if present
+            const emptyState = document.getElementById('empty-state');
+            if (emptyState) {
+                emptyState.remove();
+            }
+            
+            const list = document.getElementById('apikeys-list');
+            const row = document.createElement('div');
+            row.className = 'apikey-row';
+            row.dataset.existing = 'false';
+            row.innerHTML = `
+                <input type="text" class="apikey-key" value="${key}" placeholder="KEY_NAME">
+                <input type="text" class="apikey-value" value="${value}" placeholder="Enter value">
+                <button type="button" class="btn-delete" onclick="deleteRow(this)" title="Delete">×</button>
+            `;
+            list.appendChild(row);
+            
+            // Focus on value input if key provided, otherwise focus on key input
+            if (key) {
+                row.querySelector('.apikey-value').focus();
+            } else {
+                row.querySelector('.apikey-key').focus();
+            }
+        }
+
+        function addPreset(btn) {
+            const key = btn.dataset.key;
+            addRow(key, '');
+            btn.style.display = 'none';
+        }
+
+        function hideExistingPresets() {
+            const existingKeys = new Set();
+            document.querySelectorAll('.apikey-key').forEach(input => {
+                existingKeys.add(input.value.trim());
+            });
+            document.querySelectorAll('.btn-preset').forEach(btn => {
+                if (existingKeys.has(btn.dataset.key)) {
+                    btn.style.display = 'none';
+                }
+            });
+        }
+
+        // Hide presets for existing keys on page load
+        document.addEventListener('DOMContentLoaded', hideExistingPresets);
+        
+        function deleteRow(btn) {
+            const row = btn.closest('.apikey-row');
+            const keyInput = row.querySelector('.apikey-key');
+            const deletedKey = keyInput ? keyInput.value.trim() : '';
+            row.remove();
+            
+            // Show preset button if it was a preset key
+            if (deletedKey) {
+                const presetBtn = document.querySelector(`.btn-preset[data-key="${deletedKey}"]`);
+                if (presetBtn) {
+                    presetBtn.style.display = '';
+                }
+            }
+            
+            // Show empty state if no rows left
+            const list = document.getElementById('apikeys-list');
+            if (list.children.length === 0) {
+                list.innerHTML = `
+                    <div class="empty-state" id="empty-state">
+                        <div class="empty-state-icon">🔐</div>
+                        <p>No API keys configured yet.</p>
+                        <p>Add keys below to enable plugin features.</p>
+                    </div>
+                `;
+            }
+        }
+        
+        async function saveKeys() {
+            const rows = document.querySelectorAll('.apikey-row');
+            const entries = [];
+            let hasNewKeys = false;
+            
+            rows.forEach(row => {
+                const keyInput = row.querySelector('.apikey-key');
+                const valueInput = row.querySelector('.apikey-value');
+                const isExisting = row.dataset.existing === 'true';
+                
+                if (!keyInput || !valueInput) return;
+                
+                const key = keyInput.value.trim();
+                const value = valueInput.value.trim();
+                
+                if (key) {
+                    if (isExisting) {
+                        // Existing key - mark to keep current value on server
+                        entries.push({ key, value: null, keepExisting: true });
+                    } else {
+                        // New key - must have a value
+                        if (!value) {
+                            hasNewKeys = true;
+                            return;
+                        }
+                        entries.push({ key, value });
+                    }
+                }
+            });
+            
+            if (hasNewKeys) {
+                const newRows = document.querySelectorAll('.apikey-row[data-existing="false"]');
+                for (const row of newRows) {
+                    const valueInput = row.querySelector('.apikey-value');
+                    if (!valueInput.value.trim()) {
+                        valueInput.focus();
+                        showResponseModal('failure', 'Please enter a value for new API keys');
+                        return;
+                    }
+                }
+            }
+            
+            try {
+                const response = await fetch('{{ url_for("apikeys.save_apikeys") }}', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ entries })
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    showResponseModal('success', result.message);
+                    // Reload page to refresh
+                    setTimeout(() => window.location.reload(), 1500);
+                } else {
+                    showResponseModal('failure', result.error);
+                }
+            } catch (error) {
+                console.error('Error saving:', error);
+                showResponseModal('failure', 'Failed to save API keys');
+            }
+        }
+    </script>
+</body>
+</html>

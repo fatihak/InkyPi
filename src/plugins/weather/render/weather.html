@@ -243,8 +243,8 @@
               },
               autoSkip: false,
               callback: function(value, index, values) {
-                if (index === values.length-1) return maxTemp + "°";
-                else if (index === 0) return minTemp + "°";
+                if (index === values.length-1) return (units != "standard") ? maxTemp + "°" : maxTemp;
+                else if (index === 0) return (units != "standard") ? minTemp + "°" : minTemp;
                 else return '';
               }
             },

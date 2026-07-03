@@ -40,3 +40,19 @@ def get_current_image():
     response.headers['Last-Modified'] = last_modified.strftime('%a, %d %b %Y %H:%M:%S GMT')
     response.headers['Cache-Control'] = 'no-cache'
     return response
+
+
+@main_bp.route('/api/plugin_order', methods=['POST'])
+def save_plugin_order():
+    """Save the custom plugin order."""
+    device_config = current_app.config['DEVICE_CONFIG']
+
+    data = request.get_json() or {}
+    order = data.get('order', [])
+
+    if not isinstance(order, list):
+        return jsonify({"error": "Order must be a list"}), 400
+
+    device_config.set_plugin_order(order)
+
+    return jsonify({"success": True})

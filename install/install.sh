@@ -2,11 +2,11 @@
 
 # =============================================================================
 # Script Name: install.sh
-# Description: This script automates the installatin of InkyPI and creation of
+# Description: This script automates the installation of InkyPI and creation of
 #              the InkyPI service.
 #
 # Usage: ./install.sh [-W <waveshare_device>]
-#        -W <waveshare_device> (optional) Install for a Waveshare device, 
+#        -W <waveshare_device> (optional) Install for a Waveshare device,
 #                               specifying the device model type, e.g. epd7in3e.
 #
 #                               If not specified then the Pimoroni Inky display
@@ -40,7 +40,7 @@ SERVICE_FILE_TARGET="/etc/systemd/system/$SERVICE_FILE"
 APT_REQUIREMENTS_FILE="$SCRIPT_DIR/debian-requirements.txt"
 PIP_REQUIREMENTS_FILE="$SCRIPT_DIR/requirements.txt"
 
-# 
+#
 # Additional requirements for Waveshare support.
 #
 # empty means no WS support required, otherwise we expect the type of display
@@ -48,7 +48,7 @@ PIP_REQUIREMENTS_FILE="$SCRIPT_DIR/requirements.txt"
 WS_TYPE=""
 WS_REQUIREMENTS_FILE="$SCRIPT_DIR/ws-requirements.txt"
 
-# Parse the agumments, looking for the -W option.
+# Parse the arguments, looking for the -W option.
 parse_arguments() {
     while getopts ":W:" opt; do
         case $opt in
@@ -107,13 +107,13 @@ fetch_waveshare_driver() {
 enable_interfaces(){
   echo "Enabling interfaces required for $APPNAME"
   #enable spi
-  sudo sed -i 's/^dtparam=spi=.*/dtparam=spi=on/' /boot/config.txt
-  sudo sed -i 's/^#dtparam=spi=.*/dtparam=spi=on/' /boot/config.txt
+  sudo sed -i 's/^dtparam=spi=.*/dtparam=spi=on/' /boot/firmware/config.txt
+  sudo sed -i 's/^#dtparam=spi=.*/dtparam=spi=on/' /boot/firmware/config.txt
   sudo raspi-config nonint do_spi 0
   echo_success "\tSPI Interface has been enabled."
   #enable i2c
-  sudo sed -i 's/^dtparam=i2c_arm=.*/dtparam=i2c_arm=on/' /boot/config.txt
-  sudo sed -i 's/^#dtparam=i2c_arm=.*/dtparam=i2c_arm=on/' /boot/config.txt
+  sudo sed -i 's/^dtparam=i2c_arm=.*/dtparam=i2c_arm=on/' /boot/firmware/config.txt
+  sudo sed -i 's/^#dtparam=i2c_arm=.*/dtparam=i2c_arm=on/' /boot/firmware/config.txt
   sudo raspi-config nonint do_i2c 0
   echo_success "\tI2C Interface has been enabled."
 
@@ -294,7 +294,7 @@ start_service() {
   sudo systemctl start $SERVICE_FILE
 }
 
-copy_project() {
+install_src() {
   # Check if an existing installation is present
   echo "Installing $APPNAME to $INSTALL_PATH"
   if [[ -d $INSTALL_PATH ]]; then
@@ -306,6 +306,11 @@ copy_project() {
 
   ln -sf "$SRC_PATH" "$INSTALL_PATH/src"
   show_loader "\tCreating symlink from $SRC_PATH to $INSTALL_PATH/src"
+}
+
+install_cli() {
+  cp -r "$SCRIPT_DIR/cli" "$INSTALL_PATH/"
+  sudo chmod +x "$INSTALL_PATH/cli/"*
 }
 
 # Get Raspberry Pi hostname
@@ -368,7 +373,8 @@ else
   echo "OS version is not Bookworm - skipping zramswap setup."
 fi
 setup_earlyoom_service
-copy_project
+install_src
+install_cli
 create_venv
 install_executable
 install_config
@@ -379,6 +385,6 @@ fi
 install_app_service
 
 echo "Update JS and CSS files"
-bash $SCRIPT_DIR/update_vendors.sh
+bash $SCRIPT_DIR/update_vendors.sh > /dev/null
 
 ask_for_reboot
