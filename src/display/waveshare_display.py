@@ -142,7 +142,7 @@ class WaveshareDisplay(AbstractDisplay):
             raise ValueError(f"No image provided.")
 
         # Assume device was in sleep mode.
-        self.epd_display_init()
+        self.reinitialize_display()
 
         # Clear residual pixels before updating the image.
         self.epd_display.Clear()
