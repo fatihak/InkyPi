@@ -72,8 +72,8 @@ class WaveshareDisplay(AbstractDisplay):
 
         try:
             # Dynamically load module
-            epd_module = importlib.import_module(module_name)  
-            self.epd_display = epd_module.EPD()
+            self.epd_module = importlib.import_module(module_name)  
+            self.epd_display = self.epd_module.EPD()
             # Workaround for init functions with inconsistent casing
             self.epd_display_init = getattr(self.epd_display, "Init", getattr(self.epd_display, "init", None))
 
@@ -98,6 +98,27 @@ class WaveshareDisplay(AbstractDisplay):
                 "resolution",
                 resolution,
                 write=True)
+            
+    def reinitialize_display(self):
+
+        """
+        Re-initializes the Waveshare display device.
+
+        Waveshare EPDs may require re-initialization after entering sleep mode. This is 
+        achieved by calling the EPD() constructor and init method again. 
+        
+        Not doing this results in "OSError: [Errno 9] Bad file descriptor" because the 
+        SPI file descriptor is closed by waveshare's epdconfig sleep() command.
+        """
+
+        self.epd_display = self.epd_module.EPD()
+        # Workaround for init functions with inconsistent casing
+        self.epd_display_init = getattr(self.epd_display, "Init", getattr(self.epd_display, "init", None))
+
+        if not callable(self.epd_display_init):
+            raise AttributeError("No Init/init method found")
+
+        self.epd_display_init()
 
 
     def display_image(self, image, image_settings=[]):
