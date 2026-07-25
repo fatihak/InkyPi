@@ -79,15 +79,38 @@ class ImmichProvider:
         return matching_albums[0]["id"]
 
     def get_assets(self, album_id: str) -> list[dict]:
-        """Fetch all image assets from album using the album details endpoint."""
-        logger.debug(f"Fetching assets from album {album_id} via /api/albums/{album_id}")
-        r = self.session.get(f"{self.base_url}/api/albums/{album_id}", headers=self.headers)
-        r.raise_for_status()
-        album_data = r.json()
+        """Fetch image assets from album.
 
+        Immich v3 removed the `assets` field from GET /api/albums/{id}.
+        Use POST /api/search/metadata with albumIds filter instead, falling back
+        to the album detail endpoint for older versions.
+        """
+        # Immich v3+: assets no longer embedded in album response
+        logger.debug(f"Fetching assets for album {album_id} via search/metadata")
+        r = self.session.post(
+            f"{self.base_url}/api/search/metadata",
+            headers=self.headers,
+            json={"albumIds": [album_id], "type": "IMAGE", "withExif": False},
+        )
+        if r.status_code == 200:
+            search_data = r.json() or {}
+            items = search_data.get("assets", {}).get("items", [])
+            logger.debug(f"Search API found {len(items)} image assets")
+            if items:
+                return items
+
+        # Fallback: older Immich versions embed assets in album detail
+        logger.debug(f"Search API empty/failed, falling back to /api/albums/{album_id}")
+        r2 = self.session.get(
+            f"{self.base_url}/api/albums/{album_id}",
+            headers=self.headers,
+            params={"withAssets": "true"},
+        )
+        r2.raise_for_status()
+        album_data = r2.json()
         assets = album_data.get("assets", []) or []
-        image_assets = [a for a in assets if a.get("type") == "IMAGE"]
-        logger.debug(f"Found {len(image_assets)} image assets in album ({len(assets)} total)")
+        image_assets = [a for a in assets if a.get("type") in ("IMAGE", "image", "photo")]
+        logger.debug(f"Album detail found {len(image_assets)} image assets ({len(assets)} total)")
         return image_assets
 
     def get_image(self, album: str, dimensions: tuple[int, int], resize: bool = True) -> Image.Image | None:
