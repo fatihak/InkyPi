@@ -94,11 +94,11 @@
     const precipitation = [{% for hour in hourly_forecast %}{{ hour.precipitation * 100}}{% if not loop.last %}, {% endif %}{% endfor %}]; // Convert to percentage
     const rain = [{% for hour in hourly_forecast %}{{ hour.rain or 0 }}{% if not loop.last %}, {% endif %}{% endfor %}];
     const weatherIconsPaths = [{% for hour in hourly_forecast %}"{{ hour.icon | replace('\\', '/') }}"{% if not loop.last %}, {% endif %}{% endfor %}];
-	const iconStep = parseInt("{{ plugin_settings.graphIconStep or 2 }}");
-	const units = document.getElementById('units-container').dataset.units;
-	const isImperial = units === "imperial";
-	const unit = isImperial ? "in" : "mm";
-	const threshold = isImperial ? 0.0035 : 0.09;
+    const iconStep = parseInt("{{ plugin_settings.graphIconStep or 2 }}");
+    const units = document.getElementById('units-container').dataset.units;
+    const isImperial = units === "imperial";
+    const unit = isImperial ? "in" : "mm";
+    const threshold = isImperial ? 0.0035 : 0.09;
 	
     // Find min and max temperatures
     const minTemp = Math.min(...temperatures);

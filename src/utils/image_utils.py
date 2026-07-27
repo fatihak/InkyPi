@@ -109,11 +109,14 @@ def take_screenshot_html(html_str, dimensions, timeout_ms=None):
 def _find_chromium_binary():
     """Find the first available Chromium-based binary in system PATH."""
     candidates = ["chromium-headless-shell", "chromium", "chrome"]
+    
     for candidate in candidates:
-        path = shutil.which(candidate)
+        path = shutil.which(candidate)##, path = "C:\\Users\\dorus\\AppData\\Local\\ms-playwright\\chromium-1228\\chrome-win64\\")
+        logger.error(f"Trying to find Chromium-based browser at {path}. Install chromium, chromium-headless-shell, or chrome.")   
         if path:
             logger.debug(f"Found browser binary: {candidate} at {path}")
             return candidate
+    logger.error(f"No Chromium-based browser found at {path}. Install chromium, chromium-headless-shell, or chrome.")
     return None
 
 

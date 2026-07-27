@@ -38,12 +38,12 @@
                 "current_plugin_index": null
             }
         ],
-        "active_playlist": null
+        "active_playlist": "Default"
     },
     "refresh_info": {
-        "refresh_time": null,
-        "image_hash": null,
-        "refresh_type": null,
-        "plugin_id": null
+        "refresh_time": "2026-07-27T13:52:43.479499+00:00",
+        "image_hash": "65346c179b6fbadb1c55a6b26ca73b6a1579efd8c7290e974c53d1969bc0a2ce",
+        "refresh_type": "Manual Update",
+        "plugin_id": "weather"
     }
 }
