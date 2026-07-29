@@ -2,7 +2,7 @@ import os
 from pathlib import Path
 
 from plugins.base_plugin.base_plugin import BasePlugin
-from utils.app_utils import resolve_path, get_fonts
+from utils.app_utils import resolve_path
 
 WIDGETS_DIR = resolve_path("widgets")
 

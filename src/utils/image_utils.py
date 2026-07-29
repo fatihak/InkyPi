@@ -196,7 +196,7 @@ def calculate_contrast_color(image: Image.Image, box: tuple[int, int, int, int])
         avg_brightness = stat.mean[0]
         
         # If brightness > 128 (light), return black, else white
-        return "#000000" if avg_brightness > 128 else 'white'
+        return "#000000" if avg_brightness > 128 else "#FFFFFF"
     except Exception as e:
         logger.warning(f"Error calculating contrast: {e}")
-        return "#FFFFFF" # Default
+        return "#FFFFFF"  # Default

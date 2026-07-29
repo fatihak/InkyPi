@@ -12,17 +12,17 @@ def load_widgets(widgets_config):
     for widget in widgets_config:
         widget_id = widget.get('id')
         if widget.get("disabled", False):
-            logging.info(f"Widget {widget_id} is disabled, skipping.")
+            logger.info(f"Widget {widget_id} is disabled, skipping.")
             continue
 
         widget_dir = widgets_module_path / widget_id
         if not widget_dir.is_dir():
-            logging.error(f"Could not find widget directory {widget_dir} for '{widget_id}', skipping.")
+            logger.error(f"Could not find widget directory {widget_dir} for '{widget_id}', skipping.")
             continue
 
         module_path = widget_dir / f"{widget_id}.py"
         if not module_path.is_file():
-            logging.error(f"Could not find module path {module_path} for '{widget_id}', skipping.")
+            logger.error(f"Could not find module path {module_path} for '{widget_id}', skipping.")
             continue
 
         module_name = f"widgets.{widget_id}.{widget_id}"
@@ -35,7 +35,7 @@ def load_widgets(widgets_config):
                 WIDGET_CLASSES[widget_id] = widget_class(widget)
 
         except ImportError as e:
-            logging.error(f"Failed to import widget module {module_name}: {e}")
+            logger.error(f"Failed to import widget module {module_name}: {e}")
 
 def get_widget_instance(widget_config):
     widget_id = widget_config.get("id")

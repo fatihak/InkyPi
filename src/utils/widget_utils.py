@@ -37,34 +37,38 @@ def generate_and_apply_widgets(main_image, device_config):
             
         # Get stored settings for this widget
         specific_widget_settings = widget_settings.get('widgets', {}).get(widget_id, {})
+        settings_for_render = dict(specific_widget_settings)
         
-        # Determine check box for contrast
-        check_size = 100
-        box = (0, 0, check_size, check_size) # Default
-        
-        if corner == 'top-left':
-            box = (current_x, current_y, current_x + check_size, current_y + check_size)
-        elif corner == 'top-right':
-             box = (current_x - check_size, current_y, current_x, current_y + check_size)
-        elif corner == 'bottom-left':
-             box = (current_x, current_y - check_size, current_x + check_size, current_y)
-        elif corner == 'bottom-right':
-            box = (current_x - check_size, current_y - check_size, current_x, current_y)
+        # Only compute contrast if the widget is configured to use it
+        use_contrast_color = specific_widget_settings.get('use_contrast_color', False)
+        if use_contrast_color:
+            # Determine check box for contrast
+            check_size = 100
+            box = (0, 0, check_size, check_size) # Default
             
-        # Clamp to image bounds
-        box = (
-            max(0, int(box[0])), max(0, int(box[1])),
-            min(width, int(box[2])), min(height, int(box[3]))
-        )
-        
-        # Calculate contrast
-        contrast_color = calculate_contrast_color(main_image, box)
-        specific_widget_settings['contrast_color'] = contrast_color
+            if corner == 'top-left':
+                box = (current_x, current_y, current_x + check_size, current_y + check_size)
+            elif corner == 'top-right':
+                 box = (current_x - check_size, current_y, current_x, current_y + check_size)
+            elif corner == 'bottom-left':
+                 box = (current_x, current_y - check_size, current_x + check_size, current_y)
+            elif corner == 'bottom-right':
+                box = (current_x - check_size, current_y - check_size, current_x, current_y)
+                
+            # Clamp to image bounds
+            box = (
+                max(0, int(box[0])), max(0, int(box[1])),
+                min(width, int(box[2])), min(height, int(box[3]))
+            )
+            
+            # Calculate contrast and add to render settings
+            contrast_color = calculate_contrast_color(main_image, box)
+            settings_for_render['contrast_color'] = contrast_color
         
         # Generate widget
         try:
             widget_instance = get_widget_instance(widget_config)
-            widget_img = widget_instance.generate_image(specific_widget_settings, device_config)
+            widget_img = widget_instance.generate_image(settings_for_render, device_config)
             
             ov_w, ov_h = widget_img.size
             paste_x, paste_y = current_x, current_y
@@ -82,7 +86,6 @@ def generate_and_apply_widgets(main_image, device_config):
                     current_x += ov_w + spacing
                 else:
                     current_x -= (ov_w + spacing)
-                    
             else: # Vertical
                 if corner in ['bottom-left', 'bottom-right']:
                     paste_y = current_y - ov_h
@@ -96,7 +99,6 @@ def generate_and_apply_widgets(main_image, device_config):
                     current_y += ov_h + spacing
                 else:
                     current_y -= (ov_h + spacing)
-                    
         except Exception as e:
             logger.error(f"Error generating/applying widget {widget_id}: {e}")
             

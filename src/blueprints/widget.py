@@ -1,7 +1,8 @@
-from flask import Blueprint, request, jsonify, current_app, render_template
-from utils.app_utils import parse_form, handle_request_files
+from flask import Blueprint, request, jsonify, current_app, render_template, send_from_directory
+from utils.app_utils import parse_form, handle_request_files, resolve_path
 from widgets.widget_registry import get_widget_instance
 import logging
+import os
 
 logger = logging.getLogger(__name__)
 widget_bp = Blueprint("widget", __name__)
@@ -32,7 +33,10 @@ def reorder_widgets():
     """Reorder enabled widgets."""
     device_config = current_app.config['DEVICE_CONFIG']
     try:
-        data = request.get_json()
+        data = request.get_json(silent=True)
+        if data is None:
+            return jsonify({"error": "Invalid JSON in request body"}), 400
+        
         new_order = data.get('order', [])
         
         # Validate that all IDs are valid widgets
@@ -88,13 +92,20 @@ def save_widget_settings():
     """Save widget positioning and spacing settings."""
     device_config = current_app.config['DEVICE_CONFIG']
     try:
-        data = request.get_json()
+        data = request.get_json(silent=True)
+        if data is None:
+            return jsonify({"error": "Invalid JSON in request body"}), 400
         
         widget_settings = device_config.get_config('widget_settings', {})
         widget_settings['corner'] = data.get('corner', widget_settings.get('corner', 'top-left'))
         widget_settings['orientation'] = data.get('orientation', widget_settings.get('orientation', 'horizontal'))
-        widget_settings['spacing'] = int(data.get('spacing', widget_settings.get('spacing', 10)))
-        widget_settings['margin'] = int(data.get('margin', widget_settings.get('margin', 10)))
+        
+        # Validate and sanitize numeric fields
+        try:
+            widget_settings['spacing'] = int(data.get('spacing', widget_settings.get('spacing', 10)))
+            widget_settings['margin'] = int(data.get('margin', widget_settings.get('margin', 10)))
+        except (ValueError, TypeError):
+            return jsonify({"error": "Invalid numeric value for spacing or margin"}), 400
         
         device_config.update_value('widget_settings', widget_settings, write=True)
         
@@ -148,17 +159,13 @@ def widget_settings_page(widget_id):
             widget = get_widget_instance(widget_config)
             
             template_params = widget.generate_settings_template()
-            template_params.setdefault("plugin_settings", {})
 
             # Load settings from widget config
             widget_settings = device_config.get_config('widget_settings', {})
-            specific_widget_settings = widget_settings.get('widgets', {}).get(widget_id)
-
-            # Update template_params with specific_widget_settings to ensure values like use_contrast_color are correct
-            if specific_widget_settings is not None:
-                template_params.update(specific_widget_settings)
-            else:
-                specific_widget_settings = {}
+            specific_widget_settings = widget_settings.get('widgets', {}).get(widget_id, {})
+            
+            # Pass plugin_settings separately to avoid overwriting template metadata
+            template_params["plugin_settings"] = specific_widget_settings
             
             return render_template('widget_settings.html', widget=widget_config, widget_settings=specific_widget_settings, **template_params)
         except Exception as e:
@@ -166,3 +173,32 @@ def widget_settings_page(widget_id):
             return jsonify({"error": f"An error occurred: {str(e)}"}), 500
     else:
         return "Widget not found", 404
+
+@widget_bp.route('/widget_assets/<widget_id>/<path:filename>')
+def widget_asset(widget_id, filename):
+    """Serve static assets for widgets (images, CSS, etc.)."""
+    # Resolve widgets directory dynamically
+    widgets_dir = resolve_path("widgets")
+    
+    # Construct the full path to the widget's file
+    widget_dir = os.path.join(widgets_dir, widget_id)
+    
+    # Security check to prevent directory traversal
+    safe_path = os.path.abspath(os.path.join(widget_dir, filename))
+    if not safe_path.startswith(os.path.abspath(widgets_dir)):
+        return "Invalid path", 403
+    
+    # Convert to absolute path for send_from_directory
+    abs_widget_dir = os.path.abspath(widget_dir)
+    
+    # Check if the directory and file exist
+    if not os.path.isdir(abs_widget_dir):
+        logger.error(f"Widget directory not found: {abs_widget_dir}")
+        return "Widget directory not found", 404
+    
+    if not os.path.isfile(safe_path):
+        logger.error(f"File not found: {safe_path}")
+        return "File not found", 404
+    
+    # Serve the file from the widget directory
+    return send_from_directory(abs_widget_dir, filename)

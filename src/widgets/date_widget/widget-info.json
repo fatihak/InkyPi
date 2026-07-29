@@ -1,6 +1,6 @@
 {
     "id": "date_widget",
-    "name": "Date Widget",
+    "display_name": "Date Widget",
     "description": "Displays current date",
     "type": "widget",
     "class": "DateWidget"

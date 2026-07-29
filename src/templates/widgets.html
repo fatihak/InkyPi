@@ -18,6 +18,13 @@
     <script src="{{ url_for('static', filename='scripts/response_modal.js') }}"></script>
     <script src="{{ url_for('static', filename='scripts/refresh_settings_manager.js') }}"></script>
     <style>
+        .repo-link {
+            margin-left: 8px;
+            font-size: 0.85em;
+            color: var(--accent-primary);
+            text-decoration: none;
+        }
+        .repo-link:hover { text-decoration: underline }
         /* Overlay List Styles */
         .widget-list {
             list-style: none;
@@ -243,7 +250,10 @@
             <ul id="active-widget-list" class="widget-list">
                 {% for widget in enabled_widgets %}
                 <li data-widget-id="{{ widget.id }}" draggable="true" ondragstart="drag(event)" ondrop="drop(event)" ondragover="allowDrop(event)" class="widget-item draggable">
-                    <span class="widget-name">{{ widget.name }}</span>
+                    <span class="widget-name">{{ widget.display_name }}</span>
+                    {% if widget.repository %}
+                        <a href="{{ widget.repository }}" class="repo-link" target="_blank" rel="noopener">Repo</a>
+                    {% endif %}
                     <div style="display: flex; align-items: center;">
                         <a href="{{ url_for('widget.widget_settings_page', widget_id=widget.id) }}" class="remove-button" style="background-color: var(--button-bg, #444); color: var(--text-primary, white); text-decoration: none; margin-right: 5px;">Settings</a>
                         <button type="button" onclick="toggleWidget(event, '{{ widget.id }}', false)" class="remove-button" title="Remove">✕</button>
@@ -270,7 +280,10 @@
             <ul class="widget-list">
                 {% for widget in available_widgets %}
                 <li class="widget-item">
-                    <span class="widget-name">{{ widget.name }}</span>
+                    <span class="widget-name">{{ widget.display_name }}</span>
+                    {% if widget.repository %}
+                        <a href="{{ widget.repository }}" class="repo-link" target="_blank" rel="noopener">Repo</a>
+                    {% endif %}
                     <button type="button" onclick="toggleWidget(event, '{{ widget.id }}', true)" class="add-button" title="Add">+</button>
                 </li>
                 {% endfor %}
