@@ -1,0 +1,182 @@
+#!/usr/bin/env bash
+set -e
+
+WIDGETS_DIR="$PROJECT_DIR/src/widgets"
+
+command="${1:-}"
+shift || true
+
+usage() {
+    echo ""
+    echo "Widget commands:"
+    echo "  inkypi widget install <widget_id> <git_repository_url>"
+    echo "  inkypi widget remove <widget_id>"
+    echo "  inkypi widget list"
+    echo ""
+}
+
+require_widgets_dir() {
+    if [[ ! -d "$WIDGETS_DIR" ]]; then
+        echo "Widgets directory does not exist: $WIDGETS_DIR"
+        exit 1
+    fi
+}
+
+# ----------------------------
+# INSTALL
+# ----------------------------
+install_widget() {
+    if [[ $# -ne 2 ]]; then
+        usage
+        exit 1
+    fi
+
+    WIDGET_ID="$1"
+    REPO_URL="$2"
+    DEST_DIR="$WIDGETS_DIR/$WIDGET_ID"
+
+    require_widgets_dir
+
+    # Workaround for .pyc files created by inkypi app with sudo
+    if [[ -d "$DEST_DIR" ]]; then
+        sudo chown -R "$(whoami)":"$(whoami)" "$DEST_DIR" 2>/dev/null || true
+        chmod -R u+rw "$DEST_DIR" 2>/dev/null || true
+    fi
+
+    echo "[INFO] Installing widget '$WIDGET_ID' from $REPO_URL"
+
+    rm -rf "$DEST_DIR"
+    mkdir -p "$DEST_DIR"
+
+    git clone --depth 1 --filter=blob:none --sparse "$REPO_URL" "$DEST_DIR" &>/dev/null
+
+    # Check if the folder exists in the branch
+    DEFAULT_BRANCH=$(git -C "$DEST_DIR" symbolic-ref --short HEAD 2>/dev/null || echo main)
+    if ! git -C "$DEST_DIR" ls-tree --name-only "$DEFAULT_BRANCH" | grep -qx "$WIDGET_ID"; then
+        echo "[INFO] Widget '$WIDGET_ID' does not exist in the repo"
+        rm -rf "$DEST_DIR"
+        exit 1
+    fi
+
+    cd "$DEST_DIR"
+    git sparse-checkout set "$WIDGET_ID" &>/dev/null
+
+    # Move widget files to root of DEST_DIR
+    shopt -s dotglob
+    mv "$WIDGET_ID"/* ./
+    rm -rf "$WIDGET_ID"
+
+    echo "[INFO] Widget copied to $DEST_DIR"
+
+    # Install requirements if any
+    REQ_FILE="$DEST_DIR/requirements.txt"
+
+    if [[ -f "$REQ_FILE" ]]; then
+        echo "[INFO] requirements.txt found, installing dependencies..."
+
+        if [[ ! -d "$VENV_PATH" ]]; then
+            echo "[ERROR] Virtual environment not found at $VENV_PATH"
+            exit 1
+        fi
+
+        source "$VENV_PATH/bin/activate"
+        pip install -r "$REQ_FILE"
+        deactivate
+
+        echo "[INFO] Dependencies installed"
+    else
+        echo "[INFO] No requirements.txt found, skipping dependency install"
+    fi
+
+    echo "[INFO] Restarting $APPNAME service."
+    sudo systemctl restart "$APPNAME.service"
+
+    echo "[INFO] Done"
+}
+
+# ----------------------------
+# REMOVE
+# ----------------------------
+uninstall_widget() {
+    if [[ $# -ne 1 ]]; then
+        usage
+        exit 1
+    fi
+
+    WIDGET_ID="$1"
+    DEST_DIR="$WIDGETS_DIR/$WIDGET_ID"
+
+    require_widgets_dir
+
+    if [[ ! -d "$DEST_DIR" ]]; then
+        echo "[ERROR] Widget '$WIDGET_ID' is not installed."
+        exit 1
+    fi
+
+    echo "[INFO] Removing widget '$WIDGET_ID'"
+
+    sudo chown -R "$(whoami)":"$(whoami)" "$DEST_DIR" 2>/dev/null || true
+    rm -rf "$DEST_DIR"
+
+    echo "[INFO] Widget successfully uninstalled"
+
+    echo "[INFO] Restarting $APPNAME service."
+    sudo systemctl restart "$APPNAME.service"
+}
+
+# ----------------------------
+# LIST
+# ----------------------------
+list_widgets() {
+    require_widgets_dir
+    {
+        printf "WIDGET\tNAME\tTYPE\tREPOSITORY\n"
+
+        for widget_dir in "$WIDGETS_DIR"/*; do
+            widget_id="$(basename "$widget_dir")"
+            [[ "$widget_id" == "base_widget" ]] && continue
+
+            info_file="$widget_dir/widget-info.json"
+            [[ ! -f "$info_file" ]] && continue
+
+            # Extract name + repository
+            IFS=$'\t' read -r name repo < <(
+                jq -r '[.display_name, .repository] | map(. // "") | @tsv' "$info_file"
+            )
+
+            # Infer type from repository presence
+            if [[ -n "$repo" ]]; then
+                type="third_party"
+            else
+                type="builtin"
+                repo="-"
+            fi
+
+            printf "%s\t%s\t%s\t%s\n" \
+                "$widget_id" "$name" "$type" "$repo"
+        done
+    } | column -t -s $'\t'
+}
+# ----------------------------
+# COMMAND ROUTER
+# ----------------------------
+
+case "$command" in
+    install)
+        install_widget "$@"
+        ;;
+    uninstall)
+        uninstall_widget "$@"
+        ;;
+    list)
+        list_widgets
+        ;;
+    ""|-h|--help|help)
+        usage
+        ;;
+    *)
+        echo "[ERROR] Unknown command: $command"
+        usage
+        exit 1
+        ;;
+esac
