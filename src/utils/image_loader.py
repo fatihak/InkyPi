@@ -4,9 +4,10 @@ Centralized image loading and processing with device-aware optimizations.
 
 Automatically uses memory-efficient strategies on low-RAM devices (Pi Zero)
 and high-performance strategies on capable devices (Pi 3/4).
+Includes hardware-specific calibration profiles for Spectra 6 displays.
 """
 
-from PIL import Image, ImageOps
+from PIL import Image, ImageOps, ImageEnhance
 from io import BytesIO
 from utils.http_client import get_http_session
 import logging
@@ -14,6 +15,7 @@ import gc
 import psutil
 import tempfile
 import os
+import requests
 
 logger = logging.getLogger(__name__)
 
@@ -43,6 +45,7 @@ class AdaptiveImageLoader:
     - Memory-efficient loading using temp files + PIL draft mode on Pi Zero
     - Fast in-memory loading on powerful devices
     - Automatic resizing with quality-appropriate filters
+    - Hardware-specific calibration profiling based on target dimensions
     - RGB conversion for e-ink compatibility
     - Comprehensive error handling and logging
 
@@ -59,6 +62,22 @@ class AdaptiveImageLoader:
 
     def __init__(self):
         self.is_low_resource = _is_low_resource_device()
+        
+        # Hardware-specific calibrations to prevent dithering artifacts
+        # on Pimoroni Spectra 6 displays. 
+        self.display_profiles = {
+            (1600, 1200): { # 13.3" Spectra 6
+                "saturation": 1.5,
+                "contrast": 1.2,
+                "brightness": 1.05 
+            },
+            (800, 480): {   # 7.3" Spectra 6
+                "saturation": 1.1,
+                "contrast": 1.05,
+                "brightness": 1.0
+            }
+        }
+
 
     def from_url(self, url, dimensions, timeout_ms=40000, resize=True, headers=None):
         """
@@ -313,6 +332,22 @@ class AdaptiveImageLoader:
         else:
             img = self._resize_high_performance(img, dimensions)
 
+        # Fetch specific hardware profile (defaults to 1.0 if size not found)
+        profile = self.display_profiles.get(dimensions, {"saturation": 1.0, "contrast": 1.0, "brightness": 1.0})
+
+        # Apply e-ink calibrations
+        if profile["saturation"] != 1.0:
+            img = ImageEnhance.Color(img).enhance(profile["saturation"])
+            logger.debug(f"Applied saturation enhancement: {profile['saturation']}")
+            
+        if profile["contrast"] != 1.0:
+            img = ImageEnhance.Contrast(img).enhance(profile["contrast"])
+            logger.debug(f"Applied contrast enhancement: {profile['contrast']}")
+            
+        if profile["brightness"] != 1.0:
+            img = ImageEnhance.Brightness(img).enhance(profile["brightness"])
+            logger.debug(f"Applied brightness enhancement: {profile['brightness']}")
+
         logger.info(f"Image processing complete: {dimensions[0]}x{dimensions[1]}")
         return img
 
@@ -357,4 +392,3 @@ class AdaptiveImageLoader:
         logger.debug(f"Resizing from {img.size[0]}x{img.size[1]} to {dimensions[0]}x{dimensions[1]}")
 
         return ImageOps.fit(img, dimensions, method=Image.LANCZOS)
-
