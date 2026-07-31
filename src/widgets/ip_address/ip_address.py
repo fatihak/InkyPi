@@ -50,8 +50,6 @@ class IPAddressWidget(BaseWidget):
             overlay = Image.new('RGBA', (max(200, text_width), max(40, text_height)), (0, 0, 0, 0))
             draw = ImageDraw.Draw(overlay)
 
-        logging.log(logging.INFO, f"text_width = [{text_width}] :: text_height = [{text_height}]")
-
         draw.text((0, 0), ip_text, fill=text_color, font=font)
 
         bbox = draw.textbbox((0, 0), ip_text, font=font)

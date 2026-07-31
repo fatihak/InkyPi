@@ -38,15 +38,18 @@ def reorder_widgets():
             return jsonify({"error": "Invalid JSON in request body"}), 400
         
         new_order = data.get('order', [])
-        
-        # Validate that all IDs are valid widgets
-        widgets = device_config.get_widgets()
-        all_widget_ids = {w['id'] for w in widgets}
-        
-        if not all(w_id in all_widget_ids for w_id in new_order):
-            return jsonify({"error": "Invalid widget IDs"}), 400
-        
+
+        # Reject duplicates
+        if len(new_order) != len(set(new_order)):
+            return jsonify({"error": "Duplicate widget IDs in order"}), 400
+
+        # Validate against currently enabled widgets only
         widget_settings = device_config.get_config('widget_settings', {})
+        enabled_widgets = set(widget_settings.get('enabled_widgets', []))
+
+        if set(new_order) != enabled_widgets:
+            return jsonify({"error": "Order must contain exactly the currently enabled widgets"}), 400
+        
         widget_settings['enabled_widgets'] = new_order
         device_config.update_value('widget_settings', widget_settings, write=True)
         
@@ -97,10 +100,22 @@ def save_widget_settings():
         data = request.get_json(silent=True)
         if data is None:
             return jsonify({"error": "Invalid JSON in request body"}), 400
-        
+
+        VALID_CORNERS = {'top-left', 'top-right', 'bottom-left', 'bottom-right'}
+        VALID_ORIENTATIONS = {'horizontal', 'vertical'}
+
         widget_settings = device_config.get_config('widget_settings', {})
-        widget_settings['corner'] = data.get('corner', widget_settings.get('corner', 'top-left'))
-        widget_settings['orientation'] = data.get('orientation', widget_settings.get('orientation', 'horizontal'))
+
+        corner = data.get('corner', widget_settings.get('corner', 'top-left'))
+        if corner not in VALID_CORNERS:
+            return jsonify({"error": f"Invalid corner value: {corner}"}), 400
+
+        orientation = data.get('orientation', widget_settings.get('orientation', 'horizontal'))
+        if orientation not in VALID_ORIENTATIONS:
+            return jsonify({"error": f"Invalid orientation value: {orientation}"}), 400
+
+        widget_settings['corner'] = corner
+        widget_settings['orientation'] = orientation
         
         # Validate and sanitize numeric fields
         try:
@@ -168,7 +183,11 @@ def widget_settings_page(widget_id):
             
             # Pass plugin_settings separately to avoid overwriting template metadata
             template_params["plugin_settings"] = specific_widget_settings
-            
+
+            # Override use_contrast_color with the saved per-widget value if present
+            if 'use_contrast_color' in specific_widget_settings:
+                template_params['use_contrast_color'] = specific_widget_settings['use_contrast_color']
+
             return render_template('widget_settings.html', widget=widget_config, widget_settings=specific_widget_settings, **template_params)
         except Exception as e:
             logger.exception("EXCEPTION CAUGHT: " + str(e))

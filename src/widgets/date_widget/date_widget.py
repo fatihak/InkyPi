@@ -49,10 +49,8 @@ class DateWidget(BaseWidget):
             overlay = Image.new('RGBA', (max(150, text_width), max(80, text_height)), (0, 0, 0, 0))
             draw = ImageDraw.Draw(overlay)
 
-        logging.log(logging.INFO, f"text_width = [{text_width}] :: text_height = [{text_height}]")
-
         draw.text((0, 0), date_str, fill=text_color, font=font)
-        
+
         # Crop to actual text size
         bbox = draw.textbbox((0, 0), date_str, font=font)
         return overlay.crop(bbox)
