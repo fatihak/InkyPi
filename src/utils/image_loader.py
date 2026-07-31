@@ -5,6 +5,7 @@ Centralized image loading and processing with device-aware optimizations.
 Automatically uses memory-efficient strategies on low-RAM devices (Pi Zero)
 and high-performance strategies on capable devices (Pi 3/4).
 Includes hardware-specific calibration profiles and content-aware adjustments.
+Assumes strict landscape orientation.
 """
 
 from PIL import Image, ImageOps, ImageEnhance
@@ -54,15 +55,15 @@ class AdaptiveImageLoader:
     def __init__(self):
         self.is_low_resource = _is_low_resource_device()
         
-        # Base hardware profiles (keyed by normalized landscape tuple: (min_dim, max_dim))
+        # Hardware-specific calibrations (Landscape Only)
         self.display_profiles = {
-            (1200, 1600): { # 13.3" Spectra 6
-                "photo": {"saturation": 1.2, "contrast": 1.1, "brightness": 1.0, "sharpness": 1.3},
-                "dashboard": {"saturation": 1.0, "contrast": 1.8, "brightness": 1.0, "sharpness": 1.5}
+            (1600, 1200): { # 13.3" Spectra 6
+                "photo": {"saturation": 1.5, "contrast": 1.2, "brightness": 1.05, "sharpness": 1.2},
+                "dashboard": {"saturation": 1.0, "contrast": 1.8, "brightness": 1.05, "sharpness": 1.5}
             },
-            (480, 800): {   # 7.3" Spectra 6
-                "photo": {"saturation": 1.2, "contrast": 1.1, "brightness": 1.0, "sharpness": 1.3},
-                "dashboard": {"saturation": 1.0, "contrast": 1.8, "brightness": 1.0, "sharpness": 1.5}
+            (800, 480): {   # 7.3" Spectra 6
+                "photo": {"saturation": 1.1, "contrast": 1.05, "brightness": 1.0, "sharpness": 1.2},
+                "dashboard": {"saturation": 1.0, "contrast": 1.6, "brightness": 1.0, "sharpness": 1.4}
             }
         }
 
@@ -72,12 +73,12 @@ class AdaptiveImageLoader:
         self._palette_img.putpalette(palette_data)
 
     def _get_profile(self, dimensions, content_type="photo"):
-        """Normalizes dimensions (handles portrait/landscape) and returns profile."""
-        norm_key = (min(dimensions), max(dimensions))
-        display_dict = self.display_profiles.get(norm_key, {})
+        """Fetches the exact profile based on dimensions and content type."""
+        display_dict = self.display_profiles.get(dimensions, {})
         
+        # Safe fallback if an unknown dimension is passed
         default_profile = {
-            "photo": {"saturation": 1.1, "contrast": 1.1, "brightness": 1.0, "sharpness": 1.2},
+            "photo": {"saturation": 1.2, "contrast": 1.1, "brightness": 1.0, "sharpness": 1.2},
             "dashboard": {"saturation": 1.0, "contrast": 1.6, "brightness": 1.0, "sharpness": 1.4}
         }
         
@@ -89,7 +90,6 @@ class AdaptiveImageLoader:
         Auto-detect if an image is a flat graphic (dashboard) or a photo.
         Returns 'dashboard' if unique colors <= threshold, otherwise 'photo'.
         """
-        # Create a tiny working copy to save memory and CPU during color counting
         test_img = img.copy()
         test_img.thumbnail((300, 300), Image.NEAREST)
         
@@ -105,19 +105,26 @@ class AdaptiveImageLoader:
             logger.debug(f"Detected {len(colors)} colors. Content type: dashboard")
             return "dashboard"
 
-    def from_url(self, url, dimensions, timeout_ms=40000, resize=True, headers=None, content_type="auto", fit_mode="cover"):
-        """Load an image from a URL and apply enhancements."""
-        logger.debug(f"Loading image from URL: {url} ({content_type} mode, fit={fit_mode})")
+    def quantize_for_spectra6(self, img, content_type="photo"):
+        """
+        Quantizes an RGB image into the native 6-color Spectra palette.
+        Use NONE for dashboards (sharp text) and FLOYDSTEINBERG for photos.
+        """
+        if img.mode != "RGB":
+            img = img.convert("RGB")
+            
+        dither_method = Image.Dither.NONE if content_type == "dashboard" else Image.Dither.FLOYDSTEINBERG
+        return img.quantize(palette=self._palette_img, dither=dither_method)
 
+    def from_url(self, url, dimensions, timeout_ms=40000, resize=True, headers=None, content_type="auto", fit_mode="cover"):
+        logger.debug(f"Loading image from URL: {url} ({content_type} mode)")
         if self.is_low_resource:
             return self._load_from_url_lowmem(url, dimensions, timeout_ms, resize, headers, content_type, fit_mode)
         else:
             return self._load_from_url_fast(url, dimensions, timeout_ms, resize, headers, content_type, fit_mode)
 
     def from_file(self, path, dimensions, resize=True, content_type="auto", fit_mode="cover"):
-        """Load an image from a local file and apply enhancements."""
-        logger.debug(f"Loading image from file: {path} ({content_type} mode, fit={fit_mode})")
-
+        logger.debug(f"Loading image from file: {path} ({content_type} mode)")
         if not os.path.exists(path):
             logger.error(f"File not found: {path}")
             return None
@@ -132,7 +139,6 @@ class AdaptiveImageLoader:
             return None
 
     def from_bytesio(self, data, dimensions, resize=True, content_type="auto", fit_mode="cover"):
-        """Load an image from BytesIO object and apply enhancements."""
         try:
             img = Image.open(data)
             original_size = img.size
@@ -150,30 +156,16 @@ class AdaptiveImageLoader:
             logger.error(f"Error loading image from BytesIO: {e}")
             return None
 
-    def quantize_for_spectra6(self, img, content_type="photo"):
-        """
-        Quantizes an RGB image into the native 6-color Spectra palette.
-        Use NONE for dashboards (sharp text) and FLOYDSTEINBERG for photos.
-        """
-        if img.mode != "RGB":
-            img = img.convert("RGB")
-            
-        dither_method = Image.Dither.NONE if content_type == "dashboard" else Image.Dither.FLOYDSTEINBERG
-        return img.quantize(palette=self._palette_img, dither=dither_method)
-
     # ========== LOW-RESOURCE IMPLEMENTATIONS ==========
 
     def _load_from_url_lowmem(self, url, dimensions, timeout_ms, resize, headers=None, content_type="auto", fit_mode="cover"):
         tmp_path = None
         try:
             request_headers = {**self.DEFAULT_HEADERS, **(headers or {})}
-
-            # Explicitly force physical disk temp location to avoid tmpfs (RAM disk) overflow
             temp_dir = "/var/tmp" if os.path.exists("/var/tmp") else None
 
             with tempfile.NamedTemporaryFile(delete=False, suffix='.jpg', dir=temp_dir) as tmp:
                 tmp_path = tmp.name
-
                 session = get_http_session()
                 response = session.get(url, timeout=timeout_ms / 1000, stream=True, headers=request_headers)
                 response.raise_for_status()
@@ -203,7 +195,6 @@ class AdaptiveImageLoader:
                 content_type = self._detect_content_type(img)
 
             if resize:
-                # Safely attempt draft mode only if image format supports it (JPEG/MPO)
                 if getattr(img, "format", None) in ("JPEG", "MPO"):
                     try:
                         img.draft('RGB', (dimensions[0] * 2, dimensions[1] * 2))
