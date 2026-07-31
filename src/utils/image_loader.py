@@ -69,12 +69,14 @@ class AdaptiveImageLoader:
             (1600, 1200): { # 13.3" Spectra 6
                 "saturation": 1.5,
                 "contrast": 1.2,
-                "brightness": 1.05 
+                "brightness": 1.05,
+                "sharpness": 1.2
             },
             (800, 480): {   # 7.3" Spectra 6
                 "saturation": 1.1,
                 "contrast": 1.05,
-                "brightness": 1.0
+                "brightness": 1.0,
+                "sharpness": 1.2
             }
         }
 
@@ -333,7 +335,7 @@ class AdaptiveImageLoader:
             img = self._resize_high_performance(img, dimensions)
 
         # Fetch specific hardware profile (defaults to 1.0 if size not found)
-        profile = self.display_profiles.get(dimensions, {"saturation": 1.0, "contrast": 1.0, "brightness": 1.0})
+        profile = self.display_profiles.get(dimensions, {"saturation": 1.0, "contrast": 1.0, "brightness": 1.0, "sharpness": 1.0})
 
         # Apply e-ink calibrations
         if profile["saturation"] != 1.0:
@@ -347,6 +349,10 @@ class AdaptiveImageLoader:
         if profile["brightness"] != 1.0:
             img = ImageEnhance.Brightness(img).enhance(profile["brightness"])
             logger.debug(f"Applied brightness enhancement: {profile['brightness']}")
+
+        if profile["sharpness"] != 1.0:
+            img = ImageEnhance.Sharpness(img).enhance(profile["sharpness"])
+            logger.debug(f"Applied sharpness enhancement: {profile['sharpness']}")
 
         logger.info(f"Image processing complete: {dimensions[0]}x{dimensions[1]}")
         return img
