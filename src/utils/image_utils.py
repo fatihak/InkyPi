@@ -183,8 +183,8 @@ def pad_image_blur(img: Image, dimensions: tuple[int, int]) -> Image:
 
 def calculate_contrast_color(image: Image.Image, box: tuple[int, int, int, int]) -> str:
     """
-    Calculates the average brightness of the specified region in the image 
-    and returns 'black' or 'white' to ensure good contrast.
+    Calculates the average brightness of the specified region in the image
+    and returns a high-contrast text color as a hex string ("#000000" or "#FFFFFF").
     """
     try:
         # Crop the region

@@ -1,6 +1,4 @@
-<div class="form-group">  
-    <div class="form-group">
-        <label for="static_message" class="form-label">Message</label>
-        <input type="text" name="static_message" class="form-input" value="{{ plugin_settings.static_message }}">
-    </div>
+<div class="form-group">
+    <label for="static_message" class="form-label">Message</label>
+    <input type="text" name="static_message" class="form-input" value="{{ plugin_settings.static_message | default('') }}">
 </div>

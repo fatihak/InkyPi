@@ -61,10 +61,12 @@ def toggle_widget():
     """Enable or disable a widget."""
     device_config = current_app.config['DEVICE_CONFIG']
     try:
-        data = request.get_json()
+        data = request.get_json(silent=True)
+        if data is None:
+            return jsonify({"error": "Invalid JSON in request body"}), 400
+
         widget_id = data.get('widget_id')
         enable = data.get('enable', True)
-        
         # Validate widget exists
         widget_config = device_config.get_widget(widget_id)
         if not widget_config:

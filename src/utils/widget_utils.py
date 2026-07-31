@@ -20,13 +20,18 @@ def generate_and_apply_widgets(main_image, device_config):
     width, height = main_image.size
     
     # Calculate start position
-    x_start, y_start = {
-        'top-left': (0+margin, 0+margin),
-        'top-right': (width-margin, 0+margin),
-        'bottom-left': (0+margin, height-margin),
-        'bottom-right': (width-margin, height-margin)
-    }[corner]
-    
+    start_positions = {
+        'top-left': (0 + margin, 0 + margin),
+        'top-right': (width - margin, 0 + margin),
+        'bottom-left': (0 + margin, height - margin),
+        'bottom-right': (width - margin, height - margin),
+    }
+
+    if corner not in start_positions:
+        logger.warning(f"Invalid widget corner '{corner}', defaulting to 'top-left'")
+        corner = 'top-left'
+
+    x_start, y_start = start_positions[corner]
     current_x, current_y = x_start, y_start
     
     for widget_id in enabled_widgets:
