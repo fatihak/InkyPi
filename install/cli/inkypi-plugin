@@ -10,7 +10,7 @@ usage() {
     echo ""
     echo "Plugin commands:"
     echo "  inkypi plugin install <plugin_id> <git_repository_url>"
-    echo "  inkypi plugin remove <plugin_id>"
+    echo "  inkypi plugin uninstall <plugin_id>"
     echo "  inkypi plugin list"
     echo ""
 }

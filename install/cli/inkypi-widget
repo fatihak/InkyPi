@@ -10,7 +10,7 @@ usage() {
     echo ""
     echo "Widget commands:"
     echo "  inkypi widget install <widget_id> <git_repository_url>"
-    echo "  inkypi widget remove <widget_id>"
+    echo "  inkypi widget uninstall <widget_id>"
     echo "  inkypi widget list"
     echo ""
 }
