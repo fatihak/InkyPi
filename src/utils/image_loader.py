@@ -57,11 +57,11 @@ class AdaptiveImageLoader:
         # Base hardware profiles (keyed by normalized landscape tuple: (min_dim, max_dim))
         self.display_profiles = {
             (1200, 1600): { # 13.3" Spectra 6
-                "photo": {"saturation": 0.2, "contrast": 1.1, "brightness": 1.0, "sharpness": 1.3},
+                "photo": {"saturation": 1.2, "contrast": 1.1, "brightness": 1.0, "sharpness": 1.3},
                 "dashboard": {"saturation": 1.0, "contrast": 1.8, "brightness": 1.0, "sharpness": 1.5}
             },
             (480, 800): {   # 7.3" Spectra 6
-                "photo": {"saturation": 0.2, "contrast": 1.1, "brightness": 1.0, "sharpness": 1.3},
+                "photo": {"saturation": 1.2, "contrast": 1.1, "brightness": 1.0, "sharpness": 1.3},
                 "dashboard": {"saturation": 1.0, "contrast": 1.8, "brightness": 1.0, "sharpness": 1.5}
             }
         }
@@ -77,7 +77,7 @@ class AdaptiveImageLoader:
         display_dict = self.display_profiles.get(norm_key, {})
         
         default_profile = {
-            "photo": {"saturation": 0.3, "contrast": 1.1, "brightness": 1.0, "sharpness": 1.2},
+            "photo": {"saturation": 1.1, "contrast": 1.1, "brightness": 1.0, "sharpness": 1.2},
             "dashboard": {"saturation": 1.0, "contrast": 1.6, "brightness": 1.0, "sharpness": 1.4}
         }
         
