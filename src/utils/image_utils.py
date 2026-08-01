@@ -77,7 +77,7 @@ class AdaptiveImageLoader:
         try:
             return psutil.virtual_memory().available > (min_free_mb * 1024 * 1024)
         except Exception:
-            return True
+            return True # If psutil fails, assume memory is fine
 
     def _get_profile(self, dimensions, content_type="photo"):
         """Fetches the exact profile based on dimensions and content type."""
@@ -93,43 +93,41 @@ class AdaptiveImageLoader:
 
     def _detect_content_type(self, img):
         """
-        Ultra-fast content detection using ImageStat Entropy with safe loading.
+        Ultra-fast content detection using ImageStat Entropy.
+        Photos (high detail/noise) have high entropy.
+        Dashboards (flat UI/text) have low entropy.
         """
-        try:
-            # Ensure image data is loaded into memory and converted to RGB safely
-            if hasattr(img, 'load'):
-                img.load()
-            
-            test_img = img.convert("RGB")
-            test_img.thumbnail((300, 300), Image.NEAREST)
-            
-            stat = ImageStat.Stat(test_img.convert("L"))
-            entropy = stat.entropy[0]
-            
-            if entropy > 4.5:
-                logger.debug(f"Entropy {entropy:.2f} > 4.5. Content type: photo")
-                return "photo"
-            else:
-                logger.debug(f"Entropy {entropy:.2f} <= 4.5. Content type: dashboard")
-                return "dashboard"
-        except Exception as e:
-            logger.warning(f"Error during content entropy detection ({e}), defaulting to photo.")
+        # Create a tiny working copy for speed
+        test_img = img.copy()
+        test_img.thumbnail((300, 300), Image.NEAREST)
+        
+        # Grayscale entropy calculation is fastest
+        stat = ImageStat.Stat(test_img.convert("L"))
+        entropy = stat.entropy[0]
+        
+        # 4.5 is a standard threshold; adjust slightly if needed for your specific dashboard styles
+        if entropy > 4.5:
+            logger.debug(f"Entropy {entropy:.2f} > 4.5. Content type: photo")
             return "photo"
+        else:
+            logger.debug(f"Entropy {entropy:.2f} <= 4.5. Content type: dashboard")
+            return "dashboard"
 
     def _apply_gamut_compression(self, img):
         """
-        Safely aligns raw RGB values closer to Spectra-6 physical pigments
-        by splitting channels and scaling green and blue channels cleanly.
+        Aligns raw RGB values closer to Spectra-6 physical pigments using a fast C-level affine matrix.
+        - Blues shift darker (to hit the Navy pigment instead of White).
+        - Greens shift darker (to hit Forest Green).
+        - Reds stay vibrant.
         """
-        if img.mode != "RGB":
-            img = img.convert("RGB")
-            
-        r, g, b = img.split()
-        
-        g = g.point(lambda i: int(i * 0.95))
-        b = b.point(lambda i: int(i * 0.85))
-        
-        return Image.merge("RGB", (r, g, b))
+        # Affine mapping: R_out, G_out, B_out = M * (R_in, G_in, B_in)
+        # 12-tuple structure: (Rr, Rg, Rb, R_offset, Gr, Gg, Gb, G_offset, Br, Bg, Bb, B_offset)
+        spectra_matrix = (
+            1.0, 0.0, 0.0, 0.0,   # R remains untouched
+            0.0, 0.95, 0.0, 0.0,  # G slightly darkened
+            0.0, 0.0, 0.85, 0.0   # B noticeably darkened
+        )
+        return img.convert("RGB", spectra_matrix)
 
     def quantize_for_spectra6(self, img, content_type="photo"):
         """
@@ -217,7 +215,11 @@ class AdaptiveImageLoader:
             img = Image.open(path)
             original_size = img.size
 
+            if content_type == "auto":
+                content_type = self._detect_content_type(img)
+
             if resize:
+                # Trigger libjpeg scale-on-load to heavily reduce RAM usage on JPEGs
                 if getattr(img, "format", None) in ("JPEG", "MPO"):
                     try:
                         img.draft('RGB', (dimensions[0] * 2, dimensions[1] * 2))
@@ -225,11 +227,6 @@ class AdaptiveImageLoader:
                         logger.debug(f"Draft mode failed or unsupported: {e}")
 
                 img.load()
-            
-            if content_type == "auto":
-                content_type = self._detect_content_type(img)
-
-            if resize:
                 img = self._process_and_resize(img, dimensions, original_size, content_type, fit_mode)
             else:
                 img = ImageOps.exif_transpose(img)
@@ -255,7 +252,6 @@ class AdaptiveImageLoader:
 
             img = Image.open(BytesIO(response.content))
             original_size = img.size
-            img.load()
 
             if content_type == "auto":
                 content_type = self._detect_content_type(img)
@@ -274,7 +270,6 @@ class AdaptiveImageLoader:
         try:
             img = Image.open(path)
             original_size = img.size
-            img.load()
 
             if content_type == "auto":
                 content_type = self._detect_content_type(img)
@@ -297,18 +292,22 @@ class AdaptiveImageLoader:
         if img.mode in ('RGBA', 'LA', 'P'):
             img = img.convert('RGB')
             
+        # Spectra-6 Gamut Compression
         if content_type == "photo":
             img = self._apply_gamut_compression(img)
 
+        # Verify memory before intensive operations
         mem_ok = self._memory_ok(100)
         if not mem_ok:
             logger.warning("Low memory detected (<100MB free). Executing fallback processing.")
 
+        # Resize strategy
         if self.is_low_resource:
             img = self._resize_low_resource(img, dimensions, fit_mode, mem_ok)
         else:
             img = self._resize_high_performance(img, dimensions, fit_mode)
 
+        # Apply image enhancements ONLY if memory allows
         if mem_ok:
             profile = self._get_profile(dimensions, content_type)
 
@@ -327,6 +326,7 @@ class AdaptiveImageLoader:
         return img
 
     def _resize_low_resource(self, img, dimensions, fit_mode="cover", mem_ok=True):
+        # Fall back to NEAREST if RAM is critically low, otherwise use standard strategy
         filter_method = Image.LANCZOS if (fit_mode == "cover" and mem_ok) else Image.BICUBIC
         if not mem_ok:
             filter_method = Image.NEAREST
