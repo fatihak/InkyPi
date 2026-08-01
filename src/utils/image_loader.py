@@ -7,7 +7,7 @@ and high-performance strategies on capable devices (Pi 3/4).
 Includes Spectra-6 calibration profiles, gamut compression, and memory guardrails.
 """
 
-from PIL import Image, ImageOps, ImageEnhance, ImageStat
+from PIL import Image, ImageOps, ImageEnhance
 from io import BytesIO
 from utils.http_client import get_http_session
 import logging
@@ -16,6 +16,7 @@ import psutil
 import tempfile
 import os
 import requests
+import math
 
 logger = logging.getLogger(__name__)
 
@@ -91,14 +92,29 @@ class AdaptiveImageLoader:
         return display_dict.get(profile_type, default_profile[profile_type])
 
     def _detect_content_type(self, img):
-        test_img = img.copy()
-        test_img.thumbnail((300, 300), Image.NEAREST)
-        stat = ImageStat.Stat(test_img.convert("L"))
-        entropy = stat.entropy[0]
-        if entropy > 4.5:
+        """Safe entropy calculation using image histogram."""
+        try:
+            test_img = img.copy()
+            test_img.thumbnail((300, 300), Image.NEAREST)
+            histogram = test_img.convert("L").histogram()
+            total_pixels = sum(histogram)
+            
+            if total_pixels == 0:
+                return "dashboard"
+                
+            entropy = 0.0
+            for count in histogram:
+                if count > 0:
+                    prob = count / total_pixels
+                    entropy -= prob * math.log2(prob)
+            
+            if entropy > 4.5:
+                return "photo"
+            else:
+                return "dashboard"
+        except Exception as e:
+            logger.debug(f"Entropy detection failed, defaulting to photo: {e}")
             return "photo"
-        else:
-            return "dashboard"
 
     def _apply_gamut_compression(self, img):
         spectra_matrix = (
