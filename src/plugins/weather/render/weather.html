@@ -4,13 +4,15 @@
 <div id="units-container" data-units="{{ units }}"></div>
 
 
-<div class="weather-dashboard">
+<div class="weather-dashboard{% if not title %} no-title{% endif %}">
   {% if plugin_settings.displayRefreshTime == "true" %}
-  <div class="last-refresh">Last refresh: {{ last_refresh_time }}</div>
+  <div class="last-refresh">Laatste update: {{ last_refresh_time }}</div>
   {% endif %}
   <!-- Current Date -->
   <div class="header">
+    {% if title %}
     <div class="title">{{ title }}</div>
+    {% endif %}
     <div class="current-date">{{ current_date }}</div>
   </div>
 
@@ -18,10 +20,10 @@
     <!-- Current Weather Row -->
     <div class="current-temperature">
       <!-- Icon + Temperature -->
-        <img class="current-icon" src="{{current_day_icon}}" alt="Current Weather Icon">
+        <img class="current-icon" src="{{current_day_icon}}" alt="Huidig weericoon">
         <div class="current-weather">
           <div class="current-temp">{{ current_temperature }}<span class="temperature-unit">{{temperature_unit}}</span></div>
-          <div class="feels-like">Feels Like {{ feels_like }}{% if units != "standard" %}°{% endif %}</div>
+          <div class="feels-like">Gevoelstemp. {{ feels_like }}{% if units != "standard" %}°{% endif %}</div>
           <div class="min-max">{{ forecast[0].high }}{% if units != "standard" %}°{% endif %} / {{ forecast[0].low }}{% if units != "standard" %}°{% endif %}</div>
         </div>
     </div>
@@ -32,15 +34,48 @@
       {% for dp in data_points %}
         <div class="data-point column-container">
           <div class="data-point-img-container">
+            {% if dp.is_wind %}
+            <svg class="wind-compass-icon" viewBox="0 0 200 160" xmlns="http://www.w3.org/2000/svg" style="-webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;">
+              <circle cx="100" cy="80" r="75" fill="none" stroke="#2f74ad" stroke-width="16"/>
+              <g stroke="#2f74ad" stroke-width="9" stroke-linecap="round">
+                <line x1="100" y1="8" x2="100" y2="20"/>
+                <line x1="100" y1="152" x2="100" y2="140"/>
+                <line x1="172" y1="80" x2="160" y2="80"/>
+                <line x1="28" y1="80" x2="40" y2="80"/>
+              </g>
+              <g style="transform-origin: 100px 80px; transform: rotate({{ dp.rotation }}deg);">
+                <path d="M100,20 L126,95 L100,80 L74,95 Z" fill="#2f74ad"/>
+              </g>
+            </svg>
+            {% elif dp.is_humidity %}
+            {% set top_count = [dp.drop_count, 3] | min %}
+            {% set bottom_count = dp.drop_count - top_count %}
+            <div class="humidity-drops">
+              <div class="humidity-drop-row">
+                {% for _ in range(top_count) %}
+                <svg class="humidity-drop" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 2C12 2 5 10.5 5 15.5C5 19.09 8.13 22 12 22C15.87 22 19 19.09 19 15.5C19 10.5 12 2 12 2Z" fill="#2f74ad"/>
+                </svg>
+                {% endfor %}
+              </div>
+              {% if bottom_count > 0 %}
+              <div class="humidity-drop-row">
+                {% for _ in range(bottom_count) %}
+                <svg class="humidity-drop" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 2C12 2 5 10.5 5 15.5C5 19.09 8.13 22 12 22C15.87 22 19 19.09 19 15.5C19 10.5 12 2 12 2Z" fill="#2f74ad"/>
+                </svg>
+                {% endfor %}
+              </div>
+              {% endif %}
+            </div>
+            {% else %}
             <img class="data-point-icon" src="{{dp.icon}}" alt="{{ dp.label }}">
+            {% endif %}
           </div>
           <div class="data-point-data">
             <div class="data-point-label">{{ dp.label }}</div>
             <div class="data-point-measurement">
-			        {{ dp.measurement }}{% if dp.unit %}<span class="data-point-unit">{{ dp.unit }}</span>{% endif %}
-              {% if dp.label == "Wind" %}
-                <span class="wind-arrow-symbol">{{ dp.arrow }}</span>
-              {% endif %}
+			        {% if dp.direction %}{{ dp.direction }} {% endif %}{{ dp.measurement }}{% if dp.unit %}<span class="data-point-unit">{{ dp.unit }}</span>{% endif %}
 		    	 </div>
           </div>
         </div>
@@ -61,16 +96,16 @@
   <div class="forecast">
     {% for day in forecast[1:(plugin_settings.forecastDays | int) + 1] %}
       <div class="forecast-day">
-        <div class="forecast-day-name">{{ day.day }}</div>
-        <img class="forecast-icon" src="{{day.icon}}" alt="{{ day.day }} Weather Icon">
+        <img class="forecast-icon" src="{{day.icon}}" alt="Weericoon voor {{ day.day }}">
         <div class="forecast-temps">
+          <span class="forecast-day-name">{{ day.day }}</span>
           <span class="high">{{ day.high }}{% if units != "standard" %}°{% endif %}</span> /
           <span class="low">{{ day.low }}{% if units != "standard" %}°{% endif %}</span>
         </div>
         {% if plugin_settings.moonPhase and plugin_settings.moonPhase == "true" %}
         <div class="separator"></div>
         <div class="moon-phase-container">
-        <img class="moon-phase-icon" src="{{day.moon_phase_icon}}" alt="Moon phase icon">
+        <img class="moon-phase-icon" src="{{day.moon_phase_icon}}" alt="Maanfase icoon">
         <span style="flex: 1;">{{day.moon_phase_pct}} %</span>
         </div>
         {% endif %}
@@ -91,57 +126,32 @@
     // Extract hourly temperature and labels from template variables
     const labels = [{% for hour in hourly_forecast %}"{{ hour.time }}"{% if not loop.last %}, {% endif %}{% endfor %}];
     const temperatures = [{% for hour in hourly_forecast %}{{ hour.temperature }}{% if not loop.last %}, {% endif %}{% endfor %}];
-    const precipitation = [{% for hour in hourly_forecast %}{{ hour.precipitation * 100}}{% if not loop.last %}, {% endif %}{% endfor %}]; // Convert to percentage
     const rain = [{% for hour in hourly_forecast %}{{ hour.rain or 0 }}{% if not loop.last %}, {% endif %}{% endfor %}];
     const weatherIconsPaths = [{% for hour in hourly_forecast %}"{{ hour.icon | replace('\\', '/') }}"{% if not loop.last %}, {% endif %}{% endfor %}];
+    const sunEvents = [{% for event in sun_events %}{ position: {{ event.position }}, icon: "{{ event.icon | replace('\\', '/') }}" }{% if not loop.last %}, {% endif %}{% endfor %}];
     const iconStep = parseInt("{{ plugin_settings.graphIconStep or 2 }}");
     const units = document.getElementById('units-container').dataset.units;
     const isImperial = units === "imperial";
     const unit = isImperial ? "in" : "mm";
-    const threshold = isImperial ? 0.0035 : 0.09;
+    const tempUnitLabel = units === "standard" ? "K" : (isImperial ? "°F" : "°C");
 	
     // Find min and max temperatures
-    const minTemp = Math.min(...temperatures);
-    var maxTemp = Math.max(...temperatures);
-	
-    Chart.register({
-      id: 'annotationRain',
-      afterDatasetsDraw(chart, args, pluginOptions) {
-        const { ctx } = chart;
-        const rainData = pluginOptions.precipitationData || [];
-        const meta = chart.getDatasetMeta(1);
+    const actualMinTemp = Math.min(...temperatures);
+    const actualMaxTemp = Math.max(...temperatures);
+    const minTemp = Math.min(actualMinTemp, 0); // Always show 0° or lower when temps are positive
+    var maxTemp = Math.max(actualMaxTemp, 0); // Always show at least 0° when temps are negative
 
-        ctx.save();
-        ctx.textAlign = 'center';
-
-        meta.data.forEach((bar, i) => {
-          const rainAmount = rainData[i];
-          if (rainAmount && rainAmount > threshold) {
-            const x = bar.x;
-            const y = bar.y;
-			const base = bar.base;
-			const height = base - y;
-			
-			let textY, unitY;
-			
-			if (height < 25) {
-			  textY = y - 10;
-			  unitY = y - 3;
-			} else {
-			  textY = y + 13;
-			  unitY = y + 20;
-			}
-            ctx.fillStyle = "{{ plugin_settings.textColor }}";
-            ctx.fillText(rainAmount.toFixed(2), x, textY);
-            ctx.fillText(unit, x, unitY); 
-          }
-        });
-
-        ctx.restore();
-      }
-    });
+    // Round the rain axis up to a clean number of mm/in, with a small non-zero floor
+    const maxRainValue = Math.max(...rain, 0);
+    const rainAxisMax = maxRainValue > 0 ? Math.ceil(maxRainValue * 10) / 10 : 1;
 	
     {% if plugin_settings.displayGraphIcons == "true" %}
+    const sunIconByHourIndex = {};
+    sunEvents.forEach(event => {
+      const nearestIndex = Math.max(0, Math.min(Math.round(event.position), labels.length - 1));
+      sunIconByHourIndex[nearestIndex] = event.icon;
+    });
+
     Chart.register({
       id: 'chartIcons',
       afterDatasetsDraw(chart) {
@@ -150,14 +160,14 @@
 
         ctx.save();
         chart.getDatasetMeta(0).data.forEach((point, i) => {
-		
-		if (i % iconStep !== 0) return;
-		
+
+		if (!(i in sunIconByHourIndex) && i % iconStep !== 0) return;
+
           const img = new Image();
-          img.src = weatherIconsPaths[i];
+          img.src = sunIconByHourIndex[i] || weatherIconsPaths[i];
           const xPos = point.x - (iconSize / 2);
           const yPos = bottom + 25;
-      
+
           if (img.complete) {
             ctx.drawImage(img, xPos, yPos, iconSize, iconSize);
           } else {
@@ -169,13 +179,50 @@
     });
     {% endif %}
 
+    Chart.register({
+      id: 'minMaxLines',
+      afterDatasetsDraw(chart) {
+        const { ctx, chartArea: { left, right }, scales: { y } } = chart;
+        const xMid = (left + right) / 2;
+
+        const drawDashedLine = (value, labelOffset, showLabel) => {
+          const yPos = y.getPixelForValue(value);
+          const color = value >= 0 ? 'rgba(241, 122, 36, 0.9)' : 'rgba(13, 71, 161, 0.9)';
+
+          ctx.save();
+          ctx.setLineDash([4, 4]);
+          ctx.strokeStyle = color;
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.moveTo(left, yPos);
+          ctx.lineTo(right, yPos);
+          ctx.stroke();
+          ctx.restore();
+
+          if (!showLabel) return;
+
+          ctx.save();
+          ctx.setLineDash([]);
+          ctx.fillStyle = color;
+          ctx.textAlign = 'center';
+          ctx.font = 'bold 11px Jost';
+          ctx.fillText((units != "standard" ? value + "°" : value), xMid, yPos + labelOffset);
+          ctx.restore();
+        };
+
+        // Skip the label when it duplicates the value already shown on the left axis
+        drawDashedLine(actualMaxTemp, -6, actualMaxTemp !== maxTemp);
+        drawDashedLine(actualMinTemp, 14, actualMinTemp !== minTemp);
+      }
+    });
+
     const chart = new Chart(ctx, {
       type: 'line',
       data: {
         labels: labels,
         datasets: [{
           type: 'line',
-          label: 'Hourly Temperature',
+          label: 'Temperatuur per uur',
           data: temperatures,
           borderColor: 'rgba(241, 122, 36, 0.9)', // Line color
           borderWidth: 2,
@@ -185,8 +232,8 @@
         },
         {
           type: 'bar',
-          label: 'Precipitation Probability',
-          data: precipitation,
+          label: 'Neerslag',
+          data: rain,
           borderColor: 'rgba(26, 111, 176, 1)', // Semi-transparent blue
           borderWidth: {
             top: 2,
@@ -251,6 +298,16 @@
             grid: { display: false },
             min: minTemp,
             max: maxTemp,
+            title: {
+              display: true,
+              text: tempUnitLabel,
+              color: "{{ plugin_settings.textColor }}",
+              padding: 2,
+              font: {
+                family: 'Jost',
+                size: 13
+              }
+            },
           },
           y1: {
             position: 'right',
@@ -263,20 +320,27 @@
               },
               autoSkip: false,
               callback: function(value, index, values) {
-                if (index === values.length - 1) return "100%";
-                else if (index === 0) return "0%";
+                if (index === values.length - 1) return rainAxisMax + " " + unit;
+                else if (index === 0) return "0 " + unit;
                 else return '';
               }
             },
             min: 0,
-            max: 100,
+            max: rainAxisMax,
+            title: {
+              display: true,
+              text: 'Regen (' + unit + ')',
+              color: "{{ plugin_settings.textColor }}",
+              padding: 2,
+              font: {
+                family: 'Jost',
+                size: 13
+              }
+            },
           }
         },
         plugins: {
-          legend: { display: false },
-		  {% if plugin_settings.displayRain == "true" %}
-			annotationRain: { precipitationData: rain }
-	      {% endif %}
+          legend: { display: false }
         },
         elements: {
           line: {
@@ -292,13 +356,28 @@
     const gradientStart = chart.scales['y'].getPixelForValue(maxTemp); // Max temperature
     const gradientEnd = chart.scales['y'].getPixelForValue(minTemp);   // Min temperature
 
-    // Create gradient based on y-axis values
-    const tempGradient = ctx.createLinearGradient(0, gradientStart, 0, gradientEnd+10);
-    tempGradient.addColorStop(0, 'rgba(252,204,5, 0.95)'); // Top of the gradient (max temperature)
-    tempGradient.addColorStop(1, 'rgba(252,204,5, 0.01)'); // Bottom of the gradient (min temperature)
+    // Create gradient based on y-axis values, with no fill below 0°
+    const gradientBottom = gradientEnd + 10;
+    const zeroPixel = chart.scales['y'].getPixelForValue(0);
+    let zeroOffset = (zeroPixel - gradientStart) / (gradientBottom - gradientStart);
+    zeroOffset = Math.max(0, Math.min(1, zeroOffset));
 
-    // Update the chart to apply the gradient
+    const tempGradient = ctx.createLinearGradient(0, gradientStart, 0, gradientBottom);
+    tempGradient.addColorStop(0, 'rgba(252,204,5, 0.95)'); // Top of the gradient (max temperature)
+    tempGradient.addColorStop(zeroOffset, 'rgba(252,204,5, 0.3)'); // Fading as it approaches 0°
+    tempGradient.addColorStop(zeroOffset, 'rgba(252,204,5, 0)'); // No fill below 0°
+    tempGradient.addColorStop(1, 'rgba(252,204,5, 0)');
+
+    // Line color: orange above 0°, dark blue below 0°
+    const lineGradient = ctx.createLinearGradient(0, gradientStart, 0, gradientBottom);
+    lineGradient.addColorStop(0, 'rgba(241, 122, 36, 0.9)');
+    lineGradient.addColorStop(zeroOffset, 'rgba(241, 122, 36, 0.9)');
+    lineGradient.addColorStop(zeroOffset, 'rgba(13, 71, 161, 0.9)');
+    lineGradient.addColorStop(1, 'rgba(13, 71, 161, 0.9)');
+
+    // Update the chart to apply the gradients
     chart.data.datasets[0].backgroundColor = tempGradient;
+    chart.data.datasets[0].borderColor = lineGradient;
 
     // Create gradient based on y-axis values
     const precipitationGradient = ctx.createLinearGradient(0, gradientStart, 0, gradientEnd);

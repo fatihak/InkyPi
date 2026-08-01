@@ -1,6 +1,4 @@
 from plugins.base_plugin.base_plugin import BasePlugin
-from PIL import Image
-import os
 import requests
 import logging
 from datetime import datetime, timedelta, timezone, date
@@ -10,7 +8,20 @@ from io import BytesIO
 import math
 
 logger = logging.getLogger(__name__)
-        
+
+DUTCH_WEEKDAYS = ["maandag", "dinsdag", "woensdag", "donderdag", "vrijdag", "zaterdag", "zondag"]
+DUTCH_WEEKDAYS_ABBR = ["ma", "di", "wo", "do", "vr", "za", "zo"]
+DUTCH_MONTHS = [
+    "januari", "februari", "maart", "april", "mei", "juni",
+    "juli", "augustus", "september", "oktober", "november", "december"
+]
+
+def format_date_nl(dt):
+    return f"{DUTCH_WEEKDAYS[dt.weekday()]} {dt.day} {DUTCH_MONTHS[dt.month - 1]}"
+
+def format_day_abbr_nl(dt):
+    return DUTCH_WEEKDAYS_ABBR[dt.weekday()]
+
 def get_moon_phase_name(phase_age: float) -> str:
     """Determines the name of the lunar phase based on the age of the moon."""
     PHASES_THRESHOLDS = [
@@ -150,7 +161,7 @@ class Weather(BasePlugin):
             if current_icon.endswith('n'):
                 current_icon = current_icon.replace("n", "d")
         data = {
-            "current_date": dt.strftime("%A, %B %d"),
+            "current_date": format_date_nl(dt),
             "current_day_icon": self.get_plugin_dir(f'icons/{current_icon}.png'),
             "current_temperature": str(round(current.get("temp"))),
             "feels_like": str(round(current.get("feels_like"))),
@@ -161,7 +172,7 @@ class Weather(BasePlugin):
         data['forecast'] = self.parse_forecast(weather_data.get('daily'), tz, current_suffix, lat)
         data['data_points'] = self.parse_data_points(weather_data, aqi_data, tz, units, time_format)
 
-        data['hourly_forecast'] = self.parse_hourly(weather_data.get('hourly'), tz, time_format, units, daily_forecast)
+        data['hourly_forecast'], data['sun_events'] = self.parse_hourly(weather_data.get('hourly'), tz, time_format, units, daily_forecast)
         return data
 
     def parse_open_meteo_data(self, weather_data, aqi_data, tz, units, time_format, lat):
@@ -175,7 +186,7 @@ class Weather(BasePlugin):
         temperature_conversion = 273.15 if units == "standard" else 0.
 
         data = {
-            "current_date": dt.strftime("%A, %B %d"),
+            "current_date": format_date_nl(dt),
             "current_day_icon": self.get_plugin_dir(f'icons/{current_icon}.png'),
             "current_temperature": str(round(current.get("temperature", 0) + temperature_conversion)),
             "feels_like": str(round(current.get("apparent_temperature", current.get("temperature", 0)) + temperature_conversion)),
@@ -187,7 +198,7 @@ class Weather(BasePlugin):
         data['forecast'] = self.parse_open_meteo_forecast(weather_data.get('daily', {}), units, tz, is_day, lat)
         data['data_points'] = self.parse_open_meteo_data_points(weather_data, aqi_data, units, tz, time_format)
         
-        data['hourly_forecast'] = self.parse_open_meteo_hourly(weather_data.get('hourly', {}), units, tz, time_format, daily.get('sunrise', []), daily.get('sunset', []))
+        data['hourly_forecast'], data['sun_events'] = self.parse_open_meteo_hourly(weather_data.get('hourly', {}), units, tz, time_format, daily.get('sunrise', []), daily.get('sunset', []))
         return data
 
     def map_weather_code_to_icon(self, weather_code, is_day):
@@ -311,7 +322,7 @@ class Weather(BasePlugin):
 
             # --- date & temps ---
             dt = datetime.fromtimestamp(day["dt"], tz=timezone.utc).astimezone(tz)
-            day_label = dt.strftime("%a")
+            day_label = format_day_abbr_nl(dt)
 
             forecast.append(
                 {
@@ -342,7 +353,7 @@ class Weather(BasePlugin):
 
         for i in range(0, len(times)): 
             dt = datetime.fromisoformat(times[i]).replace(tzinfo=timezone.utc).astimezone(tz)
-            day_label = dt.strftime("%a")
+            day_label = format_day_abbr_nl(dt)
 
             code = weather_codes[i] if i < len(weather_codes) else 0
             weather_icon = self.map_weather_code_to_icon(code, is_day=1)
@@ -410,7 +421,28 @@ class Weather(BasePlugin):
                 "icon": self.get_plugin_dir(f'icons/{icon_name}.png')
             }
             hourly.append(hour_forecast)
-        return hourly
+
+        hours = hourly_forecast[:24]
+        sun_events = []
+        if hours:
+            sun_events = self.get_sun_events(hours[0].get('dt'), hours[-1].get('dt'), sun_map.values())
+        return hourly, sun_events
+
+    def get_sun_events(self, start_epoch, end_epoch, sun_epoch_pairs):
+        """Finds sunrise/sunset epochs (as unix timestamps) that fall within the hourly
+        window and returns their fractional position along it, for placement on the
+        hourly chart's x-axis (e.g. 2.5 means halfway between the 3rd and 4th hour)."""
+        events = []
+        seen = set()
+        for sunrise_epoch, sunset_epoch in sun_epoch_pairs:
+            for epoch, icon_name in [(sunrise_epoch, 'sunrise'), (sunset_epoch, 'sunset')]:
+                if epoch and epoch not in seen and start_epoch <= epoch <= end_epoch:
+                    seen.add(epoch)
+                    events.append({
+                        "position": (epoch - start_epoch) / 3600,
+                        "icon": self.get_plugin_dir(f'icons/{icon_name}.png')
+                    })
+        return events
 
     def parse_open_meteo_hourly(self, hourly_data, units, tz, time_format, sunrises, sunsets):
         hourly = []
@@ -464,61 +496,48 @@ class Weather(BasePlugin):
                 "icon": self.get_plugin_dir(f"icons/{icon_name}.png")
             }
             hourly.append(hour_forecast)
-        return hourly
+
+        sliced_dt_count = min(24, len(sliced_times))
+        sun_events = []
+        if sliced_dt_count:
+            start_dt = datetime.fromisoformat(sliced_times[0]).astimezone(tz)
+            end_dt = datetime.fromisoformat(sliced_times[sliced_dt_count - 1]).astimezone(tz)
+            sun_epoch_pairs = [(sr.timestamp(), ss.timestamp()) for sr, ss in sun_map.values()]
+            sun_events = self.get_sun_events(start_dt.timestamp(), end_dt.timestamp(), sun_epoch_pairs)
+        return hourly, sun_events
 
     def parse_data_points(self, weather, air_quality, tz, units, time_format):
         data_points = []
-        sunrise_epoch = weather.get('current', {}).get("sunrise")
-
-        if sunrise_epoch:
-            sunrise_dt = datetime.fromtimestamp(sunrise_epoch, tz=timezone.utc).astimezone(tz)
-            data_points.append({
-                "label": "Sunrise",
-                "measurement": self.format_time(sunrise_dt, time_format, include_am_pm=False),
-                "unit": "" if time_format == "24h" else sunrise_dt.strftime('%p'),
-                "icon": self.get_plugin_dir('icons/sunrise.png')
-            })
-        else:
-            logger.error(f"Sunrise not found in OpenWeatherMap response, this is expected for polar areas in midnight sun and polar night periods.")
-
-        sunset_epoch = weather.get('current', {}).get("sunset")
-        if sunset_epoch:
-            sunset_dt = datetime.fromtimestamp(sunset_epoch, tz=timezone.utc).astimezone(tz)
-            data_points.append({
-                "label": "Sunset",
-                "measurement": self.format_time(sunset_dt, time_format, include_am_pm=False),
-                "unit": "" if time_format == "24h" else sunset_dt.strftime('%p'),
-                "icon": self.get_plugin_dir('icons/sunset.png')
-            })
-        else:
-            logger.error(f"Sunset not found in OpenWeatherMap response, this is expected for polar areas in midnight sun and polar night periods.")
 
         wind_deg = weather.get('current', {}).get("wind_deg", 0)
-        wind_arrow = self.get_wind_arrow(wind_deg)
+        wind_speed = weather.get('current', {}).get("wind_speed")
         data_points.append({
-            "label": "Wind",
-            "measurement": weather.get('current', {}).get("wind_speed"),
+            "label": self.get_beaufort_description_nl(self.get_wind_speed_ms(wind_speed, units)),
+            "measurement": wind_speed,
             "unit": UNITS[units]["speed"],
-            "icon": self.get_plugin_dir('icons/wind.png'),
-            "arrow": wind_arrow
+            "direction": self.get_wind_direction_abbr_nl(wind_deg),
+            "rotation": self.get_wind_icon_rotation(wind_deg),
+            "is_wind": True
         })
 
+        humidity = weather.get('current', {}).get("humidity")
         data_points.append({
-            "label": "Humidity",
-            "measurement": weather.get('current', {}).get("humidity"),
+            "label": "Vochtigheid",
+            "measurement": humidity,
             "unit": '%',
-            "icon": self.get_plugin_dir('icons/humidity.png')
+            "is_humidity": True,
+            "drop_count": self.get_humidity_drop_count(humidity)
         })
 
         data_points.append({
-            "label": "Pressure",
+            "label": "Luchtdruk",
             "measurement": weather.get('current', {}).get("pressure"),
             "unit": 'hPa',
             "icon": self.get_plugin_dir('icons/pressure.png')
         })
 
         data_points.append({
-            "label": "UV Index",
+            "label": "UV-index",
             "measurement": weather.get('current', {}).get("uvi"),
             "unit": '',
             "icon": self.get_plugin_dir('icons/uvi.png')
@@ -537,7 +556,7 @@ class Weather(BasePlugin):
         if at_max_visibility:
             visibility_str = u"\u2265" + visibility_str
         data_points.append({
-            "label": "Visibility",
+            "label": "Zicht",
             "measurement": visibility_str,
             "unit": UNITS[units]["distance"],
             "icon": self.get_plugin_dir('icons/visibility.png')
@@ -545,9 +564,9 @@ class Weather(BasePlugin):
 
         aqi = air_quality.get('list', [])[0].get("main", {}).get("aqi")
         data_points.append({
-            "label": "Air Quality",
+            "label": "Luchtkwaliteit",
             "measurement": aqi,
-            "unit": ["Good", "Fair", "Moderate", "Poor", "Very Poor"][int(aqi)-1],
+            "unit": ["Goed", "Redelijk", "Matig", "Slecht", "Zeer slecht"][int(aqi)-1],
             "icon": self.get_plugin_dir('icons/aqi.png')
         })
 
@@ -562,40 +581,16 @@ class Weather(BasePlugin):
 
         current_time = datetime.now(tz)
 
-        # Sunrise
-        sunrise_times = daily_data.get('sunrise', [])
-        if sunrise_times:
-            sunrise_dt = datetime.fromisoformat(sunrise_times[0]).astimezone(tz)
-            data_points.append({
-                "label": "Sunrise",
-                "measurement": self.format_time(sunrise_dt, time_format, include_am_pm=False),
-                "unit": "" if time_format == "24h" else sunrise_dt.strftime('%p'),
-                "icon": self.get_plugin_dir('icons/sunrise.png')
-            })
-        else:
-            logger.error(f"Sunrise not found in Open-Meteo response, this is expected for polar areas in midnight sun and polar night periods.")
-
-        # Sunset
-        sunset_times = daily_data.get('sunset', [])
-        if sunset_times:
-            sunset_dt = datetime.fromisoformat(sunset_times[0]).astimezone(tz)
-            data_points.append({
-                "label": "Sunset",
-                "measurement": self.format_time(sunset_dt, time_format, include_am_pm=False),
-                "unit": "" if time_format == "24h" else sunset_dt.strftime('%p'),
-                "icon": self.get_plugin_dir('icons/sunset.png')
-            })
-        else:
-            logger.error(f"Sunset not found in Open-Meteo response, this is expected for polar areas in midnight sun and polar night periods.")
-
         # Wind
         wind_speed = current_data.get("windspeed", 0)
         wind_deg = current_data.get("winddirection", 0)
-        wind_arrow = self.get_wind_arrow(wind_deg)
         wind_unit = UNITS[units]["speed"]
         data_points.append({
-            "label": "Wind", "measurement": wind_speed, "unit": wind_unit,
-            "icon": self.get_plugin_dir('icons/wind.png'), "arrow": wind_arrow
+            "label": self.get_beaufort_description_nl(self.get_wind_speed_ms(wind_speed, units)),
+            "measurement": wind_speed, "unit": wind_unit,
+            "direction": self.get_wind_direction_abbr_nl(wind_deg),
+            "rotation": self.get_wind_icon_rotation(wind_deg),
+            "is_wind": True
         })
 
         # Humidity
@@ -611,8 +606,9 @@ class Weather(BasePlugin):
                 logger.warning(f"Could not parse time string {time_str} for humidity.")
                 continue
         data_points.append({
-            "label": "Humidity", "measurement": current_humidity, "unit": '%',
-            "icon": self.get_plugin_dir('icons/humidity.png')
+            "label": "Vochtigheid", "measurement": current_humidity, "unit": '%',
+            "is_humidity": True,
+            "drop_count": self.get_humidity_drop_count(current_humidity)
         })
 
         # Pressure
@@ -628,7 +624,7 @@ class Weather(BasePlugin):
                 logger.warning(f"Could not parse time string {time_str} for pressure.")
                 continue
         data_points.append({
-            "label": "Pressure", "measurement": current_pressure, "unit": 'hPa',
+            "label": "Luchtdruk", "measurement": current_pressure, "unit": 'hPa',
             "icon": self.get_plugin_dir('icons/pressure.png')
         })
 
@@ -645,7 +641,7 @@ class Weather(BasePlugin):
                 logger.warning(f"Could not parse time string {time_str} for UV Index.")
                 continue
         data_points.append({
-            "label": "UV Index", "measurement": current_uv_index, "unit": '',
+            "label": "UV-index", "measurement": current_uv_index, "unit": '',
             "icon": self.get_plugin_dir('icons/uvi.png')
         })
 
@@ -672,7 +668,7 @@ class Weather(BasePlugin):
         if at_max_visibility:
             visibility_str = u"\u2265" + visibility_str
         data_points.append({
-            "label": "Visibility", 
+            "label": "Zicht", 
             "measurement": visibility_str, 
             "unit": UNITS[units]["distance"],
             "icon": self.get_plugin_dir('icons/visibility.png')
@@ -692,32 +688,52 @@ class Weather(BasePlugin):
                 continue
         scale = ""
         if current_aqi and current_aqi != "N/A":
-            scale = ["Good","Fair","Moderate","Poor","Very Poor","Ext Poor"][min(current_aqi//20,5)]
+            scale = ["Goed","Redelijk","Matig","Slecht","Zeer slecht","Extreem slecht"][min(current_aqi//20,5)]
         data_points.append({
-            "label": "Air Quality", "measurement": current_aqi,
+            "label": "Luchtkwaliteit", "measurement": current_aqi,
             "unit": scale, "icon": self.get_plugin_dir('icons/aqi.png')
         })
 
         return data_points
 
-    def get_wind_arrow(self, wind_deg: float) -> str:
-        DIRECTIONS = [
-            ("↓", 22.5),    # North (N)
-            ("↙", 67.5),    # North-East (NE)
-            ("←", 112.5),   # East (E)
-            ("↖", 157.5),   # South-East (SE)
-            ("↑", 202.5),   # South (S)
-            ("↗", 247.5),   # South-West (SW)
-            ("→", 292.5),   # West (W)
-            ("↘", 337.5),   # North-West (NW)
-            ("↓", 360.0)    # Wrap back to North
-        ]
-        wind_deg = wind_deg % 360
-        for arrow, upper_bound in DIRECTIONS:
-            if wind_deg < upper_bound:
-                return arrow
+    def get_wind_direction_abbr_nl(self, wind_deg: float) -> str:
+        DIRECTIONS = ["N", "NO", "O", "ZO", "Z", "ZW", "W", "NW"]
+        return DIRECTIONS[round(wind_deg / 45) % 8]
 
-        return "↑"
+    def get_wind_icon_rotation(self, wind_deg: float) -> float:
+        # wind_deg is the direction the wind is blowing FROM; the compass needle's
+        # unrotated artwork points North (up), so add 180° to point where it's blowing to.
+        return (wind_deg + 180) % 360
+
+    def get_wind_speed_ms(self, speed: float, units: str) -> float:
+        return speed * 0.44704 if units == "imperial" else speed
+
+    def get_humidity_drop_count(self, humidity) -> int:
+        try:
+            humidity = float(humidity)
+        except (TypeError, ValueError):
+            return 1
+        return min(5, max(1, math.ceil(humidity / 20)))
+
+    def get_beaufort_description_nl(self, speed_ms: float) -> str:
+        BEAUFORT_LEVELS = [
+            (0.3, "Windstil"),
+            (1.6, "Zwakke wind"),
+            (3.4, "Zwakke wind"),
+            (5.5, "Matige wind"),
+            (8.0, "Matige wind"),
+            (10.8, "Vrij krachtige wind"),
+            (13.9, "Krachtige wind"),
+            (17.2, "Harde wind"),
+            (20.8, "Stormachtig"),
+            (24.5, "Storm"),
+            (28.5, "Zware storm"),
+            (32.7, "Zeer zware storm"),
+        ]
+        for upper_bound, description in BEAUFORT_LEVELS:
+            if speed_ms < upper_bound:
+                return description
+        return "Orkaan"
 
     def get_weather_data(self, api_key, units, lat, long):
         url = WEATHER_URL.format(lat=lat, long=long, units=units, api_key=api_key)

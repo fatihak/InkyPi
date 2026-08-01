@@ -13,7 +13,9 @@
   gap: 1dvh;
   width: 100%;
   height: 100%;
-  font-family: "Jost"
+  padding-bottom: 3.5dvh;
+  font-family: "Jost", sans-serif;
+  position: relative;
 }
 
 .header {
@@ -25,18 +27,19 @@
   container-type: size;
 }
 
+.no-title .header {
+  height: 7dvh;
+}
+
 .last-refresh {
   position: absolute;
-  top: 0.5dvh;
+  bottom: 0.5dvh;
   right: 0.5dvw;
   font-size: min(2dvh, 2vw);
   text-align: right;
   font-weight: bold;
   padding: 0.3dvh 0.5dvw;
-}
-
-.weather-dashboard {
-  position: relative;
+  color: grey;
 }
 
 .title {
@@ -51,10 +54,14 @@
 
 .current-date {
   font-size: min(30cqh, 6cqi);
-  text-align: center;
+  text-align: left;
   align-content: end;
   width: 100%;
   line-height: 105%;
+}
+
+.no-title .current-date {
+  font-size: min(70cqh, 6cqi);
 }
 
 .today-container {
@@ -72,17 +79,18 @@
   /* Column on small screens */
   align-items: center;
   justify-content: center;
-  width: 50%;
+  align-self: flex-start;
+  width: 40%;
   padding: 0 2vw;
-  height: 100%;
+  height: 85%;
   overflow: hidden;
 }
 
 .current-icon {
   height: auto;
-  max-width: 90%;
+  max-width: 55%;
   width: auto;
-  max-height: 100%;
+  max-height: 65%;
   flex: 1;
   min-width: 0;
   min-height: 0;
@@ -108,21 +116,27 @@
 .data-points {
   display: grid;
   justify-content: space-evenly;
+  align-self: flex-start;
+  height: 80%;
+  grid-auto-rows: 1fr;
   grid-template-columns: repeat(2, 1fr);
   gap: 0.5vh 1vw;
-  width: 50%;
+  width: 60%;
 }
 
 .data-point {
   width: 100%;
   justify-content: left;
+  align-items: center;
   overflow: hidden;
 }
 
 .data-point-img-container {
-  width: 25%;
-  height: 80%;
-  align-content: center;
+  width: 38%;
+  height: 90%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .data-point-icon {
@@ -131,8 +145,47 @@
   object-fit: contain;
 }
 
+.data-point-icon[src$="uvi.png"],
+.data-point-icon[src$="visibility.png"],
+.data-point-icon[src$="pressure.png"] {
+  transform: scale(0.75);
+}
+
+.data-point-icon[src$="aqi.png"] {
+  transform: scale(0.9);
+}
+
+.wind-compass-icon {
+  width: 100%;
+  height: 100%;
+  transform: scale(0.85);
+}
+
+.humidity-drops {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  gap: 4%;
+}
+
+.humidity-drop-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6%;
+}
+
+.humidity-drop {
+  width: 26%;
+  height: auto;
+  flex-shrink: 0;
+}
+
 .data-point-data {
-  width: 75%;
+  width: 62%;
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -142,16 +195,15 @@
 }
 
 .data-point-label {
-  font-size: min(32cqh, 15cqi);
-  text-align: center;
-  font-weight: lighter;
+  font-size: min(3.4dvh, 2.1vw);
+  text-align: left;
+  font-weight: normal;
   height: 30%
 }
 
-.data-point-measurement,
-.wind-arrow-symbol {
-  font-size: min(46cqh, 26cqi);
-  text-align: center;
+.data-point-measurement {
+  font-size: min(4.6dvh, 3.4vw);
+  text-align: left;
   white-space: nowrap;
   align-content: center;
   height: 70%;
@@ -162,7 +214,7 @@
 
 .data-point-unit {
   font-size: 0.6em;
-  font-weight: lighter;
+  font-weight: normal;
   margin-left: 0.2vw;
 }
 
@@ -174,6 +226,7 @@
   justify-content: space-evenly;
   align-items: center;
   width: 100%;
+  height: 26dvh;
   gap: 1.5dvw;
   overflow: hidden;
 }
@@ -182,47 +235,39 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 1dvh 1vw;
-  border: 1px solid;
+  padding: 1dvh 1vw 2.5dvh 1vw;
+  border-width: 2px;
+  border-style: outset;
+  border-color: #5a9c5a;
   border-radius: 1.2vw;
+  background-color: #e3f1e3;
   min-width: 0;
+  height: 100%;
   max-height: 100%;
   gap: 0.5dvh
 }
 
 .forecast-day-name {
-  font-size: min(3.5dvh, 3.5vw);
-  flex: 1;
-  height: 100%;
-  min-height: 0;
-  min-width: 0;
-  width: 100%;
-  text-align: center;
-  align-content: center;
   font-weight: bold;
-  line-height: 100%;
+  margin-right: 0.3vw;
 }
 
 .forecast-icon {
-  max-width: 100%;
-  width: 100%;
-  height: 100%;
   flex: 1;
+  width: 100%;
   min-width: 0;
   min-height: 0;
   object-fit: contain;
-  padding: 0 1vw;
-  max-width: 15dvw;
+  padding: 0;
 }
 
 .forecast-temps {
-  flex: 1;
+  flex: 0 0 auto;
   text-align: center;
   white-space: nowrap;
-  min-height: 0;
   min-width: 0;
-  height: 100%;
-  font-size: min(3dvh, 2.5vw);
+  margin-top: 0.8dvh;
+  font-size: min(3.2dvh, 2.7vw);
 }
 
 .low .high {
@@ -242,14 +287,19 @@
 
 .chart-container {
   width: 100%;
-  height: 24dvh;
+  height: 36dvh;
+  margin-top: -10.5dvh;
+}
+
+.no-title .chart-container {
+  height: 43dvh;
 }
 
 .separator {
   border-top: 1px #AAA solid;
   height: 1px;
   width: 90%;
-  margin: 3px auto 0 auto;
+  margin: 1px auto 0 auto;
 }
 
 .moon-phase-icon {
@@ -298,7 +348,7 @@
   }
 
   .data-points {
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(3, 1fr);
     grid-template-rows: repeat(2, 1fr);
     width: 100%;
   }
@@ -320,7 +370,7 @@
 @media (min-aspect-ratio: 2) {
   .data-points {
     grid-template-columns: repeat(3, 1fr);
-    grid-template-rows: repeat(3, 1fr);
+    grid-template-rows: repeat(2, 1fr);
   }
 
 }

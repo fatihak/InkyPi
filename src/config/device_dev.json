@@ -1,6 +1,8 @@
 {
     "name": "InkyPi Development",
     "display_type": "mock",
+    "timezone": "Europe/Amsterdam",
+    "time_format": "24h",
     "resolution": [
         800,
         480
@@ -41,8 +43,8 @@
         "active_playlist": "Default"
     },
     "refresh_info": {
-        "refresh_time": "2026-07-27T13:52:43.479499+00:00",
-        "image_hash": "65346c179b6fbadb1c55a6b26ca73b6a1579efd8c7290e974c53d1969bc0a2ce",
+        "refresh_time": "2026-08-01T21:30:55.167045+02:00",
+        "image_hash": "f1bfda8500ecfdcb1da4647659aee39cdb773675fbba6e2657d809f6d6c7da44",
         "refresh_type": "Manual Update",
         "plugin_id": "weather"
     }

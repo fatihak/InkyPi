@@ -23,8 +23,8 @@
 
     <label for="units" class="form-label">Units:</label>
     <select id="units" name="units" class="form-input">
-        <option value="imperial">Imperial (°F)</option>
         <option value="metric">Metric (°C)</option>
+        <option value="imperial">Imperial (°F)</option>
         <option value="standard">Standard (K)</option>
     </select>
 </div>
@@ -169,9 +169,7 @@
         const $mapModal = document.querySelector('#mapModal');
         const $closeMap = document.querySelector('#closeMap');
 
-        let latitude = +$latitude.value;
-        let longitude = +$longitude.value;
-        let zoom = latitude && longitude ? 4.5 : 2.5;
+        let latitude, longitude, zoom;
         let selectedTitle = 'location';
         let weatherProvider = 'OpenMeteo';
 
@@ -236,7 +234,10 @@
             document.getElementById('customTitle').value = pluginSettings.customTitle || '';
         } else {
             // set default values
-            document.getElementById('units').value = "imperial";
+            document.getElementById('latitude').value = "51.0004365";
+            document.getElementById('longitude').value = "5.8993687";
+            document.getElementById('units').value = "metric";
+            document.getElementById('backgroundColor').value = "#FFF8E5";
             document.getElementById('displayRefreshTime').checked = true;
             document.getElementById('displayRefreshTime').value = "true";
             document.getElementById('displayMetrics').checked = true;
@@ -245,8 +246,9 @@
             document.getElementById('displayGraph').value = "true";
 			document.getElementById('displayRain').checked = false;
             document.getElementById('displayRain').value = "false";
-			document.getElementById('displayGraphIcons').checked = false;
-			document.getElementById('displayGraphIcons').value = "false";
+			document.getElementById('displayGraphIcons').checked = true;
+			document.getElementById('displayGraphIcons').value = "true";
+			document.getElementById('graphIconStep').value = "2";
             document.getElementById('displayForecast').checked = true;
             document.getElementById('displayForecast').value = "true";
             document.getElementById('forecastDays').value = 7;
@@ -254,6 +256,10 @@
 			document.getElementById('moonPhase').value = "false";
             document.getElementById('weatherTimeZone').value = "locationTimeZone";
         }
+
+        latitude = +$latitude.value;
+        longitude = +$longitude.value;
+        zoom = latitude && longitude ? 4.5 : 2.5;
 
         document.getElementById('weatherProvider').value = weatherProvider;
         document.querySelector(`input[name="titleSelection"][value="${selectedTitle}"]`).checked = true;
