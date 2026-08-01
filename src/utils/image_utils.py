@@ -353,3 +353,27 @@ class AdaptiveImageLoader:
         if fit_mode == "contain":
             return ImageOps.pad(img, dimensions, color=(255, 255, 255), method=Image.LANCZOS)
         return ImageOps.fit(img, dimensions, method=Image.LANCZOS)
+
+# =====================================================================
+# LEGACY ADAPTER FUNCTIONS
+# These maintain compatibility with display_manager.py and other plugins
+# that still expect the old standalone utility functions.
+# =====================================================================
+
+def change_orientation(img):
+    """Legacy wrapper: EXIF orientation is now handled natively."""
+    from PIL import ImageOps
+    return ImageOps.exif_transpose(img)
+
+def resize_image(img, dimensions):
+    """Legacy wrapper: Safely resizes if a plugin passes a raw PIL image."""
+    from PIL import ImageOps, Image
+    return ImageOps.fit(img, dimensions, method=Image.LANCZOS)
+
+def apply_image_enhancement(img, contrast=1.0, saturation=1.0, brightness=1.0, sharpness=1.0):
+    """
+    Legacy wrapper (Singular): AdaptiveImageLoader now auto-applies Spectra-6 
+    specific enhancements. This passes the image through untouched.
+    """
+    return img
+
