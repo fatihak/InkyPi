@@ -2,7 +2,7 @@
 Adaptive Image Loader for InkyPi
 Centralized image loading and processing with device-aware optimizations.
 
-Automatically uses memory-efficient strategies on low-RAM devices (Pi Zero)
+Automatically uses memory-efficient strategies on low-RAM devices (Pi Zero/Pi 2W)
 and high-performance strategies on capable devices (Pi 3/4).
 Includes Spectra-6 calibration profiles, gamut compression, and memory guardrails.
 Assumes strict landscape orientation.
@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 
 def _is_low_resource_device():
-    """Detect if running on a low-resource device (e.g., Raspberry Pi Zero)."""
+    """Detect if running on a low-resource device (e.g., Raspberry Pi Zero or 2W)."""
     try:
         total_memory_gb = psutil.virtual_memory().total / (1024 ** 3)
         is_low_resource = total_memory_gb < 1.0
