@@ -77,7 +77,7 @@ class AdaptiveImageLoader:
         try:
             return psutil.virtual_memory().available > (min_free_mb * 1024 * 1024)
         except Exception:
-            return True # If psutil fails, assume memory is fine
+            return True
 
     def _get_profile(self, dimensions, content_type="photo"):
         """Fetches the exact profile based on dimensions and content type."""
@@ -97,15 +97,12 @@ class AdaptiveImageLoader:
         Photos (high detail/noise) have high entropy.
         Dashboards (flat UI/text) have low entropy.
         """
-        # Create a tiny working copy for speed
         test_img = img.copy()
         test_img.thumbnail((300, 300), Image.NEAREST)
         
-        # Grayscale entropy calculation is fastest
         stat = ImageStat.Stat(test_img.convert("L"))
         entropy = stat.entropy[0]
         
-        # 4.5 is a standard threshold; adjust slightly if needed for your specific dashboard styles
         if entropy > 4.5:
             logger.debug(f"Entropy {entropy:.2f} > 4.5. Content type: photo")
             return "photo"
@@ -115,19 +112,19 @@ class AdaptiveImageLoader:
 
     def _apply_gamut_compression(self, img):
         """
-        Aligns raw RGB values closer to Spectra-6 physical pigments using a fast C-level affine matrix.
-        - Blues shift darker (to hit the Navy pigment instead of White).
-        - Greens shift darker (to hit Forest Green).
-        - Reds stay vibrant.
+        Safely aligns raw RGB values closer to Spectra-6 physical pigments
+        by splitting channels and scaling green and blue channels cleanly.
         """
-        # Affine mapping: R_out, G_out, B_out = M * (R_in, G_in, B_in)
-        # 12-tuple structure: (Rr, Rg, Rb, R_offset, Gr, Gg, Gb, G_offset, Br, Bg, Bb, B_offset)
-        spectra_matrix = (
-            1.0, 0.0, 0.0, 0.0,   # R remains untouched
-            0.0, 0.95, 0.0, 0.0,  # G slightly darkened
-            0.0, 0.0, 0.85, 0.0   # B noticeably darkened
-        )
-        return img.convert("RGB", spectra_matrix)
+        if img.mode != "RGB":
+            img = img.convert("RGB")
+            
+        r, g, b = img.split()
+        
+        # Scale green slightly (0.95) and blue more noticeably (0.85) to hit physical dark navy/forest pigments
+        g = g.point(lambda i: int(i * 0.95))
+        b = b.point(lambda i: int(i * 0.85))
+        
+        return Image.merge("RGB", (r, g, b))
 
     def quantize_for_spectra6(self, img, content_type="photo"):
         """
@@ -219,7 +216,6 @@ class AdaptiveImageLoader:
                 content_type = self._detect_content_type(img)
 
             if resize:
-                # Trigger libjpeg scale-on-load to heavily reduce RAM usage on JPEGs
                 if getattr(img, "format", None) in ("JPEG", "MPO"):
                     try:
                         img.draft('RGB', (dimensions[0] * 2, dimensions[1] * 2))
@@ -296,18 +292,15 @@ class AdaptiveImageLoader:
         if content_type == "photo":
             img = self._apply_gamut_compression(img)
 
-        # Verify memory before intensive operations
         mem_ok = self._memory_ok(100)
         if not mem_ok:
             logger.warning("Low memory detected (<100MB free). Executing fallback processing.")
 
-        # Resize strategy
         if self.is_low_resource:
             img = self._resize_low_resource(img, dimensions, fit_mode, mem_ok)
         else:
             img = self._resize_high_performance(img, dimensions, fit_mode)
 
-        # Apply image enhancements ONLY if memory allows
         if mem_ok:
             profile = self._get_profile(dimensions, content_type)
 
@@ -326,7 +319,6 @@ class AdaptiveImageLoader:
         return img
 
     def _resize_low_resource(self, img, dimensions, fit_mode="cover", mem_ok=True):
-        # Fall back to NEAREST if RAM is critically low, otherwise use standard strategy
         filter_method = Image.LANCZOS if (fit_mode == "cover" and mem_ok) else Image.BICUBIC
         if not mem_ok:
             filter_method = Image.NEAREST
