@@ -7,7 +7,7 @@ and high-performance strategies on capable devices (Pi 3/4).
 Includes Spectra-6 calibration profiles, gamut compression, and memory guardrails.
 """
 
-from PIL import Image, ImageOps, ImageEnhance
+from PIL import Image, ImageOps, ImageEnhance, ImageStat
 from io import BytesIO
 from utils.http_client import get_http_session
 import logging
@@ -304,6 +304,9 @@ class AdaptiveImageLoader:
                 img = ImageEnhance.Brightness(img).enhance(profile["brightness"])
             if profile.get("sharpness", 1.0) != 1.0:
                 img = ImageEnhance.Sharpness(img).enhance(profile["sharpness"])
+
+        # Final step: Quantize the processed image for the Spectra 6 hardware palette
+        img = self.quantize_for_spectra6(img, content_type)
 
         return img
 
