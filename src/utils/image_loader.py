@@ -133,7 +133,7 @@ class AdaptiveImageLoader:
             else:
                 return self._load_from_file_fast(path, dimensions, resize, content_type)
         except Exception as e:
-            logger.error(f"Error loading image from {path}: {e}")
+            logger.error(f"Error loading image from {path}: {e}", exc_info=True)
             return None
 
     def from_bytesio(self, data, dimensions, resize=True, content_type="auto"):
@@ -152,7 +152,7 @@ class AdaptiveImageLoader:
 
             return img
         except Exception as e:
-            logger.error(f"Error loading image from BytesIO: {e}")
+            logger.error(f"Error loading image from BytesIO: {e}", exc_info=True)
             return None
 
     # ========== LOW-RESOURCE IMPLEMENTATIONS ==========
@@ -175,7 +175,7 @@ class AdaptiveImageLoader:
             return self._load_from_file_lowmem(tmp_path, dimensions, resize, content_type)
 
         except Exception as e:
-            logger.error(f"Error processing URL image {url}: {e}")
+            logger.error(f"Error processing URL image {url}: {e}", exc_info=True)
             return None
         finally:
             if tmp_path and os.path.exists(tmp_path):
@@ -207,11 +207,11 @@ class AdaptiveImageLoader:
             return img
 
         except MemoryError as e:
-            logger.error(f"Out of memory loading {path}: {e}")
+            logger.error(f"Out of memory loading {path}: {e}", exc_info=True)
             gc.collect()
             return None
         except Exception as e:
-            logger.error(f"Error loading file {path}: {e}")
+            logger.error(f"Error loading file {path}: {e}", exc_info=True)
             return None
 
     # ========== HIGH-PERFORMANCE IMPLEMENTATIONS ==========
@@ -236,7 +236,7 @@ class AdaptiveImageLoader:
 
             return img
         except Exception as e:
-            logger.error(f"Error downloading {url}: {e}")
+            logger.error(f"Error downloading {url}: {e}", exc_info=True)
             return None
 
     def _load_from_file_fast(self, path, dimensions, resize, content_type="auto"):
@@ -254,7 +254,7 @@ class AdaptiveImageLoader:
 
             return img
         except Exception as e:
-            logger.error(f"Error loading file {path}: {e}")
+            logger.error(f"Error loading file {path}: {e}", exc_info=True)
             return None
 
     # ========== SHARED PROCESSING LOGIC ==========
