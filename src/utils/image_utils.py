@@ -377,3 +377,24 @@ def apply_image_enhancement(img, contrast=1.0, saturation=1.0, brightness=1.0, s
     """
     return img
 
+import hashlib
+
+def compute_image_hash(img):
+    """
+    Computes an MD5 hash of the image pixel data.
+    Used by refresh_task to determine if the display actually needs to update.
+    """
+    try:
+        # Convert to a standard mode to ensure consistent hashing
+        if img.mode != 'RGB':
+            hash_img = img.convert('RGB')
+        else:
+            hash_img = img
+            
+        return hashlib.md5(hash_img.tobytes()).hexdigest()
+    except Exception as e:
+        logger.warning(f"Could not compute image hash: {e}")
+        # Return a random string so the display forces a refresh if hashing fails
+        import uuid
+        return str(uuid.uuid4())
+
