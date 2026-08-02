@@ -2,7 +2,8 @@ import fnmatch
 import json
 import logging
 
-from utils.image_utils import resize_image, change_orientation, apply_image_enhancement
+from utils.image_utils import change_orientation
+from utils.image_loader import AdaptiveImageLoader
 from display.mock_display import MockDisplay
 
 logger = logging.getLogger(__name__)
@@ -74,11 +75,25 @@ class DisplayManager:
         logger.info(f"Saving image to {self.device_config.current_image_file}")
         image.save(self.device_config.current_image_file)
 
-        # Resize and adjust orientation
+        # Adjust specific orientation (e.g., vertical/horizontal rotations)
         image = change_orientation(image, self.device_config.get_config("orientation"))
-        image = resize_image(image, self.device_config.get_resolution(), image_settings)
-        if self.device_config.get_config("inverted_image"): image = image.rotate(180)
-        image = apply_image_enhancement(image, self.device_config.get_config("image_settings"))
+        
+        if self.device_config.get_config("inverted_image"): 
+            image = image.rotate(180)
+
+        # Route through the hardware-aware image loader
+        processor = AdaptiveImageLoader()
+        resolution = self.device_config.get_resolution()
+        
+        # Dynamically calculate whether the image is a "photo" or "dashboard"
+        calculated_type = processor._detect_content_type(image)
+
+        image = processor._process_and_resize(
+            img=image, 
+            dimensions=resolution, 
+            original_size=image.size,
+            content_type=calculated_type
+        )
 
         # Pass to the concrete instance to render to the device.
         self.display.display_image(image, image_settings)
