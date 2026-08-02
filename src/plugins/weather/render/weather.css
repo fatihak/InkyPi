@@ -42,6 +42,17 @@
   color: grey;
 }
 
+.nearest-location {
+  position: absolute;
+  bottom: 0.5dvh;
+  left: 0.5dvw;
+  font-size: min(2dvh, 2vw);
+  text-align: left;
+  font-weight: bold;
+  padding: 0.3dvh 0.5dvw;
+  color: grey;
+}
+
 .title {
   font-size: min(50cqh, 8cqi);
   text-align: center;
@@ -53,7 +64,7 @@
 }
 
 .current-date {
-  font-size: min(30cqh, 6cqi);
+  font-size: min(36cqh, 7cqi);
   text-align: left;
   align-content: end;
   width: 100%;
