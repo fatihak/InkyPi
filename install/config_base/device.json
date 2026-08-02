@@ -3,6 +3,5 @@
     "orientation": "horizontal",
     "inverted_image": false,
     "scheduler_sleep_time": 60,
-    "force_image_mode": "photo",
     "startup": true
 }
