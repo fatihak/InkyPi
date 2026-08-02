@@ -145,17 +145,14 @@
   object-fit: contain;
 }
 
-.data-point-icon[src$="uvi.png"],
-.data-point-icon[src$="visibility.png"],
-.data-point-icon[src$="pressure.png"] {
+.data-point-icon[src$="visibility.png"] {
   transform: scale(0.75);
 }
 
-.data-point-icon[src$="aqi.png"] {
-  transform: scale(0.9);
-}
-
-.wind-compass-icon {
+.wind-compass-icon,
+.pressure-gauge-icon,
+.uv-icon,
+.aqi-gauge-icon {
   width: 100%;
   height: 100%;
   transform: scale(0.85);
@@ -168,20 +165,30 @@
   justify-content: center;
   width: 100%;
   height: 100%;
-  gap: 4%;
 }
 
 .humidity-drop-row {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6%;
+}
+
+.humidity-drop-row + .humidity-drop-row {
+  margin-top: -3%;
 }
 
 .humidity-drop {
-  width: 26%;
+  width: 20%;
   height: auto;
   flex-shrink: 0;
+}
+
+.humidity-drop:not(:first-child) {
+  margin-left: -8%;
+}
+
+.humidity-drop-hidden {
+  visibility: hidden;
 }
 
 .data-point-data {

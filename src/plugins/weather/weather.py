@@ -83,10 +83,12 @@ class Weather(BasePlugin):
         return template_params
 
     def generate_image(self, settings, device_config):
-        lat = float(settings.get('latitude'))
-        long = float(settings.get('longitude'))
-        if not lat or not long:
+        lat_str = settings.get('latitude')
+        long_str = settings.get('longitude')
+        if not lat_str or not long_str:
             raise RuntimeError("Latitude and Longitude are required.")
+        lat = float(lat_str)
+        long = float(long_str)
 
         units = settings.get('units')
         if not units or units not in ['metric', 'imperial', 'standard']:
@@ -529,18 +531,23 @@ class Weather(BasePlugin):
             "drop_count": self.get_humidity_drop_count(humidity)
         })
 
+        pressure = weather.get('current', {}).get("pressure")
         data_points.append({
             "label": "Luchtdruk",
-            "measurement": weather.get('current', {}).get("pressure"),
+            "measurement": pressure,
             "unit": 'hPa',
-            "icon": self.get_plugin_dir('icons/pressure.png')
+            "is_pressure": True,
+            "gauge_rotation": self.get_pressure_gauge_rotation(pressure)
         })
 
+        uvi = weather.get('current', {}).get("uvi")
         data_points.append({
             "label": "UV-index",
-            "measurement": weather.get('current', {}).get("uvi"),
+            "measurement": uvi,
             "unit": '',
-            "icon": self.get_plugin_dir('icons/uvi.png')
+            "is_uv": True,
+            "uv_color": self.get_uv_color(uvi),
+            "uv_beams": self.get_uv_beam_points(uvi)
         })
 
         visibility = weather.get('current', {}).get("visibility")
@@ -567,7 +574,8 @@ class Weather(BasePlugin):
             "label": "Luchtkwaliteit",
             "measurement": aqi,
             "unit": ["Goed", "Redelijk", "Matig", "Slecht", "Zeer slecht"][int(aqi)-1],
-            "icon": self.get_plugin_dir('icons/aqi.png')
+            "is_aqi": True,
+            "aqi_rotation": self.get_owm_aqi_rotation(aqi)
         })
 
         return data_points
@@ -625,7 +633,8 @@ class Weather(BasePlugin):
                 continue
         data_points.append({
             "label": "Luchtdruk", "measurement": current_pressure, "unit": 'hPa',
-            "icon": self.get_plugin_dir('icons/pressure.png')
+            "is_pressure": True,
+            "gauge_rotation": self.get_pressure_gauge_rotation(current_pressure)
         })
 
         # UV Index
@@ -642,7 +651,9 @@ class Weather(BasePlugin):
                 continue
         data_points.append({
             "label": "UV-index", "measurement": current_uv_index, "unit": '',
-            "icon": self.get_plugin_dir('icons/uvi.png')
+            "is_uv": True,
+            "uv_color": self.get_uv_color(current_uv_index),
+            "uv_beams": self.get_uv_beam_points(current_uv_index)
         })
 
         # Visibility
@@ -691,7 +702,9 @@ class Weather(BasePlugin):
             scale = ["Goed","Redelijk","Matig","Slecht","Zeer slecht","Extreem slecht"][min(current_aqi//20,5)]
         data_points.append({
             "label": "Luchtkwaliteit", "measurement": current_aqi,
-            "unit": scale, "icon": self.get_plugin_dir('icons/aqi.png')
+            "unit": scale,
+            "is_aqi": True,
+            "aqi_rotation": self.get_european_aqi_rotation(current_aqi)
         })
 
         return data_points
@@ -714,6 +727,68 @@ class Weather(BasePlugin):
         except (TypeError, ValueError):
             return 1
         return min(5, max(1, math.ceil(humidity / 20)))
+
+    def get_pressure_gauge_rotation(self, pressure) -> float:
+        # Maps the typical 970-1050 hPa range onto a 180° needle sweep
+        # (-90° to +90°), matching a flat-bottomed dome barometer face.
+        try:
+            pressure = float(pressure)
+        except (TypeError, ValueError):
+            pressure = 1013.25
+        PRESSURE_MIN, PRESSURE_MAX = 970, 1050
+        clamped = min(PRESSURE_MAX, max(PRESSURE_MIN, pressure))
+        fraction = (clamped - PRESSURE_MIN) / (PRESSURE_MAX - PRESSURE_MIN)
+        return -90 + fraction * 180
+
+    def get_aqi_rotation_from_fraction(self, fraction_good: float) -> float:
+        # fraction_good: 0 = worst (needle points left, into the red band), 1 = best (points right, into green).
+        fraction_good = min(1.0, max(0.0, fraction_good))
+        return -180 + (180 * fraction_good)
+
+    def get_owm_aqi_rotation(self, aqi) -> float:
+        # OWM scale is 1 (Good) - 5 (Very Poor).
+        try:
+            aqi = float(aqi)
+        except (TypeError, ValueError):
+            return self.get_aqi_rotation_from_fraction(0.5)
+        return self.get_aqi_rotation_from_fraction((5 - aqi) / 4)
+
+    def get_european_aqi_rotation(self, aqi) -> float:
+        # European AQI: 0 (best) upwards, 100+ treated as worst.
+        try:
+            aqi = float(aqi)
+        except (TypeError, ValueError):
+            return self.get_aqi_rotation_from_fraction(0.5)
+        return self.get_aqi_rotation_from_fraction(1 - min(aqi, 100) / 100)
+
+    def get_uv_fraction(self, uv_index) -> float:
+        try:
+            uv_index = float(uv_index)
+        except (TypeError, ValueError):
+            uv_index = 0
+        return min(1.0, max(0.0, uv_index / 11))
+
+    def get_uv_color(self, uv_index) -> str:
+        # Whitish yellow (low UV) fading to dark orange (high UV).
+        LOW_COLOR, HIGH_COLOR = (255, 242, 178), (193, 68, 14)
+        fraction = self.get_uv_fraction(uv_index)
+        r, g, b = (round(low + (high - low) * fraction) for low, high in zip(LOW_COLOR, HIGH_COLOR))
+        return f"#{r:02x}{g:02x}{b:02x}"
+
+    def get_uv_beam_points(self, uv_index, beam_count=10, cx=60, cy=60, core_r=24, min_len=10, max_len=32, half_width=5):
+        # Triangular sun beams whose length scales with UV index; fixed count keeps the sun silhouette recognizable.
+        beam_len = min_len + (max_len - min_len) * self.get_uv_fraction(uv_index)
+        outer_r = core_r + beam_len
+        beams = []
+        for i in range(beam_count):
+            angle = (2 * math.pi * i / beam_count) - (math.pi / 2)
+            perp = angle + (math.pi / 2)
+            base_x, base_y = cx + core_r * math.cos(angle), cy + core_r * math.sin(angle)
+            left = (base_x + half_width * math.cos(perp), base_y + half_width * math.sin(perp))
+            right = (base_x - half_width * math.cos(perp), base_y - half_width * math.sin(perp))
+            tip = (cx + outer_r * math.cos(angle), cy + outer_r * math.sin(angle))
+            beams.append(f"{left[0]:.1f},{left[1]:.1f} {tip[0]:.1f},{tip[1]:.1f} {right[0]:.1f},{right[1]:.1f}")
+        return beams
 
     def get_beaufort_description_nl(self, speed_ms: float) -> str:
         BEAUFORT_LEVELS = [
