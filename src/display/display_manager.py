@@ -85,15 +85,18 @@ class DisplayManager:
         processor = AdaptiveImageLoader()
         resolution = self.device_config.get_resolution()
         
-        # Dynamically calculate whether the image is a "photo" or "dashboard"
-        calculated_type = processor._detect_content_type(image)
-
-        image = processor._process_and_resize(
-            img=image, 
-            dimensions=resolution, 
-            original_size=image.size,
-            content_type=calculated_type
-        )
+        # ONLY process if the image hasn't already been quantized by a plugin
+        if image.mode != "P":
+            logger.info("Image not yet optimized for Spectra 6. Processing now...")
+            calculated_type = processor._detect_content_type(image)
+            image = processor._process_and_resize(
+                img=image, 
+                dimensions=resolution, 
+                original_size=image.size,
+                content_type=calculated_type
+            )
+        else:
+            logger.info("Image already optimized (Palette mode). Skipping duplicate processing.")
 
         # Pass to the concrete instance to render to the device.
         self.display.display_image(image, image_settings)
