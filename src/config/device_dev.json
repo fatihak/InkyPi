@@ -43,8 +43,8 @@
         "active_playlist": "Default"
     },
     "refresh_info": {
-        "refresh_time": "2026-08-02T11:33:33.902050+02:00",
-        "image_hash": "a86b2c8327d1f6663df1e47c9586dd28508982cf73b450af4b75a00341a7597a",
+        "refresh_time": "2026-08-02T12:00:11.783705+02:00",
+        "image_hash": "35f30ffdd9579ee9675bb62b8d3dde6734ca2310e1aa8258c565f48090887c80",
         "refresh_type": "Manual Update",
         "plugin_id": "weather"
     }

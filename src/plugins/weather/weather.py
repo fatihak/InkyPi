@@ -63,7 +63,7 @@ UNITS = {
 WEATHER_URL = "https://api.openweathermap.org/data/3.0/onecall?lat={lat}&lon={long}&units={units}&exclude=minutely&appid={api_key}"
 AIR_QUALITY_URL = "http://api.openweathermap.org/data/2.5/air_pollution?lat={lat}&lon={long}&appid={api_key}"
 GEOCODING_URL = "http://api.openweathermap.org/geo/1.0/reverse?lat={lat}&lon={long}&limit=1&appid={api_key}"
-NOMINATIM_REVERSE_URL = "https://nominatim.openstreetmap.org/reverse?lat={lat}&lon={long}&format=jsonv2&accept-language=nl&zoom=14"
+NOMINATIM_REVERSE_URL = "https://nominatim.openstreetmap.org/reverse?lat={lat}&lon={long}&format=jsonv2&accept-language=en&zoom=14"
 
 OPEN_METEO_FORECAST_URL = "https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={long}&hourly=weather_code,temperature_2m,precipitation,precipitation_probability,relative_humidity_2m,surface_pressure,visibility&daily=weathercode,temperature_2m_max,temperature_2m_min,sunrise,sunset&current=temperature,windspeed,winddirection,is_day,precipitation,weather_code,apparent_temperature&timezone=auto&models=best_match&forecast_days={forecast_days}"
 OPEN_METEO_AIR_QUALITY_URL = "https://air-quality-api.open-meteo.com/v1/air-quality?latitude={lat}&longitude={long}&hourly=european_aqi,uv_index,uv_index_clear_sky&timezone=auto"
@@ -123,7 +123,13 @@ class Weather(BasePlugin):
                 forecast_days = 7
                 weather_data = self.get_open_meteo_data(lat, long, units, forecast_days + 1)
                 aqi_data = self.get_open_meteo_air_quality(lat, long)
-                template_params = self.parse_open_meteo_data(weather_data, aqi_data, tz, units, time_format, lat)
+                if settings.get('weatherTimeZone', 'locationTimeZone') == 'locationTimeZone':
+                    logger.info("Using location timezone for Open-Meteo data.")
+                    wtz = self.parse_timezone(weather_data)
+                    template_params = self.parse_open_meteo_data(weather_data, aqi_data, wtz, units, time_format, lat)
+                else:
+                    logger.info("Using configured timezone for Open-Meteo data.")
+                    template_params = self.parse_open_meteo_data(weather_data, aqi_data, tz, units, time_format, lat)
             else:
                 raise RuntimeError(f"Unknown weather provider: {weather_provider}")
 
@@ -137,7 +143,7 @@ class Weather(BasePlugin):
             dimensions = dimensions[::-1]
 
         template_params["plugin_settings"] = settings
-        template_params["nearest_location"] = self.get_nearest_location_name_nl(lat, long)
+        template_params["nearest_location"] = self.get_nearest_location_name(lat, long)
 
         # Add last refresh time
         now = datetime.now(tz)
@@ -845,8 +851,8 @@ class Weather(BasePlugin):
 
         return location_str
 
-    def get_nearest_location_name_nl(self, lat, long):
-        # Free reverse geocoding (no API key required), Dutch place names via accept-language=nl.
+    def get_nearest_location_name(self, lat, long):
+        # Free reverse geocoding (no API key required), English place names via accept-language=en.
         try:
             response = requests.get(
                 NOMINATIM_REVERSE_URL.format(lat=lat, long=long),
@@ -858,10 +864,16 @@ class Weather(BasePlugin):
                 return ""
 
             address = response.json().get("address", {})
+            city = ""
             for key in ("city", "town", "village", "municipality", "hamlet", "suburb", "county"):
                 if address.get(key):
-                    return address[key]
-            return ""
+                    city = address[key]
+                    break
+
+            country = address.get("country", "")
+            if city and country:
+                return f"{city}, {country}"
+            return city or country
         except Exception as e:
             logger.warning(f"Could not retrieve nearest location name: {str(e)}")
             return ""
