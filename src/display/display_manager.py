@@ -19,12 +19,11 @@ try:
 except ImportError:
     logger.info("Waveshare display not available, hardware support disabled")
 
-class DisplayManager:
 
+class DisplayManager:
     """Manages the display and rendering of images."""
 
     def __init__(self, device_config):
-
         """
         Initializes the display manager and selects the correct display type 
         based on the configuration.
@@ -35,7 +34,6 @@ class DisplayManager:
         Raises:
             ValueError: If an unsupported display type is specified.
         """
-        
         self.device_config = device_config
      
         display_type = device_config.get_config("display_type", default="inky")
@@ -56,7 +54,6 @@ class DisplayManager:
             raise ValueError(f"Unsupported display type: {display_type}")
 
     def display_image(self, image, image_settings=[]):
-        
         """
         Delegates image rendering to the appropriate display instance.
 
@@ -67,7 +64,6 @@ class DisplayManager:
         Raises:
             ValueError: If no valid display instance is found.
         """
-
         if not hasattr(self, "display"):
             raise ValueError("No valid display instance initialized.")
         
@@ -82,7 +78,8 @@ class DisplayManager:
             image = image.rotate(180)
 
         # Route through the hardware-aware image loader
-        processor = AdaptiveImageLoader()
+        # Pass the config so the loader can read the JSON override
+        processor = AdaptiveImageLoader(self.device_config)
         resolution = self.device_config.get_resolution()
         
         # ONLY process if the image hasn't already been quantized by a plugin
