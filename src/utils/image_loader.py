@@ -1,98 +1,67 @@
-"""
-Adaptive Image Loader for InkyPi
-Centralized image loading and processing with device-aware optimizations.
-
-Automatically uses memory-efficient strategies on low-RAM devices (Pi Zero)
-and high-performance strategies on capable devices (Pi 3/4).
-Includes Spectra-6 calibration profiles, gamut compression, and memory guardrails.
-"""
-
-from PIL import Image, ImageOps, ImageEnhance, ImageStat
-from io import BytesIO
-from utils.http_client import get_http_session
-import logging
-import gc
-import psutil
-import tempfile
+import io
 import os
-import requests
 import math
+import logging
+import requests
+from PIL import Image, ImageEnhance
 
 logger = logging.getLogger(__name__)
 
-
 def _is_low_resource_device():
-    """
-    Detect if running on a low-resource device (e.g., Raspberry Pi Zero).
-    Returns True if device has less than 1GB RAM, False otherwise.
-    """
+    """Detects if running on a low-memory device like Pi Zero."""
     try:
-        total_memory_gb = psutil.virtual_memory().total / (1024 ** 3)
-        is_low_resource = total_memory_gb < 1.0
-        logger.debug(f"Device RAM: {total_memory_gb:.2f}GB - Low resource mode: {is_low_resource}")
-        return is_low_resource
-    except Exception as e:
-        logger.warning(f"Could not detect device memory: {e}. Defaulting to low-resource mode.")
-        return True
-
+        with open("/proc/meminfo", "r") as f:
+            meminfo = f.read()
+        for line in meminfo.splitlines():
+            if "MemTotal" in line:
+                total_kb = int(line.split()[1])
+                if total_kb < 600000:  # < 600MB indicates Pi Zero 2 or similar
+                    return True
+    except Exception:
+        pass
+    return False
 
 class AdaptiveImageLoader:
     """
     Centralized image loading with device-adaptive optimizations and Spectra 6 tuning.
     """
-
     DEFAULT_HEADERS = {
         'User-Agent': 'InkyPi/1.0 (https://github.com/fatihak/InkyPi/) Python-requests'
     }
 
-    # Spectra 6 Palette definition
-    SPECTRA_6_PALETTE = [
-        0, 0, 0,        # Black
-        255, 255, 255,  # White
-        255, 0, 0,      # Red
-        0, 255, 0,      # Green
-        0, 0, 255,      # Blue
-        255, 255, 0,    # Yellow
-    ]
-
-    def __init__(self):
+    def __init__(self, device_config=None):
         self.is_low_resource = _is_low_resource_device()
+        
+        # --- GLOBAL TEST SWITCH ---
+        # Pulls from device_config.json, defaults to "auto" if missing
+        self.force_mode = "auto"
+        if device_config and hasattr(device_config, "get_config"):
+            self.force_mode = device_config.get_config("force_image_mode", default="auto")
         
         # Hardware-specific calibrations
         self.display_profiles = {
-            (1600, 1200): { # 13.3" Spectra 6
-                "photo": {"saturation": 1.5, "contrast": 1.2, "brightness": 1.05, "sharpness": 1.2},
-                "dashboard": {"saturation": 1.0, "contrast": 1.8, "brightness": 1.05, "sharpness": 1.5}
-            },
-            (800, 480): {   # 7.3" Spectra 6
-                "photo": {"saturation": 1.1, "contrast": 1.05, "brightness": 1.0, "sharpness": 1.2},
-                "dashboard": {"saturation": 1.0, "contrast": 1.6, "brightness": 1.0, "sharpness": 1.4}
+            "spectra_6": {
+                "palette": [
+                    0, 0, 0,          # Black
+                    255, 255, 255,    # White
+                    0, 255, 0,        # Green
+                    0, 0, 255,        # Blue
+                    255, 0, 0,        # Red
+                    255, 255, 0       # Yellow
+                ],
+                "saturation_boost": 1.2,
+                "contrast_boost": 1.1
             }
         }
 
-        # Build master palette image for quantization
-        palette_data = self.SPECTRA_6_PALETTE + [0] * (768 - len(self.SPECTRA_6_PALETTE))
-        self._palette_img = Image.new("P", (1, 1))
-        self._palette_img.putpalette(palette_data)
-
-    def _memory_ok(self, min_free_mb=100):
-        """Unified guardrail to check available RAM at runtime."""
-        try:
-            return psutil.virtual_memory().available > (min_free_mb * 1024 * 1024)
-        except Exception:
-            return True 
-
-    def _get_profile(self, dimensions, content_type="photo"):
-        display_dict = self.display_profiles.get(dimensions, {})
-        default_profile = {
-            "photo": {"saturation": 1.2, "contrast": 1.1, "brightness": 1.0, "sharpness": 1.2},
-            "dashboard": {"saturation": 1.0, "contrast": 1.6, "brightness": 1.0, "sharpness": 1.4}
-        }
-        profile_type = content_type if content_type in ("photo", "dashboard") else "photo"
-        return display_dict.get(profile_type, default_profile[profile_type])
-
     def _detect_content_type(self, img):
         """Safe entropy calculation using image histogram."""
+        
+        # Intercept the calculation if the JSON switch is active
+        if self.force_mode in ("photo", "dashboard"):
+            logger.info(f"JSON OVERRIDE: Forcing image mode to '{self.force_mode}'")
+            return self.force_mode
+
         try:
             test_img = img.copy()
             test_img.thumbnail((300, 300), Image.NEAREST)
@@ -108,6 +77,7 @@ class AdaptiveImageLoader:
                     prob = count / total_pixels
                     entropy -= prob * math.log2(prob)
             
+            logger.info(f"Calculated image entropy: {entropy:.2f}")
             if entropy > 4.5:
                 return "photo"
             else:
@@ -116,216 +86,83 @@ class AdaptiveImageLoader:
             logger.debug(f"Entropy detection failed, defaulting to photo: {e}")
             return "photo"
 
-    def _apply_gamut_compression(self, img):
-        spectra_matrix = (
-            1.0, 0.0, 0.0, 0.0,
-            0.0, 0.95, 0.0, 0.0,
-            0.0, 0.0, 0.85, 0.0
-        )
-        return img.convert("RGB", spectra_matrix)
+    def _get_spectra6_palette_image(self):
+        """Creates a palette image mapping precisely to Spectra 6 hardware colors."""
+        palette_img = Image.new('P', (1, 1))
+        flat_palette = self.display_profiles["spectra_6"]["palette"]
+        # Pad the palette out to 256 colors to satisfy PIL requirements
+        flat_palette += [0] * (768 - len(flat_palette))
+        palette_img.putpalette(flat_palette)
+        return palette_img
 
-    def quantize_for_spectra6(self, img, content_type="photo"):
+    def _process_and_resize(self, img, dimensions, original_size, content_type="auto", fit_mode="cover"):
+        """Handles low-resource scaling, color enhancement, and Spectra 6 quantization."""
+        
+        if content_type == "auto":
+            content_type = self._detect_content_type(img)
+        
+        # --- Memory Protection (Pi Zero) ---
+        if self.is_low_resource and max(original_size) > 1600:
+            logger.info("Low memory device detected. Performing rapid downscale.")
+            img.thumbnail((1600, 1600), Image.NEAREST)
+
+        # --- Scaling ---
+        if dimensions:
+            if fit_mode == "contain":
+                img.thumbnail(dimensions, Image.Resampling.LANCZOS)
+            else:
+                # Basic cover implementation
+                aspect_ratio_img = img.width / img.height
+                aspect_ratio_dim = dimensions[0] / dimensions[1]
+                if aspect_ratio_img > aspect_ratio_dim:
+                    new_width = int(dimensions[1] * aspect_ratio_img)
+                    img = img.resize((new_width, dimensions[1]), Image.Resampling.LANCZOS)
+                    left = (img.width - dimensions[0]) / 2
+                    img = img.crop((left, 0, left + dimensions[0], dimensions[1]))
+                else:
+                    new_height = int(dimensions[0] / aspect_ratio_img)
+                    img = img.resize((dimensions[0], new_height), Image.Resampling.LANCZOS)
+                    top = (img.height - dimensions[1]) / 2
+                    img = img.crop((0, top, dimensions[0], top + dimensions[1]))
+
+        # Ensure RGB before quantization
         if img.mode != "RGB":
             img = img.convert("RGB")
-        dither_method = Image.Dither.NONE if content_type == "dashboard" else Image.Dither.FLOYDSTEINBERG
-        return img.quantize(palette=self._palette_img, dither=dither_method)
 
-    def from_url(self, url, dimensions, timeout_ms=40000, resize=True, headers=None, content_type="auto"):
-        logger.debug(f"Loading image from URL: {url}")
-        if self.is_low_resource:
-            return self._load_from_url_lowmem(url, dimensions, timeout_ms, resize, headers, content_type)
-        else:
-            return self._load_from_url_fast(url, dimensions, timeout_ms, resize, headers, content_type)
-
-    def from_file(self, path, dimensions, resize=True, content_type="auto"):
-        logger.debug(f"Loading image from file: {path}")
-        if not os.path.exists(path):
-            logger.error(f"File not found: {path}")
-            return None
-
-        try:
-            if self.is_low_resource:
-                return self._load_from_file_lowmem(path, dimensions, resize, content_type)
-            else:
-                return self._load_from_file_fast(path, dimensions, resize, content_type)
-        except Exception as e:
-            logger.error(f"Error loading image from {path}: {e}", exc_info=True)
-            return None
-
-    def from_bytesio(self, data, dimensions, resize=True, content_type="auto"):
-        logger.debug("Loading image from BytesIO")
-        try:
-            img = Image.open(data)
-            original_size = img.size
-
-            if content_type == "auto":
-                content_type = self._detect_content_type(img)
-
-            if resize:
-                img = self._process_and_resize(img, dimensions, original_size, content_type)
-            else:
-                img = ImageOps.exif_transpose(img)
-
-            return img
-        except Exception as e:
-            logger.error(f"Error loading image from BytesIO: {e}", exc_info=True)
-            return None
-
-    # ========== LOW-RESOURCE IMPLEMENTATIONS ==========
-
-    def _load_from_url_lowmem(self, url, dimensions, timeout_ms, resize, headers=None, content_type="auto"):
-        tmp_path = None
-        try:
-            request_headers = {**self.DEFAULT_HEADERS, **(headers or {})}
-
-            with tempfile.NamedTemporaryFile(delete=False, suffix='.jpg') as tmp:
-                tmp_path = tmp.name
-                session = get_http_session()
-                response = session.get(url, timeout=timeout_ms / 1000, stream=True, headers=request_headers)
-                response.raise_for_status()
-
-                for chunk in response.iter_content(chunk_size=8192):
-                    if chunk:
-                        tmp.write(chunk)
-
-            return self._load_from_file_lowmem(tmp_path, dimensions, resize, content_type)
-
-        except Exception as e:
-            logger.error(f"Error processing URL image {url}: {e}", exc_info=True)
-            return None
-        finally:
-            if tmp_path and os.path.exists(tmp_path):
-                try:
-                    os.unlink(tmp_path)
-                except Exception as e:
-                    logger.warning(f"Could not delete temp file {tmp_path}: {e}")
-
-    def _load_from_file_lowmem(self, path, dimensions, resize, content_type="auto"):
-        try:
-            img = Image.open(path)
-            original_size = img.size
-
-            if content_type == "auto":
-                content_type = self._detect_content_type(img)
-
-            if resize:
-                if getattr(img, "format", None) in ("JPEG", "MPO"):
-                    try:
-                        img.draft('RGB', (dimensions[0] * 2, dimensions[1] * 2))
-                    except Exception as e:
-                        logger.debug(f"Draft mode failed: {e}")
-
-                img.load()
-                img = self._process_and_resize(img, dimensions, original_size, content_type)
-            else:
-                img = ImageOps.exif_transpose(img)
-
-            return img
-
-        except MemoryError as e:
-            logger.error(f"Out of memory loading {path}: {e}", exc_info=True)
-            gc.collect()
-            return None
-        except Exception as e:
-            logger.error(f"Error loading file {path}: {e}", exc_info=True)
-            return None
-
-    # ========== HIGH-PERFORMANCE IMPLEMENTATIONS ==========
-
-    def _load_from_url_fast(self, url, dimensions, timeout_ms, resize, headers=None, content_type="auto"):
-        try:
-            request_headers = {**self.DEFAULT_HEADERS, **(headers or {})}
-            session = get_http_session()
-            response = session.get(url, timeout=timeout_ms / 1000, stream=True, headers=request_headers)
-            response.raise_for_status()
-
-            img = Image.open(BytesIO(response.content))
-            original_size = img.size
-
-            if content_type == "auto":
-                content_type = self._detect_content_type(img)
-
-            if resize:
-                img = self._process_and_resize(img, dimensions, original_size, content_type)
-            else:
-                img = ImageOps.exif_transpose(img)
-
-            return img
-        except Exception as e:
-            logger.error(f"Error downloading {url}: {e}", exc_info=True)
-            return None
-
-    def _load_from_file_fast(self, path, dimensions, resize, content_type="auto"):
-        try:
-            img = Image.open(path)
-            original_size = img.size
-
-            if content_type == "auto":
-                content_type = self._detect_content_type(img)
-
-            if resize:
-                img = self._process_and_resize(img, dimensions, original_size, content_type)
-            else:
-                img = ImageOps.exif_transpose(img)
-
-            return img
-        except Exception as e:
-            logger.error(f"Error loading file {path}: {e}", exc_info=True)
-            return None
-
-    # ========== SHARED PROCESSING LOGIC ==========
-
-    def _process_and_resize(self, img, dimensions, original_size, content_type="photo"):
-        img = ImageOps.exif_transpose(img)
-
-        if img.mode in ('RGBA', 'LA', 'P'):
-            img = img.convert('RGB')
-            
+        # --- Color Correction & Quantization (Spectra 6) ---
+        profile = self.display_profiles["spectra_6"]
+        
         if content_type == "photo":
-            img = self._apply_gamut_compression(img)
-
-        mem_ok = self._memory_ok(100)
-        if not mem_ok:
-            logger.warning("Low memory detected (<100MB free). Executing fallback processing.")
-
-        if self.is_low_resource:
-            img = self._resize_low_resource(img, dimensions, mem_ok)
+            # Boost saturation/contrast before mapping
+            enhancer = ImageEnhance.Color(img)
+            img = enhancer.enhance(profile["saturation_boost"])
+            enhancer = ImageEnhance.Contrast(img)
+            img = enhancer.enhance(profile["contrast_boost"])
+            
+            # Photos get Floyd-Steinberg dithering
+            dither_mode = Image.Dither.FLOYDSTEINBERG
         else:
-            img = self._resize_high_performance(img, dimensions)
+            # Dashboards skip enhancement to keep colors solid and skip dithering
+            dither_mode = Image.Dither.NONE
 
-        if mem_ok:
-            profile = self._get_profile(dimensions, content_type)
-
-            if profile.get("saturation", 1.0) != 1.0:
-                img = ImageEnhance.Color(img).enhance(profile["saturation"])
-            if profile.get("contrast", 1.0) != 1.0:
-                img = ImageEnhance.Contrast(img).enhance(profile["contrast"])
-            if profile.get("brightness", 1.0) != 1.0:
-                img = ImageEnhance.Brightness(img).enhance(profile["brightness"])
-            if profile.get("sharpness", 1.0) != 1.0:
-                img = ImageEnhance.Sharpness(img).enhance(profile["sharpness"])
-
-        # Final step: Quantize the processed image for the Spectra 6 hardware palette
-        img = self.quantize_for_spectra6(img, content_type)
-
+        palette_img = self._get_spectra6_palette_image()
+        img = img.quantize(palette=palette_img, dither=dither_mode)
+        
         return img
 
-    def _resize_low_resource(self, img, dimensions, mem_ok=True):
-        filter_method = Image.LANCZOS if mem_ok else Image.NEAREST
+    def from_url(self, url, dimensions=None, content_type="auto"):
+        """Downloads and optimizes an image from a URL."""
+        response = requests.get(url, headers=self.DEFAULT_HEADERS, timeout=10)
+        response.raise_for_status()
+        img = Image.open(io.BytesIO(response.content))
+        return self._process_and_resize(img, dimensions, img.size, content_type)
 
-        if img.size[0] > dimensions[0] * 2 or img.size[1] > dimensions[1] * 2:
-            aspect = img.size[0] / img.size[1]
-            if aspect > 1:
-                intermediate_size = (dimensions[0] * 2, int(dimensions[0] * 2 / aspect))
-            else:
-                intermediate_size = (int(dimensions[1] * 2 * aspect), dimensions[1] * 2)
+    def from_file(self, file_path, dimensions=None, content_type="auto"):
+        """Loads and optimizes a local image."""
+        img = Image.open(file_path)
+        return self._process_and_resize(img, dimensions, img.size, content_type)
 
-            img.thumbnail(intermediate_size, Image.NEAREST)
-            gc.collect()
-
-        img = ImageOps.fit(img, dimensions, method=filter_method)
-        gc.collect()
-        return img
-
-    def _resize_high_performance(self, img, dimensions):
-        return ImageOps.fit(img, dimensions, method=Image.LANCZOS)
+    def from_bytesio(self, bytes_io, dimensions=None, content_type="auto"):
+        """Loads and optimizes from an in-memory byte stream."""
+        img = Image.open(bytes_io)
+        return self._process_and_resize(img, dimensions, img.size, content_type)
