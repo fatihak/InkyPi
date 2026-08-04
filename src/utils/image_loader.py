@@ -248,12 +248,6 @@ class AdaptiveImageLoader:
             logger.debug(f"Converting image from {img.mode} to RGB")
             img = img.convert('RGB')
 
-        # ✅ NEW: Boost Blue/Green channels ONLY for loaded photos to fix dark e-ink pigments
-        r, g, b = img.split()
-        g = g.point(lambda i: min(255, int(i * 1.2)))
-        b = b.point(lambda i: min(255, int(i * 1.3)))
-        img = Image.merge("RGB", (r, g, b))
-
         if self.is_low_resource:
             img = self._resize_low_resource(img, dimensions)
         else:
