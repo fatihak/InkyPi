@@ -244,23 +244,15 @@ class AdaptiveImageLoader:
         if img.size != original_size:
             logger.debug(f"EXIF orientation applied: {original_size[0]}x{original_size[1]} -> {img.size[0]}x{img.size[1]}")
         
-        # Safely ensure ALL images are RGB so they don't crash the script
-        if img.mode != 'RGB':
+        if img.mode in ('RGBA', 'LA', 'P'):
             logger.debug(f"Converting image from {img.mode} to RGB")
             img = img.convert('RGB')
 
-        # THE SMART FILTER: Only boost colors if this is a full-screen wallpaper.
-        # This completely protects your ND dashboard logos and UI elements.
-        is_fullscreen_photo = dimensions in [(1600, 1200), (800, 480)]
-        
-        if is_fullscreen_photo:
-            logger.debug("Full-screen photo detected: Applying e-ink Blue/Green pigment boost")
-            r, g, b = img.split()
-            g = g.point(lambda i: min(255, int(i * 1.2)))
-            b = b.point(lambda i: min(255, int(i * 1.3)))
-            img = Image.merge("RGB", (r, g, b))
-        else:
-            logger.debug(f"UI element/Logo detected ({dimensions[0]}x{dimensions[1]}): Skipping color boost")
+        # ✅ NEW: Boost Blue/Green channels ONLY for loaded photos to fix dark e-ink pigments
+        r, g, b = img.split()
+        g = g.point(lambda i: min(255, int(i * 1.2)))
+        b = b.point(lambda i: min(255, int(i * 1.3)))
+        img = Image.merge("RGB", (r, g, b))
 
         if self.is_low_resource:
             img = self._resize_low_resource(img, dimensions)
