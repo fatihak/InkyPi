@@ -2,11 +2,12 @@
 Adaptive Image Loader for InkyPi
 Centralized image loading and processing with device-aware optimizations.
 
-Automatically uses memory-efficient strategies on low-RAM devices (Pi Zero)
+Automatically uses memory-efficient strategies on low-RAM devices (Pi Zero/Pi 2W)
 and high-performance strategies on capable devices (Pi 3/4).
+Includes hardware-specific calibration profiles for Spectra 6 displays.
 """
 
-from PIL import Image, ImageOps
+from PIL import Image, ImageOps, ImageEnhance
 from io import BytesIO
 from utils.http_client import get_http_session
 import logging
@@ -14,6 +15,7 @@ import gc
 import psutil
 import tempfile
 import os
+import requests
 
 logger = logging.getLogger(__name__)
 
@@ -43,13 +45,9 @@ class AdaptiveImageLoader:
     - Memory-efficient loading using temp files + PIL draft mode on Pi Zero
     - Fast in-memory loading on powerful devices
     - Automatic resizing with quality-appropriate filters
+    - Hardware-specific calibration profiling based on target dimensions
     - RGB conversion for e-ink compatibility
     - Comprehensive error handling and logging
-
-    Usage:
-        loader = AdaptiveImageLoader()
-        image = loader.from_url("https://...", (800, 480))
-        image = loader.from_file("/path/to/image.jpg", (800, 480))
     """
 
     # Default headers to avoid 403 errors from sites that block requests without User-Agent
@@ -59,42 +57,33 @@ class AdaptiveImageLoader:
 
     def __init__(self):
         self.is_low_resource = _is_low_resource_device()
+        
+        # Hardware-specific calibrations to prevent dithering artifacts
+        # on Pimoroni Spectra 6 displays. 
+        self.display_profiles = {
+            (1600, 1200): { # 13.3" Spectra 6
+                "saturation": 1.5,
+                "contrast": 1.2,
+                "brightness": 1.05,
+                "sharpness": 1.2
+            },
+            (800, 480): {   # 7.3" Spectra 6
+                "saturation": 1.1,
+                "contrast": 1.05,
+                "brightness": 1.0,
+                "sharpness": 1.2
+            }
+        }
 
     def from_url(self, url, dimensions, timeout_ms=40000, resize=True, headers=None):
-        """
-        Load an image from a URL and optionally resize it.
-
-        Args:
-            url: Image URL to download
-            dimensions: Target dimensions as (width, height)
-            timeout_ms: Request timeout in milliseconds
-            resize: Whether to resize the image (default True)
-            headers: Optional dict of HTTP headers to include in request
-
-        Returns:
-            PIL Image object resized to dimensions, or None on error
-        """
         logger.debug(f"Loading image from URL: {url}")
-
         if self.is_low_resource:
             return self._load_from_url_lowmem(url, dimensions, timeout_ms, resize, headers)
         else:
             return self._load_from_url_fast(url, dimensions, timeout_ms, resize, headers)
 
     def from_file(self, path, dimensions, resize=True):
-        """
-        Load an image from a local file and optionally resize it.
-
-        Args:
-            path: Path to local image file
-            dimensions: Target dimensions as (width, height)
-            resize: Whether to resize the image (default True)
-
-        Returns:
-            PIL Image object resized to dimensions, or None on error
-        """
         logger.debug(f"Loading image from file: {path}")
-
         if not os.path.exists(path):
             logger.error(f"File not found: {path}")
             return None
@@ -109,19 +98,7 @@ class AdaptiveImageLoader:
             return None
 
     def from_bytesio(self, data, dimensions, resize=True):
-        """
-        Load an image from BytesIO object and optionally resize it.
-
-        Args:
-            data: BytesIO object containing image data
-            dimensions: Target dimensions as (width, height)
-            resize: Whether to resize the image (default True)
-
-        Returns:
-            PIL Image object resized to dimensions, or None on error
-        """
         logger.debug("Loading image from BytesIO")
-
         try:
             img = Image.open(data)
             original_size = img.size
@@ -131,7 +108,6 @@ class AdaptiveImageLoader:
             if resize:
                 img = self._process_and_resize(img, dimensions, original_size)
             else:
-                # Even without resizing, apply EXIF orientation correction
                 img = ImageOps.exif_transpose(img)
                 if img.size != original_size:
                     logger.debug(f"EXIF orientation applied: {original_size[0]}x{original_size[1]} -> {img.size[0]}x{img.size[1]}")
@@ -144,19 +120,13 @@ class AdaptiveImageLoader:
     # ========== LOW-RESOURCE IMPLEMENTATIONS ==========
 
     def _load_from_url_lowmem(self, url, dimensions, timeout_ms, resize, headers=None):
-        """Low-memory URL loading using temp file + draft mode."""
         tmp_path = None
-
         try:
             logger.debug("Using disk-based streaming (low-resource mode)")
-
-            # Merge provided headers with defaults
             request_headers = {**self.DEFAULT_HEADERS, **(headers or {})}
 
-            # Create temp file and stream download
             with tempfile.NamedTemporaryFile(delete=False, suffix='.jpg') as tmp:
                 tmp_path = tmp.name
-
                 session = get_http_session()
                 response = session.get(url, timeout=timeout_ms / 1000, stream=True, headers=request_headers)
                 response.raise_for_status()
@@ -169,7 +139,6 @@ class AdaptiveImageLoader:
 
                 logger.debug(f"Downloaded {downloaded_bytes / 1024:.1f}KB to temp file")
 
-            # Load from temp file with draft mode
             return self._load_from_file_lowmem(tmp_path, dimensions, resize)
 
         except requests.exceptions.RequestException as e:
@@ -179,7 +148,6 @@ class AdaptiveImageLoader:
             logger.error(f"Error processing image from {url}: {e}")
             return None
         finally:
-            # Clean up temp file
             if tmp_path and os.path.exists(tmp_path):
                 try:
                     os.unlink(tmp_path)
@@ -188,7 +156,6 @@ class AdaptiveImageLoader:
                     logger.warning(f"Could not delete temp file {tmp_path}: {e}")
 
     def _load_from_file_lowmem(self, path, dimensions, resize):
-        """Low-memory file loading using draft mode."""
         try:
             img = Image.open(path)
             original_size = img.size
@@ -196,17 +163,13 @@ class AdaptiveImageLoader:
             logger.info(f"Loaded image: {original_size[0]}x{original_size[1]} ({img.mode} mode, {original_pixels/1_000_000:.1f}MP)")
 
             if resize:
-                # Apply draft mode for massive memory savings during decode
                 img.draft('RGB', (dimensions[0] * 2, dimensions[1] * 2))
-                logger.debug(f"Draft mode applied - PIL will decode at reduced resolution")
-
-                # Force load with draft mode
+                logger.debug("Draft mode applied - PIL will decode at reduced resolution")
                 img.load()
                 logger.debug(f"Image decoded: {img.size[0]}x{img.size[1]} (draft mode reduced from {original_size[0]}x{original_size[1]})")
 
                 img = self._process_and_resize(img, dimensions, original_size)
             else:
-                # Even without resizing, apply EXIF orientation correction
                 img = ImageOps.exif_transpose(img)
                 if img.size != original_size:
                     logger.debug(f"EXIF orientation applied: {original_size[0]}x{original_size[1]} -> {img.size[0]}x{img.size[1]}")
@@ -225,11 +188,8 @@ class AdaptiveImageLoader:
     # ========== HIGH-PERFORMANCE IMPLEMENTATIONS ==========
 
     def _load_from_url_fast(self, url, dimensions, timeout_ms, resize, headers=None):
-        """High-performance URL loading using in-memory processing."""
         try:
             logger.debug("Using in-memory processing (high-performance mode)")
-
-            # Merge provided headers with defaults
             request_headers = {**self.DEFAULT_HEADERS, **(headers or {})}
 
             session = get_http_session()
@@ -244,7 +204,6 @@ class AdaptiveImageLoader:
             if resize:
                 img = self._process_and_resize(img, dimensions, original_size)
             else:
-                # Even without resizing, apply EXIF orientation correction
                 img = ImageOps.exif_transpose(img)
                 if img.size != original_size:
                     logger.debug(f"EXIF orientation applied: {original_size[0]}x{original_size[1]} -> {img.size[0]}x{img.size[1]}")
@@ -259,7 +218,6 @@ class AdaptiveImageLoader:
             return None
 
     def _load_from_file_fast(self, path, dimensions, resize):
-        """High-performance file loading using in-memory processing."""
         try:
             img = Image.open(path)
             original_size = img.size
@@ -269,7 +227,6 @@ class AdaptiveImageLoader:
             if resize:
                 img = self._process_and_resize(img, dimensions, original_size)
             else:
-                # Even without resizing, apply EXIF orientation correction
                 img = ImageOps.exif_transpose(img)
                 if img.size != original_size:
                     logger.debug(f"EXIF orientation applied: {original_size[0]}x{original_size[1]} -> {img.size[0]}x{img.size[1]}")
@@ -283,78 +240,77 @@ class AdaptiveImageLoader:
     # ========== SHARED PROCESSING LOGIC ==========
 
     def _process_and_resize(self, img, dimensions, original_size):
-        """
-        Process and resize image with device-appropriate optimizations.
-
-        Args:
-            img: PIL Image object
-            dimensions: Target dimensions (width, height)
-            original_size: Original image size for logging
-
-        Returns:
-            Processed and resized PIL Image
-        """
-        # Apply EXIF orientation correction first (before any processing)
-        # This handles images from cameras/phones that store rotation in EXIF metadata
-        # Safe to call on any image - returns unchanged if no EXIF data present
         img = ImageOps.exif_transpose(img)
         if img.size != original_size:
             logger.debug(f"EXIF orientation applied: {original_size[0]}x{original_size[1]} -> {img.size[0]}x{img.size[1]}")
         
-        # Convert to RGB if necessary (removes alpha channel, saves memory)
-        # E-ink displays don't need alpha channel anyway
-        if img.mode in ('RGBA', 'LA', 'P'):
+        # Safely ensure ALL images are RGB so they don't crash the script
+        if img.mode != 'RGB':
             logger.debug(f"Converting image from {img.mode} to RGB")
             img = img.convert('RGB')
 
-        # Choose processing strategy based on device capabilities
+        # THE SMART FILTER: Only boost colors if this is a full-screen wallpaper.
+        # This completely protects your ND dashboard logos and UI elements.
+        is_fullscreen_photo = dimensions in [(1600, 1200), (800, 480)]
+        
+        if is_fullscreen_photo:
+            logger.debug("Full-screen photo detected: Applying e-ink Blue/Green pigment boost")
+            r, g, b = img.split()
+            g = g.point(lambda i: min(255, int(i * 1.2)))
+            b = b.point(lambda i: min(255, int(i * 1.3)))
+            img = Image.merge("RGB", (r, g, b))
+        else:
+            logger.debug(f"UI element/Logo detected ({dimensions[0]}x{dimensions[1]}): Skipping color boost")
+
         if self.is_low_resource:
             img = self._resize_low_resource(img, dimensions)
         else:
             img = self._resize_high_performance(img, dimensions)
 
-        logger.info(f"Image processing complete: {dimensions[0]}x{dimensions[1]}")
+        # Fetch hardware profile (defaults to 1.0 for all values if size not found)
+        profile = self.display_profiles.get(dimensions, {
+            "saturation": 1.0, 
+            "contrast": 1.0, 
+            "brightness": 1.0, 
+            "sharpness": 1.0
+        })
+
+        # Apply e-ink calibrations
+        if profile.get("saturation", 1.0) != 1.0:
+            img = ImageEnhance.Color(img).enhance(profile["saturation"])
+            
+        if profile.get("contrast", 1.0) != 1.0:
+            img = ImageEnhance.Contrast(img).enhance(profile["contrast"])
+            
+        if profile.get("brightness", 1.0) != 1.0:
+            img = ImageEnhance.Brightness(img).enhance(profile["brightness"])
+            
+        if profile.get("sharpness", 1.0) != 1.0:
+            img = ImageEnhance.Sharpness(img).enhance(profile["sharpness"])
+
+        logger.info(f"Image processing complete: {dimensions[0]}x{dimensions[1]} with hardware profile")
         return img
 
     def _resize_low_resource(self, img, dimensions):
-        """Memory-efficient resize for low-resource devices."""
-        logger.debug("Using memory-efficient processing (BICUBIC filter)")
+        logger.debug("Using memory-efficient processing (LANCZOS final fit)")
 
-        # For very large images, use two-stage resize
         if img.size[0] > dimensions[0] * 2 or img.size[1] > dimensions[1] * 2:
             logger.debug(f"Image is {img.size[0]}x{img.size[1]}, using two-stage resize")
 
-            # Stage 1: Aggressive downsample using thumbnail (in-place, very memory efficient)
             aspect = img.size[0] / img.size[1]
-            if aspect > 1:  # Landscape
+            if aspect > 1:
                 intermediate_size = (dimensions[0] * 2, int(dimensions[0] * 2 / aspect))
-            else:  # Portrait
+            else:
                 intermediate_size = (int(dimensions[1] * 2 * aspect), dimensions[1] * 2)
 
             logger.debug(f"Stage 1: Downsampling to ~{intermediate_size[0]}x{intermediate_size[1]} using NEAREST")
             img.thumbnail(intermediate_size, Image.NEAREST)
-            logger.debug(f"Stage 1 complete: {img.size[0]}x{img.size[1]}")
             gc.collect()
 
-            # Stage 2: High-quality resize to exact dimensions
-            logger.debug(f"Stage 2: Final resize to {dimensions[0]}x{dimensions[1]} using LANCZOS")
-            img = ImageOps.fit(img, dimensions, method=Image.LANCZOS)
-            logger.debug(f"Stage 2 complete: {dimensions[0]}x{dimensions[1]}")
-        else:
-            # Direct resize with BICUBIC (fast, sufficient quality for e-ink)
-            logger.debug(f"Resizing directly from {img.size[0]}x{img.size[1]} to {dimensions[0]}x{dimensions[1]}")
-            img = ImageOps.fit(img, dimensions, method=Image.BICUBIC)
-
-        # Explicit garbage collection
+        img = ImageOps.fit(img, dimensions, method=Image.LANCZOS)
         gc.collect()
-        logger.debug("Garbage collection completed")
-
         return img
 
     def _resize_high_performance(self, img, dimensions):
-        """High-quality resize for powerful devices."""
         logger.debug("Using high-quality processing (LANCZOS filter)")
-        logger.debug(f"Resizing from {img.size[0]}x{img.size[1]} to {dimensions[0]}x{dimensions[1]}")
-
         return ImageOps.fit(img, dimensions, method=Image.LANCZOS)
-
