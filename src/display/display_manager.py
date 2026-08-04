@@ -4,6 +4,7 @@ import logging
 
 from utils.image_utils import resize_image, change_orientation, apply_image_enhancement
 from display.mock_display import MockDisplay
+from PIL import Image
 
 logger = logging.getLogger(__name__)
 
@@ -17,6 +18,28 @@ try:
     from display.waveshare_display import WaveshareDisplay
 except ImportError:
     logger.info("Waveshare display not available, hardware support disabled")
+
+
+def boost_blue_green_channels(img):
+    """
+    Isolates and brightens only the Green and Blue channels of an RGB image
+    to compensate for dark e-ink pigments prior to quantization.
+    """
+    if img.mode != "RGB":
+        img = img.convert("RGB")
+        
+    # Split the image into its separate Red, Green, and Blue channels
+    r, g, b = img.split()
+    
+    # Brighten Green channel (e.g., multiply pixel values by 1.2)
+    g = g.point(lambda i: min(255, int(i * 1.2)))
+    
+    # Brighten Blue channel (e.g., multiply pixel values by 1.3)
+    b = b.point(lambda i: min(255, int(i * 1.3)))
+    
+    # Merge the channels back together (Red is completely untouched)
+    return Image.merge("RGB", (r, g, b))
+
 
 class DisplayManager:
 
@@ -78,7 +101,13 @@ class DisplayManager:
         image = change_orientation(image, self.device_config.get_config("orientation"))
         image = resize_image(image, self.device_config.get_resolution(), image_settings)
         if self.device_config.get_config("inverted_image"): image = image.rotate(180)
+        
+        # Apply standard enhancements
         image = apply_image_enhancement(image, self.device_config.get_config("image_settings"))
+
+        # ✅ Apply E-Ink Pigment Compensation
+        # This will boost the dark blues and greens before hitting the screen driver
+        image = boost_blue_green_channels(image)
 
         # Pass to the concrete instance to render to the device.
         self.display.display_image(image, image_settings)
