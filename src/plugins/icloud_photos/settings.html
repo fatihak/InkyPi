@@ -1,0 +1,57 @@
+<div class="form-group">
+    <label for="album_url" class="form-label">iCloud Shared Album URL:</label>
+    <input
+        id="album_url"
+        name="album_url"
+        type="url"
+        class="form-input"
+        required
+        autocomplete="off"
+        placeholder="https://www.icloud.com/sharedalbum/#B2DXXXXXXXXXXX">
+    <small style="width: 100%;">
+        Paste the complete URL for an iCloud Shared Album. Anyone with this URL may be able to view the album.
+    </small>
+</div>
+
+<div class="form-group">
+    <label for="padImage" class="form-label">Scale to Fit:</label>
+    <div class="toggle-container">
+        <input id="padImage" name="padImage" type="checkbox" class="toggle-checkbox" value="true">
+        <label for="padImage" class="toggle-label"></label>
+    </div>
+</div>
+
+<div class="form-group">
+    <label class="form-label">Background:</label>
+    <div class="form-group">
+        <input id="backgroundBlur" name="backgroundOption" type="radio" value="blur" checked>
+        <label for="backgroundBlur">Blur</label>
+        <input id="backgroundColorOption" name="backgroundOption" type="radio" value="color">
+        <label for="backgroundColorOption">Color</label>
+        <input id="backgroundColor" name="backgroundColor" type="color" value="#ffffff" class="color-picker">
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const albumUrl = document.getElementById('album_url');
+        const padImage = document.getElementById('padImage');
+        const backgroundColor = document.getElementById('backgroundColor');
+
+        if (loadPluginSettings) {
+            albumUrl.value = pluginSettings.album_url || '';
+            padImage.checked = pluginSettings.padImage === 'true';
+            backgroundColor.value = pluginSettings.backgroundColor || '#ffffff';
+        }
+
+        const backgroundOption = loadPluginSettings
+            ? pluginSettings.backgroundOption || 'blur'
+            : 'blur';
+        const selectedBackground = document.querySelector(
+            `input[name="backgroundOption"][value="${backgroundOption}"]`
+        );
+        if (selectedBackground) {
+            selectedBackground.checked = true;
+        }
+    });
+</script>
