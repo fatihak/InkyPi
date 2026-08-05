@@ -21,6 +21,10 @@ specific to this branch.
 
 ## Visual/icon mockups
 
+- **Render a fresh screenshot after every update to this app** (not just when a visual
+  change was intended) — `--mock-output` to `mock_display_output/pi_zero/` with a
+  descriptive or timestamped filename. Do this automatically, without being asked each
+  time.
 - When generating a preview image of a new icon or visual change, save it to
   `mock_display_output/` in the repo root with a descriptive filename, and **leave it
   there** — don't clean these up. They're a kept record of each iteration for comparison.
