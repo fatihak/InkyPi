@@ -16,3 +16,7 @@ them) once fixed.
 - [ ] All fonts, gauge sizes, and region positions in `layout.py` are a first-pass approximation of `weather.css`'s proportions, not pixel-matched to the original design yet.
 - [ ] Chart's hourly icon strip can overflow slightly past the bottom edge of `CHART_AREA` (~4px) depending on content.
 - [ ] Imperial/standard unit rendering (rain axis label, temperature conversion) has only been tested with metric units so far.
+
+
+## Ideas
+- [ ] True power-down via an RTC/battery HAT (e.g. PiJuice), not just a systemd timer. Our current pi-weather-display.timer keeps the Pi fully powered and Linux running 24/7, waking a process every 10 minutes — fine on wall power, but not remotely battery-friendly. Real power savings would mean the Pi shutting down between refreshes and an RTC waking it, mirroring what actually got that project to 4 months on a battery.
