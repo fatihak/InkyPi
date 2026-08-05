@@ -63,12 +63,16 @@ def render_chart(image: Image.Image, region, hourly, sun_events, text_color, ico
 
     y_zero = y_temp(0)
 
-    # rain bars
+    # rain bars - skip anything too small to be a meaningful bar, otherwise the
+    # highlight strip alone (drawn at a fixed height) reads as a solid false
+    # floor across hours with essentially no rain
     for x, rain in zip(xs, rains):
+        if rain < rain_axis_max * 0.03:
+            continue
         top = y_rain(rain)
         w = band * 0.85
         draw.rectangle([x - w / 2, top, x + w / 2, plot_y1], fill=(*BLUE, 130))
-        draw.rectangle([x - w / 2, top, x + w / 2, top + 3], fill=(*BLUE, 230))
+        draw.rectangle([x - w / 2, top, x + w / 2, min(top + 3, plot_y1)], fill=(*BLUE, 230))
 
     # temperature fill (between the curve and the 0 degree line)
     curve = [(x, y_temp(t)) for x, t in zip(xs, temps)]

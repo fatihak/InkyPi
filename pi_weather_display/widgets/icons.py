@@ -20,14 +20,26 @@ class AssetStore:
             path = os.path.join(self.icon_dir, f"{key}.png")
             if not os.path.exists(path):
                 return None
-            img = Image.open(path).convert("RGBA")
+            raw = Image.open(path).convert("RGBA")
+            # Source PNGs carry wildly inconsistent transparent padding (some
+            # fill their whole 512x512 canvas, some leave >20% margin) -
+            # cropping to actual content first is what makes a uniform resize
+            # below produce consistent-looking icons instead of some reading
+            # bigger/smaller or off-center than others.
+            bbox = raw.getbbox()
+            img = raw.crop(bbox) if bbox else raw
             self._icon_cache[key] = img
         if size is None:
             return img
         cache_key = (key, size)
         resized = self._resized_cache.get(cache_key)
         if resized is None:
-            resized = img.resize(size, Image.LANCZOS)
+            target_w, target_h = size
+            scale = min(target_w / img.width, target_h / img.height)
+            fit_w, fit_h = max(1, round(img.width * scale)), max(1, round(img.height * scale))
+            fitted = img.resize((fit_w, fit_h), Image.LANCZOS)
+            resized = Image.new("RGBA", size, (0, 0, 0, 0))
+            resized.paste(fitted, ((target_w - fit_w) // 2, (target_h - fit_h) // 2), fitted)
             self._resized_cache[cache_key] = resized
         return resized
 
