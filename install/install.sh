@@ -215,7 +215,7 @@ create_venv(){
   # do additional dependencies for Waveshare support.
   if [[ -n "$WS_TYPE" ]]; then
     echo "Adding additional dependencies for waveshare to the python virtual environment. "
-    $VENV_PATH/bin/python -m pip install -r $WS_REQUIREMENTS_FILE > ws_pip_install.log &
+    $VENV_PATH/bin/python -m pip install -r $WS_REQUIREMENTS_FILE -qq > /dev/null &
     show_loader "\tInstalling additional Waveshare python dependencies. "
   fi
 
@@ -240,8 +240,8 @@ install_executable() {
 }
 
 install_config() {
-  CONFIG_BASE_DIR="$SCRIPT_DIR/config_base"
-  CONFIG_DIR="$SRC_PATH/config"
+  local CONFIG_BASE_DIR="$SCRIPT_DIR/config_base"
+  local CONFIG_DIR="$SRC_PATH/config"
   echo "Copying config files to $CONFIG_DIR"
 
   # Check and copy device.config if it doesn't exist
@@ -258,6 +258,7 @@ install_config() {
 #
 update_config() {
   if [[ -n "$WS_TYPE" ]]; then
+      local CONFIG_DIR="$SRC_PATH/config"
       local DEVICE_JSON="$CONFIG_DIR/device.json"
 
       if grep -q '"display_type":' "$DEVICE_JSON"; then

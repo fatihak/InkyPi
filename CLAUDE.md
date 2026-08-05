@@ -42,6 +42,21 @@ these automatically, without being asked each time.
   renderer. Add to it when something rough turns up; check items off (don't delete them)
   once fixed.
 
+## Install procedure
+
+- The full app and `pi_weather_display/` each have their own independent install path in
+  `install/` — installing one doesn't affect the other:
+  - Full app: `install.sh` / `update.sh` / `uninstall.sh`, using `requirements.txt` /
+    `requirements-dev.txt` / `debian-requirements.txt` (+ `ws-requirements.txt` for
+    Waveshare displays), installs to `/usr/local/inkypi`, runs as `inkypi.service`.
+  - `pi_weather_display/`: `install-pi-weather-display.sh` / `uninstall-pi-weather-display.sh`,
+    using `pi-weather-display-requirements.txt` / `pi-weather-display-debian-requirements.txt`,
+    installs to `/usr/local/pi-weather-display`, runs periodically via
+    `pi-weather-display.timer` (not a long-running service).
+  - Keep both requirements files' shared package versions (pillow, requests, pytz, astral)
+    in sync with the main `requirements.txt` when bumping one.
+  - See [docs/pi_weather_display.md](./docs/pi_weather_display.md) for full details.
+
 ## Raspberry Pi compatibility
 
 - The real deployment target is a Raspberry Pi (currently Pi 4/5, Raspberry Pi OS, ARM) —

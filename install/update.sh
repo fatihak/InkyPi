@@ -25,6 +25,8 @@ SERVICE_FILE_TARGET="/etc/systemd/system/$SERVICE_FILE"
 
 APT_REQUIREMENTS_FILE="$SCRIPT_DIR/debian-requirements.txt"
 PIP_REQUIREMENTS_FILE="$SCRIPT_DIR/requirements.txt"
+WS_REQUIREMENTS_FILE="$SCRIPT_DIR/ws-requirements.txt"
+CONFIG_DIR="$INSTALL_PATH/src/config"
 
 echo_success() {
   echo -e "$1 [\e[32m\xE2\x9C\x94\e[0m]"
@@ -115,6 +117,19 @@ if [ -f "$PIP_REQUIREMENTS_FILE" ]; then
 else
   echo_error "ERROR: Requirements file $PIP_REQUIREMENTS_FILE not found!"
   exit 1
+fi
+
+# If this install uses a Waveshare display (device.json has a display_type set
+# by install.sh's -W option), also update its extra dependencies - these live
+# in a separate requirements file and are otherwise never refreshed here.
+if [ -f "$CONFIG_DIR/device.json" ] && grep -q '"display_type":[[:space:]]*"[^"]' "$CONFIG_DIR/device.json"; then
+  if [ -f "$WS_REQUIREMENTS_FILE" ]; then
+    echo "Waveshare display detected, updating its Python dependencies..."
+    $VENV_PATH/bin/python -m pip install --upgrade -r "$WS_REQUIREMENTS_FILE" -qq > /dev/null && echo_success "Waveshare dependencies updated successfully."
+  else
+    echo_error "ERROR: Waveshare requirements file $WS_REQUIREMENTS_FILE not found!"
+    exit 1
+  fi
 fi
 
 echo "Updating executable in ${BINPATH}/$APPNAME"

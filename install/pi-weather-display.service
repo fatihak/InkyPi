@@ -1,0 +1,12 @@
+[Unit]
+Description=Pi Weather Display (standalone renderer)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=root
+WorkingDirectory=/usr/local/pi-weather-display/app
+ExecStart=/usr/local/pi-weather-display/venv/bin/python /usr/local/pi-weather-display/app/main.py
+StandardOutput=journal
+StandardError=journal

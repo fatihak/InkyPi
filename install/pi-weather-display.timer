@@ -1,0 +1,10 @@
+[Unit]
+Description=Run Pi Weather Display on a timer
+
+[Timer]
+OnBootSec=30s
+OnUnitActiveSec=10min
+Unit=pi-weather-display.service
+
+[Install]
+WantedBy=timers.target

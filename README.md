@@ -109,6 +109,16 @@ To install InkyPi, simply run the following command:
 sudo bash install/uninstall.sh
 ```
 
+## Lightweight Alternative: Pi Weather Display
+
+If you only want the weather plugin - no web UI, no other plugins, no
+playlist scheduling - and are running on hardware too weak for headless
+Chromium (e.g. a Raspberry Pi Zero W), `pi_weather_display/` is a standalone
+renderer that draws the display natively with Pillow instead of a browser,
+and runs as a periodic systemd timer instead of a long-running service. See
+[pi_weather_display.md](./docs/pi_weather_display.md) for details and install
+instructions. It's fully independent of the main app above.
+
 ## Roadmap
 The InkyPi project is constantly evolving, with many exciting features and improvements planned for the future.
 

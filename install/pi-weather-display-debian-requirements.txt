@@ -1,0 +1,6 @@
+python3
+python3-venv
+python3-pip
+libjpeg-dev
+libfreetype6-dev
+zlib1g-dev
