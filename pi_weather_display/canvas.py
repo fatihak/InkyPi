@@ -96,7 +96,7 @@ class WeatherCanvas:
         elif kind == "aqi":
             gauge_img = gauge.render_aqi_gauge(dp["aqi_rotation"])
         elif kind == "humidity":
-            icons_widget.draw_humidity_drops(image, box, dp["drop_count"])
+            icons_widget.draw_humidity_drops(image, box, self.assets, dp["drop_count"])
             return
         elif kind == "visibility":
             icon = self.assets.icon("visibility", (box.w, box.h))

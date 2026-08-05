@@ -1,8 +1,9 @@
-import math
 import os
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageFont
 
-HUMIDITY_COLOR = (13, 71, 161)
+# width / height of the source humidity_drop_filled.png / humidity_drop_empty.png
+# assets (cropped from a pi4-app render - see pi_weather_display/TODO.md)
+DROPLET_ASPECT = 28 / 38
 
 
 class AssetStore:
@@ -40,36 +41,19 @@ class AssetStore:
         return font
 
 
-def _teardrop_points(cx: float, cy: float, size: float, n: int = 14) -> list[tuple[float, float]]:
-    """A single closed outline (tip + a ~170deg arc for the bulb) so filled and
-    outline-only draws both come from one continuous shape - two separately
-    drawn pieces (e.g. an ellipse + a triangle) leave a visible seam line
-    across the outline-only case where their edges don't coincide."""
-    r = size * 0.35
-    bulb_cy = cy + size * 0.15
-    tip = (cx, cy - size * 0.5)
-    start_deg, end_deg = 5, 175  # tangent points either side of the bulb's bottom
-    points = [tip]
-    for i in range(n + 1):
-        deg = math.radians(start_deg + (end_deg - start_deg) * i / n)
-        points.append((cx + r * math.cos(deg), bulb_cy + r * math.sin(deg)))
-    return points
-
-
-def _draw_droplet(draw: ImageDraw.ImageDraw, cx: float, cy: float, size: float, filled: bool, color):
-    points = _teardrop_points(cx, cy, size)
-    if filled:
-        draw.polygon(points, fill=color)
-    else:
-        draw.polygon(points, outline=color, width=2)
-
-
-def draw_humidity_drops(image: Image.Image, region, filled_count: int, total: int = 5):
-    """5 drops in a 3-over-2 layout, border always visible, filled up to filled_count."""
-    draw = ImageDraw.Draw(image)
+def draw_humidity_drops(image: Image.Image, region, assets: AssetStore, filled_count: int, total: int = 5):
+    """5 drops in a 3-over-2 layout, border always visible, filled up to filled_count.
+    Uses pre-rendered drop images (humidity_drop_filled/empty.png) rather than
+    drawing the teardrop shape - a hand-drawn polygon approximation never
+    looked as clean as the original CSS/SVG-rendered shape."""
     cx, cy = region.center
-    drop_size = region.h * 0.5
-    spacing = drop_size * 0.8
+    drop_h = max(1, int(region.h * 0.5))
+    drop_w = max(1, int(drop_h * DROPLET_ASPECT))
+    spacing = drop_w
+
+    filled_icon = assets.icon("humidity_drop_filled", (drop_w, drop_h))
+    empty_icon = assets.icon("humidity_drop_empty", (drop_w, drop_h))
+
     row1_y = cy - region.h * 0.16
     row2_y = cy + region.h * 0.22
 
@@ -79,4 +63,6 @@ def draw_humidity_drops(image: Image.Image, region, filled_count: int, total: in
 
     positions = row_positions(3, row1_y) + row_positions(2, row2_y)
     for i, (x, y) in enumerate(positions):
-        _draw_droplet(draw, x, y, drop_size, i < filled_count, HUMIDITY_COLOR)
+        icon = filled_icon if i < filled_count else empty_icon
+        if icon:
+            image.paste(icon, (int(x - drop_w / 2), int(y - drop_h / 2)), icon)
