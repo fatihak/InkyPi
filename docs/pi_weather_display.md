@@ -1,53 +1,56 @@
-# Pi Weather Display (standalone renderer)
+# Pi Weather Display
 
-`pi_weather_display/` is a lightweight alternative to the full InkyPi app, for
-when you only want the weather plugin and don't need the web UI, plugin
-system, or playlist/rotation scheduling. It's aimed at hardware too weak to
-run headless Chromium (e.g. a Raspberry Pi Zero W).
+Architecture, install, and local-testing details for `pi_weather_display/` -
+the renderer this project is built around. See the root
+[README.md](../README.md) for hardware and the quick install steps.
 
-## How it differs from the full app
+## Design
 
-| | Full InkyPi app | `pi_weather_display` |
-| --- | --- | --- |
-| Rendering | Flask/Jinja HTML+CSS, screenshotted via headless Chromium | Drawn directly with Pillow - no browser |
-| Scope | All plugins, web UI, playlists/scheduling | Weather only, no UI |
-| Runs as | Long-running `inkypi.service` | One-shot script fired by a systemd timer |
-| Config | Web UI, `device.json` | Edit `pi_weather_display/config.py` directly |
-| Target hardware | Pi 4/3/Zero 2 W | Also suitable for the original Pi Zero W |
-
-The two are independent - installing one doesn't affect the other, and you
-only need one of them for a given display.
+- Renders natively with Pillow - no browser, no Chromium, no HTML/CSS.
+- No web UI, no plugin system, no playlist/scheduling. One plugin (weather),
+  one config file, one job.
+- Runs as a `systemd` timer firing periodically (default every 10 minutes),
+  not a long-running service - a crashed run just gets retried on the next
+  tick, no supervisor logic needed.
+- Chosen over an ESP32-S3/embedded-C rewrite because it reuses Pimoroni's
+  existing `inky` Python display driver unchanged, and reuses the weather
+  data-fetch/parsing logic almost verbatim, rather than reimplementing the
+  whole visual layout in C.
 
 ## Architecture
 
-- `weather_data.py` - fetches and parses Open-Meteo data (ported from the
-  main app's `weather.py`, Open-Meteo only)
+- `weather_data.py` - fetches and parses Open-Meteo data (current, hourly,
+  daily forecast, air quality/UV) into typed dataclasses
 - `layout.py` - fixed pixel regions for the 800x480 canvas
-- `canvas.py` - orchestrates one full render
-- `widgets/` - gauge, chart, forecast-card, and icon/humidity-drop drawing
-- `display/inky_driver.py` - same `inky` library call the full app uses;
-  `display/mock_driver.py` saves to a file instead, for local testing
-- `main.py` - fetch -> render -> display, no Flask, no scheduling loop
-
-See `pi_weather_display/TODO.md` for known bugs and rough edges (e.g. the
-current font has no CJK glyph fallback).
+- `canvas.py` - orchestrates one full render (`WeatherCanvas.render()`)
+- `widgets/` - gauge (wind/pressure/UV/AQI), chart (temp/rain), forecast-card,
+  and icon/humidity-drop drawing - all hand-drawn with Pillow
+- `display/inky_driver.py` - thin wrapper around the `inky` library;
+  `display/mock_driver.py` saves to a file instead, for testing without
+  hardware
+- `assets/` - the icon PNGs and Jost font files it actually uses (see
+  [attribution.md](./attribution.md))
+- `config.py` - a plain dataclass (location, units, refresh interval, etc.) -
+  edited directly in source, since there's no web UI
+- `main.py` - fetch -> render -> display, no scheduling loop of its own
+  (that's the systemd timer's job)
+- `TODO.md` - known bugs and rough edges (e.g. the current font has no CJK
+  glyph fallback)
 
 ## Installing on a Raspberry Pi
 
 ```bash
-git clone https://github.com/fatihak/InkyPi.git
+git clone git@github.com:Dorus-Weather/InkyPi.git
 cd InkyPi
 sudo bash install/install-pi-weather-display.sh
 ```
 
 This installs its own minimal Python virtual environment (Pillow, requests,
 pytz, astral, inky - see `install/pi-weather-display-requirements.txt`),
-enables SPI, and sets up a `pi-weather-display.timer` systemd unit that runs
-the renderer every 10 minutes.
+enables SPI, and sets up a `pi-weather-display.timer` systemd unit.
 
 **Before the first real render, edit `pi_weather_display/config.py`** to set
-your location (`latitude`/`longitude`) and preferences - there's no web UI to
-do this through.
+your location and preferences.
 
 Useful commands after installing:
 
@@ -57,8 +60,11 @@ journalctl -u pi-weather-display.service      # view render logs
 sudo systemctl start pi-weather-display.service  # force an immediate render
 ```
 
-To uninstall: `sudo bash install/uninstall-pi-weather-display.sh` (removes the
-service, timer, and venv - leaves your git checkout alone).
+To update: `git pull` then rerun `install-pi-weather-display.sh` (safe to
+rerun - reinstalls deps and refreshes the systemd units in place).
+
+To uninstall: `sudo bash install/uninstall-pi-weather-display.sh` (removes
+the service, timer, and venv - leaves your git checkout alone).
 
 ## Local testing (no hardware required)
 
