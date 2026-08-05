@@ -99,9 +99,11 @@ class WeatherCanvas:
             icons_widget.draw_humidity_drops(image, box, self.assets, dp["drop_count"])
             return
         elif kind == "visibility":
-            icon = self.assets.icon("visibility", (box.w, box.h))
+            scale = 0.55
+            w, h = max(1, int(box.w * scale)), max(1, int(box.h * scale))
+            icon = self.assets.icon("visibility", (w, h))
             if icon:
-                image.paste(icon, (box.x, box.y), icon)
+                image.paste(icon, (box.x + (box.w - w) // 2, box.y + (box.h - h) // 2), icon)
             return
         else:
             return
