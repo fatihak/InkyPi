@@ -1,3 +1,4 @@
+import math
 import os
 from PIL import Image, ImageDraw, ImageFont
 
@@ -39,26 +40,37 @@ class AssetStore:
         return font
 
 
-def _draw_droplet(draw: ImageDraw.ImageDraw, cx: float, cy: float, w: float, filled: bool, color):
-    r = w * 0.42
-    bulb_cy = cy + w * 0.15
-    bbox = [cx - r, bulb_cy - r, cx + r, bulb_cy + r]
-    tip = [(cx, cy - w * 0.55), (cx - r * 0.9, bulb_cy - r * 0.15), (cx + r * 0.9, bulb_cy - r * 0.15)]
+def _teardrop_points(cx: float, cy: float, size: float, n: int = 14) -> list[tuple[float, float]]:
+    """A single closed outline (tip + a ~170deg arc for the bulb) so filled and
+    outline-only draws both come from one continuous shape - two separately
+    drawn pieces (e.g. an ellipse + a triangle) leave a visible seam line
+    across the outline-only case where their edges don't coincide."""
+    r = size * 0.35
+    bulb_cy = cy + size * 0.15
+    tip = (cx, cy - size * 0.5)
+    start_deg, end_deg = 5, 175  # tangent points either side of the bulb's bottom
+    points = [tip]
+    for i in range(n + 1):
+        deg = math.radians(start_deg + (end_deg - start_deg) * i / n)
+        points.append((cx + r * math.cos(deg), bulb_cy + r * math.sin(deg)))
+    return points
+
+
+def _draw_droplet(draw: ImageDraw.ImageDraw, cx: float, cy: float, size: float, filled: bool, color):
+    points = _teardrop_points(cx, cy, size)
     if filled:
-        draw.ellipse(bbox, fill=color)
-        draw.polygon(tip, fill=color)
+        draw.polygon(points, fill=color)
     else:
-        draw.ellipse(bbox, outline=color, width=2)
-        draw.polygon(tip, outline=color, width=2)
+        draw.polygon(points, outline=color, width=2)
 
 
 def draw_humidity_drops(image: Image.Image, region, filled_count: int, total: int = 5):
     """5 drops in a 3-over-2 layout, border always visible, filled up to filled_count."""
     draw = ImageDraw.Draw(image)
     cx, cy = region.center
-    drop_w = region.h * 0.42
-    spacing = drop_w * 0.72
-    row1_y = cy - region.h * 0.15
+    drop_size = region.h * 0.58
+    spacing = drop_size * 0.52
+    row1_y = cy - region.h * 0.16
     row2_y = cy + region.h * 0.22
 
     def row_positions(count, y):
@@ -67,4 +79,4 @@ def draw_humidity_drops(image: Image.Image, region, filled_count: int, total: in
 
     positions = row_positions(3, row1_y) + row_positions(2, row2_y)
     for i, (x, y) in enumerate(positions):
-        _draw_droplet(draw, x, y, drop_w, i < filled_count, HUMIDITY_COLOR)
+        _draw_droplet(draw, x, y, drop_size, i < filled_count, HUMIDITY_COLOR)
