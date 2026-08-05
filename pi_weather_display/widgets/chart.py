@@ -15,7 +15,6 @@ RIGHT_MARGIN = 42
 TOP_MARGIN = 12
 BOTTOM_MARGIN = 34
 ICON_SIZE = 20
-LABEL_STEP = 3  # show every 3rd hour label on the x-axis
 
 
 def _vertical_text(draw_target: Image.Image, position, text, font, color):
@@ -108,8 +107,10 @@ def render_chart(image: Image.Image, region, hourly, sun_events, text_color, ico
     _vertical_text(image, (region.x + 4, (plot_y0 + plot_y1) // 2), unit_label_temp, font_bold, text_color)
     _vertical_text(image, (region.right - 16, (plot_y0 + plot_y1) // 2), "Regen", font_bold, text_color)
 
-    # x-axis hour labels
-    for i in range(0, n, LABEL_STEP):
+    # x-axis hour labels - same cadence as the icon strip below, so each
+    # icon sits directly under its hour's label instead of drifting out of
+    # sync with a differently-stepped label grid
+    for i in range(0, n, graph_icon_step):
         draw.text((xs[i], plot_y1 + 6), hourly[i].time_label, font=font_small, fill=text_color, anchor="ma")
 
     # hourly/sun-event icon strip, at a fixed row below the plot (matches the
