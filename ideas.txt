@@ -1,3 +1,0 @@
-replace rain chance % by mm 
-increase the spacing in bottom of the next days forecast boxes between the text and the edge of the box.
-
