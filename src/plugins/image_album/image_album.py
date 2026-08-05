@@ -1,10 +1,9 @@
 import logging
 from random import choice
 
-from PIL import Image, ImageColor, ImageOps
+from PIL import Image
 from utils.http_client import get_http_session
 from plugins.base_plugin.base_plugin import BasePlugin
-from utils.image_utils import pad_image_blur
 
 logger = logging.getLogger(__name__)
 
@@ -53,14 +52,24 @@ class ImmichProvider:
         logger.debug(f"Found {len(all_items)} total assets in album")
         return all_items
 
-    def get_image(self, album: str, dimensions: tuple[int, int], resize: bool = True) -> Image.Image | None:
+    def get_image(
+        self,
+        album: str,
+        dimensions: tuple[int, int],
+        *,
+        fit_mode: str | None = None,
+        background_option: str = "blur",
+        background_color: str | None = None,
+    ) -> Image.Image | None:
         """
         Get a random image from the album.
 
         Args:
             album: Album name
             dimensions: Target dimensions (width, height)
-            resize: Whether to let loader resize (False when padding will be applied)
+            fit_mode: Optional cover, contain, or automatic fitting mode
+            background_option: Background style for contained images
+            background_color: Solid background color when selected
 
         Returns:
             PIL Image or None on error
@@ -87,14 +96,14 @@ class ImmichProvider:
         logger.info(f"Selected random asset: {asset_id}")
         logger.debug(f"Downloading from: {asset_url}")
 
-        # Use adaptive image loader for memory-efficient processing
-        # Let loader resize when requested (when no padding will be applied)
         img = self.image_loader.from_url(
             asset_url,
             dimensions,
             timeout_ms=40000,
-            resize=resize,
-            headers=self.headers
+            headers=self.headers,
+            fit_mode=fit_mode,
+            background_option=background_option,
+            background_color=background_color,
         )
 
         if not img:
@@ -129,10 +138,9 @@ class ImageAlbum(BasePlugin):
         album_provider = settings.get("albumProvider")
         logger.info(f"Album provider: {album_provider}")
 
-        # Check padding options to determine resize strategy
-        use_padding = settings.get('padImage') == "true"
+        fit_mode = settings.get("fitMode", "cover")
         background_option = settings.get('backgroundOption', 'blur')
-        logger.debug(f"Settings: pad_image={use_padding}, background_option={background_option}")
+        logger.debug(f"Settings: fit_mode={fit_mode}, background_option={background_option}")
 
         match album_provider:
             case "Immich":
@@ -155,8 +163,13 @@ class ImageAlbum(BasePlugin):
                 logger.info(f"Album: {album}")
 
                 provider = ImmichProvider(url, key, self.image_loader)
-                # Let loader resize when no padding needed, otherwise load full-size for padding
-                img = provider.get_image(album, dimensions, resize=not use_padding)
+                img = provider.get_image(
+                    album,
+                    dimensions,
+                    fit_mode=fit_mode,
+                    background_option=background_option,
+                    background_color=settings.get('backgroundColor'),
+                )
 
                 if not img:
                     logger.error("Failed to retrieve image from Immich")
@@ -168,19 +181,6 @@ class ImageAlbum(BasePlugin):
         if img is None:
             logger.error("Image is None after provider processing")
             raise RuntimeError("Failed to load image, please check logs.")
-
-        # Apply padding if requested (image was loaded at full size)
-        if use_padding:
-            logger.debug(f"Applying padding with {background_option} background")
-            if background_option == "blur":
-                img = pad_image_blur(img, dimensions)
-            else:
-                background_color = ImageColor.getcolor(
-                    settings.get('backgroundColor') or "white",
-                    img.mode
-                )
-                img = ImageOps.pad(img, dimensions, color=background_color, method=Image.Resampling.LANCZOS)
-        # else: loader already resized to fit with proper aspect ratio
 
         logger.info("=== Image Album Plugin: Image generation complete ===")
         return img

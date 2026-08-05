@@ -1,10 +1,7 @@
 from plugins.base_plugin.base_plugin import BasePlugin
-from PIL import Image, ImageOps, ImageColor
 import logging
 import os
 import random
-
-from utils.image_utils import pad_image_blur
 
 logger = logging.getLogger(__name__)
 
@@ -53,31 +50,21 @@ class ImageFolder(BasePlugin):
         logger.info(f"Selected random image: {os.path.basename(image_url)}")
         logger.debug(f"Full path: {image_url}")
 
-        # Check padding options
-        use_padding = settings.get('padImage') == "true"
+        fit_mode = settings.get("fitMode", "cover")
         background_option = settings.get('backgroundOption', 'blur')
-        logger.debug(f"Settings: pad_image={use_padding}, background_option={background_option}")
+        logger.debug(f"Settings: fit_mode={fit_mode}, background_option={background_option}")
 
         try:
-            # Use adaptive loader for memory-efficient processing
-            # Load without auto-resize first to handle padding options
-            # Note: Loader automatically handles EXIF orientation correction
-            img = self.image_loader.from_file(image_url, dimensions, resize=False)
+            img = self.image_loader.from_file(
+                image_url,
+                dimensions,
+                fit_mode=fit_mode,
+                background_option=background_option,
+                background_color=settings.get('backgroundColor'),
+            )
 
             if not img:
                 raise RuntimeError("Failed to load image from file")
-
-            if use_padding:
-                logger.debug(f"Applying padding with {background_option} background")
-                if background_option == "blur":
-                    img = pad_image_blur(img, dimensions)
-                else:
-                    background_color = ImageColor.getcolor(settings.get('backgroundColor') or "white", img.mode)
-                    img = ImageOps.pad(img, dimensions, color=background_color, method=Image.Resampling.LANCZOS)
-            else:
-                # No padding requested, scale to fit dimensions (crop to preserve aspect ratio)
-                logger.debug(f"Scaling to fit dimensions: {dimensions[0]}x{dimensions[1]}")
-                img = ImageOps.fit(img, dimensions, method=Image.LANCZOS)
 
             return img
         except Exception as e:
