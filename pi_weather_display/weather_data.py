@@ -406,7 +406,6 @@ def _value_at_current_hour(times, values, tz, current_time):
 
 def _parse_data_points(weather_data, aqi_data, units, tz) -> list[dict]:
     data_points = []
-    daily_data = weather_data.get("daily", {})
     current_data = weather_data.get("current", {})
     hourly_data = weather_data.get("hourly", {})
     current_time = datetime.now(tz)

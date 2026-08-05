@@ -4,7 +4,7 @@ weather.html. Draws directly into the target region of the main canvas
 there's no rotation/scaling involved)."""
 
 import math
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw
 
 ORANGE = (230, 81, 0)
 BLUE = (13, 71, 161)
