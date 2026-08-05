@@ -68,8 +68,8 @@ def draw_humidity_drops(image: Image.Image, region, filled_count: int, total: in
     """5 drops in a 3-over-2 layout, border always visible, filled up to filled_count."""
     draw = ImageDraw.Draw(image)
     cx, cy = region.center
-    drop_size = region.h * 0.58
-    spacing = drop_size * 0.52
+    drop_size = region.h * 0.5
+    spacing = drop_size * 0.8
     row1_y = cy - region.h * 0.16
     row2_y = cy + region.h * 0.22
 
