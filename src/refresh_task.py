@@ -73,7 +73,7 @@ class RefreshTask:
         while True:
             try:
                 with self.condition:
-                    sleep_time = self.device_config.get_config("plugin_cycle_interval_seconds", default=60*60)
+                    sleep_time = self._get_sleep_time()
 
                     # Wait for sleep_time or until notified
                     self.condition.wait(timeout=sleep_time)
@@ -160,6 +160,39 @@ class RefreshTask:
         tz_str = self.device_config.get_config("timezone", default="UTC")
         return datetime.now(pytz.timezone(tz_str))
 
+    def _get_sleep_time(self):
+        """Determines how long to sleep before the next refresh check.
+
+        Returns the minimum of the global plugin cycle interval and the currently
+        displayed plugin instance's refresh interval (if it has one), so that
+        plugins requiring frequent refreshes (e.g., a clock) are re-rendered
+        while they remain displayed.
+        """
+        global_interval = self.device_config.get_config("plugin_cycle_interval_seconds", default=3600)
+
+        playlist_manager = self.device_config.get_playlist_manager()
+        current_dt = self._get_current_datetime()
+        playlist = playlist_manager.determine_active_playlist(current_dt)
+
+        if playlist and playlist.plugins and playlist.current_plugin_index is not None:
+            plugin_instance = playlist.plugins[playlist.current_plugin_index]
+            if "interval" in plugin_instance.refresh:
+                interval = plugin_instance.refresh.get("interval")
+                if interval:
+                    # Calculate time remaining until the next refresh
+                    latest_refresh_dt = plugin_instance.get_latest_refresh_dt()
+                    if latest_refresh_dt:
+                        # Ensure both datetimes are timezone-aware for comparison
+                        if latest_refresh_dt.tzinfo is None:
+                            latest_refresh_dt = latest_refresh_dt.replace(tzinfo=current_dt.tzinfo)
+                        time_since_refresh = (current_dt - latest_refresh_dt).total_seconds()
+                        time_until_refresh = interval - time_since_refresh
+                        if time_until_refresh > 0:
+                            return min(global_interval, time_until_refresh)
+                    return min(global_interval, interval)
+
+        return global_interval
+
     def _determine_next_plugin(self, playlist_manager, latest_refresh_info, current_dt):
         """Determines the next plugin to refresh based on the active playlist, plugin cycle interval, and current time."""
         playlist = playlist_manager.determine_active_playlist(current_dt)
@@ -172,6 +205,13 @@ class RefreshTask:
         if not playlist.plugins:
             logger.info(f"Active playlist '{playlist.name}' has no plugins.")
             return None, None
+
+        # Check if the currently displayed plugin instance needs a refresh based on its own settings
+        if playlist.current_plugin_index is not None and playlist.current_plugin_index < len(playlist.plugins):
+            current_plugin = playlist.plugins[playlist.current_plugin_index]
+            if current_plugin.should_refresh(current_dt):
+                logger.info(f"Refreshing currently displayed plugin instance. | plugin_instance: {current_plugin.name}")
+                return playlist, current_plugin
 
         latest_refresh_dt = latest_refresh_info.get_refresh_datetime()
         plugin_cycle_interval = self.device_config.get_config("plugin_cycle_interval_seconds", default=3600)
