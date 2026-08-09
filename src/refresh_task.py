@@ -115,7 +115,17 @@ class RefreshTask:
                         image_hash = compute_image_hash(image)
 
                         refresh_info = refresh_action.get_refresh_info()
-                        refresh_info.update({"refresh_time": current_dt.isoformat(), "image_hash": image_hash})
+                        refresh_info.update({"image_hash": image_hash})
+
+                        # Only update the global rotation time when the plugin actually
+                        # changes (rotation or manual update). In-place refreshes of the
+                        # same plugin (e.g., a clock updating every 60 seconds) must not
+                        # reset the playlist rotation timer.
+                        if self._is_rotation_refresh(refresh_info, latest_refresh):
+                            refresh_info["refresh_time"] = current_dt.isoformat()
+                        else:
+                            refresh_info["refresh_time"] = latest_refresh.refresh_time
+
                         # check if image is the same as current image
                         if image_hash != latest_refresh.image_hash:
                             logger.info(f"Updating display. | refresh_info: {refresh_info}")
@@ -163,10 +173,10 @@ class RefreshTask:
     def _get_sleep_time(self):
         """Determines how long to sleep before the next refresh check.
 
-        Returns the minimum of the global plugin cycle interval and the currently
-        displayed plugin instance's refresh interval (if it has one), so that
-        plugins requiring frequent refreshes (e.g., a clock) are re-rendered
-        while they remain displayed.
+        Returns the minimum of the time until the next global playlist rotation
+        and the time until the currently active plugin instance's next refresh,
+        so that plugins requiring frequent refreshes (e.g., a clock) are re-rendered
+        while they remain displayed, and the playlist still advances on schedule.
         """
         global_interval = self.device_config.get_config("plugin_cycle_interval_seconds", default=3600)
 
@@ -174,27 +184,46 @@ class RefreshTask:
         current_dt = self._get_current_datetime()
         playlist = playlist_manager.determine_active_playlist(current_dt)
 
-        if playlist and playlist.plugins and playlist.current_plugin_index is not None:
+        if not playlist or not playlist.plugins:
+            return global_interval
+
+        # Time until the next global rotation (plugin change)
+        time_until_rotation = global_interval
+        latest_refresh = self.device_config.get_refresh_info()
+        latest_refresh_dt = latest_refresh.get_refresh_datetime()
+        if latest_refresh_dt:
+            if latest_refresh_dt.tzinfo is None:
+                latest_refresh_dt = latest_refresh_dt.replace(tzinfo=current_dt.tzinfo)
+            time_since_rotation = (current_dt - latest_refresh_dt).total_seconds()
+            time_until_rotation = max(0, global_interval - time_since_rotation)
+
+        # Time until the current plugin's next refresh
+        time_until_plugin_refresh = global_interval
+        if playlist.current_plugin_index is not None and playlist.current_plugin_index < len(playlist.plugins):
             plugin_instance = playlist.plugins[playlist.current_plugin_index]
             if "interval" in plugin_instance.refresh:
                 interval = plugin_instance.refresh.get("interval")
                 if interval:
-                    # Calculate time remaining until the next refresh
                     latest_refresh_dt = plugin_instance.get_latest_refresh_dt()
                     if latest_refresh_dt:
-                        # Ensure both datetimes are timezone-aware for comparison
                         if latest_refresh_dt.tzinfo is None:
                             latest_refresh_dt = latest_refresh_dt.replace(tzinfo=current_dt.tzinfo)
                         time_since_refresh = (current_dt - latest_refresh_dt).total_seconds()
-                        time_until_refresh = interval - time_since_refresh
-                        if time_until_refresh > 0:
-                            return min(global_interval, time_until_refresh)
-                    return min(global_interval, interval)
+                        time_until_plugin_refresh = max(0, interval - time_since_refresh)
+                    else:
+                        time_until_plugin_refresh = interval
 
-        return global_interval
+        return min(time_until_rotation, time_until_plugin_refresh)
 
     def _determine_next_plugin(self, playlist_manager, latest_refresh_info, current_dt):
-        """Determines the next plugin to refresh based on the active playlist, plugin cycle interval, and current time."""
+        """Determines the next plugin to refresh based on the active playlist, plugin cycle interval, and current time.
+
+        Priority:
+        1. If the global rotation interval has elapsed, advance to the next plugin.
+        2. Otherwise, if the currently displayed plugin instance has its own refresh
+           interval that has elapsed, refresh it in place.
+        3. Otherwise, do nothing.
+        """
         playlist = playlist_manager.determine_active_playlist(current_dt)
         if not playlist:
             playlist_manager.active_playlist = None
@@ -206,27 +235,40 @@ class RefreshTask:
             logger.info(f"Active playlist '{playlist.name}' has no plugins.")
             return None, None
 
-        # Check if the currently displayed plugin instance needs a refresh based on its own settings
+        # 1. Check if it's time to rotate to the next plugin in the playlist.
+        latest_refresh_dt = latest_refresh_info.get_refresh_datetime()
+        plugin_cycle_interval = self.device_config.get_config("plugin_cycle_interval_seconds", default=3600)
+        should_rotate = PlaylistManager.should_refresh(latest_refresh_dt, plugin_cycle_interval, current_dt)
+
+        if should_rotate:
+            plugin = playlist.get_next_plugin()
+            logger.info(f"Determined next plugin. | active_playlist: {playlist.name} | plugin_instance: {plugin.name}")
+            return playlist, plugin
+
+        # 2. Otherwise, check if the currently displayed plugin instance needs a
+        #    refresh based on its own settings (e.g., a clock refreshing every 60s).
         if playlist.current_plugin_index is not None and playlist.current_plugin_index < len(playlist.plugins):
             current_plugin = playlist.plugins[playlist.current_plugin_index]
             if current_plugin.should_refresh(current_dt):
                 logger.info(f"Refreshing currently displayed plugin instance. | plugin_instance: {current_plugin.name}")
                 return playlist, current_plugin
 
-        latest_refresh_dt = latest_refresh_info.get_refresh_datetime()
-        plugin_cycle_interval = self.device_config.get_config("plugin_cycle_interval_seconds", default=3600)
-        should_refresh = PlaylistManager.should_refresh(latest_refresh_dt, plugin_cycle_interval, current_dt)
+        # 3. Nothing to do.
+        latest_refresh_str = latest_refresh_dt.strftime('%Y-%m-%d %H:%M:%S') if latest_refresh_dt else "None"
+        logger.info(f"Not time to update display. | latest_update: {latest_refresh_str} | plugin_cycle_interval: {plugin_cycle_interval}")
+        return None, None
 
-        if not should_refresh:
-            latest_refresh_str = latest_refresh_dt.strftime('%Y-%m-%d %H:%M:%S') if latest_refresh_dt else "None"
-            logger.info(f"Not time to update display. | latest_update: {latest_refresh_str} | plugin_cycle_interval: {plugin_cycle_interval}")
-            return None, None
+    def _is_rotation_refresh(self, refresh_info, latest_refresh):
+        """Determines whether a refresh action represents a rotation (plugin change)
+        or a manual update, as opposed to an in-place refresh of the same plugin.
 
-        plugin = playlist.get_next_plugin()
-        logger.info(f"Determined next plugin. | active_playlist: {playlist.name} | plugin_instance: {plugin.name}")
+        In-place refreshes (e.g., a clock updating every 60 seconds) must not reset
+        the global playlist rotation timer.
+        """
+        if refresh_info.get("refresh_type") != "Playlist":
+            return True
+        return refresh_info.get("plugin_instance") != latest_refresh.plugin_instance
 
-        return playlist, plugin
-    
     def log_system_stats(self):
         metrics = {
             'cpu_percent': psutil.cpu_percent(interval=1),
