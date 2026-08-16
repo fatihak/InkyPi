@@ -233,6 +233,7 @@ def preview_plugin():
     """Generate a plugin image and return a preview without pushing it to the display."""
     device_config = current_app.config['DEVICE_CONFIG']
     display_manager = current_app.config['DISPLAY_MANAGER']
+    refresh_task = current_app.config['REFRESH_TASK']
 
     try:
         plugin_settings = parse_form(request.form)
@@ -243,12 +244,18 @@ def preview_plugin():
         if not plugin_config:
             return jsonify({"error": f"Plugin '{plugin_id}' not found"}), 404
 
-        plugin = get_plugin_instance(plugin_config)
-        image = plugin.generate_image(plugin_settings, device_config)
+        if refresh_task.running:
+            # Serialize rendering through the background refresh task to avoid running a
+            # second browser/screenshot process concurrently, which can hang the display.
+            image = refresh_task.preview(plugin_id, plugin_settings)
+        else:
+            # In development mode the refresh task may not be running, render directly.
+            plugin = get_plugin_instance(plugin_config)
+            image = plugin.generate_image(plugin_settings, device_config)
+            image = display_manager.process_image(image, plugin_config.get("image_settings", []))
 
-        # Apply the same processing pipeline used when rendering to the device
-        image_settings = plugin_config.get("image_settings", [])
-        image = display_manager.process_image(image, image_settings)
+        if image is None:
+            return jsonify({"error": "Failed to generate preview image"}), 500
 
         # Encode the processed image as a base64 data URL for the browser
         buffer = io.BytesIO()
