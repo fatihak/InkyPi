@@ -149,7 +149,16 @@ def take_screenshot(target, dimensions, timeout_ms=None):
             "--mute-audio",
             "--renderer-process-limit=1",
             "--no-zygote",
-            "--no-sandbox"
+            "--no-sandbox",
+            # Startup-trimming flags to reduce Chromium cold-start time, which
+            # dominates render time on low-resource devices (e.g. Pi Zero).
+            "--no-first-run",
+            "--no-default-browser-check",
+            "--disable-background-networking",
+            "--disable-sync",
+            "--disable-default-apps",
+            "--disable-component-update",
+            "--disable-features=Translate,BackForwardCache"
         ]
         if timeout_ms:
             command.append(f"--timeout={timeout_ms}")
