@@ -4,6 +4,8 @@ from utils.app_utils import resolve_path, handle_request_files, parse_form
 from refresh_task import ManualRefresh, PlaylistRefresh
 import json
 import os
+import io
+import base64
 import logging
 
 logger = logging.getLogger(__name__)
@@ -225,6 +227,38 @@ def display_plugin_instance():
         return jsonify({"error": f"An error occurred: {str(e)}"}), 500
 
     return jsonify({"success": True, "message": "Display updated"}), 200
+
+@plugin_bp.route('/preview_plugin', methods=['POST'])
+def preview_plugin():
+    """Generate a plugin image and return a preview without pushing it to the display."""
+    device_config = current_app.config['DEVICE_CONFIG']
+    display_manager = current_app.config['DISPLAY_MANAGER']
+
+    try:
+        plugin_settings = parse_form(request.form)
+        plugin_settings.update(handle_request_files(request.files))
+        plugin_id = plugin_settings.pop("plugin_id")
+
+        plugin_config = device_config.get_plugin(plugin_id)
+        if not plugin_config:
+            return jsonify({"error": f"Plugin '{plugin_id}' not found"}), 404
+
+        plugin = get_plugin_instance(plugin_config)
+        image = plugin.generate_image(plugin_settings, device_config)
+
+        # Apply the same processing pipeline used when rendering to the device
+        image_settings = plugin_config.get("image_settings", [])
+        image = display_manager.process_image(image, image_settings)
+
+        # Encode the processed image as a base64 data URL for the browser
+        buffer = io.BytesIO()
+        image.convert("RGB").save(buffer, format="PNG")
+        encoded = base64.b64encode(buffer.getvalue()).decode("utf-8")
+    except Exception as e:
+        logger.exception(f"Error in preview_plugin: {str(e)}")
+        return jsonify({"error": f"An error occurred: {str(e)}"}), 500
+
+    return jsonify({"success": True, "image": f"data:image/png;base64,{encoded}"}), 200
 
 @plugin_bp.route('/update_now', methods=['POST'])
 def update_now():
