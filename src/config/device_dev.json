@@ -10,8 +10,6 @@
         "calendar",
         "clock",
         "countdown",
-        "image_album",
-        "image_folder",
         "image_upload",
         "apod",
         "image_url",
@@ -37,9 +35,9 @@
         "active_playlist": null
     },
     "refresh_info": {
-        "refresh_time": "2026-08-17T21:52:52.869806+00:00",
-        "image_hash": "221dd63b3dfed44fe8276497ae0958469ab0a22d02af58a93cab0fd4cf474454",
+        "refresh_time": "2026-08-17T21:56:10.210542+00:00",
+        "image_hash": "a5ad95c15fe06598969c57fc60d062d361c29fe437a325aa8f6d227bd10e101e",
         "refresh_type": "Manual Update",
-        "plugin_id": "weather"
+        "plugin_id": "newspaper"
     }
 }
