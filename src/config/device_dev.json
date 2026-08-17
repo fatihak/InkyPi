@@ -15,7 +15,6 @@
         "todo_list",
         "unsplash",
         "weather",
-        "wpotd",
         "year_progress"
     ],
     "playlist_config": {
@@ -31,8 +30,8 @@
         "active_playlist": null
     },
     "refresh_info": {
-        "refresh_time": "2026-08-17T22:01:27.572722+00:00",
-        "image_hash": "fd626432191c7d3da032e4b1a07251c71335e0ff4e7d3a79f73e5e1ba084acd2",
+        "refresh_time": "2026-08-17T22:03:54.984347+00:00",
+        "image_hash": "d37e6819ce536d0e847015ddaffeccfdcfea51f794b02454dcb182ff82d31a6e",
         "refresh_type": "Manual Update",
         "plugin_id": "wpotd"
     }
