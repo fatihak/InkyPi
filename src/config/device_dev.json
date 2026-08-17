@@ -12,7 +12,6 @@
         "countdown",
         "image_upload",
         "rss",
-        "screenshot",
         "todo_list",
         "unsplash",
         "weather",
@@ -32,9 +31,9 @@
         "active_playlist": null
     },
     "refresh_info": {
-        "refresh_time": "2026-08-17T21:56:10.210542+00:00",
-        "image_hash": "a5ad95c15fe06598969c57fc60d062d361c29fe437a325aa8f6d227bd10e101e",
+        "refresh_time": "2026-08-17T22:01:27.572722+00:00",
+        "image_hash": "fd626432191c7d3da032e4b1a07251c71335e0ff4e7d3a79f73e5e1ba084acd2",
         "refresh_type": "Manual Update",
-        "plugin_id": "newspaper"
+        "plugin_id": "wpotd"
     }
 }
