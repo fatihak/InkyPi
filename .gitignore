@@ -165,6 +165,7 @@ cython_debug/
 
 # Development artifacts
 mock_display_output/
+src/static/images/current_image.png
 
 # IDE files
 .idea

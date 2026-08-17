@@ -32,13 +32,6 @@ See [the wiki](https://github.com/fatihak/InkyPi/wiki) for a list of community-m
     - Recommended to get 40 pin Pre Soldered Header
 - MicroSD Card (min 8 GB) like [this one](https://amzn.to/3G3Tq9W)
 - E-Ink Display:
-    - Inky Impression by Pimoroni
-        - **[13.3 Inch Display](https://collabs.shop/q2jmza)**
-        - **[7.3 Inch Display](https://collabs.shop/q2jmza)**
-        - **[5.7 Inch Display](https://collabs.shop/ns6m6m)**
-        - **[4 Inch Display](https://collabs.shop/cpwtbh)**
-    - Inky wHAT by Pimoroni
-        - **[4.2 Inch Display](https://collabs.shop/jrzqmf)**
     - Waveshare e-Paper Displays
         - Spectra 6 (E6) Full Color **[4 inch](https://www.waveshare.com/4inch-e-paper-hat-plus-e.htm?&aff_id=111126)** **[7.3 inch](https://www.waveshare.com/7.3inch-e-paper-hat-e.htm?&aff_id=111126)** **[13.3 inch](https://www.waveshare.com/13.3inch-e-paper-hat-plus-e.htm?&aff_id=111126)**
         - Black and White **[7.5 inch](https://www.waveshare.com/7.5inch-e-paper-hat.htm?&aff_id=111126)** **[13.3 inch](https://www.waveshare.com/13.3inch-e-paper-hat-k.htm?&aff_id=111126)**
@@ -59,22 +52,13 @@ To install InkyPi, follow these steps:
     ```bash
     cd InkyPi
     ```
-3. Run the installation script with sudo:
+3. Run the installation script with sudo, specifying your [Waveshare display model](#waveshare-display-support):
     ```bash
-    sudo bash install/install.sh [-W <waveshare device model>]
-    ``` 
-     Option: 
-    
-    * -W \<waveshare device model\> - specify this parameter **ONLY** if installing for a Waveshare display.  After the -W option specify the Waveshare device model e.g. epd7in3f.
-
-    e.g. for Inky displays use:
-    ```bash
-    sudo bash install/install.sh
+    sudo bash install/install.sh -W <waveshare device model>
     ```
-
-    and for [Waveshare displays](#waveshare-display-support) use:
+    e.g.:
     ```bash
-    sudo bash install/install.sh -W epd7in3f
+    sudo bash install/install.sh -W epd7in5_V2
     ```
 
 
@@ -121,7 +105,7 @@ Check out the public [trello board](https://trello.com/b/SWJYWqe4/inkypi) to exp
 
 ## Waveshare Display Support
 
-Waveshare offers a range of e-Paper displays, similar to the Inky screens from Pimoroni, but with slightly different requirements. While Inky displays auto-configure via the inky Python library, Waveshare displays require model-specific drivers from their [Python EPD library](https://github.com/waveshareteam/e-Paper/tree/master/RaspberryPi_JetsonNano/python/lib/waveshare_epd).
+Waveshare e-Paper displays require model-specific drivers from their [Python EPD library](https://github.com/waveshareteam/e-Paper/tree/master/RaspberryPi_JetsonNano/python/lib/waveshare_epd).
 
 This project has been tested with several Waveshare models. **Displays based on the IT8951 controller are not supported**, and **screens smaller than 4 inches are not recommended** due to limited resolution.
 
