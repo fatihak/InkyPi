@@ -11,7 +11,6 @@
         "clock",
         "countdown",
         "image_upload",
-        "rss",
         "todo_list",
         "unsplash",
         "weather",
@@ -30,9 +29,9 @@
         "active_playlist": null
     },
     "refresh_info": {
-        "refresh_time": "2026-08-17T22:03:54.984347+00:00",
-        "image_hash": "d37e6819ce536d0e847015ddaffeccfdcfea51f794b02454dcb182ff82d31a6e",
+        "refresh_time": "2026-08-17T22:07:55.261986+00:00",
+        "image_hash": "a1786cc25b379ce0fda77bddb20d9ad19d6e3575bbd307240c5182c059e2bb13",
         "refresh_type": "Manual Update",
-        "plugin_id": "wpotd"
+        "plugin_id": "weather"
     }
 }
