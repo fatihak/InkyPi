@@ -1,6 +1,5 @@
 flask==3.1.2
 python-dotenv==1.2.1
-inky==2.3.0
 requests==2.32.5
 urllib3==2.6.3
 werkzeug==3.1.5

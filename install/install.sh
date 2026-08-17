@@ -5,12 +5,8 @@
 # Description: This script automates the installation of InkyPI and creation of
 #              the InkyPI service.
 #
-# Usage: ./install.sh [-W <waveshare_device>]
-#        -W <waveshare_device> (optional) Install for a Waveshare device,
-#                               specifying the device model type, e.g. epd7in3e.
-#
-#                               If not specified then the Pimoroni Inky display
-#                               is assumed.
+# Usage: ./install.sh -W <waveshare_device>
+#        -W <waveshare_device> Waveshare device model type, e.g. epd7in5_V2.
 # =============================================================================
 
 # Formatting stuff
@@ -41,19 +37,18 @@ APT_REQUIREMENTS_FILE="$SCRIPT_DIR/debian-requirements.txt"
 PIP_REQUIREMENTS_FILE="$SCRIPT_DIR/requirements.txt"
 
 #
-# Additional requirements for Waveshare support.
+# Requirements for Waveshare support.
 #
-# empty means no WS support required, otherwise we expect the type of display
-# as per the WS naming convention.
+# We expect the type of display as per the WS naming convention.
 WS_TYPE=""
 WS_REQUIREMENTS_FILE="$SCRIPT_DIR/ws-requirements.txt"
 
-# Parse the arguments, looking for the -W option.
+# Parse the arguments, requiring the -W option.
 parse_arguments() {
     while getopts ":W:" opt; do
         case $opt in
             W) WS_TYPE=$OPTARG
-                echo "Optional parameter WS is set for Waveshare support.  Screen type is: $WS_TYPE"
+                echo "Screen type is: $WS_TYPE"
                 ;;
             \?) echo "Invalid option: -$OPTARG." >&2
                 exit 1
@@ -63,6 +58,11 @@ parse_arguments() {
                ;;
         esac
     done
+
+    if [[ -z "$WS_TYPE" ]]; then
+        echo "ERROR: -W <waveshare_device> is required, e.g. -W epd7in5_V2." >&2
+        exit 1
+    fi
 }
 
 check_permissions() {
@@ -117,27 +117,13 @@ enable_interfaces(){
   sudo raspi-config nonint do_i2c 0
   echo_success "\tI2C Interface has been enabled."
 
-  # Is a Waveshare device specified as an install parameter?
-  if [[ -n "$WS_TYPE" ]]; then
-    # WS parameter is set for Waveshare support so ensure that both CS lines
-    # are enabled in the config.txt file.  This is different to INKY which
-    # only needs one line set.n
-    echo "Enabling both CS lines for SPI interface in config.txt"
-    if ! grep -E -q '^[[:space:]]*dtoverlay=spi0-2cs' /boot/firmware/config.txt; then
-        sed -i '/^dtparam=spi=on/a dtoverlay=spi0-2cs' /boot/firmware/config.txt
-    else
-        echo "dtoverlay for spi0-2cs already specified"
-    fi
+  # Waveshare displays need both CS lines enabled in config.txt.
+  echo "Enabling both CS lines for SPI interface in config.txt"
+  if ! grep -E -q '^[[:space:]]*dtoverlay=spi0-2cs' /boot/firmware/config.txt; then
+      sed -i '/^dtparam=spi=on/a dtoverlay=spi0-2cs' /boot/firmware/config.txt
   else
-    # TODO - check if really need the dtparam set for INKY as this seems to be 
-    # only for the older screens (as per INKY docs)
-    echo "Enabling single CS line for SPI interface in config.txt"
-    if ! grep -E -q '^[[:space:]]*dtoverlay=spi0-0cs' /boot/firmware/config.txt; then
-        sed -i '/^dtparam=spi=on/a dtoverlay=spi0-0cs' /boot/firmware/config.txt
-    else
-        echo "dtoverlay for spi0-0cs already specified"
-    fi
-  fi 
+      echo "dtoverlay for spi0-2cs already specified"
+  fi
 }
 
 show_loader() {
@@ -212,13 +198,9 @@ create_venv(){
   $VENV_PATH/bin/python -m pip install -r $PIP_REQUIREMENTS_FILE -qq > /dev/null &
   show_loader "\tInstalling python dependencies. "
 
-  # do additional dependencies for Waveshare support.
-  if [[ -n "$WS_TYPE" ]]; then
-    echo "Adding additional dependencies for waveshare to the python virtual environment. "
-    $VENV_PATH/bin/python -m pip install -r $WS_REQUIREMENTS_FILE > ws_pip_install.log &
-    show_loader "\tInstalling additional Waveshare python dependencies. "
-  fi
-
+  echo "Adding additional dependencies for waveshare to the python virtual environment. "
+  $VENV_PATH/bin/python -m pip install -r $WS_REQUIREMENTS_FILE > ws_pip_install.log &
+  show_loader "\tInstalling additional Waveshare python dependencies. "
 }
 
 install_app_service() {
@@ -254,27 +236,23 @@ install_config() {
 }
 
 #
-# Update the device.json file with the supplied Waveshare parameter (if set).
+# Update the device.json file with the supplied Waveshare parameter.
 #
 update_config() {
-  if [[ -n "$WS_TYPE" ]]; then
-      local DEVICE_JSON="$CONFIG_DIR/device.json"
+  local DEVICE_JSON="$CONFIG_DIR/device.json"
 
-      if grep -q '"display_type":' "$DEVICE_JSON"; then
-          # Update existing display_type value
-          sed -i "s/\"display_type\": \".*\"/\"display_type\": \"$WS_TYPE\"/" "$DEVICE_JSON"
-          echo "Updated display_type to: $WS_TYPE" 
-      else
-          # Append display_type safely, ensuring proper comma placement
-          if grep -q '}$' "$DEVICE_JSON"; then
-              sed -i '$s/}/,/' "$DEVICE_JSON"  # Replace last } with a comma
-          fi
-          echo "  \"display_type\": \"$WS_TYPE\"" >> "$DEVICE_JSON"
-          echo "}" >> "$DEVICE_JSON"  # Add trailing }
-          echo "Added display_type: $WS_TYPE"
-      fi
+  if grep -q '"display_type":' "$DEVICE_JSON"; then
+      # Update existing display_type value
+      sed -i "s/\"display_type\": \".*\"/\"display_type\": \"$WS_TYPE\"/" "$DEVICE_JSON"
+      echo "Updated display_type to: $WS_TYPE"
   else
-      echo "Config not updated as WS_TYPE flag is not set"
+      # Append display_type safely, ensuring proper comma placement
+      if grep -q '}$' "$DEVICE_JSON"; then
+          sed -i '$s/}/,/' "$DEVICE_JSON"  # Replace last } with a comma
+      fi
+      echo "  \"display_type\": \"$WS_TYPE\"" >> "$DEVICE_JSON"
+      echo "}" >> "$DEVICE_JSON"  # Add trailing }
+      echo "Added display_type: $WS_TYPE"
   fi
 }
 
@@ -354,15 +332,10 @@ ask_for_reboot() {
   fi
 }
 
-# check if we have an argument for WS display support.  Parameter is not required
-# to maintain default INKY display support.
 parse_arguments "$@"
 check_permissions
 stop_service
-# fetch the WS display driver if defined.
-if [[ -n "$WS_TYPE" ]]; then
-  fetch_waveshare_driver
-fi
+fetch_waveshare_driver
 enable_interfaces
 install_debian_dependencies
 # check OS version for Bookworm to setup zramswap
@@ -378,10 +351,7 @@ install_cli
 create_venv
 install_executable
 install_config
-# update the config file with additional WS if defined.
-if [[ -n "$WS_TYPE" ]]; then
-  update_config
-fi
+update_config
 install_app_service
 
 echo "Update JS and CSS files"

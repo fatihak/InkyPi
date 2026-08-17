@@ -9,11 +9,6 @@ logger = logging.getLogger(__name__)
 
 # Try to import hardware displays, but don't fail if they're not available
 try:
-    from display.inky_display import InkyDisplay
-except ImportError:
-    logger.info("Inky display not available, hardware support disabled")
-
-try:
     from display.waveshare_display import WaveshareDisplay
 except ImportError:
     logger.info("Waveshare display not available, hardware support disabled")
@@ -37,13 +32,11 @@ class DisplayManager:
         
         self.device_config = device_config
      
-        display_type = device_config.get_config("display_type", default="inky")
+        display_type = device_config.get_config("display_type", default=None)
 
         if display_type == "mock":
             self.display = MockDisplay(device_config)
-        elif display_type == "inky":
-            self.display = InkyDisplay(device_config)
-        elif fnmatch.fnmatch(display_type, "epd*in*"):  
+        elif display_type and fnmatch.fnmatch(display_type, "epd*in*"):
             # derived from waveshare epd - we assume here that will be consistent
             # otherwise we will have to enshring the manufacturer in the 
             # display_type and then have a display_model parameter.  Will leave
