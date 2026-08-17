@@ -8,7 +8,6 @@
     "orientation": "horizontal",
     "plugin_order": [
         "calendar",
-        "ai_text",
         "clock",
         "comic",
         "countdown",
