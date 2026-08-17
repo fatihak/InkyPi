@@ -12,7 +12,6 @@
         "countdown",
         "image_upload",
         "todo_list",
-        "unsplash",
         "weather",
         "year_progress"
     ],
@@ -29,9 +28,9 @@
         "active_playlist": null
     },
     "refresh_info": {
-        "refresh_time": "2026-08-17T22:07:55.261986+00:00",
-        "image_hash": "a1786cc25b379ce0fda77bddb20d9ad19d6e3575bbd307240c5182c059e2bb13",
+        "refresh_time": "2026-08-17T22:09:16.513268+00:00",
+        "image_hash": "c519b8fabb2053e80c26de9d35c9ea1f2cf0cad0ab0d69047ab77246b8a59a43",
         "refresh_type": "Manual Update",
-        "plugin_id": "weather"
+        "plugin_id": "todo_list"
     }
 }
