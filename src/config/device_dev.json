@@ -9,7 +9,6 @@
     "plugin_order": [
         "calendar",
         "clock",
-        "comic",
         "countdown",
         "github",
         "image_album",
