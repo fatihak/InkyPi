@@ -10,7 +10,6 @@
         "calendar",
         "clock",
         "countdown",
-        "github",
         "image_album",
         "image_folder",
         "image_upload",
@@ -38,9 +37,9 @@
         "active_playlist": null
     },
     "refresh_info": {
-        "refresh_time": null,
-        "image_hash": null,
-        "refresh_type": null,
-        "plugin_id": null
+        "refresh_time": "2026-08-17T21:52:52.869806+00:00",
+        "image_hash": "221dd63b3dfed44fe8276497ae0958469ab0a22d02af58a93cab0fd4cf474454",
+        "refresh_type": "Manual Update",
+        "plugin_id": "weather"
     }
 }
