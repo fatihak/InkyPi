@@ -5,7 +5,7 @@
 The `--dev` flag enables complete development without requiring:
 
 - Raspberry Pi hardware
-- Physical e-ink displays (Inky pHAT/wHAT or Waveshare)
+- Physical Waveshare e-ink display
 - Root privileges or GPIO access
 - Linux-specific features (systemd)
 
