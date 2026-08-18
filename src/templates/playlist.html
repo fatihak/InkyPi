@@ -53,9 +53,11 @@
             const modal = document.getElementById('thumbnailPreviewModal');
             const img = document.getElementById('thumbnailPreviewImage');
             const info = document.getElementById('thumbnailPreviewInfo');
+            const title = document.getElementById('thumbnailPreviewTitle');
 
             const imageUrl = `/plugin_instance_image/${encodeURIComponent(playlistName)}/${encodeURIComponent(pluginId)}/${encodeURIComponent(instanceName)}`;
             img.src = imageUrl;
+            title.textContent = pluginName;
             info.textContent = `Plugin: ${pluginName} | Instancia: ${instanceName}`;
             modal.style.display = 'block';
         }
@@ -498,7 +500,9 @@
     <!-- Thumbnail Preview Modal -->
     <div id="thumbnailPreviewModal" class="thumbnail-preview-modal">
         <div class="thumbnail-preview-content">
-            <span class="thumbnail-preview-close" onclick="closeThumbnailPreview()">×</span>
+            <span class="close-button" onclick="closeThumbnailPreview()">×</span>
+            <h2 id="thumbnailPreviewTitle">Vista previa</h2>
+            <div class="separator"></div>
             <img id="thumbnailPreviewImage" src="" alt="Vista previa de la instancia del plugin">
             <div class="thumbnail-preview-info" id="thumbnailPreviewInfo"></div>
         </div>

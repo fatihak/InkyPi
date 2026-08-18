@@ -198,22 +198,6 @@
     border-radius: 8px;
 }
 
-.thumbnail-preview-close {
-    position: absolute;
-    top: 10px;
-    right: 20px;
-    font-size: 35px;
-    font-weight: bold;
-    color: var(--close-btn-color);
-    cursor: pointer;
-    transition: color 0.3s ease;
-}
-
-.thumbnail-preview-close:hover,
-.thumbnail-preview-close:focus {
-    color: var(--close-btn-hover);
-}
-
 .thumbnail-preview-info {
     margin-top: 10px;
     padding: 10px;
