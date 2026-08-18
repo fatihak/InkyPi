@@ -6,6 +6,8 @@
         480
     ],
     "orientation": "horizontal",
+    "timezone": "Europe/Madrid",
+    "time_format": "24h",
     "plugin_order": [
         "calendar",
         "clock",
