@@ -1,0 +1,257 @@
+/* Scoped redesign for the Settings page only — does not touch main.css */
+.settings-frame {
+    min-height: 0;
+}
+
+.settings-sections {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    margin: 4px 0 20px 0;
+}
+
+.settings-section {
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    overflow: hidden;
+    transition: border-color 0.3s ease;
+}
+
+.settings-section-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 14px 16px;
+    background: var(--bg-primary);
+    border: none;
+    cursor: pointer;
+    text-align: left;
+    font-family: inherit;
+}
+
+.settings-section-header:hover {
+    background: var(--button-hover);
+}
+
+.settings-section-icon {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    color: var(--accent-primary);
+}
+
+.settings-section-icon svg {
+    width: 100%;
+    height: 100%;
+}
+
+.settings-section-title {
+    flex: 1;
+    font-weight: 600;
+    font-size: 1rem;
+    color: var(--text-primary);
+}
+
+.settings-section-chevron {
+    width: 16px;
+    height: 16px;
+    color: var(--text-secondary);
+    transition: transform 0.25s ease;
+    flex-shrink: 0;
+}
+
+.settings-section.open .settings-section-chevron {
+    transform: rotate(180deg);
+}
+
+.settings-section-body {
+    display: none;
+    padding: 18px 16px 20px 16px;
+    border-top: 1px solid var(--border-color);
+}
+
+.settings-section.open .settings-section-body {
+    display: block;
+}
+
+.settings-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 28px;
+}
+
+.settings-row + .settings-row {
+    margin-top: 16px;
+}
+
+.settings-field {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.settings-field label {
+    font-weight: 500;
+    color: var(--text-primary);
+    white-space: nowrap;
+}
+
+/* Toggle switch */
+.toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 42px;
+    height: 24px;
+    flex-shrink: 0;
+}
+
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.toggle-slider {
+    position: absolute;
+    inset: 0;
+    background-color: var(--border-subtle);
+    border-radius: 24px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.toggle-slider::before {
+    content: "";
+    position: absolute;
+    width: 18px;
+    height: 18px;
+    left: 3px;
+    top: 3px;
+    background-color: #fff;
+    border-radius: 50%;
+    transition: transform 0.2s ease;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.toggle-switch input:checked + .toggle-slider {
+    background-color: var(--accent-primary);
+}
+
+.toggle-switch input:checked + .toggle-slider::before {
+    transform: translateX(18px);
+}
+
+/* Sliders */
+.slider-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.slider-row label {
+    font-weight: 500;
+    color: var(--text-primary);
+    min-width: 90px;
+    white-space: nowrap;
+}
+
+.slider-row input[type="range"] {
+    flex: 1;
+    max-width: 360px;
+    -webkit-appearance: none;
+    appearance: none;
+    height: 6px;
+    border-radius: 3px;
+    background: var(--border-subtle);
+    outline: none;
+}
+
+.slider-row input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--accent-primary);
+    cursor: pointer;
+    border: 3px solid var(--bg-secondary);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.slider-row input[type="range"]::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--accent-primary);
+    cursor: pointer;
+    border: 3px solid var(--bg-secondary);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.slider-value {
+    min-width: 28px;
+    text-align: right;
+    color: var(--text-secondary);
+    font-variant-numeric: tabular-nums;
+}
+
+/* Text/select inputs reused within the new rows */
+.settings-field input[type="text"],
+.settings-field select {
+    padding: 0.5rem 0.7rem;
+    font-size: 1rem;
+    border: 1px solid var(--border-subtle);
+    border-radius: 6px;
+    background-color: var(--input-bg);
+    color: var(--text-primary);
+    transition: all 0.3s ease;
+}
+
+.settings-field input[type="text"]:focus,
+.settings-field select:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 3px var(--input-focus);
+}
+
+/* Custom select arrow, replacing the native one so it never crowds the border
+   and matches the chevron used elsewhere on this page */
+.select-wrapper {
+    position: relative;
+    display: inline-flex;
+}
+
+.select-wrapper select {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    padding-right: 2.2rem;
+}
+
+.select-chevron {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 14px;
+    height: 14px;
+    color: var(--text-secondary);
+    pointer-events: none;
+}
+
+.header-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.header-actions .header-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.header-actions svg {
+    width: 15px;
+    height: 15px;
+}
