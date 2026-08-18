@@ -7,11 +7,14 @@
   <input type="radio" name="refreshType" id="{{ prefix }}-refresh-interval" value="interval" checked>
   <label for="{{ prefix }}-refresh-interval">Cada</label>
   <input type="number" id="{{ prefix }}-interval" name="interval" class="form-input" required min="1" placeholder="Introduce un número">
-  <select id="{{ prefix }}-unit" name="unit" class="form-input" required>
-    <option value="minute">Minuto</option>
-    <option value="hour">Hora</option>
-    <option value="day">Día</option>
-  </select>
+  <span class="select-wrapper">
+    <select id="{{ prefix }}-unit" name="unit" class="form-input" required>
+      <option value="minute">Minuto</option>
+      <option value="hour">Hora</option>
+      <option value="day">Día</option>
+    </select>
+    <svg class="select-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+  </span>
 </div>
 
 <div class="form-group nowrap" id="{{ prefix }}-group-scheduled">
