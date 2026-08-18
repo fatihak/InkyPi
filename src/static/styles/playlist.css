@@ -26,7 +26,7 @@
 
 .playlist-title-group {
     display: flex;
-    align-items: center;
+    align-items: baseline;
     gap: 10px;
 }
 
@@ -35,6 +35,7 @@
     height: 21px;
     color: var(--accent-primary);
     flex-shrink: 0;
+    align-self: center;
 }
 
 /* Line up the plugin rows' left edge with the header's icon/title above them */
