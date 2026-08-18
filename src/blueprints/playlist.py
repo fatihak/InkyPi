@@ -78,34 +78,22 @@ def playlists():
         'playlist.html',
         playlist_config=playlist_manager.to_dict(),
         refresh_info=refresh_info.to_dict(),
-        plugins={p["id"]: p for p in plugins_list},
-        plugin_cycle_interval_seconds=device_config.get_config("plugin_cycle_interval_seconds", default=3600)
+        plugins={p["id"]: p for p in plugins_list}
     )
 
-@playlist_bp.route('/update_cycle_interval', methods=['POST'])
-def update_cycle_interval():
-    device_config = current_app.config['DEVICE_CONFIG']
-
-    data = request.get_json() or {}
+def _parse_cycle_interval(data):
+    """Validates and converts the interval/unit fields from a playlist create/update request into seconds."""
     unit, interval = data.get("unit"), data.get("interval")
     if not unit or unit not in ["minute", "hour"]:
-        return jsonify({"error": "Plugin cycle interval unit is required"}), 400
+        raise ValueError("Plugin cycle interval unit is required")
     if not interval or not str(interval).isnumeric():
-        return jsonify({"error": "Refresh interval is required"}), 400
+        raise ValueError("Refresh interval is required")
 
-    previous_interval_seconds = device_config.get_config("plugin_cycle_interval_seconds")
-    plugin_cycle_interval_seconds = calculate_seconds(int(interval), unit)
-    if plugin_cycle_interval_seconds > 86400 or plugin_cycle_interval_seconds <= 0:
-        return jsonify({"error": "Plugin cycle interval must be less than 24 hours"}), 400
+    cycle_interval_seconds = calculate_seconds(int(interval), unit)
+    if cycle_interval_seconds > 86400 or cycle_interval_seconds <= 0:
+        raise ValueError("Plugin cycle interval must be less than 24 hours")
 
-    device_config.update_value("plugin_cycle_interval_seconds", plugin_cycle_interval_seconds, write=True)
-
-    if plugin_cycle_interval_seconds != previous_interval_seconds:
-        # wake the background thread up to signal interval config change
-        refresh_task = current_app.config['REFRESH_TASK']
-        refresh_task.signal_config_change()
-
-    return jsonify({"success": True, "message": "Updated plugin cycle interval."})
+    return cycle_interval_seconds
 
 @playlist_bp.route('/create_playlist', methods=['POST'])
 def create_playlist():
@@ -123,11 +111,16 @@ def create_playlist():
         return jsonify({"error": "Start time and End time are required"}), 400
 
     try:
+        cycle_interval_seconds = _parse_cycle_interval(data)
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
+
+    try:
         playlist = playlist_manager.get_playlist(playlist_name)
         if playlist:
             return jsonify({"error": f"Playlist with name '{playlist_name}' already exists"}), 400
 
-        result = playlist_manager.add_playlist(playlist_name, start_time, end_time)
+        result = playlist_manager.add_playlist(playlist_name, start_time, end_time, cycle_interval_seconds)
         if not result:
             return jsonify({"error": "Failed to create playlist"}), 500
 
@@ -158,10 +151,21 @@ def update_playlist(playlist_name):
     if not playlist:
         return jsonify({"error": f"Playlist '{playlist_name}' does not exist"}), 400
 
-    result = playlist_manager.update_playlist(playlist_name, new_name, start_time, end_time)
+    try:
+        cycle_interval_seconds = _parse_cycle_interval(data)
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
+
+    previous_interval_seconds = playlist.cycle_interval_seconds
+    result = playlist_manager.update_playlist(playlist_name, new_name, start_time, end_time, cycle_interval_seconds)
     if not result:
         return jsonify({"error": "Failed to delete playlist"}), 500
     device_config.write_config()
+
+    if cycle_interval_seconds != previous_interval_seconds:
+        # wake the background thread up so a shorter interval takes effect right away
+        refresh_task = current_app.config['REFRESH_TASK']
+        refresh_task.signal_config_change()
 
     return jsonify({"success": True, "message": f"Updated playlist '{playlist_name}'!"})
 
