@@ -107,6 +107,9 @@
     </style>
     <script>
         async function deletePluginInstance(playlistName, pluginId, pluginInstance) {
+            if (!confirm(`¿Eliminar "${pluginInstance}" de la lista "${playlistName}"?`)) {
+                return;
+            }
             try {
                 const response = await fetch("{{ url_for('plugin.delete_plugin_instance') }}", {
                     method: 'POST',
@@ -296,6 +299,9 @@
 
         async function deletePlaylist() {
             let name = document.getElementById("editingPlaylistName").value;
+            if (!confirm(`¿Eliminar la lista "${name}" y todos sus plugins? Esta acción no se puede deshacer.`)) {
+                return;
+            }
             try {
                 const response = await fetch("{{ url_for('playlist.delete_playlist', playlist_name='') }}" + name, {
                     method: "DELETE",
