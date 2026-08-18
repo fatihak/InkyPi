@@ -8,6 +8,10 @@
     border: 1px solid var(--border-color);
     border-radius: 12px;
     overflow: hidden;
+    /* main.css leaves 5px of unstyled bottom padding below the last row; on a playlist
+       with no plugins that shows up as a strip of the page background left uncovered
+       by the header's dark fill, looking like the card is "cut off". */
+    padding-bottom: 0;
 }
 
 .playlist-item.active {
