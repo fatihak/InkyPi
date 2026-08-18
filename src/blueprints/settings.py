@@ -53,7 +53,6 @@ def save_settings():
             return jsonify({"error": "Plugin cycle interval must be less than 24 hours"}), 400
 
         settings = {
-            "name": form_data.get("deviceName"),
             "orientation": form_data.get("orientation"),
             "inverted_image": form_data.get("invertImage"),
             "log_system_stats": form_data.get("logSystemStats"),
