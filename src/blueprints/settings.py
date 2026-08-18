@@ -38,10 +38,10 @@ def save_settings():
         form_data = request.form.to_dict()
 
         if not form_data.get("timezoneName"):
-            return jsonify({"error": "Time Zone is required"}), 400
+            return jsonify({"error": "La zona horaria es obligatoria"}), 400
         time_format = form_data.get("timeFormat")
         if not time_format or time_format not in ["12h", "24h"]:
-            return jsonify({"error": "Time format is required"}), 400
+            return jsonify({"error": "El formato de hora es obligatorio"}), 400
 
         settings = {
             "orientation": form_data.get("orientation"),
@@ -61,7 +61,7 @@ def save_settings():
         return jsonify({"error": str(e)}), 500
     except Exception as e:
         return jsonify({"error": f"An error occurred: {str(e)}"}), 500
-    return jsonify({"success": True, "message": "Saved settings."})
+    return jsonify({"success": True, "message": "Ajustes guardados."})
 
 @settings_bp.route('/shutdown', methods=['POST'])
 def shutdown():
