@@ -1,0 +1,204 @@
+/* Scoped redesign for the Playlist page only — does not touch main.css */
+.playlist-frame {
+    min-height: 0;
+}
+
+/* Playlist cards */
+.playlist-item {
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    overflow: hidden;
+    /* main.css leaves 5px of unstyled bottom padding below the last row; on a playlist
+       with no plugins that shows up as a strip of the page background left uncovered
+       by the header's dark fill, looking like the card is "cut off". */
+    padding-bottom: 0;
+}
+
+.playlist-item.active {
+    border-color: var(--accent-primary);
+    box-shadow: 0 4px 12px var(--shadow-light);
+}
+
+.playlist-header {
+    background: var(--bg-primary);
+    border-radius: 10px 10px 0 0;
+    /* main.css uses 20px/10px top/bottom, which pushes the content off-center
+       within the bar — even it out for this page's taller icon+title group. */
+    padding-top: 15px;
+    padding-bottom: 15px;
+}
+
+.playlist-title-group {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+}
+
+.playlist-card-icon {
+    width: 21px;
+    height: 21px;
+    color: var(--accent-primary);
+    flex-shrink: 0;
+    align-self: center;
+}
+
+/* Line up the plugin rows' left edge with the header's icon/title above them */
+.plugin-item {
+    padding-left: 25px;
+}
+
+.playlist-time-range {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+/* Plugin rows */
+.plugin-item {
+    border-top: 1px solid var(--border-color);
+}
+
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 0.8rem;
+}
+
+.status-badge svg {
+    width: 13px;
+    height: 13px;
+}
+
+.displayed-now {
+    background-color: var(--accent-primary);
+    color: #fff;
+}
+
+.latest-refresh {
+    background-color: var(--bg-primary);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
+    font-style: normal;
+}
+
+/* Icon buttons (edit / refresh settings / display now / delete) */
+.icon-action-button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    color: var(--text-secondary);
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.icon-action-button:hover {
+    background-color: var(--button-hover);
+    color: var(--accent-primary);
+}
+
+.icon-action-button.delete:hover {
+    color: var(--accent-warn);
+}
+
+.icon-action-button svg {
+    width: 17px;
+    height: 17px;
+}
+
+/* Custom select arrow, matching the one used on the Settings page */
+.select-wrapper {
+    position: relative;
+    display: inline-flex;
+}
+
+.select-wrapper select {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    padding-right: 2.2rem;
+}
+
+.select-chevron {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 14px;
+    height: 14px;
+    color: var(--text-secondary);
+    pointer-events: none;
+}
+
+.header-button-icon {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.header-button-icon svg {
+    width: 15px;
+    height: 15px;
+}
+
+/* Plugin Instance Thumbnail */
+.plugin-thumbnail-container {
+    position: relative;
+    cursor: pointer;
+    margin-left: 8px;
+}
+
+.plugin-thumbnail {
+    width: 40px;
+    height: 40px;
+    object-fit: cover;
+    border: 2px solid var(--border-color);
+    border-radius: 4px;
+    transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.plugin-thumbnail:hover {
+    transform: scale(1.1);
+    border-color: var(--accent-primary);
+}
+
+/* Thumbnail Preview Modal */
+.thumbnail-preview-modal {
+    display: none;
+    position: fixed;
+    z-index: 1001;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: var(--modal-overlay);
+    backdrop-filter: blur(3px);
+}
+
+.thumbnail-preview-content {
+    position: relative;
+    margin: 5% auto;
+    padding: 20px;
+    width: 90%;
+    max-width: 800px;
+    background-color: var(--modal-bg);
+    border-radius: 12px;
+    box-shadow: 0 4px 20px var(--shadow-medium);
+}
+
+.thumbnail-preview-content h2 {
+    color: var(--text-primary);
+}
+
+.thumbnail-preview-content img {
+    width: 100%;
+    height: auto;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+}

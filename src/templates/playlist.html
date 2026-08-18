@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Playlists</title>
+    <title>Listas de reproducción</title>
     <script>
         (function() {
             const theme = localStorage.getItem('inkypi-theme') ||
@@ -14,88 +14,15 @@
         })();
     </script>
     <link rel= "stylesheet" type= "text/css" href= "{{ url_for('static',filename='styles/main.css') }}">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='styles/playlist.css') }}">
     <script src="{{ url_for('static', filename='scripts/dark_mode.js') }}"></script>
     <script src="{{ url_for('static', filename='scripts/response_modal.js') }}"></script>
     <script src="{{ url_for('static', filename='scripts/refresh_settings_manager.js') }}"></script>
-    <style>
-        /* Plugin Instance Thumbnail */
-        .plugin-thumbnail-container {
-            position: relative;
-            cursor: pointer;
-            margin-left: 8px;
-        }
-
-        .plugin-thumbnail {
-            width: 40px;
-            height: 40px;
-            object-fit: cover;
-            border: 2px solid var(--border-color);
-            border-radius: 4px;
-            transition: transform 0.2s ease, border-color 0.2s ease;
-        }
-
-        .plugin-thumbnail:hover {
-            transform: scale(1.1);
-            border-color: var(--accent-primary);
-        }
-
-        /* Thumbnail Preview Modal */
-        .thumbnail-preview-modal {
-            display: none;
-            position: fixed;
-            z-index: 1001;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: var(--modal-overlay);
-            backdrop-filter: blur(3px);
-        }
-
-        .thumbnail-preview-content {
-            position: relative;
-            margin: 5% auto;
-            padding: 20px;
-            width: 90%;
-            max-width: 800px;
-            background-color: var(--modal-bg);
-            border-radius: 12px;
-            box-shadow: 0 4px 20px var(--shadow-medium);
-        }
-
-        .thumbnail-preview-content img {
-            width: 100%;
-            height: auto;
-            border-radius: 8px;
-        }
-
-        .thumbnail-preview-close {
-            position: absolute;
-            top: 10px;
-            right: 20px;
-            font-size: 35px;
-            font-weight: bold;
-            color: var(--close-btn-color);
-            cursor: pointer;
-            transition: color 0.3s ease;
-        }
-
-        .thumbnail-preview-close:hover,
-        .thumbnail-preview-close:focus {
-            color: var(--close-btn-hover);
-        }
-
-        .thumbnail-preview-info {
-            margin-top: 10px;
-            padding: 10px;
-            background-color: var(--bg-primary);
-            border-radius: 6px;
-            color: var(--text-secondary);
-            font-size: 14px;
-        }
-    </style>
     <script>
         async function deletePluginInstance(playlistName, pluginId, pluginInstance) {
+            if (!confirm(`¿Eliminar "${pluginInstance}" de la lista "${playlistName}"?`)) {
+                return;
+            }
             try {
                 const response = await fetch("{{ url_for('plugin.delete_plugin_instance') }}", {
                     method: 'POST',
@@ -111,25 +38,25 @@
 
                 const result = await response.json();
                 if (response.ok) {
-                    sessionStorage.setItem("storedMessage", JSON.stringify({ type: "success", text: `Success! ${result.message}` }));
+                    sessionStorage.setItem("storedMessage", JSON.stringify({ type: "success", text: `¡Éxito! ${result.message}` }));
                     location.reload();
                 } else {
-                    showResponseModal('failure', `Error!  ${result.error}`);
+                    showResponseModal('failure', `¡Error!  ${result.error}`);
                 }
             } catch (error) {
                 console.error('Error:', error);
-                alert('An error occurred while processing your request.');
+                alert('Se ha producido un error al procesar tu solicitud.');
             }
         }
 
         function showThumbnailPreview(playlistName, pluginId, pluginName, instanceName) {
             const modal = document.getElementById('thumbnailPreviewModal');
             const img = document.getElementById('thumbnailPreviewImage');
-            const info = document.getElementById('thumbnailPreviewInfo');
+            const title = document.getElementById('thumbnailPreviewTitle');
 
             const imageUrl = `/plugin_instance_image/${encodeURIComponent(playlistName)}/${encodeURIComponent(pluginId)}/${encodeURIComponent(instanceName)}`;
             img.src = imageUrl;
-            info.textContent = `Plugin: ${pluginName} | Instance: ${instanceName}`;
+            title.textContent = pluginName;
             modal.style.display = 'block';
         }
 
@@ -168,14 +95,14 @@
 
                 const result = await response.json();
                 if (response.ok) {
-                    sessionStorage.setItem("storedMessage", JSON.stringify({ type: "success", text: `Success! ${result.message}` }));
+                    sessionStorage.setItem("storedMessage", JSON.stringify({ type: "success", text: `¡Éxito! ${result.message}` }));
                     location.reload();
                 } else {
-                    showResponseModal('failure', `Error!  ${result.error}`);
+                    showResponseModal('failure', `¡Error!  ${result.error}`);
                 }
             } catch (error) {
                 console.error('Error:', error);
-                alert('An error occurred while processing your request.');
+                alert('Se ha producido un error al procesar tu solicitud.');
             } finally {
                 // Hide loading indicator after the action is complete
                 loadingIndicator.style.display = 'none';
@@ -184,11 +111,12 @@
 
         // Open modal for **creating** a new playlist
         function openCreateModal() {
-            document.getElementById("modalTitle").textContent = "New Playlist";
+            document.getElementById("modalTitle").textContent = "Nueva lista";
             document.getElementById("playlist_name").value = "";
             document.getElementById("editingPlaylistName").value = ""; // Empty value means it's new
             document.getElementById("start_time").value = "00:00";
             document.getElementById("end_time").value = "24:00";
+            setCycleIntervalFields(3600);
 
             document.getElementById("saveButton").setAttribute("onclick", "createPlaylist()");
             document.getElementById("deleteButton").classList.add("hidden"); // Hide delete button
@@ -197,12 +125,13 @@
         }
 
         // Open modal for **editing** an existing playlist
-        function openEditModal(playlistName, startTime, endTime) {
-            document.getElementById("modalTitle").textContent = "Update Playlist";
+        function openEditModal(playlistName, startTime, endTime, cycleIntervalSeconds) {
+            document.getElementById("modalTitle").textContent = "Editar lista";
             document.getElementById("playlist_name").value = playlistName;
             document.getElementById("editingPlaylistName").value = playlistName;
             document.getElementById("start_time").value = startTime;
             document.getElementById("end_time").value = endTime;
+            setCycleIntervalFields(cycleIntervalSeconds);
 
             document.getElementById("saveButton").setAttribute("onclick", "updatePlaylist()");
             document.getElementById("deleteButton").classList.remove("hidden"); // Show delete button
@@ -224,6 +153,8 @@
             let playlistName = document.getElementById("playlist_name").value.trim();
             let startTime = document.getElementById("start_time").value;
             let endTime = document.getElementById("end_time").value;
+            let interval = document.getElementById("cycleInterval").value;
+            let unit = document.getElementById("cycleIntervalUnit").value;
 
             try {
                 const response = await fetch("{{ url_for('playlist.create_playlist') }}", {
@@ -231,20 +162,20 @@
                     headers: {
                         "Content-Type": "application/json"
                     },
-                    body: JSON.stringify({ playlist_name: playlistName, start_time: startTime, end_time: endTime })
+                    body: JSON.stringify({ playlist_name: playlistName, start_time: startTime, end_time: endTime, interval: interval, unit: unit })
                 });
 
                 const result = await response.json();
                 if (response.ok) {
                     closeModal(); // Close the modal on success
-                    sessionStorage.setItem("storedMessage", JSON.stringify({ type: "success", text: `Success! ${result.message}` }));
+                    sessionStorage.setItem("storedMessage", JSON.stringify({ type: "success", text: `¡Éxito! ${result.message}` }));
                     location.reload();
                 } else {
-                    showResponseModal('failure', `Error!  ${result.error}`);
+                    showResponseModal('failure', `¡Error!  ${result.error}`);
                 }
             } catch (error) {
                 console.error("Error:", error);
-                alert('An error occurred while processing your request.');
+                alert('Se ha producido un error al procesar tu solicitud.');
             }
         }
 
@@ -253,6 +184,8 @@
             let newName = document.getElementById("playlist_name").value;
             let startTime = document.getElementById("start_time").value;
             let endTime = document.getElementById("end_time").value;
+            let interval = document.getElementById("cycleInterval").value;
+            let unit = document.getElementById("cycleIntervalUnit").value;
 
             try {
                 const response = await fetch("{{ url_for('playlist.update_playlist', playlist_name='') }}" + oldName, {
@@ -260,25 +193,28 @@
                     headers: {
                         "Content-Type": "application/json"
                     },
-                    body: JSON.stringify({ new_name: newName, start_time: startTime, end_time: endTime })
+                    body: JSON.stringify({ new_name: newName, start_time: startTime, end_time: endTime, interval: interval, unit: unit })
                 });
 
                 const result = await response.json();
                 if (response.ok) {
                     closeModal(); // Close the modal after success
-                    sessionStorage.setItem("storedMessage", JSON.stringify({ type: "success", text: `Success! ${result.message}` }));
+                    sessionStorage.setItem("storedMessage", JSON.stringify({ type: "success", text: `¡Éxito! ${result.message}` }));
                     location.reload();
                 } else {
-                    showResponseModal('failure', `Error!  ${result.error}`);
+                    showResponseModal('failure', `¡Error!  ${result.error}`);
                 }
             } catch (error) {
                 console.error("Error:", error);
-                alert('An error occurred while processing your request.');
+                alert('Se ha producido un error al procesar tu solicitud.');
             }
         }
 
         async function deletePlaylist() {
             let name = document.getElementById("editingPlaylistName").value;
+            if (!confirm(`¿Eliminar la lista "${name}" y todos sus plugins? Esta acción no se puede deshacer.`)) {
+                return;
+            }
             try {
                 const response = await fetch("{{ url_for('playlist.delete_playlist', playlist_name='') }}" + name, {
                     method: "DELETE",
@@ -287,63 +223,32 @@
                 const result = await response.json();
                 if (response.ok) {
                     closeModal(); // Close the modal after success
-                    sessionStorage.setItem("storedMessage", JSON.stringify({ type: "success", text: `Success! ${result.message}` }));
+                    sessionStorage.setItem("storedMessage", JSON.stringify({ type: "success", text: `¡Éxito! ${result.message}` }));
                     location.reload();
                 } else {
-                    showResponseModal('failure', `Error!  ${result.error}`);
+                    showResponseModal('failure', `¡Error!  ${result.error}`);
                 }
             } catch (error) {
                 console.error("Error:", error);
-                alert('An error occurred while processing your request.');
+                alert('Se ha producido un error al procesar tu solicitud.');
             }
         }
 
-        let pluginCycleIntervalSeconds = {{ plugin_cycle_interval_seconds | default(3600) | tojson }};
-
-        function populateCycleIntervalField() {
+        // Populates the interval number + unit fields in the create/edit playlist modal
+        // from a total-seconds value (used both for the "New Playlist" default and to
+        // show an existing playlist's own cycle interval when editing it).
+        function setCycleIntervalFields(seconds) {
             const intervalInput = document.getElementById('cycleInterval');
             const unitSelect = document.getElementById('cycleIntervalUnit');
 
-            if (pluginCycleIntervalSeconds !== null && pluginCycleIntervalSeconds !== undefined) {
-                let intervalInMinutes = Math.floor(pluginCycleIntervalSeconds / 60);
-                let intervalInHours = Math.floor(pluginCycleIntervalSeconds / 3600);
-
-                if (intervalInHours > 0) {
-                    intervalInput.value = intervalInHours;
-                    unitSelect.value = "hour";
-                } else {
-                    intervalInput.value = intervalInMinutes;
-                    unitSelect.value = "minute";
-                }
+            if (seconds % 3600 === 0) {
+                intervalInput.value = seconds / 3600;
+                unitSelect.value = "hour";
+            } else {
+                intervalInput.value = Math.max(1, Math.round(seconds / 60));
+                unitSelect.value = "minute";
             }
         }
-
-        async function saveCycleInterval() {
-            let interval = document.getElementById("cycleInterval").value;
-            let unit = document.getElementById("cycleIntervalUnit").value;
-
-            try {
-                const response = await fetch("{{ url_for('playlist.update_cycle_interval') }}", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({ interval: interval, unit: unit })
-                });
-
-                const result = await response.json();
-                if (response.ok) {
-                    showResponseModal('success', `Success! ${result.message}`);
-                } else {
-                    showResponseModal('failure', `Error!  ${result.error}`);
-                }
-            } catch (error) {
-                console.error("Error:", error);
-                alert('An error occurred while processing your request.');
-            }
-        }
-
-        document.addEventListener("DOMContentLoaded", populateCycleIntervalField);
 
         function populateTimeOptions() {
             let startSelect = document.getElementById("start_time");
@@ -419,58 +324,54 @@
 
                 const result = await response.json();
                 if (response.ok) {
-                    sessionStorage.setItem("storedMessage", JSON.stringify({ type: "success", text: `Success! ${result.message}` }));
+                    sessionStorage.setItem("storedMessage", JSON.stringify({ type: "success", text: `¡Éxito! ${result.message}` }));
                     location.reload();
                 } else {
-                    throw new Error(result.error || 'Failed to update refresh settings');
+                    throw new Error(result.error || 'No se pudieron actualizar los ajustes de refresco');
                 }
             });
         }
     </script>
 </head>
 <body>
-    <div class="frame">
+    <div class="frame playlist-frame">
         <!-- Back Button -->
-        <button onclick="history.back()" class="back-button">← Back</button>
+        <button onclick="history.back()" class="back-button">← Volver</button>
         <!-- Settings Header -->
         <div class="app-header">
             <div class="header-content">
                 <div class="title-container">
-                    <img src="{{ url_for('static', filename='icons/playlist.png') }}" alt="playlist icon" class="app-icon">
-                    <h1 class="app-title">Playlists</h1>
+                    <img src="{{ url_for('static', filename='icons/playlist.png') }}" alt="icono de listas" class="app-icon">
+                    <h1 class="app-title">Listas de reproducción</h1>
                 </div>
-                <button class="header-button" onclick="openCreateModal()">New Playlist</button>
+                <button class="header-button header-button-icon" onclick="openCreateModal()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    Nueva lista
+                </button>
             </div>
         </div>
         <div class="separator"></div>
-
-        <!-- Plugin Cycle Interval -->
-        <div class="form-group nowrap" style="margin: 12px 0;">
-            <label for="cycleInterval">Plugin Cycle Interval:</label>
-            <span title="Determines how often the display switches to a new plugin.">ⓘ</span>
-            <span>Every</span>
-            <input type="number" id="cycleInterval" class="form-input" style="max-width: 80px;" required min="1">
-            <select id="cycleIntervalUnit" class="form-input" required>
-                <option value="minute">Minute</option>
-                <option value="hour">Hour</option>
-            </select>
-            <button type="button" class="header-button" onclick="saveCycleInterval()">Save</button>
-        </div>
 
         <!-- Playlists Container -->
         <div class="playlist-list">
             {% for playlist in playlist_config.playlists %}
             <div class="playlist-item {% if playlist.name == playlist_config.active_playlist %}active{% endif %}">
                     <div class="playlist-header">
-                        <span class="playlist-title">{{ playlist.name }}</span>
-                        <button class="edit-button" onclick="openEditModal('{{ playlist.name }}', '{{ playlist.start_time }}','{{ playlist.end_time }}')"><img src="{{ url_for('static', filename='icons/settings.png') }}" alt="edit playlist" class="action-icon"></button>
+                        <span class="playlist-title-group">
+                            <svg class="playlist-card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                            <span class="playlist-title">{{ playlist.name }}</span>
+                            <span class="playlist-time-range">{{ playlist.start_time }} – {{ playlist.end_time }}</span>
+                        </span>
+                        <button class="icon-action-button" title="Editar lista" onclick="openEditModal('{{ playlist.name }}', '{{ playlist.start_time }}','{{ playlist.end_time }}', {{ playlist.cycle_interval_seconds }})">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                        </button>
                     </div>
                     <!-- Plugin List -->
                     <div class="plugin-list">
                         {% for plugin_instance in playlist.plugins %}
                         <div class="plugin-item">
                             <div class="plugin-info" id="{{plugin_instance.name}}">
-                                <img src="{{ url_for('plugin.image', plugin_id=plugin_instance.plugin_id, filename='icon.png') }}" alt="Plugin Icon" class="plugin-icon">
+                                <img src="{{ url_for('plugin.image', plugin_id=plugin_instance.plugin_id, filename='icon.png') }}" alt="icono del plugin" class="plugin-icon">
                                 <span class="plugin-instance">{{ plugin_instance.name }}</span>
 
                                 <!-- Thumbnail preview - only show if image has been generated -->
@@ -478,9 +379,9 @@
                                 <div class="plugin-thumbnail-container" onclick="showThumbnailPreview('{{ playlist.name }}', '{{ plugin_instance.plugin_id }}', '{{ plugins.get(plugin_instance.plugin_id, {}).display_name or plugin_instance.plugin_id }}','{{ plugin_instance.name }}')">
                                     <img
                                         src="{{ url_for('plugin.plugin_instance_image', playlist_name=playlist.name, plugin_id=plugin_instance.plugin_id, instance_name=plugin_instance.name) }}"
-                                        alt="Preview"
+                                        alt="Vista previa"
                                         class="plugin-thumbnail"
-                                        title="Click to view full size"
+                                        title="Haz clic para ver a tamaño completo"
                                         onerror="this.parentElement.style.display='none';"
                                     >
                                 </div>
@@ -488,7 +389,10 @@
 
                                 <!-- Check if the current plugin is the one being displayed -->
                                 {% if playlist.name == refresh_info.playlist and plugin_instance.name == refresh_info.plugin_instance %}
-                                <span class="displayed-now">Displayed Now</span>
+                                <span class="status-badge displayed-now">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                                    Mostrándose ahora
+                                </span>
                                 {% endif %}
                                 <div id="loadingIndicator" class="loading-indicator small left-align"></div>
 
@@ -496,27 +400,28 @@
                             <div class="plugin-actions">
                                 {% if plugin_instance.latest_refresh_time %}
                                     {% set refresh_time = plugin_instance.latest_refresh_time | format_relative_time %}
-                                    <span class="latest-refresh" title="{{plugin_instance.latest_refresh_time}}">
-                                        Refreshed {{ refresh_time }}
+                                    <span class="status-badge latest-refresh" title="{{plugin_instance.latest_refresh_time}}">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                                        Actualizado {{ refresh_time }}
                                     </span>
                                 {% endif %}
 
-                                <a href="{{ url_for('plugin.plugin_page', plugin_id=plugin_instance.plugin_id) }}?instance={{ plugin_instance.name }}" class="edit-button">
-                                    <img src="{{ url_for('static', filename='icons/edit.png') }}" alt="edit plugin" class="action-icon">
+                                <a href="{{ url_for('plugin.plugin_page', plugin_id=plugin_instance.plugin_id) }}?instance={{ plugin_instance.name }}" class="icon-action-button" title="Editar plugin">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                                 </a>
-                                <button class="edit-button refresh-settings-btn"
-                                        title="Edit Refresh Settings"
+                                <button class="icon-action-button refresh-settings-btn"
+                                        title="Editar ajustes de refresco"
                                         data-playlist="{{ playlist.name }}"
                                         data-plugin-id="{{ plugin_instance.plugin_id }}"
                                         data-instance="{{ plugin_instance.name }}"
                                         data-refresh='{{ plugin_instance.refresh | tojson }}'>
-                                    <img src="{{ url_for('static', filename='icons/clock.svg') }}" alt="refresh settings" class="action-icon">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                                 </button>
-                                <button class="edit-button" title="Display Now" onclick="displayPluginInstance('{{ playlist.name }}', '{{ plugin_instance.plugin_id }}','{{ plugin_instance.name }}')">
-                                    <img src="{{ url_for('static', filename='icons/display.png') }}" alt="display now" class="action-icon">
+                                <button class="icon-action-button" title="Mostrar ahora" onclick="displayPluginInstance('{{ playlist.name }}', '{{ plugin_instance.plugin_id }}','{{ plugin_instance.name }}')">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
                                 </button>
-                                <button class="delete-button" title="Delete Plugin Instance" onclick="deletePluginInstance('{{ playlist.name }}', '{{ plugin_instance.plugin_id }}','{{ plugin_instance.name }}')">
-                                    <img src="{{ url_for('static', filename='icons/remove.png') }}" alt="delete plugin" class="action-icon">
+                                <button class="icon-action-button delete" title="Eliminar instancia de plugin" onclick="deletePluginInstance('{{ playlist.name }}', '{{ plugin_instance.plugin_id }}','{{ plugin_instance.name }}')">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
                                 </button>
                             </div>
                         </div>
@@ -531,25 +436,42 @@
     <div id="playlistModal" class="modal">
         <div class="modal-content">
             <span class="close-button" onclick="closeModal()">×</span>
-            <h2 id="modalTitle">New Playlist</h2>
+            <h2 id="modalTitle">Nueva lista</h2>
             <div class="separator"></div>
             <form id="scheduleForm" class="settings-form">
                 <input type="hidden" id="editingPlaylistName" value="">  <!-- Track existing playlist -->
 
                 <div class="form-group">
-                    <label for="playlist_name" class="form-label">Playlist Name:</label>
-                    <input type="text" id="playlist_name" name="playlist_name" placeholder="Type something..." required class="form-input">
+                    <label for="playlist_name" class="form-label">Nombre de la lista:</label>
+                    <input type="text" id="playlist_name" name="playlist_name" placeholder="Escribe algo..." required class="form-input">
                 </div>
                 <div class="form-group">
-                    <label for="start_time" class="form-label">Display from </label>
-                    <select id="start_time" name="start_time" class="form-input"></select>
-                    <span> - </span>
-                    <select id="end_time" name="end_time" class="form-input"></select>
+                    <label for="start_time" class="form-label">Mostrar de </label>
+                    <span class="select-wrapper">
+                        <select id="start_time" name="start_time" class="form-input"></select>
+                        <svg class="select-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                    </span>
+                    <span> a </span>
+                    <span class="select-wrapper">
+                        <select id="end_time" name="end_time" class="form-input"></select>
+                        <svg class="select-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                    </span>
+                </div>
+                <div class="form-group nowrap">
+                    <label for="cycleInterval" class="form-label">Rotar plugin cada</label>
+                    <input type="number" id="cycleInterval" class="form-input" style="max-width: 80px;" required min="1">
+                    <span class="select-wrapper">
+                        <select id="cycleIntervalUnit" class="form-input" required>
+                            <option value="minute">minuto(s)</option>
+                            <option value="hour">hora(s)</option>
+                        </select>
+                        <svg class="select-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                    </span>
                 </div>
             </form>
             <div class="buttons-container">
-                <button type="button" class="action-button" id="saveButton">Save</button>
-                <button type="button" class="action-button warn hidden" id="deleteButton" onclick="deletePlaylist()">Delete</button>
+                <button type="button" class="action-button" id="saveButton">Guardar</button>
+                <button type="button" class="action-button warn hidden" id="deleteButton" onclick="deletePlaylist()">Eliminar</button>
             </div>
         </div>
     </div>
@@ -558,14 +480,14 @@
     <div id="refreshSettingsModal" class="modal">
         <div class="modal-content">
             <span class="close-button" onclick="closeRefreshModal()">×</span>
-            <h2>Refresh Settings</h2>
+            <h2>Ajustes de refresco</h2>
             <div class="separator"></div>
             <form id="refreshSettingsForm" class="settings-form">
                 {% set prefix = "modal" %}
                 {% include 'refresh_settings_form.html' %}
             </form>
             <div class="buttons-container">
-                <button type="button" class="action-button" onclick="saveRefreshSettings()">Save</button>
+                <button type="button" class="action-button" onclick="saveRefreshSettings()">Guardar</button>
             </div>
         </div>
     </div>
@@ -576,9 +498,10 @@
     <!-- Thumbnail Preview Modal -->
     <div id="thumbnailPreviewModal" class="thumbnail-preview-modal">
         <div class="thumbnail-preview-content">
-            <span class="thumbnail-preview-close" onclick="closeThumbnailPreview()">×</span>
-            <img id="thumbnailPreviewImage" src="" alt="Plugin Instance Preview">
-            <div class="thumbnail-preview-info" id="thumbnailPreviewInfo"></div>
+            <span class="close-button" onclick="closeThumbnailPreview()">×</span>
+            <h2 id="thumbnailPreviewTitle">Vista previa</h2>
+            <div class="separator"></div>
+            <img id="thumbnailPreviewImage" src="" alt="Vista previa de la instancia del plugin">
         </div>
     </div>
 </body>

@@ -24,10 +24,11 @@
                 "start_time": "00:00",
                 "end_time": "24:00",
                 "plugins": [],
-                "current_plugin_index": null
+                "current_plugin_index": null,
+                "cycle_interval_seconds": 3600
             }
         ],
-        "active_playlist": null
+        "active_playlist": "Default"
     },
     "refresh_info": {
         "refresh_time": "2026-08-17T22:09:16.513268+00:00",

@@ -119,22 +119,23 @@ class PlaylistManager:
             logger.warning(f"Playlist '{playlist_name}' not found.")
         return False
 
-    def add_playlist(self, name, start_time=None, end_time=None):
+    def add_playlist(self, name, start_time=None, end_time=None, cycle_interval_seconds=None):
         """Creates and adds a new playlist with the given start and end times."""
         if not start_time:
             start_time = PlaylistManager.DEFAULT_PLAYLIST_START
         if not end_time:
             end_time = PlaylistManager.DEFAULT_PLAYLIST_END
-        self.playlists.append(Playlist(name, start_time, end_time))
+        self.playlists.append(Playlist(name, start_time, end_time, cycle_interval_seconds=cycle_interval_seconds))
         return True
 
-    def update_playlist(self, old_name, new_name, start_time, end_time):
-        """Updates an existing playlist's name, start time, and end time."""
+    def update_playlist(self, old_name, new_name, start_time, end_time, cycle_interval_seconds=None):
+        """Updates an existing playlist's name, start time, end time, and cycle interval."""
         playlist = self.get_playlist(old_name)
         if playlist:
             playlist.name = new_name
             playlist.start_time = start_time
             playlist.end_time = end_time
+            playlist.cycle_interval_seconds = cycle_interval_seconds or Playlist.DEFAULT_CYCLE_INTERVAL_SECONDS
             return True
         logger.warning(f"Playlist '{old_name}' not found.")
         return False
@@ -173,14 +174,18 @@ class Playlist:
         end_time (str): Playlist end time in 'HH:MM'.
         plugins (list): A list of PluginInstance objects within the playlist.
         current_plugin_index (int): Index of the currently active plugin in the playlist.
+        cycle_interval_seconds (int): How often this playlist switches to its next plugin.
     """
 
-    def __init__(self, name, start_time, end_time, plugins=None, current_plugin_index=None):
+    DEFAULT_CYCLE_INTERVAL_SECONDS = 3600
+
+    def __init__(self, name, start_time, end_time, plugins=None, current_plugin_index=None, cycle_interval_seconds=None):
         self.name = name
         self.start_time = start_time
         self.end_time = end_time
         self.plugins = [PluginInstance.from_dict(p) for p in (plugins or [])]
         self.current_plugin_index = current_plugin_index
+        self.cycle_interval_seconds = cycle_interval_seconds or Playlist.DEFAULT_CYCLE_INTERVAL_SECONDS
 
     def is_active(self, current_time):
         """Check if the playlist is active at the given time."""
@@ -257,7 +262,8 @@ class Playlist:
             "start_time": self.start_time,
             "end_time": self.end_time,
             "plugins": [p.to_dict() for p in self.plugins],
-            "current_plugin_index": self.current_plugin_index
+            "current_plugin_index": self.current_plugin_index,
+            "cycle_interval_seconds": self.cycle_interval_seconds
         }
 
     @classmethod
@@ -267,7 +273,8 @@ class Playlist:
             start_time=data["start_time"],
             end_time=data["end_time"],
             plugins=data["plugins"],
-            current_plugin_index=data.get("current_plugin_index", None)
+            current_plugin_index=data.get("current_plugin_index", None),
+            cycle_interval_seconds=data.get("cycle_interval_seconds")
         )
 
 class PluginInstance:
