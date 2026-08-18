@@ -192,9 +192,14 @@
     box-shadow: 0 4px 20px var(--shadow-medium);
 }
 
+.thumbnail-preview-content h2 {
+    color: var(--text-primary);
+}
+
 .thumbnail-preview-content img {
     width: 100%;
     height: auto;
+    border: 1px solid var(--border-color);
     border-radius: 8px;
 }
 
