@@ -78,8 +78,34 @@ def playlists():
         'playlist.html',
         playlist_config=playlist_manager.to_dict(),
         refresh_info=refresh_info.to_dict(),
-        plugins={p["id"]: p for p in plugins_list}
+        plugins={p["id"]: p for p in plugins_list},
+        plugin_cycle_interval_seconds=device_config.get_config("plugin_cycle_interval_seconds", default=3600)
     )
+
+@playlist_bp.route('/update_cycle_interval', methods=['POST'])
+def update_cycle_interval():
+    device_config = current_app.config['DEVICE_CONFIG']
+
+    data = request.get_json() or {}
+    unit, interval = data.get("unit"), data.get("interval")
+    if not unit or unit not in ["minute", "hour"]:
+        return jsonify({"error": "Plugin cycle interval unit is required"}), 400
+    if not interval or not str(interval).isnumeric():
+        return jsonify({"error": "Refresh interval is required"}), 400
+
+    previous_interval_seconds = device_config.get_config("plugin_cycle_interval_seconds")
+    plugin_cycle_interval_seconds = calculate_seconds(int(interval), unit)
+    if plugin_cycle_interval_seconds > 86400 or plugin_cycle_interval_seconds <= 0:
+        return jsonify({"error": "Plugin cycle interval must be less than 24 hours"}), 400
+
+    device_config.update_value("plugin_cycle_interval_seconds", plugin_cycle_interval_seconds, write=True)
+
+    if plugin_cycle_interval_seconds != previous_interval_seconds:
+        # wake the background thread up to signal interval config change
+        refresh_task = current_app.config['REFRESH_TASK']
+        refresh_task.signal_config_change()
+
+    return jsonify({"success": True, "message": "Updated plugin cycle interval."})
 
 @playlist_bp.route('/create_playlist', methods=['POST'])
 def create_playlist():

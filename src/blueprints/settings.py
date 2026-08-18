@@ -1,5 +1,4 @@
 from flask import Blueprint, request, jsonify, current_app, render_template, Response
-from utils.time_utils import calculate_seconds
 from datetime import datetime, timedelta
 import os
 import pytz
@@ -38,19 +37,11 @@ def save_settings():
     try:
         form_data = request.form.to_dict()
 
-        unit, interval, time_format = form_data.get('unit'), form_data.get("interval"), form_data.get("timeFormat")
-        if not unit or unit not in ["minute", "hour"]:
-            return jsonify({"error": "Plugin cycle interval unit is required"}), 400
-        if not interval or not interval.isnumeric():
-            return jsonify({"error": "Refresh interval is required"}), 400
         if not form_data.get("timezoneName"):
             return jsonify({"error": "Time Zone is required"}), 400
+        time_format = form_data.get("timeFormat")
         if not time_format or time_format not in ["12h", "24h"]:
             return jsonify({"error": "Time format is required"}), 400
-        previous_interval_seconds = device_config.get_config("plugin_cycle_interval_seconds")
-        plugin_cycle_interval_seconds = calculate_seconds(int(interval), unit)
-        if plugin_cycle_interval_seconds > 86400 or plugin_cycle_interval_seconds <= 0:
-            return jsonify({"error": "Plugin cycle interval must be less than 24 hours"}), 400
 
         settings = {
             "orientation": form_data.get("orientation"),
@@ -58,7 +49,6 @@ def save_settings():
             "log_system_stats": form_data.get("logSystemStats"),
             "timezone": form_data.get("timezoneName"),
             "time_format": form_data.get("timeFormat"),
-            "plugin_cycle_interval_seconds": plugin_cycle_interval_seconds,
             "image_settings": {
                 "saturation": float(form_data.get("saturation", "1.0")),
                 "brightness": float(form_data.get("brightness", "1.0")),
@@ -67,11 +57,6 @@ def save_settings():
             }
         }
         device_config.update_config(settings)
-
-        if plugin_cycle_interval_seconds != previous_interval_seconds:
-            # wake the background thread up to signal interval config change
-            refresh_task = current_app.config['REFRESH_TASK']
-            refresh_task.signal_config_change()
     except RuntimeError as e:
         return jsonify({"error": str(e)}), 500
     except Exception as e:

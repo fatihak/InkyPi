@@ -298,6 +298,53 @@
             }
         }
 
+        let pluginCycleIntervalSeconds = {{ plugin_cycle_interval_seconds | default(3600) | tojson }};
+
+        function populateCycleIntervalField() {
+            const intervalInput = document.getElementById('cycleInterval');
+            const unitSelect = document.getElementById('cycleIntervalUnit');
+
+            if (pluginCycleIntervalSeconds !== null && pluginCycleIntervalSeconds !== undefined) {
+                let intervalInMinutes = Math.floor(pluginCycleIntervalSeconds / 60);
+                let intervalInHours = Math.floor(pluginCycleIntervalSeconds / 3600);
+
+                if (intervalInHours > 0) {
+                    intervalInput.value = intervalInHours;
+                    unitSelect.value = "hour";
+                } else {
+                    intervalInput.value = intervalInMinutes;
+                    unitSelect.value = "minute";
+                }
+            }
+        }
+
+        async function saveCycleInterval() {
+            let interval = document.getElementById("cycleInterval").value;
+            let unit = document.getElementById("cycleIntervalUnit").value;
+
+            try {
+                const response = await fetch("{{ url_for('playlist.update_cycle_interval') }}", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({ interval: interval, unit: unit })
+                });
+
+                const result = await response.json();
+                if (response.ok) {
+                    showResponseModal('success', `Success! ${result.message}`);
+                } else {
+                    showResponseModal('failure', `Error!  ${result.error}`);
+                }
+            } catch (error) {
+                console.error("Error:", error);
+                alert('An error occurred while processing your request.');
+            }
+        }
+
+        document.addEventListener("DOMContentLoaded", populateCycleIntervalField);
+
         function populateTimeOptions() {
             let startSelect = document.getElementById("start_time");
             let endSelect = document.getElementById("end_time");
@@ -396,6 +443,19 @@
             </div>
         </div>
         <div class="separator"></div>
+
+        <!-- Plugin Cycle Interval -->
+        <div class="form-group nowrap" style="margin: 12px 0;">
+            <label for="cycleInterval">Plugin Cycle Interval:</label>
+            <span title="Determines how often the display switches to a new plugin.">ⓘ</span>
+            <span>Every</span>
+            <input type="number" id="cycleInterval" class="form-input" style="max-width: 80px;" required min="1">
+            <select id="cycleIntervalUnit" class="form-input" required>
+                <option value="minute">Minute</option>
+                <option value="hour">Hour</option>
+            </select>
+            <button type="button" class="header-button" onclick="saveCycleInterval()">Save</button>
+        </div>
 
         <!-- Playlists Container -->
         <div class="playlist-list">
