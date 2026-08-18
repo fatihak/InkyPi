@@ -170,6 +170,9 @@ src/static/images/current_image.png
 # IDE files
 .idea
 
-# Static Files added by install/update_vendors.sh
-/src/static/scripts/
-/src/static/styles/
+# Static files added by install/update_vendors.sh (third-party, not our own code)
+/src/static/scripts/select2.min.js
+/src/static/scripts/jquery.min.js
+/src/static/scripts/chart.js
+/src/static/scripts/calendar.min.js
+/src/static/styles/select2.min.css

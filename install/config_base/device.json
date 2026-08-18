@@ -3,5 +3,7 @@
     "orientation": "horizontal",
     "inverted_image": false,
     "scheduler_sleep_time": 60,
-    "startup": true
+    "startup": true,
+    "timezone": "Europe/Madrid",
+    "time_format": "24h"
 }
