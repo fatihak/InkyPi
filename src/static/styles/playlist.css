@@ -202,12 +202,3 @@
     border: 1px solid var(--border-color);
     border-radius: 8px;
 }
-
-.thumbnail-preview-info {
-    margin-top: 10px;
-    padding: 10px;
-    background-color: var(--bg-primary);
-    border-radius: 6px;
-    color: var(--text-secondary);
-    font-size: 14px;
-}
