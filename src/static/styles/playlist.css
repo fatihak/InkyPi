@@ -22,6 +22,10 @@
 .playlist-header {
     background: var(--bg-primary);
     border-radius: 10px 10px 0 0;
+    /* main.css uses 20px/10px top/bottom, which pushes the content off-center
+       within the bar — even it out for this page's taller icon+title group. */
+    padding-top: 15px;
+    padding-bottom: 15px;
 }
 
 .playlist-title-group {
