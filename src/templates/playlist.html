@@ -200,6 +200,7 @@
             document.getElementById("editingPlaylistName").value = ""; // Empty value means it's new
             document.getElementById("start_time").value = "00:00";
             document.getElementById("end_time").value = "24:00";
+            setCycleIntervalFields(3600);
 
             document.getElementById("saveButton").setAttribute("onclick", "createPlaylist()");
             document.getElementById("deleteButton").classList.add("hidden"); // Hide delete button
@@ -208,12 +209,13 @@
         }
 
         // Open modal for **editing** an existing playlist
-        function openEditModal(playlistName, startTime, endTime) {
+        function openEditModal(playlistName, startTime, endTime, cycleIntervalSeconds) {
             document.getElementById("modalTitle").textContent = "Update Playlist";
             document.getElementById("playlist_name").value = playlistName;
             document.getElementById("editingPlaylistName").value = playlistName;
             document.getElementById("start_time").value = startTime;
             document.getElementById("end_time").value = endTime;
+            setCycleIntervalFields(cycleIntervalSeconds);
 
             document.getElementById("saveButton").setAttribute("onclick", "updatePlaylist()");
             document.getElementById("deleteButton").classList.remove("hidden"); // Show delete button
@@ -235,6 +237,8 @@
             let playlistName = document.getElementById("playlist_name").value.trim();
             let startTime = document.getElementById("start_time").value;
             let endTime = document.getElementById("end_time").value;
+            let interval = document.getElementById("cycleInterval").value;
+            let unit = document.getElementById("cycleIntervalUnit").value;
 
             try {
                 const response = await fetch("{{ url_for('playlist.create_playlist') }}", {
@@ -242,7 +246,7 @@
                     headers: {
                         "Content-Type": "application/json"
                     },
-                    body: JSON.stringify({ playlist_name: playlistName, start_time: startTime, end_time: endTime })
+                    body: JSON.stringify({ playlist_name: playlistName, start_time: startTime, end_time: endTime, interval: interval, unit: unit })
                 });
 
                 const result = await response.json();
@@ -264,6 +268,8 @@
             let newName = document.getElementById("playlist_name").value;
             let startTime = document.getElementById("start_time").value;
             let endTime = document.getElementById("end_time").value;
+            let interval = document.getElementById("cycleInterval").value;
+            let unit = document.getElementById("cycleIntervalUnit").value;
 
             try {
                 const response = await fetch("{{ url_for('playlist.update_playlist', playlist_name='') }}" + oldName, {
@@ -271,7 +277,7 @@
                     headers: {
                         "Content-Type": "application/json"
                     },
-                    body: JSON.stringify({ new_name: newName, start_time: startTime, end_time: endTime })
+                    body: JSON.stringify({ new_name: newName, start_time: startTime, end_time: endTime, interval: interval, unit: unit })
                 });
 
                 const result = await response.json();
@@ -309,52 +315,21 @@
             }
         }
 
-        let pluginCycleIntervalSeconds = {{ plugin_cycle_interval_seconds | default(3600) | tojson }};
-
-        function populateCycleIntervalField() {
+        // Populates the interval number + unit fields in the create/edit playlist modal
+        // from a total-seconds value (used both for the "New Playlist" default and to
+        // show an existing playlist's own cycle interval when editing it).
+        function setCycleIntervalFields(seconds) {
             const intervalInput = document.getElementById('cycleInterval');
             const unitSelect = document.getElementById('cycleIntervalUnit');
 
-            if (pluginCycleIntervalSeconds !== null && pluginCycleIntervalSeconds !== undefined) {
-                let intervalInMinutes = Math.floor(pluginCycleIntervalSeconds / 60);
-                let intervalInHours = Math.floor(pluginCycleIntervalSeconds / 3600);
-
-                if (intervalInHours > 0) {
-                    intervalInput.value = intervalInHours;
-                    unitSelect.value = "hour";
-                } else {
-                    intervalInput.value = intervalInMinutes;
-                    unitSelect.value = "minute";
-                }
+            if (seconds % 3600 === 0) {
+                intervalInput.value = seconds / 3600;
+                unitSelect.value = "hour";
+            } else {
+                intervalInput.value = Math.max(1, Math.round(seconds / 60));
+                unitSelect.value = "minute";
             }
         }
-
-        async function saveCycleInterval() {
-            let interval = document.getElementById("cycleInterval").value;
-            let unit = document.getElementById("cycleIntervalUnit").value;
-
-            try {
-                const response = await fetch("{{ url_for('playlist.update_cycle_interval') }}", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({ interval: interval, unit: unit })
-                });
-
-                const result = await response.json();
-                if (response.ok) {
-                    showResponseModal('success', `Success! ${result.message}`);
-                } else {
-                    showResponseModal('failure', `Error!  ${result.error}`);
-                }
-            } catch (error) {
-                console.error("Error:", error);
-                alert('An error occurred while processing your request.');
-            }
-        }
-
-        document.addEventListener("DOMContentLoaded", populateCycleIntervalField);
 
         function populateTimeOptions() {
             let startSelect = document.getElementById("start_time");
@@ -455,19 +430,6 @@
         </div>
         <div class="separator"></div>
 
-        <!-- Plugin Cycle Interval -->
-        <div class="form-group nowrap" style="margin: 12px 0;">
-            <label for="cycleInterval">Plugin Cycle Interval:</label>
-            <span title="Determines how often the display switches to a new plugin.">ⓘ</span>
-            <span>Every</span>
-            <input type="number" id="cycleInterval" class="form-input" style="max-width: 80px;" required min="1">
-            <select id="cycleIntervalUnit" class="form-input" required>
-                <option value="minute">Minute</option>
-                <option value="hour">Hour</option>
-            </select>
-            <button type="button" class="header-button" onclick="saveCycleInterval()">Save</button>
-        </div>
-
         <!-- Playlists Container -->
         <div class="playlist-list">
             {% for playlist in playlist_config.playlists %}
@@ -477,7 +439,7 @@
                             <span class="playlist-title">{{ playlist.name }}</span>
                             <span class="playlist-time-range">{{ playlist.start_time }} – {{ playlist.end_time }}</span>
                         </span>
-                        <button class="edit-button" onclick="openEditModal('{{ playlist.name }}', '{{ playlist.start_time }}','{{ playlist.end_time }}')"><img src="{{ url_for('static', filename='icons/settings.png') }}" alt="edit playlist" class="action-icon"></button>
+                        <button class="edit-button" onclick="openEditModal('{{ playlist.name }}', '{{ playlist.start_time }}','{{ playlist.end_time }}', {{ playlist.cycle_interval_seconds }})"><img src="{{ url_for('static', filename='icons/settings.png') }}" alt="edit playlist" class="action-icon"></button>
                     </div>
                     <!-- Plugin List -->
                     <div class="plugin-list">
@@ -559,6 +521,16 @@
                     <select id="start_time" name="start_time" class="form-input"></select>
                     <span> - </span>
                     <select id="end_time" name="end_time" class="form-input"></select>
+                </div>
+                <div class="form-group">
+                    <label for="cycleInterval" class="form-label">Plugin Cycle Interval:</label>
+                    <span title="Determines how often the display switches to a new plugin while this playlist is active.">ⓘ</span>
+                    <span>Every</span>
+                    <input type="number" id="cycleInterval" class="form-input" style="max-width: 80px;" required min="1">
+                    <select id="cycleIntervalUnit" class="form-input" required>
+                        <option value="minute">Minute</option>
+                        <option value="hour">Hour</option>
+                    </select>
                 </div>
             </form>
             <div class="buttons-container">
