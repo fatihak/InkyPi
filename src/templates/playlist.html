@@ -93,6 +93,17 @@
             color: var(--text-secondary);
             font-size: 14px;
         }
+
+        .playlist-title-group {
+            display: flex;
+            align-items: baseline;
+            gap: 10px;
+        }
+
+        .playlist-time-range {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
     </style>
     <script>
         async function deletePluginInstance(playlistName, pluginId, pluginInstance) {
@@ -462,7 +473,10 @@
             {% for playlist in playlist_config.playlists %}
             <div class="playlist-item {% if playlist.name == playlist_config.active_playlist %}active{% endif %}">
                     <div class="playlist-header">
-                        <span class="playlist-title">{{ playlist.name }}</span>
+                        <span class="playlist-title-group">
+                            <span class="playlist-title">{{ playlist.name }}</span>
+                            <span class="playlist-time-range">{{ playlist.start_time }} – {{ playlist.end_time }}</span>
+                        </span>
                         <button class="edit-button" onclick="openEditModal('{{ playlist.name }}', '{{ playlist.start_time }}','{{ playlist.end_time }}')"><img src="{{ url_for('static', filename='icons/settings.png') }}" alt="edit playlist" class="action-icon"></button>
                     </div>
                     <!-- Plugin List -->
