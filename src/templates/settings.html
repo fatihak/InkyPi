@@ -16,6 +16,265 @@
     <link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='styles/main.css') }}">
     <script src="{{ url_for('static', filename='scripts/dark_mode.js') }}"></script>
     <script src="{{ url_for('static', filename='scripts/response_modal.js') }}"></script>
+    <style>
+        /* Scoped redesign for the Settings page only — does not touch main.css */
+        .settings-frame {
+            min-height: 0;
+        }
+
+        .settings-sections {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            margin: 4px 0 20px 0;
+        }
+
+        .settings-section {
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            overflow: hidden;
+            transition: border-color 0.3s ease;
+        }
+
+        .settings-section-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            width: 100%;
+            padding: 14px 16px;
+            background: var(--bg-primary);
+            border: none;
+            cursor: pointer;
+            text-align: left;
+            font-family: inherit;
+        }
+
+        .settings-section-header:hover {
+            background: var(--button-hover);
+        }
+
+        .settings-section-icon {
+            width: 20px;
+            height: 20px;
+            flex-shrink: 0;
+            color: var(--accent-primary);
+        }
+
+        .settings-section-icon svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        .settings-section-title {
+            flex: 1;
+            font-weight: 600;
+            font-size: 1rem;
+            color: var(--text-primary);
+        }
+
+        .settings-section-chevron {
+            width: 16px;
+            height: 16px;
+            color: var(--text-secondary);
+            transition: transform 0.25s ease;
+            flex-shrink: 0;
+        }
+
+        .settings-section.open .settings-section-chevron {
+            transform: rotate(180deg);
+        }
+
+        .settings-section-body {
+            display: none;
+            padding: 18px 16px 20px 16px;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .settings-section.open .settings-section-body {
+            display: block;
+        }
+
+        .settings-row {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 10px 28px;
+        }
+
+        .settings-row + .settings-row {
+            margin-top: 16px;
+        }
+
+        .settings-field {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .settings-field label {
+            font-weight: 500;
+            color: var(--text-primary);
+            white-space: nowrap;
+        }
+
+        /* Toggle switch */
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 42px;
+            height: 24px;
+            flex-shrink: 0;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            inset: 0;
+            background-color: var(--border-subtle);
+            border-radius: 24px;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+
+        .toggle-slider::before {
+            content: "";
+            position: absolute;
+            width: 18px;
+            height: 18px;
+            left: 3px;
+            top: 3px;
+            background-color: #fff;
+            border-radius: 50%;
+            transition: transform 0.2s ease;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+        }
+
+        .toggle-switch input:checked + .toggle-slider {
+            background-color: var(--accent-primary);
+        }
+
+        .toggle-switch input:checked + .toggle-slider::before {
+            transform: translateX(18px);
+        }
+
+        /* Sliders */
+        .slider-row {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .slider-row label {
+            font-weight: 500;
+            color: var(--text-primary);
+            min-width: 90px;
+            white-space: nowrap;
+        }
+
+        .slider-row input[type="range"] {
+            flex: 1;
+            max-width: 360px;
+            -webkit-appearance: none;
+            appearance: none;
+            height: 6px;
+            border-radius: 3px;
+            background: var(--border-subtle);
+            outline: none;
+        }
+
+        .slider-row input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--accent-primary);
+            cursor: pointer;
+            border: 3px solid var(--bg-secondary);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+        }
+
+        .slider-row input[type="range"]::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--accent-primary);
+            cursor: pointer;
+            border: 3px solid var(--bg-secondary);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+        }
+
+        .slider-value {
+            min-width: 28px;
+            text-align: right;
+            color: var(--text-secondary);
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* Text/select inputs reused within the new rows */
+        .settings-field input[type="text"],
+        .settings-field select {
+            padding: 0.5rem 0.7rem;
+            font-size: 1rem;
+            border: 1px solid var(--border-subtle);
+            border-radius: 6px;
+            background-color: var(--input-bg);
+            color: var(--text-primary);
+            transition: all 0.3s ease;
+        }
+
+        .settings-field input[type="text"]:focus,
+        .settings-field select:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 3px var(--input-focus);
+        }
+
+        /* Custom select arrow, replacing the native one so it never crowds the border
+           and matches the chevron used elsewhere on this page */
+        .select-wrapper {
+            position: relative;
+            display: inline-flex;
+        }
+
+        .select-wrapper select {
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            padding-right: 2.2rem;
+        }
+
+        .select-chevron {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 14px;
+            height: 14px;
+            color: var(--text-secondary);
+            pointer-events: none;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .header-actions .header-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .header-actions svg {
+            width: 15px;
+            height: 15px;
+        }
+    </style>
     <script>
         async function handleAction() {
             const form = document.querySelector('.settings-form');
@@ -40,12 +299,8 @@
             }
         }
 
-        function toggleCollapsible(button) {
-            const content = button.nextElementSibling;
-            const icon = button.querySelector(".collapsible-icon");
-            button.classList.toggle("active");
-            content.style.display = content.style.display === "block" ? "none" : "block";
-            icon.textContent = content.style.display === "block" ? "▲" : "▼";
+        function toggleSection(header) {
+            header.closest('.settings-section').classList.toggle('open');
         }
 
         async function handleShutdown(reboot) {
@@ -65,7 +320,6 @@
             });
         }
 
-
         function updateSliderValue(slider) {
             const valueDisplay = document.getElementById(`${slider.id}-value`);
             valueDisplay.textContent = parseFloat(slider.value).toFixed(1);
@@ -73,7 +327,7 @@
     </script>
 </head>
 <body>
-    <div class="frame">
+    <div class="frame settings-frame">
         <!-- Back Button -->
         <button onclick="history.back()" class="back-button">← Volver</button>
         <!-- Settings Header -->
@@ -83,53 +337,70 @@
                     <img src="{{ url_for('static', filename='icons/settings.png') }}" alt="icono de ajustes" class="app-icon">
                     <h1 class="app-title">Configuración</h1>
                 </div>
-                <div>
-                    <button class="header-button" style="background-color: #FFD600; color: #333;" onclick="handleShutdown(true)">Reiniciar</button>
-                    <button class="header-button" style="background-color: #E53935; color: #fff;" onclick="handleShutdown(false)">Apagar</button>
+                <div class="header-actions">
+                    <button class="header-button" style="background-color: #FFD600; color: #333;" onclick="handleShutdown(true)">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+                        Reiniciar
+                    </button>
+                    <button class="header-button" style="background-color: #E53935; color: #fff;" onclick="handleShutdown(false)">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"/><line x1="12" y1="2" x2="12" y2="12"/></svg>
+                        Apagar
+                    </button>
                 </div>
             </div>
         </div>
         <div class="separator"></div>
         <!-- Settings Content -->
         <form class="settings-form">
-            <div id="settings-container">
-                <div class="collapsible">
-                    <button type="button" class="collapsible-header" onclick="toggleCollapsible(this)">
-                        Pantalla <span class="collapsible-icon">▼</span>
+            <div class="settings-sections">
+
+                <div class="settings-section open">
+                    <button type="button" class="settings-section-header" onclick="toggleSection(this)">
+                        <span class="settings-section-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                        </span>
+                        <span class="settings-section-title">Pantalla</span>
+                        <svg class="settings-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
                     </button>
-                    <div class="settings-container collapsible-content">
-                        <div class="form-group nowrap">
-                            <!-- Orientation Dropdown -->
-                            <div class="form-group">
-                                <label for="orientation" class="form-label">Orientación:</label>
-                                <select id="orientation" name="orientation" class="form-input">
-                                    <option value="horizontal" {% if device_settings.orientation == "horizontal" %}selected{% endif %}>Horizontal</option>
-                                    <option value="vertical" {% if device_settings.orientation == "vertical" %}selected{% endif %}>Vertical</option>
-                                </select>
+                    <div class="settings-section-body">
+                        <div class="settings-row">
+                            <div class="settings-field">
+                                <label for="orientation">Orientación</label>
+                                <span class="select-wrapper">
+                                    <select id="orientation" name="orientation">
+                                        <option value="horizontal" {% if device_settings.orientation == "horizontal" %}selected{% endif %}>Horizontal</option>
+                                        <option value="vertical" {% if device_settings.orientation == "vertical" %}selected{% endif %}>Vertical</option>
+                                    </select>
+                                    <svg class="select-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                                </span>
                             </div>
-                            <div class="form-group nowrap">
-                                <!-- Invert Image Checkbox -->
-                                <label class="form-label" for="invertImage">Invertir imagen</label>
-                                <input type="checkbox" id="invertImage" name="invertImage" {% if device_settings.inverted_image %}checked{% endif %}>
+                            <div class="settings-field">
+                                <label for="invertImage">Invertir imagen</label>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="invertImage" name="invertImage" {% if device_settings.inverted_image %}checked{% endif %}>
+                                    <span class="toggle-slider"></span>
+                                </label>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="collapsible">
-                    <button type="button" class="collapsible-header" onclick="toggleCollapsible(this)">
-                        Hora <span class="collapsible-icon">▼</span>
+                <div class="settings-section open">
+                    <button type="button" class="settings-section-header" onclick="toggleSection(this)">
+                        <span class="settings-section-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                        </span>
+                        <span class="settings-section-title">Hora</span>
+                        <svg class="settings-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
                     </button>
-                    <div class="settings-container collapsible-content">
-                        <div class="form-group">
-                            <!-- Timezone Dropdown -->
-                            <div class="form-group nowrap">
-                                <label for="timezone" class="form-label">Zona horaria:</label>
+                    <div class="settings-section-body">
+                        <div class="settings-row">
+                            <div class="settings-field">
+                                <label for="timezone">Zona horaria</label>
                                 <input
                                     type="text"
                                     id="timezone"
                                     name="timezoneName"
-                                    class="form-input"
                                     list="timezoneList"
                                     placeholder="Escribe para buscar..."
                                     value="{{ device_settings.timezone }}"
@@ -140,95 +411,84 @@
                                     {% endfor %}
                                 </datalist>
                             </div>
-
-                            <!-- Time Format Dropdown -->
-                            <div class="form-group nowrap">
-                                <label for="timeFormat" class="form-label">Formato de hora:</label>
-                                <select id="timeFormat" name="timeFormat" class="form-input">
-                                    <option value="12h" {% if device_settings.time_format == "12h" %}selected{% endif %}>12 horas (AM/PM)</option>
-                                    <option value="24h" {% if device_settings.time_format == "24h" %}selected{% endif %}>24 horas</option>
-                                </select>
+                            <div class="settings-field">
+                                <label for="timeFormat">Formato de hora</label>
+                                <span class="select-wrapper">
+                                    <select id="timeFormat" name="timeFormat">
+                                        <option value="12h" {% if device_settings.time_format == "12h" %}selected{% endif %}>12 horas (AM/PM)</option>
+                                        <option value="24h" {% if device_settings.time_format == "24h" %}selected{% endif %}>24 horas</option>
+                                    </select>
+                                    <svg class="select-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                                </span>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="collapsible">
-                    <button type="button" class="collapsible-header" onclick="toggleCollapsible(this)">
-                        Imagen <span class="collapsible-icon">▼</span>
+                <div class="settings-section">
+                    <button type="button" class="settings-section-header" onclick="toggleSection(this)">
+                        <span class="settings-section-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                        </span>
+                        <span class="settings-section-title">Imagen</span>
+                        <svg class="settings-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
                     </button>
-                    <div class="settings-container collapsible-content">
-                        <div class="form-group">
-                            <label for="saturation" class="form-label" style="min-width: 100px;">Saturación:</label>
-                            <span id="saturation-value">{{ device_settings.get('image_settings', {}).get('saturation', 1.0) }}</span>
-                            <input
-                                type="range"
-                                id="saturation"
-                                name="saturation"
-                                class="form-input"
-                                min="0" max="2" step="0.1"
-                                value="{{ device_settings.get('image_settings', {}).get('saturation', 1.0) }}"
-                                style="max-width: 400px;"
-                                oninput="updateSliderValue(this)"
-                            />
-                        </div>
-                        <div class="form-group">
-                            <label for="contrast" class="form-label" style="min-width: 100px;">Contraste:</label>
-                            <span id="contrast-value">{{ device_settings.get('image_settings', {}).get('contrast', 1.0) }}</span>
-                            <input
-                                type="range"
-                                id="contrast"
-                                name="contrast"
-                                class="form-input"
-                                min="0" max="2" step="0.1"
-                                value="{{ device_settings.get('image_settings', {}).get('contrast', 1.0) }}"
-                                style="max-width: 400px;"
-                                oninput="updateSliderValue(this)"
-                            />
-                         </div>
-                        <div class="form-group">
-                            <label for="sharpness" class="form-label" style="min-width: 100px;">Nitidez:</label>
-                            <span id="sharpness-value">{{ device_settings.get('image_settings', {}).get('sharpness', 1.0) }}</span>
-                            <input
-                                type="range"
-                                id="sharpness"
-                                name="sharpness"
-                                class="form-input"
-                                min="0" max="2" step="0.1"
-                                value="{{ device_settings.get('image_settings', {}).get('sharpness', 1.0) }}"
-                                style="max-width: 400px;"
-                                oninput="updateSliderValue(this)"
-                            />
-                        </div>
-                        <div class="form-group">
-                            <label for="brightness" class="form-label" style="min-width: 100px;">Brillo:</label>
-                            <span id="brightness-value">{{ device_settings.get('image_settings', {}).get('brightness', 1.0) }}</span>
-                            <input
-                                type="range"
-                                id="brightness"
-                                name="brightness"
-                                class="form-input"
-                                min="0" max="2" step="0.1"
-                                value="{{ device_settings.get('image_settings', {}).get('brightness', 1.0) }}"
-                                style="max-width: 400px;"
-                                oninput="updateSliderValue(this)"
-                            />
+                    <div class="settings-section-body">
+                        <div class="settings-row" style="flex-direction: column; align-items: stretch; gap: 14px;">
+                            <div class="slider-row">
+                                <label for="saturation">Saturación</label>
+                                <input type="range" id="saturation" name="saturation" min="0" max="2" step="0.1"
+                                       value="{{ device_settings.get('image_settings', {}).get('saturation', 1.0) }}"
+                                       oninput="updateSliderValue(this)">
+                                <span class="slider-value" id="saturation-value">{{ device_settings.get('image_settings', {}).get('saturation', 1.0) }}</span>
+                            </div>
+                            <div class="slider-row">
+                                <label for="contrast">Contraste</label>
+                                <input type="range" id="contrast" name="contrast" min="0" max="2" step="0.1"
+                                       value="{{ device_settings.get('image_settings', {}).get('contrast', 1.0) }}"
+                                       oninput="updateSliderValue(this)">
+                                <span class="slider-value" id="contrast-value">{{ device_settings.get('image_settings', {}).get('contrast', 1.0) }}</span>
+                            </div>
+                            <div class="slider-row">
+                                <label for="sharpness">Nitidez</label>
+                                <input type="range" id="sharpness" name="sharpness" min="0" max="2" step="0.1"
+                                       value="{{ device_settings.get('image_settings', {}).get('sharpness', 1.0) }}"
+                                       oninput="updateSliderValue(this)">
+                                <span class="slider-value" id="sharpness-value">{{ device_settings.get('image_settings', {}).get('sharpness', 1.0) }}</span>
+                            </div>
+                            <div class="slider-row">
+                                <label for="brightness">Brillo</label>
+                                <input type="range" id="brightness" name="brightness" min="0" max="2" step="0.1"
+                                       value="{{ device_settings.get('image_settings', {}).get('brightness', 1.0) }}"
+                                       oninput="updateSliderValue(this)">
+                                <span class="slider-value" id="brightness-value">{{ device_settings.get('image_settings', {}).get('brightness', 1.0) }}</span>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="collapsible">
-                    <button type="button" class="collapsible-header" onclick="toggleCollapsible(this)">
-                        Técnico <span class="collapsible-icon">▼</span>
+                <div class="settings-section">
+                    <button type="button" class="settings-section-header" onclick="toggleSection(this)">
+                        <span class="settings-section-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
+                        </span>
+                        <span class="settings-section-title">Técnico</span>
+                        <svg class="settings-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
                     </button>
-                    <div class="settings-container collapsible-content">
-                        <div class="form-group nowrap">
+                    <div class="settings-section-body">
+                        <div class="settings-row">
                             <a class="header-button" style="text-decoration: none;" href="{{ url_for('settings.download_logs', hours=24) }}" download>Descargar registros</a>
-                            <label class="form-label" for="logSystemStats">Registrar estadísticas del sistema</label>
-                            <input type="checkbox" id="logSystemStats" name="logSystemStats" {% if device_settings.log_system_stats %}checked{% endif %}>
+                            <div class="settings-field">
+                                <label for="logSystemStats">Registrar estadísticas del sistema</label>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="logSystemStats" name="logSystemStats" {% if device_settings.log_system_stats %}checked{% endif %}>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
                         </div>
                     </div>
                 </div>
+
             </div>
         </form>
 
