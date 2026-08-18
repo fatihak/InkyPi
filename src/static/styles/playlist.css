@@ -26,10 +26,15 @@
 }
 
 .playlist-card-icon {
-    width: 18px;
-    height: 18px;
+    width: 21px;
+    height: 21px;
     color: var(--accent-primary);
     flex-shrink: 0;
+}
+
+/* Line up the plugin rows' left edge with the header's icon/title above them */
+.plugin-item {
+    padding-left: 25px;
 }
 
 .playlist-time-range {
