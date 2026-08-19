@@ -6,7 +6,7 @@
 
 <div class="weather-dashboard">
   {% if plugin_settings.displayRefreshTime == "true" %}
-  <div class="last-refresh">Last refresh: {{ last_refresh_time }}</div>
+  <div class="last-refresh">{{ last_refresh_label }}: {{ last_refresh_time }}</div>
   {% endif %}
   <!-- Current Date -->
   <div class="header">
@@ -21,7 +21,7 @@
         <img class="current-icon" src="{{current_day_icon}}" alt="Current Weather Icon">
         <div class="current-weather">
           <div class="current-temp">{{ current_temperature }}<span class="temperature-unit">{{temperature_unit}}</span></div>
-          <div class="feels-like">Feels Like {{ feels_like }}{% if units != "standard" %}°{% endif %}</div>
+          <div class="feels-like">{{ feels_like_label }} {{ feels_like }}{% if units != "standard" %}°{% endif %}</div>
           <div class="min-max">{{ forecast[0].high }}{% if units != "standard" %}°{% endif %} / {{ forecast[0].low }}{% if units != "standard" %}°{% endif %}</div>
         </div>
     </div>
@@ -38,7 +38,7 @@
             <div class="data-point-label">{{ dp.label }}</div>
             <div class="data-point-measurement">
 			        {{ dp.measurement }}{% if dp.unit %}<span class="data-point-unit">{{ dp.unit }}</span>{% endif %}
-              {% if dp.label == "Wind" %}
+              {% if dp.key == "Wind" %}
                 <span class="wind-arrow-symbol">{{ dp.arrow }}</span>
               {% endif %}
 		    	 </div>
