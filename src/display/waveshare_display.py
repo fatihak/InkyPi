@@ -1,4 +1,3 @@
-import inspect
 import importlib
 import logging
 import sys
@@ -11,22 +10,23 @@ from plugins.plugin_registry import get_plugin_instance
 logger = logging.getLogger(__name__)
 
 
-def split_image_for_bi_color_epd(image):
+def quantize_to_4_gray(image, epd_display):
     """
-    Convert image into two 1-bit layers for bi-color (black and red) e-paper displays.
+    Dither image down to the 4 exact gray levels a 4Gray-capable epd driver
+    expects. The driver's own getbuffer_4Gray() does no dithering itself, just
+    a raw truncation of each pixel's top 2 bits, so this has to be done before
+    handing the image off, using the driver's own GRAY1-4 constants.
     """
-    black = (0, 0, 0)
-    white = (255, 255, 255)
-    red = (255, 0, 0)
-
-    palette_data = [*black, *white, *red]
+    gray_levels = [epd_display.GRAY4, epd_display.GRAY3, epd_display.GRAY2, epd_display.GRAY1]
+    palette_data = []
+    for gray in gray_levels:
+        palette_data += [gray, gray, gray]
     palette_img = Image.new('P', (1, 1))
     palette_img.putpalette(palette_data)
 
-    indexed_img = image.quantize(palette=palette_img, dither=Image.Dither.FLOYDSTEINBERG)
-    black_layer = indexed_img.point(lambda p: 0 if p == 0 else 1, mode='1')
-    red_layer = indexed_img.point(lambda p: 0 if p == 2 else 1, mode='1')
-    return black_layer, red_layer
+    gray_rgb = image.convert('L').convert('RGB')
+    indexed_img = gray_rgb.quantize(palette=palette_img, dither=Image.Dither.FLOYDSTEINBERG)
+    return indexed_img.convert('L')
 
 
 class WaveshareDisplay(AbstractDisplay):
@@ -80,15 +80,24 @@ class WaveshareDisplay(AbstractDisplay):
             if not callable(self.epd_display_init):
                 raise AttributeError("No Init/init method found")
 
-            self.epd_display_init()
+            if not hasattr(self.epd_display, "display") or not hasattr(self.epd_display, "getbuffer"):
+                raise AttributeError("No display/getbuffer method found")
 
-            display_args_spec = inspect.getfullargspec(self.epd_display.display)
+            self.epd_display_init()
         except ModuleNotFoundError:
             raise ValueError(f"Unsupported Waveshare display type: {display_type}")
         except AttributeError:
             raise ValueError(f"Display does not support required methods: {display_type}")
 
-        self.bi_color_display = len(display_args_spec.args) > 2
+        # Workaround for 4Gray init functions with inconsistent casing across drivers
+        self.epd_display_init_4gray = getattr(
+            self.epd_display, "init_4Gray", getattr(self.epd_display, "Init_4Gray", None)
+        )
+        self.gray4_display = (
+            callable(self.epd_display_init_4gray)
+            and hasattr(self.epd_display, "getbuffer_4Gray")
+            and hasattr(self.epd_display, "display_4Gray")
+        )
 
         # update the resolution directly from the loaded device context
         if not self.device_config.get_config("resolution"):
@@ -121,21 +130,20 @@ class WaveshareDisplay(AbstractDisplay):
             raise ValueError(f"No image provided.")
 
         # Assume device was in sleep mode.
-        self.epd_display_init()
+        if self.gray4_display:
+            self.epd_display_init_4gray()
+        else:
+            self.epd_display_init()
 
         # Clear residual pixels before updating the image.
         self.epd_display.Clear()
 
         # Display the image on the WS display.
-        if not self.bi_color_display:
-            self.epd_display.display(self.epd_display.getbuffer(image))
+        if self.gray4_display:
+            gray_image = quantize_to_4_gray(image, self.epd_display)
+            self.epd_display.display_4Gray(self.epd_display.getbuffer_4Gray(gray_image))
         else:
-            black_layer, red_layer = split_image_for_bi_color_epd(image)
-
-            self.epd_display.display(
-                self.epd_display.getbuffer(black_layer),
-                self.epd_display.getbuffer(red_layer),
-            )
+            self.epd_display.display(self.epd_display.getbuffer(image))
 
         # Put device into low power mode (EPD displays maintain image when powered off)
         logger.info("Putting Waveshare display into sleep mode for power saving.")
