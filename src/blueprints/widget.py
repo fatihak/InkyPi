@@ -1,0 +1,225 @@
+from flask import Blueprint, request, jsonify, current_app, render_template, send_from_directory
+from utils.app_utils import parse_form, handle_request_files, resolve_path
+from widgets.widget_registry import get_widget_instance
+import logging
+import os
+
+logger = logging.getLogger(__name__)
+widget_bp = Blueprint("widget", __name__)
+
+@widget_bp.route('/widgets')
+def widgets_page():
+    """Display widget management page."""
+    device_config = current_app.config['DEVICE_CONFIG']
+    all_widgets = device_config.get_widgets()
+    
+    enabled_widget_ids = device_config.get_config('widget_settings', {}).get('enabled_widgets', [])
+    enabled_widgets = [o for o in all_widgets if o['id'] in enabled_widget_ids]
+    # Maintain order from enabled_widgets list
+    enabled_widgets.sort(key=lambda x: enabled_widget_ids.index(x['id']))
+    available_widgets = [o for o in all_widgets if o['id'] not in enabled_widget_ids]
+    
+    widget_settings = device_config.get_config('widget_settings', {})
+    
+    return render_template(
+        'widgets.html',
+        enabled_widgets=enabled_widgets,
+        available_widgets=available_widgets,
+        widget_settings=widget_settings
+    )
+
+@widget_bp.route('/api/widgets/reorder', methods=['POST'])
+def reorder_widgets():
+    """Reorder enabled widgets."""
+    device_config = current_app.config['DEVICE_CONFIG']
+    try:
+        data = request.get_json(silent=True)
+        if data is None:
+            return jsonify({"error": "Invalid JSON in request body"}), 400
+        
+        new_order = data.get('order', [])
+
+        # Reject duplicates
+        if len(new_order) != len(set(new_order)):
+            return jsonify({"error": "Duplicate widget IDs in order"}), 400
+
+        # Validate against currently enabled widgets only
+        widget_settings = device_config.get_config('widget_settings', {})
+        enabled_widgets = set(widget_settings.get('enabled_widgets', []))
+
+        if set(new_order) != enabled_widgets:
+            return jsonify({"error": "Order must contain exactly the currently enabled widgets"}), 400
+        
+        widget_settings['enabled_widgets'] = new_order
+        device_config.update_value('widget_settings', widget_settings, write=True)
+        
+        logger.info(f"Widget order updated: {new_order}")
+        return jsonify({"success": True, "message": "Widget order updated"}), 200
+    except Exception as e:
+        logger.exception(f"Error reordering widgets: {str(e)}")
+        return jsonify({"error": f"An error occurred: {str(e)}"}), 500
+
+@widget_bp.route('/api/widgets/toggle', methods=['POST'])
+def toggle_widget():
+    """Enable or disable a widget."""
+    device_config = current_app.config['DEVICE_CONFIG']
+    try:
+        data = request.get_json(silent=True)
+        if data is None:
+            return jsonify({"error": "Invalid JSON in request body"}), 400
+
+        widget_id = data.get('widget_id')
+        enable = data.get('enable', True)
+        # Validate widget exists
+        widget_config = device_config.get_widget(widget_id)
+        if not widget_config:
+            return jsonify({"error": f"Widget '{widget_id}' not found"}), 404
+        
+        widget_settings = device_config.get_config('widget_settings', {})
+        enabled_widgets = widget_settings.get('enabled_widgets', [])
+        
+        if enable and widget_id not in enabled_widgets:
+            enabled_widgets.append(widget_id)
+        elif not enable and widget_id in enabled_widgets:
+            enabled_widgets.remove(widget_id)
+        
+        widget_settings['enabled_widgets'] = enabled_widgets
+        device_config.update_value('widget_settings', widget_settings, write=True)
+        
+        logger.info(f"Widget '{widget_id}' {'enabled' if enable else 'disabled'}")
+        return jsonify({"success": True, "message": f"Widget {'enabled' if enable else 'disabled'}"}), 200
+    except Exception as e:
+        logger.exception(f"Error toggling widget: {str(e)}")
+        return jsonify({"error": f"An error occurred: {str(e)}"}), 500
+
+@widget_bp.route('/api/widgets/settings', methods=['POST'])
+def save_widget_settings():
+    """Save widget positioning and spacing settings."""
+    device_config = current_app.config['DEVICE_CONFIG']
+    try:
+        data = request.get_json(silent=True)
+        if data is None:
+            return jsonify({"error": "Invalid JSON in request body"}), 400
+
+        VALID_CORNERS = {'top-left', 'top-right', 'bottom-left', 'bottom-right'}
+        VALID_ORIENTATIONS = {'horizontal', 'vertical'}
+
+        widget_settings = device_config.get_config('widget_settings', {})
+
+        corner = data.get('corner', widget_settings.get('corner', 'top-left'))
+        if corner not in VALID_CORNERS:
+            return jsonify({"error": f"Invalid corner value: {corner}"}), 400
+
+        orientation = data.get('orientation', widget_settings.get('orientation', 'horizontal'))
+        if orientation not in VALID_ORIENTATIONS:
+            return jsonify({"error": f"Invalid orientation value: {orientation}"}), 400
+
+        widget_settings['corner'] = corner
+        widget_settings['orientation'] = orientation
+        
+        # Validate and sanitize numeric fields
+        try:
+            widget_settings['spacing'] = int(data.get('spacing', widget_settings.get('spacing', 10)))
+            widget_settings['margin'] = int(data.get('margin', widget_settings.get('margin', 10)))
+        except (ValueError, TypeError):
+            return jsonify({"error": "Invalid numeric value for spacing or margin"}), 400
+        
+        device_config.update_value('widget_settings', widget_settings, write=True)
+        
+        logger.info(f"Widget settings updated: corner={widget_settings['corner']}, orientation={widget_settings['orientation']}, spacing={widget_settings['spacing']}, margin={widget_settings['margin']}")
+        return jsonify({"success": True, "message": "Widget settings saved"}), 200
+    except Exception as e:
+        logger.exception(f"Error saving widget settings: {str(e)}")
+        return jsonify({"error": f"An error occurred: {str(e)}"}), 500
+
+@widget_bp.route('/api/widgets/<widget_id>/settings', methods=['POST'])
+def save_widget_config(widget_id):
+    """Save configuration for a specific widget."""
+    device_config = current_app.config['DEVICE_CONFIG']
+    try:
+        # Get widget settings structure
+        widget_settings = device_config.get_config('widget_settings', {})
+        if 'widgets' not in widget_settings:
+            widget_settings['widgets'] = {}
+        
+        plugin_settings = parse_form(request.form)
+        plugin_settings.update(handle_request_files(request.files, request.form))
+        
+        # Remove plugin_id if it crept in
+        plugin_settings.pop('plugin_id', None)
+        plugin_settings.pop('widget_id', None)
+
+        # Check contrast color value
+        use_contrast_color = (
+            plugin_settings.pop('use_contrast_color', 'false') == 'true'
+        )
+        
+        # Save
+        widget_settings['widgets'][widget_id] = plugin_settings
+        widget_settings['widgets'][widget_id]['use_contrast_color'] = use_contrast_color
+        device_config.update_value('widget_settings', widget_settings, write=True)
+        
+        logger.info(f"Saved settings for widget '{widget_id}'")
+        return jsonify({"success": True, "message": "Widget settings saved"}), 200
+    except Exception as e:
+        logger.exception(f"Error saving widget settings: {str(e)}")
+        return jsonify({"error": f"An error occurred: {str(e)}"}), 500
+
+@widget_bp.route('/widgets/<widget_id>')
+def widget_settings_page(widget_id):
+    device_config = current_app.config['DEVICE_CONFIG']
+    
+    # Find the widget by id
+    widget_config = device_config.get_widget(widget_id)
+    if widget_config:
+        try:
+            widget = get_widget_instance(widget_config)
+            
+            template_params = widget.generate_settings_template()
+
+            # Load settings from widget config
+            widget_settings = device_config.get_config('widget_settings', {})
+            specific_widget_settings = widget_settings.get('widgets', {}).get(widget_id, {})
+            
+            # Pass plugin_settings separately to avoid overwriting template metadata
+            template_params["plugin_settings"] = specific_widget_settings
+
+            # Override use_contrast_color with the saved per-widget value if present
+            if 'use_contrast_color' in specific_widget_settings:
+                template_params['use_contrast_color'] = specific_widget_settings['use_contrast_color']
+
+            return render_template('widget_settings.html', widget=widget_config, widget_settings=specific_widget_settings, **template_params)
+        except Exception as e:
+            logger.exception("EXCEPTION CAUGHT: " + str(e))
+            return jsonify({"error": f"An error occurred: {str(e)}"}), 500
+    else:
+        return "Widget not found", 404
+
+@widget_bp.route('/widget_assets/<widget_id>/<path:filename>')
+def widget_asset(widget_id, filename):
+    """Serve static assets for widgets (images, CSS, etc.)."""
+    # Resolve widgets directory dynamically
+    widgets_dir = resolve_path("widgets")
+    
+    # Construct the full path to the widget's file
+    widget_dir = os.path.join(widgets_dir, widget_id)
+    
+    # Security check to prevent directory traversal
+    safe_path = os.path.abspath(os.path.join(widget_dir, filename))
+    if not safe_path.startswith(os.path.abspath(widgets_dir)):
+        return "Invalid path", 403
+    
+    # Convert to absolute path for send_from_directory
+    abs_widget_dir = os.path.abspath(widget_dir)
+    
+    # Check if the directory and file exist
+    if not os.path.isdir(abs_widget_dir):
+        logger.error(f"Widget directory not found: {abs_widget_dir}")
+        return "Widget directory not found", 404
+    
+    if not os.path.isfile(safe_path):
+        logger.error(f"File not found: {safe_path}")
+        return "File not found", 404
+    
+    # Serve the file from the widget directory
+    return send_from_directory(abs_widget_dir, filename)
