@@ -27,5 +27,8 @@ class ImageURL(BasePlugin):
             logger.error("Failed to load image from URL")
             raise RuntimeError("Failed to load image, please check logs.")
 
+        # Add debug overlay if enabled
+        image = self.add_debug_overlay(image, settings, device_config)
+
         logger.info("=== Image URL Plugin: Image generation complete ===")
         return image

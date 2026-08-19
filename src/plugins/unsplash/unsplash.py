@@ -101,5 +101,8 @@ class Unsplash(BasePlugin):
             logger.error("Failed to load and process image")
             raise RuntimeError("Failed to load image, please check logs.")
 
+        # Add debug overlay if enabled
+        image = self.add_debug_overlay(image, settings, device_config)
+
         logger.info("=== Unsplash Plugin: Image generation complete ===")
         return image

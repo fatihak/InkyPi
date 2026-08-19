@@ -47,7 +47,8 @@
 
     <div class="form-group">
       <input type="checkbox" id="displayRefreshTime" name="displayRefreshTime" onclick="this.value=this.checked ? 'true' : 'false';">
-      <span>Refresh Time</span>
+      <span>Debug Info</span>
+      <span title="Show debug overlay with timestamps, performance metrics, and weather-specific data">ⓘ</span>
     </div>
 
     <div class="form-group">
@@ -229,7 +230,7 @@
             document.getElementById('moonPhase').value = pluginSettings.moonPhase;
 
             document.getElementById('weatherTimeZone').value = pluginSettings.weatherTimeZone;
-            
+
             selectedTitle = pluginSettings.titleSelection || 'location';
             weatherProvider = pluginSettings.weatherProvider || 'OpenMeteo';
 

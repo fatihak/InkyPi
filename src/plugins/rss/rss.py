@@ -27,7 +27,7 @@ class Rss(BasePlugin):
         feed_url = settings.get("feedUrl")
         if not feed_url:
             raise RuntimeError("RSS Feed Url is required.")
-        
+
         items = self.parse_rss_feed(feed_url)
 
         dimensions = device_config.get_resolution()
@@ -42,13 +42,13 @@ class Rss(BasePlugin):
             "plugin_settings": settings
         }
 
-        image = self.render_image(dimensions, "rss.html", "rss.css", template_params)
+        image = self.render_image(dimensions, "rss.html", "rss.css", template_params, device_config=device_config)
         return image
-    
+
     def parse_rss_feed(self, url, timeout=10):
         resp = requests.get(url, timeout=timeout, headers={"User-Agent": "Mozilla/5.0"})
         resp.raise_for_status()
-        
+
         # Parse the feed content
         feed = feedparser.parse(resp.content)
         items = []
