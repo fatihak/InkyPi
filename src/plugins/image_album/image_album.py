@@ -19,7 +19,7 @@ class ImmichProvider:
 
     def get_album_id(self, album: str) -> str:
         logger.debug(f"Fetching albums from {self.base_url}")
-        r = self.session.get(f"{self.base_url}/api/albums", headers=self.headers)
+        r = self.session.get(f"{self.base_url}/api/albums", headers=self.headers, timeout=30)
         r.raise_for_status()
         albums = r.json()
 
@@ -42,7 +42,7 @@ class ImmichProvider:
                 "size": 1000,
                 "page": page
             }
-            r2 = self.session.post(f"{self.base_url}/api/search/metadata", json=body, headers=self.headers)
+            r2 = self.session.post(f"{self.base_url}/api/search/metadata", json=body, headers=self.headers, timeout=30)
             r2.raise_for_status()
             assets_data = r2.json()
 
