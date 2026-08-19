@@ -6,6 +6,7 @@
         480
     ],
     "orientation": "horizontal",
+    "servo_enabled": true,
     "plugin_order": [
         "calendar",
         "ai_image",
@@ -45,5 +46,7 @@
         "image_hash": null,
         "refresh_type": null,
         "plugin_id": null
-    }
+    },
+    "inverted_image": false,
+    "current_servo_angle": 45
 }

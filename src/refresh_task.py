@@ -112,6 +112,9 @@ class RefreshTask:
                             continue
                         plugin = get_plugin_instance(plugin_config)
                         image = refresh_action.execute(plugin, self.device_config, current_dt)
+                        if image is None:
+                            logger.info(f"Plugin '{refresh_action.get_plugin_id()}' did not return an image.")
+                            continue
                         image_hash = compute_image_hash(image)
 
                         refresh_info = refresh_action.get_refresh_info()
@@ -183,7 +186,7 @@ class RefreshTask:
             return None, None
 
         plugin = playlist.get_next_plugin()
-        logger.info(f"Determined next plugin. | active_playlist: {playlist.name} | plugin_instance: {plugin.name}")
+        logger.info(f"Determined next plugin. | active_playlist: {playlist.name}")
 
         return playlist, plugin
     

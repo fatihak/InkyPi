@@ -61,20 +61,33 @@ To install InkyPi, follow these steps:
     ```
 3. Run the installation script with sudo:
     ```bash
-    sudo bash install/install.sh [-W <waveshare device model>]
+    sudo bash install/install.sh [-W <waveshare device model>] [-S]
     ``` 
-     Option: 
+     Options: 
     
     * -W \<waveshare device model\> - specify this parameter **ONLY** if installing for a Waveshare display.  After the -W option specify the Waveshare device model e.g. epd7in3f.
+    * -S (optional) - include this flag to enable servo control support. If not specified, servo support is disabled.
 
-    e.g. for Inky displays use:
+    Examples:
+
+    For Inky displays without servo:
     ```bash
     sudo bash install/install.sh
     ```
 
-    and for [Waveshare displays](#waveshare-display-support) use:
+    For Inky displays with servo support:
+    ```bash
+    sudo bash install/install.sh -S
+    ```
+
+    For [Waveshare displays](#waveshare-display-support) without servo:
     ```bash
     sudo bash install/install.sh -W epd7in3f
+    ```
+
+    For [Waveshare displays](#waveshare-display-support) with servo support:
+    ```bash
+    sudo bash install/install.sh -W epd7in3f -S
     ```
 
 
