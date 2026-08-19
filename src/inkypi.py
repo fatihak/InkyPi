@@ -31,7 +31,7 @@ from blueprints.plugin import plugin_bp
 from blueprints.playlist import playlist_bp
 from blueprints.apikeys import apikeys_bp
 from jinja2 import ChoiceLoader, FileSystemLoader
-from plugins.plugin_registry import load_plugins
+from plugins.plugin_registry import load_plugins, get_plugin_instance, register_plugin_blueprints
 from waitress import serve
 
 
@@ -81,6 +81,9 @@ app.register_blueprint(plugin_bp)
 app.register_blueprint(playlist_bp)
 app.register_blueprint(apikeys_bp)
 
+
+# Register blueprints from plugins (generic mechanism - any plugin can expose blueprints)
+register_plugin_blueprints(app)
 # Register opener for HEIF/HEIC images
 register_heif_opener()
 
