@@ -61,21 +61,21 @@
         <!-- Page Title -->
         <header class="header">
             <h1>{{ config.name }}</h1>
-            <button class="settings-button dark-mode-toggle" title="Toggle Dark Mode" aria-label="Toggle Dark Mode"></button>
+            <button class="settings-button dark-mode-toggle" title="Cambiar modo oscuro" aria-label="Cambiar modo oscuro"></button>
             <a href="{{ url_for('apikeys.apikeys_page') }}" class="settings-button" title="API Keys">
                 <span style="font-size: 20px;">🔑</span>
             </a>
             <a href="{{ url_for('playlist.playlists') }}" class="settings-button">
-                <img src="{{ url_for('static', filename='icons/playlist.png') }}" title="Playlists" alt="playlists icon" class="icon-image">
+                <img src="{{ url_for('static', filename='icons/playlist.png') }}" title="Listas de reproducción" alt="icono de listas de reproducción" class="icon-image">
             </a>
             <a href="{{ url_for('settings.settings_page') }}" class="settings-button">
-                <img src="{{ url_for('static', filename='icons/settings.png') }}" title="Settings" alt="settings icon" class="icon-image">
+                <img src="{{ url_for('static', filename='icons/settings.png') }}" title="Configuración" alt="icono de configuración" class="icon-image">
             </a>
         </header>
 
         <!-- Display the current image -->
         <div class="image-container">
-            <img src="{{ url_for('static', filename='images/current_image.png') }}" alt="Current Image">
+            <img src="{{ url_for('static', filename='images/current_image.png') }}" alt="Imagen actual">
         </div>
 
         <!-- Separator -->
@@ -84,12 +84,12 @@
         <div class="plugins-header">
             <h2 class="plugins-title">Plugins</h2>
             <div class="plugins-controls">
-                <button class="sort-toggle" id="sortToggle" title="Reorder plugins">Sort</button>
-                <button class="view-toggle" id="viewToggle" title="Switch view">List</button>
+                <button class="sort-toggle" id="sortToggle" title="Reordenar plugins">Ordenar</button>
+                <button class="view-toggle" id="viewToggle" title="Cambiar vista">Lista</button>
             </div>
         </div>
 
-        <div class="sort-hint" id="sortHint">Drag plugins to reorder. Click "Save" when done.</div>
+        <div class="sort-hint" id="sortHint">Arrastra los plugins para reordenarlos. Pulsa "Guardar" cuando termines.</div>
 
         <div class="plugins-container" id="pluginsContainer">
             {% for plugin in plugins %}
@@ -115,10 +115,10 @@
             function updateView() {
                 if (currentView === 'list') {
                     pluginsContainer.classList.add('list-view');
-                    viewToggle.textContent = 'Grid';
+                    viewToggle.textContent = 'Cuadrícula';
                 } else {
                     pluginsContainer.classList.remove('list-view');
-                    viewToggle.textContent = 'List';
+                    viewToggle.textContent = 'Lista';
                 }
             }
 
@@ -139,7 +139,7 @@
             function enableSorting() {
                 isSorting = true;
                 sortToggle.classList.add('active');
-                sortToggle.textContent = 'Save';
+                sortToggle.textContent = 'Guardar';
                 sortHint.classList.add('visible');
                 pluginsContainer.classList.add('sorting');
 
@@ -157,7 +157,7 @@
             function disableSorting() {
                 isSorting = false;
                 sortToggle.classList.remove('active');
-                sortToggle.textContent = 'Sort';
+                sortToggle.textContent = 'Ordenar';
                 sortHint.classList.remove('visible');
                 pluginsContainer.classList.remove('sorting');
 
