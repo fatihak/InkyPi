@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plugin Manager</title>
+    <script>
+        (function() {
+            const theme = localStorage.getItem('inkypi-theme') ||
+                         (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+            if (theme === 'dark') {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            }
+        })();
+    </script>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='styles/main.css') }}">
+    <script src="{{ url_for('static', filename='scripts/response_modal.js') }}"></script>
+    <style>
+        /* Collapsible Sections */
+        .settings-section {
+            margin: 20px 0;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            overflow: hidden;
+            background: var(--bg-secondary);
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 18px;
+            background: var(--collapsible-bg);
+            cursor: pointer;
+            user-select: none;
+            transition: background 0.2s;
+            border: none;
+            width: 100%;
+            text-align: left;
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .section-header:hover {
+            background: var(--button-hover);
+        }
+
+        .section-header-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section-icon {
+            font-size: 18px;
+        }
+
+        .section-chevron {
+            font-size: 12px;
+            transition: transform 0.3s ease;
+            color: var(--text-secondary);
+        }
+
+        .section-header.active .section-chevron {
+            transform: rotate(180deg);
+        }
+
+        .section-content {
+            display: none;
+            padding: 18px;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .section-content.open {
+            display: block;
+        }
+
+        /* Plugin List Styles */
+        .plugin-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .plugin-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border-color);
+            transition: background 0.2s;
+            gap: 16px;
+        }
+
+        .plugin-item:last-child {
+            border-bottom: none;
+        }
+
+        .plugin-item:hover {
+            background: var(--button-hover);
+        }
+
+        .plugin-info-left {
+            flex: 0 0 auto;
+            min-width: 200px;
+        }
+
+        .plugin-info-right {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 12px;
+        }
+
+        .plugin-name {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .plugin-id {
+            font-size: 12px;
+            color: var(--text-secondary);
+            font-family: monospace;
+            margin-top: 2px;
+        }
+
+        .plugin-repository {
+            font-size: 12px;
+            color: var(--text-secondary);
+            font-family: monospace;
+            text-align: right;
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .btn-update {
+            padding: 6px 12px;
+            background: var(--accent-primary);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: background 0.2s;
+            flex-shrink: 0;
+        }
+
+        .btn-update:hover {
+            background: var(--accent-hover);
+        }
+
+        .btn-update:disabled {
+            background: var(--button-bg);
+            color: var(--text-secondary);
+            cursor: not-allowed;
+        }
+
+        .btn-remove {
+            padding: 6px 12px;
+            background: var(--remove-btn-color);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: background 0.2s;
+            flex-shrink: 0;
+        }
+
+        .btn-remove:hover {
+            background: var(--remove-btn-hover);
+        }
+
+        .btn-remove:disabled {
+            background: var(--button-bg);
+            color: var(--text-secondary);
+            cursor: not-allowed;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-secondary);
+        }
+
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+            opacity: 0.5;
+        }
+
+        /* Install Form Styles */
+        .install-form {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .form-label {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .form-input {
+            padding: 10px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 14px;
+            background: var(--input-bg);
+            color: var(--text-primary);
+            transition: border-color 0.2s;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 3px var(--input-focus);
+        }
+
+        .form-hint {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .install-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .tab-button {
+            padding: 10px 20px;
+            background: none;
+            border: none;
+            border-bottom: 2px solid transparent;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            transition: all 0.2s;
+            margin-bottom: -2px;
+        }
+
+        .tab-button.active {
+            color: var(--accent-primary);
+            border-bottom-color: var(--accent-primary);
+        }
+
+        .tab-button:hover {
+            color: var(--accent-primary);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .btn-primary {
+            padding: 10px 20px;
+            background: var(--accent-primary);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: background 0.2s;
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-hover);
+        }
+
+        .btn-primary:disabled {
+            background: var(--button-bg);
+            color: var(--text-secondary);
+            cursor: not-allowed;
+        }
+
+        .file-upload-area {
+            border: 2px dashed var(--border-color);
+            border-radius: 8px;
+            padding: 30px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: var(--bg-secondary);
+        }
+
+        .file-upload-area:hover {
+            border-color: var(--accent-primary);
+            background: var(--button-hover);
+        }
+
+        .file-upload-area.dragover {
+            border-color: var(--accent-primary);
+            background: var(--button-hover);
+        }
+
+        .file-upload-icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+            color: var(--text-secondary);
+        }
+
+        .file-name {
+            margin-top: 12px;
+            font-size: 14px;
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        /* Loading Spinner */
+        .spinner {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-right: 8px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+    </style>
+</head>
+<body>
+    {% include 'response_modal.html' %}
+
+    <div class="frame">
+        <!-- Back Button -->
+        <button onclick="history.back()" class="back-button">← Back</button>
+
+        <!-- Plugin Manager Header -->
+        <div class="app-header">
+            <div class="header-content">
+                <div class="title-container">
+                    <img src="{{ url_for('static', filename='icons/plugin.png') }}" alt="plugin icon" class="app-icon">
+                    <h1 class="app-title">Plugin Manager</h1>
+                </div>
+            </div>
+        </div>
+
+        <div class="separator"></div>
+
+        <!-- Installed Plugins Section -->
+        <div class="settings-section">
+            <button class="section-header" onclick="toggleSection(this)">
+                <div class="section-header-left">
+                    <span class="section-icon">📦</span>
+                    <span>Installed Plugins ({{ plugins|selectattr('type', 'equalto', 'third-party')|list|length }})</span>
+                </div>
+                <span class="section-chevron">▼</span>
+            </button>
+            <div class="section-content">
+                {% set third_party_plugins = plugins|selectattr('type', 'equalto', 'third-party')|list %}
+                {% if third_party_plugins %}
+                    <ul class="plugin-list">
+                        {% for plugin in third_party_plugins %}
+                        <li class="plugin-item">
+                            <div class="plugin-info-left">
+                                <div class="plugin-name">{{ plugin.display_name }}</div>
+                                <div class="plugin-id">{{ plugin.id }}</div>
+                            </div>
+                            <div class="plugin-info-right">
+                                {% if plugin.repository %}
+                                <div class="plugin-repository" title="{{ plugin.repository }}">{{ plugin.repository }}</div>
+                                {% endif %}
+                                {% if plugin.is_git %}
+                                <button class="btn-update" onclick="updatePlugin('{{ plugin.id }}', '{{ plugin.display_name }}')" title="Update plugin from repository">
+                                    ↻ Update
+                                </button>
+                                {% endif %}
+                                <button class="btn-remove" onclick="removePlugin('{{ plugin.id }}', '{{ plugin.display_name }}')">
+                                    Remove
+                                </button>
+                            </div>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📦</div>
+                        <p>No third-party plugins installed</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Install Plugin Section -->
+        <div class="settings-section">
+            <button class="section-header active" onclick="toggleSection(this)">
+                <div class="section-header-left">
+                    <span class="section-icon">➕</span>
+                    <span>Install New Plugin</span>
+                </div>
+                <span class="section-chevron">▼</span>
+            </button>
+            <div class="section-content open">
+                <div class="install-tabs">
+                    <button class="tab-button active" onclick="switchTab('git')">Git Repository</button>
+                    <button class="tab-button" onclick="switchTab('upload')">Upload Archive</button>
+                </div>
+
+                <!-- Git Install Tab -->
+                <div id="git-tab" class="tab-content active">
+                    <form class="install-form" onsubmit="installFromGit(event)">
+                        <div class="form-group">
+                            <label class="form-label" for="git-plugin-id">Plugin ID</label>
+                            <input
+                                type="text"
+                                id="git-plugin-id"
+                                class="form-input"
+                                placeholder="e.g., weather-plugin"
+                                required
+                                pattern="[a-zA-Z0-9_-]+"
+                                title="Use only letters, numbers, hyphens, and underscores"
+                            >
+                            <span class="form-hint">Must match the folder name in the repository</span>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="git-repo-url">Git Repository URL</label>
+                            <input
+                                type="url"
+                                id="git-repo-url"
+                                class="form-input"
+                                placeholder="https://github.com/user/inkypi-plugins"
+                                required
+                            >
+                            <span class="form-hint">Repository containing the plugin folder</span>
+                        </div>
+
+                        <button type="submit" class="btn-primary" id="git-install-btn">
+                            Install Plugin
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Upload Install Tab -->
+                <div id="upload-tab" class="tab-content">
+                    <form class="install-form" onsubmit="installFromUpload(event)">
+                        <div class="form-group">
+                            <label class="form-label">Plugin Archive</label>
+                            <div
+                                class="file-upload-area"
+                                id="file-upload-area"
+                                onclick="document.getElementById('archive-file').click()"
+                            >
+                                <div class="file-upload-icon">📦</div>
+                                <div>Click to select or drag & drop</div>
+                                <div class="form-hint" style="margin-top: 8px;">
+                                    Supported formats: ZIP, TAR.GZ
+                                </div>
+                                <div class="file-name" id="file-name"></div>
+                            </div>
+                            <input
+                                type="file"
+                                id="archive-file"
+                                accept=".zip,.tar.gz,.tgz,.tar"
+                                style="display: none;"
+                                onchange="handleFileSelect(event)"
+                            >
+                        </div>
+
+                        <button type="submit" class="btn-primary" id="upload-install-btn" disabled>
+                            Install Plugin
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentTab = 'git';
+        let selectedFile = null;
+
+        function toggleSection(header) {
+            const content = header.nextElementSibling;
+            const isOpen = content.classList.contains('open');
+
+            if (isOpen) {
+                content.classList.remove('open');
+                header.classList.remove('active');
+            } else {
+                content.classList.add('open');
+                header.classList.add('active');
+            }
+        }
+
+        function switchTab(tab) {
+            currentTab = tab;
+
+            // Update tab buttons
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+
+            // Update tab content
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById(`${tab}-tab`).classList.add('active');
+        }
+
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (file) {
+                selectedFile = file;
+                document.getElementById('file-name').textContent = file.name;
+                document.getElementById('upload-install-btn').disabled = false;
+            }
+        }
+
+        // Drag and drop handlers
+        const uploadArea = document.getElementById('file-upload-area');
+
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+
+            const file = e.dataTransfer.files[0];
+            if (file) {
+                selectedFile = file;
+                document.getElementById('file-name').textContent = file.name;
+                document.getElementById('upload-install-btn').disabled = false;
+
+                // Update file input
+                const dataTransfer = new DataTransfer();
+                dataTransfer.items.add(file);
+                document.getElementById('archive-file').files = dataTransfer.files;
+            }
+        });
+
+        async function installFromGit(event) {
+            event.preventDefault();
+
+            const pluginId = document.getElementById('git-plugin-id').value.trim();
+            const repoUrl = document.getElementById('git-repo-url').value.trim();
+            const btn = document.getElementById('git-install-btn');
+
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span>Installing...';
+
+            try {
+                const response = await fetch('/plugins/install/git', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        plugin_id: pluginId,
+                        repo_url: repoUrl
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showResponseModal('Success', data.message, 'success');
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1500);
+                } else {
+                    showResponseModal('Error', data.message, 'error');
+                }
+            } catch (error) {
+                showResponseModal('Error', 'Failed to install plugin: ' + error.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = 'Install Plugin';
+            }
+        }
+
+        async function installFromUpload(event) {
+            event.preventDefault();
+
+            if (!selectedFile) {
+                showResponseModal('Error', 'Please select a file', 'error');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('archive', selectedFile);
+
+            const btn = document.getElementById('upload-install-btn');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span>Installing...';
+
+            try {
+                const response = await fetch('/plugins/install/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showResponseModal('Success', data.message, 'success');
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1500);
+                } else {
+                    showResponseModal('Error', data.message, 'error');
+                }
+            } catch (error) {
+                showResponseModal('Error', 'Failed to install plugin: ' + error.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = 'Install Plugin';
+            }
+        }
+
+        async function updatePlugin(pluginId, pluginName) {
+            if (!confirm(`Update "${pluginName}" to the latest version?`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/plugins/update/${pluginId}`, {
+                    method: 'POST'
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showResponseModal('Success', data.message, 'success');
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1500);
+                } else {
+                    showResponseModal('Error', data.message, 'error');
+                }
+            } catch (error) {
+                showResponseModal('Error', 'Failed to update plugin: ' + error.message, 'error');
+            }
+        }
+
+        async function removePlugin(pluginId, pluginName) {
+            if (!confirm(`Are you sure you want to remove "${pluginName}"?`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/plugins/remove/${pluginId}`, {
+                    method: 'DELETE'
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showResponseModal('Success', data.message, 'success');
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1500);
+                } else {
+                    showResponseModal('Error', data.message, 'error');
+                }
+            } catch (error) {
+                showResponseModal('Error', 'Failed to remove plugin: ' + error.message, 'error');
+            }
+        }
+    </script>
+    </div> <!-- Close frame -->
+</body>
+</html>
