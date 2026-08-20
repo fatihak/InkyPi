@@ -2,6 +2,7 @@ import os
 import json
 import logging
 from datetime import datetime, timedelta
+from utils.settings_migrations import migrate_plugin_settings
 
 logger = logging.getLogger(__name__)
 
@@ -287,6 +288,14 @@ class PluginInstance:
         self.settings = settings
         self.refresh = refresh
         self.latest_refresh_time = latest_refresh_time
+
+    @property
+    def settings(self):
+        return self._settings
+
+    @settings.setter
+    def settings(self, value):
+        self._settings = migrate_plugin_settings(self.plugin_id, value)
 
     def update(self, updated_data):
         """Update attributes of the class with the dictionary values."""

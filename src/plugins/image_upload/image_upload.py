@@ -1,16 +1,23 @@
 from plugins.base_plugin.base_plugin import BasePlugin
-from PIL import Image, ImageOps, ImageColor
+from PIL import Image
 import logging
 import random
 import os
-
-from utils.image_utils import pad_image_blur
 
 logger = logging.getLogger(__name__)
 
 
 class ImageUpload(BasePlugin):
-    def open_image(self, img_index: int, image_locations: list, dimensions: tuple, resize: bool = True) -> Image:
+    def open_image(
+        self,
+        img_index: int,
+        image_locations: list,
+        dimensions: tuple,
+        *,
+        fit_mode: str | None = None,
+        background_option: str = "blur",
+        background_color: str | None = None,
+    ) -> Image:
         """
         Open image with adaptive loader for memory efficiency.
 
@@ -18,14 +25,21 @@ class ImageUpload(BasePlugin):
             img_index: Index of image to load
             image_locations: List of image paths
             dimensions: Target dimensions
-            resize: Whether to auto-resize (set False if manual padding needed)
+            fit_mode: Optional cover, contain, or automatic fitting mode
+            background_option: Background style for contained images
+            background_color: Solid background color when selected
         """
         if not image_locations:
             raise RuntimeError("No images provided.")
 
         try:
-            # Use adaptive loader for memory-efficient processing
-            image = self.image_loader.from_file(image_locations[img_index], dimensions, resize=resize)
+            image = self.image_loader.from_file(
+                image_locations[img_index],
+                dimensions,
+                fit_mode=fit_mode,
+                background_option=background_option,
+                background_color=background_color,
+            )
             if not image:
                 raise RuntimeError("Failed to load image from file")
             return image
@@ -60,35 +74,39 @@ class ImageUpload(BasePlugin):
             dimensions = dimensions[::-1]
             logger.debug(f"Vertical orientation detected, dimensions: {dimensions[0]}x{dimensions[1]}")
 
-        # Determine if we need manual padding
-        needs_padding = settings.get('padImage') == "true"
+        fit_mode = settings.get("fitMode", "cover")
         is_random = settings.get('randomize') == "true"
         background_option = settings.get('backgroundOption', 'blur')
+        background_color = settings.get('backgroundColor')
 
-        logger.debug(f"Settings: randomize={is_random}, pad_image={needs_padding}, background_option={background_option}")
+        logger.debug(f"Settings: randomize={is_random}, fit_mode={fit_mode}, background_option={background_option}")
 
-        # Load image (without auto-resize if padding needed)
         if is_random:
             img_index = random.randrange(0, len(image_locations))
             logger.info(f"Random mode: Selected image index {img_index}")
-            image = self.open_image(img_index, image_locations, dimensions, resize=not needs_padding)
+            image = self.open_image(
+                img_index,
+                image_locations,
+                dimensions,
+                fit_mode=fit_mode,
+                background_option=background_option,
+                background_color=background_color,
+            )
         else:
             logger.info(f"Sequential mode: Loading image index {img_index}")
-            image = self.open_image(img_index, image_locations, dimensions, resize=not needs_padding)
+            image = self.open_image(
+                img_index,
+                image_locations,
+                dimensions,
+                fit_mode=fit_mode,
+                background_option=background_option,
+                background_color=background_color,
+            )
             img_index = (img_index + 1) % len(image_locations)
             logger.debug(f"Next index will be: {img_index}")
 
         # Write the new index back to the device json
         settings['image_index'] = img_index
-
-        # Apply padding if requested
-        if needs_padding:
-            logger.debug(f"Applying padding with {background_option} background")
-            if background_option == "blur":
-                image = pad_image_blur(image, dimensions)
-            else:
-                background_color = ImageColor.getcolor(settings.get('backgroundColor') or "white", image.mode)
-                image = ImageOps.pad(image, dimensions, color=background_color, method=Image.Resampling.LANCZOS)
 
         logger.info("=== Image Upload Plugin: Image generation complete ===")
         return image
