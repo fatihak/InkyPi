@@ -20,20 +20,25 @@ def get_image(image_url):
     return img
 
 def change_orientation(image, orientation, inverted=False):
-    if orientation == 'horizontal':
-        angle = 0
-    elif orientation == 'vertical':
+    if orientation == 'vertical':
         angle = 90
+    else:
+        angle = 0
 
     if inverted:
         angle = (angle + 180) % 360
 
     return image.rotate(angle, expand=1)
 
-def resize_image(image, desired_size, image_settings=[]):
+def resize_image(image, desired_size, image_settings=None):
+    if image_settings is None:
+        image_settings = []
     img_width, img_height = image.size
     desired_width, desired_height = desired_size
     desired_width, desired_height = int(desired_width), int(desired_height)
+
+    if img_height == 0 or desired_height == 0:
+        raise ValueError("Image dimensions must be non-zero")
 
     img_ratio = img_width / img_height
     desired_ratio = desired_width / desired_height
@@ -61,7 +66,9 @@ def resize_image(image, desired_size, image_settings=[]):
     # Step 3: Resize to the exact desired dimensions (if necessary)
     return image.resize((desired_width, desired_height), Image.LANCZOS)
 
-def apply_image_enhancement(img, image_settings={}):
+def apply_image_enhancement(img, image_settings=None):
+    if image_settings is None:
+        image_settings = {}
     # Convert image to RGB mode if necessary for enhancement operations
     # ImageEnhance requires RGB mode for operations like blend
     if img.mode not in ('RGB', 'L'):

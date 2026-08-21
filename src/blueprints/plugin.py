@@ -235,7 +235,9 @@ def update_now():
     try:
         plugin_settings = parse_form(request.form)
         plugin_settings.update(handle_request_files(request.files))
-        plugin_id = plugin_settings.pop("plugin_id")
+        plugin_id = plugin_settings.pop("plugin_id", None)
+        if not plugin_id:
+            return jsonify({"error": "plugin_id is required"}), 400
 
         # Check if refresh task is running
         if refresh_task.running:
@@ -249,7 +251,7 @@ def update_now():
 
             plugin = get_plugin_instance(plugin_config)
             image = plugin.generate_image(plugin_settings, device_config)
-            display_manager.display_image(image, image_settings=plugin_config.get("image_settings", []))
+            display_manager.display_image(image, image_settings=plugin_config.get("image_settings") or [])
 
     except Exception as e:
         logger.exception(f"Error in update_now: {str(e)}")

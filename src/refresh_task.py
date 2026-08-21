@@ -143,7 +143,8 @@ class RefreshTask:
 
                 self.condition.notify_all()  # Wake the thread to process manual update
 
-            self.refresh_event.wait()
+            if not self.refresh_event.wait(timeout=300):
+                raise TimeoutError("Manual update timed out after 300 seconds")
             if self.refresh_result.get("exception"):
                 raise self.refresh_result.get("exception")
         else:

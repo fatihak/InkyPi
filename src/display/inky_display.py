@@ -37,7 +37,7 @@ class InkyDisplay(AbstractDisplay):
                 [int(self.inky_display.width), int(self.inky_display.height)], 
                 write=True)
 
-    def display_image(self, image, image_settings=[]):
+    def display_image(self, image, image_settings=None):
         
         """
         Displays the provided image on the Inky display.
