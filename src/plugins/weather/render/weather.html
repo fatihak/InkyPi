@@ -93,7 +93,9 @@
     const temperatures = [{% for hour in hourly_forecast %}{{ hour.temperature }}{% if not loop.last %}, {% endif %}{% endfor %}];
     const precipitation = [{% for hour in hourly_forecast %}{{ hour.precipitation * 100}}{% if not loop.last %}, {% endif %}{% endfor %}]; // Convert to percentage
     const rain = [{% for hour in hourly_forecast %}{{ hour.rain or 0 }}{% if not loop.last %}, {% endif %}{% endfor %}];
-    const weatherIconsPaths = [{% for hour in hourly_forecast %}"{{ hour.icon | replace('\\', '/') }}"{% if not loop.last %}, {% endif %}{% endfor %}];
+    const wind = [{% for hour in hourly_forecast %}{{ hour.wind or 0 }}{% if not loop.last %}, {% endif %}{% endfor %}];
+    const sunshine = [{% for hour in hourly_forecast %}{{ (hour.sunshine or 0) * 100 }}{% if not loop.last %}, {% endif %}{% endfor %}];
+	const weatherIconsPaths = [{% for hour in hourly_forecast %}"{{ hour.icon | replace('\\', '/') }}"{% if not loop.last %}, {% endif %}{% endfor %}];
 	const iconStep = parseInt("{{ plugin_settings.graphIconStep or 2 }}");
 	const units = document.getElementById('units-container').dataset.units;
 	const isImperial = units === "imperial";
@@ -140,6 +142,34 @@
         ctx.restore();
       }
     });
+Chart.register({
+  id: 'annotationWind',
+  afterDatasetsDraw(chart, args, pluginOptions) {
+    const windData = pluginOptions.windData || [];
+    if (!windData.length) return;
+    const { ctx, chartArea: { top, bottom }, scales: { x } } = chart;
+    const height = bottom - top;
+    const maxWind = Math.max(...windData, 50);
+    ctx.save();
+    ctx.strokeStyle = "{{ plugin_settings.textColor }}";
+    ctx.lineWidth = 2;
+    ctx.setLineDash([3, 2]);
+    ctx.beginPath();
+    windData.forEach((speed, i) => {
+      const xPos = x.getPixelForValue(i);
+      const yPos = bottom - (speed / maxWind) * height;
+      i === 0 ? ctx.moveTo(xPos, yPos) : ctx.lineTo(xPos, yPos);
+    });
+    ctx.stroke();
+    const lastVal = windData[windData.length - 1];
+    const lastX = x.getPixelForValue(windData.length - 1);
+    const lastY = Math.max(top + 10, bottom - (lastVal / maxWind) * height);
+    ctx.fillStyle = "{{ plugin_settings.textColor }}";
+    ctx.font = '9px sans-serif';
+    ctx.fillText(lastVal.toFixed(1), lastX - 10, lastY - 4);
+    ctx.restore();
+  }
+});
 	
     {% if plugin_settings.displayGraphIcons == "true" %}
     Chart.register({
@@ -180,7 +210,8 @@
           borderColor: 'rgba(241, 122, 36, 0.9)', // Line color
           borderWidth: 2,
           pointRadius: 0, // Hide points
-          fill: true, // Enable filling the area under the line
+          // fill: true, // Enable filling the area under the line
+          fill: false, // Disable filling the area under the line
           tension: 0.5
         },
         {
@@ -194,11 +225,32 @@
             bottom: 0,
             left: 0
           },
+	  order: 1,
           yAxisID: 'y1',
           barPercentage: 1.0, // Ensures full width
           categoryPercentage: 1.0,  // Ensures full width
           fill: true, // Enable filling the area under the line
-        }
+        },
+	{% if plugin_settings.displaySunshine == "true" %}
+	{
+	  type: 'bar',
+	  label: 'Sunshine Duration',
+  	  data: sunshine,
+  	  borderColor: 'rgba(252, 204, 5, 1)',
+  	  borderWidth: {
+    	    top: 2,
+            right: 0,
+            bottom: 0,
+            left: 0
+  	  },
+  	  backgroundColor: 'rgba(252, 204, 5, 0.20)',
+	  order: 2,
+  	  yAxisID: 'y1',
+  	  barPercentage: 1.0,
+  	  categoryPercentage: 1.0,
+  	  fill: true,
+	},
+	{% endif %}
       ]
       },
       options: {
@@ -273,9 +325,12 @@
           }
         },
         plugins: {
-          legend: { display: false },
+          legend: { display: false }
 		  {% if plugin_settings.displayRain == "true" %}
-			annotationRain: { precipitationData: rain }
+			,annotationRain: { precipitationData: rain }
+	      {% endif %}
+	          {% if plugin_settings.displayWind == "true" %}
+		        ,annotationWind: { windData: wind }
 	      {% endif %}
         },
         elements: {
@@ -293,12 +348,12 @@
     const gradientEnd = chart.scales['y'].getPixelForValue(minTemp);   // Min temperature
 
     // Create gradient based on y-axis values
-    const tempGradient = ctx.createLinearGradient(0, gradientStart, 0, gradientEnd+10);
-    tempGradient.addColorStop(0, 'rgba(252,204,5, 0.95)'); // Top of the gradient (max temperature)
-    tempGradient.addColorStop(1, 'rgba(252,204,5, 0.01)'); // Bottom of the gradient (min temperature)
+    //const tempGradient = ctx.createLinearGradient(0, gradientStart, 0, gradientEnd+10);
+    //tempGradient.addColorStop(0, 'rgba(252,204,5, 0.95)'); // Top of the gradient (max temperature)
+    //tempGradient.addColorStop(1, 'rgba(252,204,5, 0.01)'); // Bottom of the gradient (min temperature)
 
     // Update the chart to apply the gradient
-    chart.data.datasets[0].backgroundColor = tempGradient;
+    //chart.data.datasets[0].backgroundColor = tempGradient;
 
     // Create gradient based on y-axis values
     const precipitationGradient = ctx.createLinearGradient(0, gradientStart, 0, gradientEnd);
@@ -306,6 +361,13 @@
     precipitationGradient.addColorStop(1, 'rgba(194, 223, 246, 0)'); // Bottom of the gradient (min temperature)
 
     chart.data.datasets[1].backgroundColor = precipitationGradient;
+
+    {% if plugin_settings.displaySunshine == "true" %}
+    const sunshineGradient = ctx.createLinearGradient(0, gradientStart, 0, gradientEnd);
+    sunshineGradient.addColorStop(0, 'rgba(252, 204, 5, 0.5)');
+    sunshineGradient.addColorStop(1, 'rgba(252, 204, 5, 0.0)');
+    chart.data.datasets[2].backgroundColor = sunshineGradient;
+    {% endif %}
 
     chart.update();
   });

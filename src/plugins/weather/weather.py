@@ -32,12 +32,12 @@ def get_moon_phase_name(phase_age: float) -> str:
 UNITS = {
     "standard": {
         "temperature": "K",
-        "speed": "m/s",
+        "speed": "km/h",
         "distance":"km"
     },
     "metric": {
         "temperature": "°C",
-        "speed": "m/s",
+        "speed": "km/h",
         "distance":"km"
 
     },
@@ -52,11 +52,11 @@ WEATHER_URL = "https://api.openweathermap.org/data/3.0/onecall?lat={lat}&lon={lo
 AIR_QUALITY_URL = "http://api.openweathermap.org/data/2.5/air_pollution?lat={lat}&lon={long}&appid={api_key}"
 GEOCODING_URL = "http://api.openweathermap.org/geo/1.0/reverse?lat={lat}&lon={long}&limit=1&appid={api_key}"
 
-OPEN_METEO_FORECAST_URL = "https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={long}&hourly=weather_code,temperature_2m,precipitation,precipitation_probability,relative_humidity_2m,surface_pressure,visibility&daily=weathercode,temperature_2m_max,temperature_2m_min,sunrise,sunset&current=temperature,windspeed,winddirection,is_day,precipitation,weather_code,apparent_temperature&timezone=auto&models=best_match&forecast_days={forecast_days}"
+OPEN_METEO_FORECAST_URL = "https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={long}&hourly=weather_code,temperature_2m,precipitation,precipitation_probability,relative_humidity_2m,surface_pressure,visibility,wind_speed_10m,sunshine_duration&daily=weathercode,temperature_2m_max,temperature_2m_min,sunrise,sunset&current=temperature,windspeed,winddirection,is_day,precipitation,weather_code,apparent_temperature&timezone=auto&models=best_match&forecast_days={forecast_days}"
 OPEN_METEO_AIR_QUALITY_URL = "https://air-quality-api.open-meteo.com/v1/air-quality?latitude={lat}&longitude={long}&hourly=european_aqi,uv_index,uv_index_clear_sky&timezone=auto"
 OPEN_METEO_UNIT_PARAMS = {
-    "standard": "temperature_unit=celsius&wind_speed_unit=ms&precipitation_unit=mm",  # temperature is converted to Kelvin later
-    "metric":   "temperature_unit=celsius&wind_speed_unit=ms&precipitation_unit=mm",
+    "standard": "temperature_unit=celsius&wind_speed_unit=kmh&precipitation_unit=mm",  # temperature is converted to Kelvin later
+    "metric":   "temperature_unit=celsius&wind_speed_unit=kmh&precipitation_unit=mm",
     "imperial": "temperature_unit=fahrenheit&wind_speed_unit=mph&precipitation_unit=inch"
 }
 
@@ -72,6 +72,16 @@ class Weather(BasePlugin):
         return template_params
 
     def generate_image(self, settings, device_config):
+        # Sanitize boolean settings to prevent float conversion errors
+        bool_settings = [
+            'displayRefreshTime', 'displayMetrics', 'displayGraph',
+            'displayRain', 'displayWind', 'displayGraphIcons',
+            'displayForecast', 'moonPhase'
+        ]
+        for key in bool_settings:
+            if settings.get(key, '') == '':
+                settings[key] = 'false'
+
         lat = float(settings.get('latitude'))
         long = float(settings.get('longitude'))
         if not lat or not long:
@@ -108,7 +118,7 @@ class Weather(BasePlugin):
                 forecast_days = 7
                 weather_data = self.get_open_meteo_data(lat, long, units, forecast_days + 1)
                 aqi_data = self.get_open_meteo_air_quality(lat, long)
-                template_params = self.parse_open_meteo_data(weather_data, aqi_data, tz, units, time_format, lat)
+                template_params = self.parse_open_meteo_data(weather_data, aqi_data, tz, units, time_format, lat, settings)
             else:
                 raise RuntimeError(f"Unknown weather provider: {weather_provider}")
 
@@ -164,7 +174,7 @@ class Weather(BasePlugin):
         data['hourly_forecast'] = self.parse_hourly(weather_data.get('hourly'), tz, time_format, units, daily_forecast)
         return data
 
-    def parse_open_meteo_data(self, weather_data, aqi_data, tz, units, time_format, lat):
+    def parse_open_meteo_data(self, weather_data, aqi_data, tz, units, time_format, lat, settings=None):
         current = weather_data.get("current", {})
         daily = weather_data.get('daily', {})
         dt = datetime.fromisoformat(current.get('time')).astimezone(tz) if current.get('time') else datetime.now(tz)
@@ -185,7 +195,7 @@ class Weather(BasePlugin):
         }
 
         data['forecast'] = self.parse_open_meteo_forecast(weather_data.get('daily', {}), units, tz, is_day, lat)
-        data['data_points'] = self.parse_open_meteo_data_points(weather_data, aqi_data, units, tz, time_format)
+        data['data_points'] = self.parse_open_meteo_data_points(weather_data, aqi_data, units, tz, time_format, settings)
         
         data['hourly_forecast'] = self.parse_open_meteo_hourly(weather_data.get('hourly', {}), units, tz, time_format, daily.get('sunrise', []), daily.get('sunset', []))
         return data
@@ -407,6 +417,7 @@ class Weather(BasePlugin):
                 "temperature": int(hour.get("temp")),
                 "precipitation": hour.get("pop"),
                 "rain": round(precip_value, 2),
+                "wind": round(hour.get("wind_speed", 0) * 3.6, 1) if units != "imperial" else hour.get("wind_speed", 0),
                 "icon": self.get_plugin_dir(f'icons/{icon_name}.png')
             }
             hourly.append(hour_forecast)
@@ -447,6 +458,10 @@ class Weather(BasePlugin):
         sliced_precipitation_probabilities = precipitation_probabilities[start_index:]
         sliced_rain = rain[start_index:]
         sliced_codes = codes[start_index:]
+        wind_speed = hourly_data.get('wind_speed_10m', [])
+        sliced_wind_speed = wind_speed[start_index:]
+        sunshine_duration = hourly_data.get('sunshine_duration', [])
+        sliced_sunshine = sunshine_duration[start_index:]
 
         for i in range(min(24, len(sliced_times))):
             dt = datetime.fromisoformat(sliced_times[i]).astimezone(tz)
@@ -461,6 +476,8 @@ class Weather(BasePlugin):
                 "temperature": int(sliced_temperatures[i]) if i < len(sliced_temperatures) else 0,
                 "precipitation": (sliced_precipitation_probabilities[i] / 100) if i < len(sliced_precipitation_probabilities) else 0,
                 "rain": (sliced_rain[i]) if i < len(sliced_rain) else 0,
+                "wind": (sliced_wind_speed[i]) if i < len(sliced_wind_speed) else 0,
+                "sunshine": min(1.0, round((sliced_sunshine[i] / 3600), 2)) if i < len(sliced_sunshine) and sliced_sunshine[i] is not None else 0.0,
                 "icon": self.get_plugin_dir(f"icons/{icon_name}.png")
             }
             hourly.append(hour_forecast)
@@ -495,9 +512,11 @@ class Weather(BasePlugin):
 
         wind_deg = weather.get('current', {}).get("wind_deg", 0)
         wind_arrow = self.get_wind_arrow(wind_deg)
+        wind_speed_raw = weather.get('current', {}).get("wind_speed", 0)
+        wind_speed = round(wind_speed_raw * 3.6, 1) if units != "imperial" else wind_speed_raw
         data_points.append({
             "label": "Wind",
-            "measurement": weather.get('current', {}).get("wind_speed"),
+            "measurement": wind_speed,
             "unit": UNITS[units]["speed"],
             "icon": self.get_plugin_dir('icons/wind.png'),
             "arrow": wind_arrow
@@ -553,7 +572,7 @@ class Weather(BasePlugin):
 
         return data_points
 
-    def parse_open_meteo_data_points(self, weather_data, aqi_data, units, tz, time_format):
+    def parse_open_meteo_data_points(self, weather_data, aqi_data, units, tz, time_format, settings=None):
         """Parses current data points from Open-Meteo API response."""
         data_points = []
         daily_data = weather_data.get('daily', {})
@@ -589,9 +608,10 @@ class Weather(BasePlugin):
             logger.error(f"Sunset not found in Open-Meteo response, this is expected for polar areas in midnight sun and polar night periods.")
 
         # Wind
-        wind_speed = current_data.get("windspeed", 0)
+        wind_speed_raw = current_data.get("windspeed", 0)
         wind_deg = current_data.get("winddirection", 0)
         wind_arrow = self.get_wind_arrow(wind_deg)
+        wind_speed = wind_speed_raw
         wind_unit = UNITS[units]["speed"]
         data_points.append({
             "label": "Wind", "measurement": wind_speed, "unit": wind_unit,

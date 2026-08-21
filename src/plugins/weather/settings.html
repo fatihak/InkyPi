@@ -64,7 +64,16 @@
         <input type="checkbox" id="displayRain" name="displayRain" onclick="this.value=this.checked ? 'true' : 'false';">
         <span>Rain Amount</span>
     </div>
-	
+
+    <div class="form-group">
+    	<input type="checkbox" id="displayWind" name="displayWind" value="false" onclick="this.value=this.checked ? 'true' : 'false';">
+    	<span>Wind Speed</span>
+    </div>
+
+    <div class="form-group">
+    	<input type="checkbox" id="displaySunshine" name="displaySunshine" value="false" onclick="this.value=this.checked ? 'true' : 'false';">
+    	<span>Sunshine</span>
+    </div>
 
     <div class="form-group">
         <input type="checkbox" id="moonPhase" name="moonPhase" onclick="this.value=this.checked ? 'true' : 'false';">
@@ -214,10 +223,16 @@
             document.getElementById('displayGraph').checked = pluginSettings.displayGraph;
             document.getElementById('displayGraph').value = pluginSettings.displayGraph;
 
-			document.getElementById('displayRain').checked = pluginSettings.displayRain;
+	    document.getElementById('displayRain').checked = pluginSettings.displayRain;
             document.getElementById('displayRain').value = pluginSettings.displayRain;
-			
-			document.getElementById('displayGraphIcons').checked = pluginSettings.displayGraphIcons;
+
+	    document.getElementById('displayWind').checked = pluginSettings.displayWind === 'true';
+	    document.getElementById('displayWind').value = pluginSettings.displayWind || 'false';
+
+	    document.getElementById('displaySunshine').checked = pluginSettings.displaySunshine === 'true';
+	    document.getElementById('displaySunshine').value = pluginSettings.displaySunshine || 'false';
+
+	    document.getElementById('displayGraphIcons').checked = pluginSettings.displayGraphIcons;
             document.getElementById('displayGraphIcons').value = pluginSettings.displayGraphIcons;
 			
             document.getElementById('displayForecast').checked = pluginSettings.displayForecast;
@@ -243,15 +258,19 @@
             document.getElementById('displayMetrics').value = "true";
             document.getElementById('displayGraph').checked = true;
             document.getElementById('displayGraph').value = "true";
-			document.getElementById('displayRain').checked = false;
+	    document.getElementById('displayRain').checked = false;
             document.getElementById('displayRain').value = "false";
-			document.getElementById('displayGraphIcons').checked = false;
-			document.getElementById('displayGraphIcons').value = "false";
+	    document.getElementById('displayWind').checked = false;
+	    document.getElementById('displayWind').value = "false";
+	    document.getElementById('displaySunshine').checked = false;
+	    document.getElementById('displaySunshine').value = "false";
+	    document.getElementById('displayGraphIcons').checked = false;
+	    document.getElementById('displayGraphIcons').value = "false";
             document.getElementById('displayForecast').checked = true;
             document.getElementById('displayForecast').value = "true";
             document.getElementById('forecastDays').value = 7;
             document.getElementById('moonPhase').checked = false;
-			document.getElementById('moonPhase').value = "false";
+	    document.getElementById('moonPhase').value = "false";
             document.getElementById('weatherTimeZone').value = "locationTimeZone";
         }
 
