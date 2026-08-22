@@ -1,0 +1,9 @@
+{
+  "name": "Server Status",
+  "id": "server_status",
+  "description": "Shows WireGuard and Pi-hole status",
+  "version": "1.0.0",
+  "author": "robi",
+  "entry_point": "server_status.py",
+  "class": "ServerStatus"
+}
