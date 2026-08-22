@@ -7,6 +7,7 @@ import pytz
 from datetime import datetime, timezone
 from plugins.plugin_registry import get_plugin_instance
 from utils.image_utils import compute_image_hash
+from utils.app_utils import generate_error_image
 from model import RefreshInfo, PlaylistManager
 from PIL import Image
 
@@ -45,6 +46,57 @@ class RefreshTask:
         if self.thread:
             logger.info("Stopping refresh task")
             self.thread.join()
+
+    def run_once(self):
+        """Runs a single refresh cycle, advancing to the next plugin, and then returns."""
+        logger.info("Running single refresh cycle")
+        try:
+            playlist_manager = self.device_config.get_playlist_manager()
+            latest_refresh = self.device_config.get_refresh_info()
+            current_dt = self._get_current_datetime()
+
+            # Force advance to next plugin
+            playlist, plugin_instance = self._determine_next_plugin(playlist_manager, latest_refresh, current_dt, force=True)
+            
+            if plugin_instance:
+                refresh_action = PlaylistRefresh(playlist, plugin_instance, force=True)
+                self._execute_refresh(refresh_action, latest_refresh, current_dt)
+            else:
+                logger.info("No plugin to refresh.")
+
+        except Exception as e:
+            logger.exception('Exception during run_once refresh')
+            raise e
+
+    def _execute_refresh(self, refresh_action, latest_refresh, current_dt):
+        """Executes the refresh action, updates display and config."""
+        plugin_config = self.device_config.get_plugin(refresh_action.get_plugin_id())
+        if plugin_config is None:
+            logger.error(f"Plugin config not found for '{refresh_action.get_plugin_id()}'.")
+            return
+
+        plugin = get_plugin_instance(plugin_config)
+        try:
+            image = refresh_action.execute(plugin, self.device_config, current_dt)
+        except Exception as e:
+            logger.exception(f"Failed to execute refresh action for {refresh_action.get_plugin_id()}")
+            image = generate_error_image(f"Plugin Error:\n{refresh_action.get_plugin_id()}\n{str(e)}", self.device_config.get_resolution())
+            
+        image_hash = compute_image_hash(image)
+
+        refresh_info = refresh_action.get_refresh_info()
+        refresh_info.update({"refresh_time": current_dt.isoformat(), "image_hash": image_hash})
+        
+        # check if image is the same as current image
+        if image_hash != latest_refresh.image_hash:
+            logger.info(f"Updating display. | refresh_info: {refresh_info}")
+            self.display_manager.display_image(image, image_settings=plugin.config.get("image_settings", []))
+        else:
+            logger.info(f"Image already displayed, skipping refresh. | refresh_info: {refresh_info}")
+
+        # update latest refresh data in the device config
+        self.device_config.refresh_info = RefreshInfo(**refresh_info)
+        self.device_config.write_config()
 
     def _run(self):
         """Background task that manages the periodic refresh of the display.
@@ -106,26 +158,7 @@ class RefreshTask:
                             refresh_action = PlaylistRefresh(playlist, plugin_instance)
 
                     if refresh_action:
-                        plugin_config = self.device_config.get_plugin(refresh_action.get_plugin_id())
-                        if plugin_config is None:
-                            logger.error(f"Plugin config not found for '{refresh_action.get_plugin_id()}'.")
-                            continue
-                        plugin = get_plugin_instance(plugin_config)
-                        image = refresh_action.execute(plugin, self.device_config, current_dt)
-                        image_hash = compute_image_hash(image)
-
-                        refresh_info = refresh_action.get_refresh_info()
-                        refresh_info.update({"refresh_time": current_dt.isoformat(), "image_hash": image_hash})
-                        # check if image is the same as current image
-                        if image_hash != latest_refresh.image_hash:
-                            logger.info(f"Updating display. | refresh_info: {refresh_info}")
-                            self.display_manager.display_image(image, image_settings=plugin.config.get("image_settings", []))
-                        else:
-                            logger.info(f"Image already displayed, skipping refresh. | refresh_info: {refresh_info}")
-
-                        # update latest refresh data in the device config
-                        self.device_config.refresh_info = RefreshInfo(**refresh_info)
-                        self.device_config.write_config()
+                        self._execute_refresh(refresh_action, latest_refresh, current_dt)
 
             except Exception as e:
                 logger.exception('Exception during refresh')
@@ -160,7 +193,7 @@ class RefreshTask:
         tz_str = self.device_config.get_config("timezone", default="UTC")
         return datetime.now(pytz.timezone(tz_str))
 
-    def _determine_next_plugin(self, playlist_manager, latest_refresh_info, current_dt):
+    def _determine_next_plugin(self, playlist_manager, latest_refresh_info, current_dt, force=False):
         """Determines the next plugin to refresh based on the active playlist, plugin cycle interval, and current time."""
         playlist = playlist_manager.determine_active_playlist(current_dt)
         if not playlist:
@@ -177,7 +210,7 @@ class RefreshTask:
         plugin_cycle_interval = self.device_config.get_config("plugin_cycle_interval_seconds", default=3600)
         should_refresh = PlaylistManager.should_refresh(latest_refresh_dt, plugin_cycle_interval, current_dt)
 
-        if not should_refresh:
+        if not should_refresh and not force:
             latest_refresh_str = latest_refresh_dt.strftime('%Y-%m-%d %H:%M:%S') if latest_refresh_dt else "None"
             logger.info(f"Not time to update display. | latest_update: {latest_refresh_str} | plugin_cycle_interval: {plugin_cycle_interval}")
             return None, None
