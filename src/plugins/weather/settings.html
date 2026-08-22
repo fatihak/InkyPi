@@ -161,6 +161,14 @@
         return true;
     }
 
+    const weatherHandleAction = window.handleAction;
+    window.handleAction = async function(action) {
+        if (!validateCoordInputs()) {
+            return;
+        }
+        return weatherHandleAction(action);
+    };
+
     function updateTitleOptions(provider) {
         const titleLocationRadio = document.getElementById('title-location');
         const titleLocationLabel = document.querySelector('label[for="title-location"]');
@@ -222,9 +230,6 @@
         let map, marker;
         let markerMoved = false;
         let hadValidCoords = false;
-
-        // Register global validation hook so handleAction can call it
-        window.pluginValidate = validateCoordInputs;
 
         $openMap.addEventListener('click', () => {
             if (!validateCoordInputs()) return;
