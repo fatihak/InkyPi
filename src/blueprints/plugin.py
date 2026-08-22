@@ -249,6 +249,8 @@ def update_now():
 
             plugin = get_plugin_instance(plugin_config)
             image = plugin.generate_image(plugin_settings, device_config)
+            if image is None:
+                return jsonify({"error": f"Plugin '{plugin_id}' failed to generate an image."}), 500
             display_manager.display_image(image, image_settings=plugin_config.get("image_settings", []))
 
     except Exception as e:

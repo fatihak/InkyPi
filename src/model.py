@@ -296,37 +296,142 @@ class PluginInstance:
     def should_refresh(self, current_time):
         """Checks whether the plugin should be refreshed based on its refresh settings and the current time."""
         latest_refresh_dt = self.get_latest_refresh_dt()
+        # If never refreshed, check scheduled time before allowing refresh
         if not latest_refresh_dt:
+            if "scheduled" in self.refresh:
+                scheduled_time_str = self.refresh.get("scheduled")
+                scheduled_time = datetime.strptime(scheduled_time_str, "%H:%M").time()
+
+                # Build a scheduled datetime on the current date and align tzinfo with current_time
+                scheduled_dt = datetime.combine(current_time.date(), scheduled_time)
+                if current_time.tzinfo is not None:
+                    scheduled_dt = scheduled_dt.replace(tzinfo=current_time.tzinfo)
+
+                result = current_time >= scheduled_dt
+                logger.debug(
+                    f"should_refresh({self.name}): never refreshed, scheduled={scheduled_time_str}, "
+                    f"current_time={current_time}, result={result}"
+                )
+                return result
+            logger.debug(f"should_refresh({self.name}): never refreshed, no schedule, returning True")
             return True
 
         # Check for interval-based refresh
         if "interval" in self.refresh:
             interval = self.refresh.get("interval")
-            if interval and (current_time - latest_refresh_dt) >= timedelta(seconds=interval):
-                return True
+            if interval:
+                ldt = latest_refresh_dt
+                # Normalize latest refresh to current_time's tz-naive/aware state
+                if ldt.tzinfo is None and current_time.tzinfo is not None:
+                    ldt = ldt.replace(tzinfo=current_time.tzinfo)
+                elif ldt.tzinfo is not None and current_time.tzinfo is None:
+                    ldt = ldt.replace(tzinfo=None)
+                elif ldt.tzinfo is not None and current_time.tzinfo is not None:
+                    ldt = ldt.astimezone(current_time.tzinfo)
+
+                elapsed = current_time - ldt
+                if elapsed >= timedelta(seconds=interval):
+                    logger.debug(
+                        f"should_refresh({self.name}): interval elapsed "
+                        f"({elapsed.total_seconds():.0f}s >= {interval}s), returning True"
+                    )
+                    return True
 
         # Check for scheduled refresh (HH:MM format)
         if "scheduled" in self.refresh:
             scheduled_time_str = self.refresh.get("scheduled")
-            latest_refresh_str = latest_refresh_dt.strftime("%H:%M")
-
-            # If the latest refresh is before the scheduled time today
-            if latest_refresh_str < scheduled_time_str:
-                return True
-        
-        if "scheduled" in self.refresh:
-            scheduled_time_str = self.refresh.get("scheduled")
             scheduled_time = datetime.strptime(scheduled_time_str, "%H:%M").time()
-            
-            latest_refresh_date = latest_refresh_dt.date()
+
+            # Build a scheduled datetime for today and align tzinfo with current_time
+            scheduled_dt = datetime.combine(current_time.date(), scheduled_time)
+            if current_time.tzinfo is not None:
+                scheduled_dt = scheduled_dt.replace(tzinfo=current_time.tzinfo)
+
+            # Normalize latest_refresh_dt into current_time's timezone/naive state for safe comparison
+            ldt = latest_refresh_dt
+            if ldt.tzinfo is None and current_time.tzinfo is not None:
+                ldt = ldt.replace(tzinfo=current_time.tzinfo)
+            elif ldt.tzinfo is not None and current_time.tzinfo is None:
+                ldt = ldt.replace(tzinfo=None)
+            elif ldt.tzinfo is not None and current_time.tzinfo is not None:
+                ldt = ldt.astimezone(current_time.tzinfo)
+
+            latest_refresh_date = ldt.date()
             current_date = current_time.date()
 
             # Determine if a refresh is needed based on scheduled time and last refresh
-            if (latest_refresh_date < current_date and current_time.time() >= scheduled_time) or \
-            (latest_refresh_date == current_date and latest_refresh_dt.time() < scheduled_time <= current_time.time()):
+            if (latest_refresh_date < current_date and current_time >= scheduled_dt) or \
+               (latest_refresh_date == current_date and ldt < scheduled_dt <= current_time):
+                logger.debug(
+                    f"should_refresh({self.name}): scheduled time reached "
+                    f"(scheduled={scheduled_time_str}, latest_refresh_date={latest_refresh_date}, "
+                    f"current_date={current_date}), returning True"
+                )
                 return True
 
+        logger.debug(
+            f"should_refresh({self.name}): no refresh needed "
+            f"| latest_refresh={latest_refresh_dt} | refresh_settings={self.refresh}"
+        )
         return False
+
+    def get_due_datetime(self, current_time):
+        """Computes the effective due datetime for this plugin.
+
+        For scheduled plugins: today's scheduled time (or yesterday's if the
+        plugin has never been refreshed and the scheduled time has passed).
+        For interval plugins: latest_refresh_time + interval.
+        For never-refreshed non-scheduled plugins: datetime.min (highest priority).
+
+        Returns a timezone-aware or naive datetime matching current_time.
+        """
+        latest_refresh_dt = self.get_latest_refresh_dt()
+
+        # --- scheduled ---
+        if "scheduled" in self.refresh:
+            scheduled_time_str = self.refresh.get("scheduled")
+            scheduled_time = datetime.strptime(scheduled_time_str, "%H:%M").time()
+            scheduled_dt = datetime.combine(current_time.date(), scheduled_time)
+            if current_time.tzinfo is not None:
+                scheduled_dt = scheduled_dt.replace(tzinfo=current_time.tzinfo)
+
+            if not latest_refresh_dt:
+                # Never refreshed ? due since today's scheduled time
+                return scheduled_dt
+
+            # Normalize latest_refresh_dt timezone
+            ldt = latest_refresh_dt
+            if ldt.tzinfo is None and current_time.tzinfo is not None:
+                ldt = ldt.replace(tzinfo=current_time.tzinfo)
+            elif ldt.tzinfo is not None and current_time.tzinfo is None:
+                ldt = ldt.replace(tzinfo=None)
+            elif ldt.tzinfo is not None and current_time.tzinfo is not None:
+                ldt = ldt.astimezone(current_time.tzinfo)
+
+            # If last refresh was before today's scheduled time, due time is today's scheduled time
+            if ldt < scheduled_dt <= current_time:
+                return scheduled_dt
+            # If last refresh was on a previous day, due time is today's scheduled time
+            if ldt.date() < current_time.date() and current_time >= scheduled_dt:
+                return scheduled_dt
+
+        # --- interval ---
+        if "interval" in self.refresh:
+            interval = self.refresh.get("interval")
+            if interval and latest_refresh_dt:
+                ldt = latest_refresh_dt
+                if ldt.tzinfo is None and current_time.tzinfo is not None:
+                    ldt = ldt.replace(tzinfo=current_time.tzinfo)
+                elif ldt.tzinfo is not None and current_time.tzinfo is None:
+                    ldt = ldt.replace(tzinfo=None)
+                elif ldt.tzinfo is not None and current_time.tzinfo is not None:
+                    ldt = ldt.astimezone(current_time.tzinfo)
+                return ldt + timedelta(seconds=interval)
+
+        # Never refreshed, no schedule ? due since the beginning of time
+        if current_time.tzinfo is not None:
+            return datetime.min.replace(tzinfo=current_time.tzinfo)
+        return datetime.min
 
     def get_image_path(self):
         """Formats the image path for this plugin instance."""
