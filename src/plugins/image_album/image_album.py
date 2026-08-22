@@ -10,12 +10,61 @@ logger = logging.getLogger(__name__)
 
 
 class ImmichProvider:
+    # Ordered from newest to oldest.  The first URL that answers 200 to a HEAD
+    # request is stored in _preview_url_template and reused for all subsequent
+    # asset fetches so we only pay the probe cost once per provider lifetime.
+    #
+    # Current Immich API (viewAsset operationId):
+    #   GET /api/assets/{id}/thumbnail?size=preview
+    # Older versions (no size param, returns preview JPEG by default):
+    #   GET /api/assets/{id}/thumbnail
+    _PREVIEW_URL_TEMPLATES = [
+        "{base}/api/assets/{id}/thumbnail?size=preview",  # Immich current API
+        "{base}/api/assets/{id}/thumbnail",               # Immich older (no size param)
+    ]
+
     def __init__(self, base_url: str, key: str, image_loader):
         self.base_url = base_url
         self.key = key
         self.headers = {"x-api-key": self.key}
         self.image_loader = image_loader
         self.session = get_http_session()
+        self._preview_url_template: str | None = None
+
+    def _resolve_preview_url(self, asset_id: str) -> str:
+        """
+        Return the best available preview URL for *asset_id*.
+
+        On the first call we probe the server with HEAD requests to find which
+        endpoint it supports, then cache the template so subsequent calls skip
+        the probe entirely.
+        """
+        if self._preview_url_template is None:
+            for template in self._PREVIEW_URL_TEMPLATES:
+                url = template.format(base=self.base_url, id=asset_id)
+                try:
+                    # Use streaming GET so we only read the response headers and
+                    # status code without downloading the image body.
+                    # HEAD is not reliably supported by Immich on these endpoints.
+                    r = self.session.get(url, headers=self.headers, timeout=10, stream=True)
+                    r.close()
+                    if r.status_code == 200:
+                        self._preview_url_template = template
+                        logger.info(f"Immich preview endpoint resolved: {template}")
+                        return url
+                    logger.debug(f"GET (probe) {url} → {r.status_code}, trying next")
+                except Exception as e:
+                    logger.debug(f"GET (probe) {url} failed: {e}, trying next")
+
+            # All preview endpoints failed — log a warning and fall back to the
+            # original.  This avoids a hard failure but may be slow/large.
+            logger.warning(
+                "No preview endpoint responded 200; falling back to /original. "
+                "Consider upgrading Immich or checking API key permissions."
+            )
+            self._preview_url_template = "{base}/api/assets/{id}/original"
+
+        return self._preview_url_template.format(base=self.base_url, id=asset_id)
 
     def get_album_id(self, album: str) -> str:
         logger.debug(f"Fetching albums from {self.base_url}")
@@ -30,28 +79,39 @@ class ImmichProvider:
         return matching_albums[0]["id"]
 
     def get_assets(self, album_id: str) -> list[dict]:
-        """Fetch all assets from album."""
-        all_items = []
-        page_items = [1]
-        page = 1
+        """Fetch image assets from album.
 
-        logger.debug(f"Fetching assets from album {album_id}")
-        while page_items:
-            body = {
-                "albumIds": [album_id],
-                "size": 1000,
-                "page": page
-            }
-            r2 = self.session.post(f"{self.base_url}/api/search/metadata", json=body, headers=self.headers)
-            r2.raise_for_status()
-            assets_data = r2.json()
+        Immich v3 removed the `assets` field from GET /api/albums/{id}.
+        Use POST /api/search/metadata with albumIds filter instead, falling back
+        to the album detail endpoint for older versions.
+        """
+        # Immich v3+: assets no longer embedded in album response
+        logger.debug(f"Fetching assets for album {album_id} via search/metadata")
+        r = self.session.post(
+            f"{self.base_url}/api/search/metadata",
+            headers=self.headers,
+            json={"albumIds": [album_id], "type": "IMAGE", "withExif": False},
+        )
+        if r.status_code == 200:
+            search_data = r.json() or {}
+            items = search_data.get("assets", {}).get("items", [])
+            logger.debug(f"Search API found {len(items)} image assets")
+            if items:
+                return items
 
-            page_items = assets_data.get("assets", {}).get("items", [])
-            all_items.extend(page_items)
-            page += 1
-
-        logger.debug(f"Found {len(all_items)} total assets in album")
-        return all_items
+        # Fallback: older Immich versions embed assets in album detail
+        logger.debug(f"Search API empty/failed, falling back to /api/albums/{album_id}")
+        r2 = self.session.get(
+            f"{self.base_url}/api/albums/{album_id}",
+            headers=self.headers,
+            params={"withAssets": "true"},
+        )
+        r2.raise_for_status()
+        album_data = r2.json()
+        assets = album_data.get("assets", []) or []
+        image_assets = [a for a in assets if a.get("type") in ("IMAGE", "image", "photo")]
+        logger.debug(f"Album detail found {len(image_assets)} image assets ({len(assets)} total)")
+        return image_assets
 
     def get_image(self, album: str, dimensions: tuple[int, int], resize: bool = True) -> Image.Image | None:
         """
@@ -82,7 +142,7 @@ class ImmichProvider:
         # Select random asset
         selected_asset = choice(assets)
         asset_id = selected_asset["id"]
-        asset_url = f"{self.base_url}/api/assets/{asset_id}/original"
+        asset_url = self._resolve_preview_url(asset_id)
 
         logger.info(f"Selected random asset: {asset_id}")
         logger.debug(f"Downloading from: {asset_url}")
