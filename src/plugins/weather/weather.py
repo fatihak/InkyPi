@@ -72,10 +72,15 @@ class Weather(BasePlugin):
         return template_params
 
     def generate_image(self, settings, device_config):
-        lat = float(settings.get('latitude'))
-        long = float(settings.get('longitude'))
-        if not lat or not long:
+        raw_lat = settings.get('latitude', '').strip()
+        raw_long = settings.get('longitude', '').strip()
+        if not raw_lat or not raw_long:
             raise RuntimeError("Latitude and Longitude are required.")
+        try:
+            lat = float(raw_lat)
+            long = float(raw_long)
+        except (ValueError, TypeError):
+            raise RuntimeError("Latitude and Longitude must be valid numbers.")
 
         units = settings.get('units')
         if not units or units not in ['metric', 'imperial', 'standard']:
