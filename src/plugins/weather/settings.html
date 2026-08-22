@@ -169,6 +169,14 @@
         return weatherHandleAction(action);
     };
 
+    const weatherOpenModal = window.openModal;
+    window.openModal = function(modalId) {
+        if (modalId === 'scheduleModal' && !validateCoordInputs()) {
+            return;
+        }
+        return weatherOpenModal(modalId);
+    };
+
     function updateTitleOptions(provider) {
         const titleLocationRadio = document.getElementById('title-location');
         const titleLocationLabel = document.querySelector('label[for="title-location"]');
