@@ -74,7 +74,11 @@ class Calendar(BasePlugin):
         parsed_events = []
 
         for calendar_url, color in zip(calendar_urls, colors):
-            cal = self.fetch_calendar(calendar_url)
+            try:
+                cal = self.fetch_calendar(calendar_url)
+            except RuntimeError as e:
+                logger.warning(f"Skipping calendar due to fetch error: {e}")
+                continue
             events = recurring_ical_events.of(cal).between(start_range, end_range)
             contrast_color = self.get_contrast_color(color)
 

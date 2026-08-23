@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify, current_app, render_template, Response
 from utils.time_utils import calculate_seconds
 from datetime import datetime, timedelta
-import os
+import subprocess
 import pytz
 import logging
 import io
@@ -86,10 +86,10 @@ def shutdown():
     data = request.get_json() or {}
     if data.get("reboot"):
         logger.info("Reboot requested")
-        os.system("sudo reboot")
+        subprocess.Popen(["sudo", "reboot"])
     else:
         logger.info("Shutdown requested")
-        os.system("sudo shutdown -h now")
+        subprocess.Popen(["sudo", "shutdown", "-h", "now"])
     return jsonify({"success": True})
 
 @settings_bp.route('/download-logs')

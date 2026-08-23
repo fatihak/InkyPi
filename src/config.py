@@ -20,6 +20,7 @@ class Config:
     plugin_image_dir = os.path.join(BASE_DIR, "static", "images", "plugins")
 
     def __init__(self):
+        load_dotenv(override=True)
         self.config = self.read_config()
         self.plugins_list = self.read_plugins_list()
         self.playlist_manager = self.load_playlist_manager()
@@ -60,10 +61,10 @@ class Config:
         with open(self.config_file, 'w') as outfile:
             json.dump(self.config, outfile, indent=4)
 
-    def get_config(self, key=None, default={}):
+    def get_config(self, key=None, default=None):
         """Gets the value of a specific configuration key or returns the entire config if none provided."""
         if key is not None:
-            return self.config.get(key, default)
+            return self.config.get(key, default if default is not None else {})
         return self.config
 
     def get_plugins(self):
@@ -114,7 +115,6 @@ class Config:
 
     def load_env_key(self, key):
         """Loads an environment variable using dotenv and returns its value."""
-        load_dotenv(override=True)
         return os.getenv(key)
 
     def load_playlist_manager(self):

@@ -11,13 +11,8 @@ logging.config.fileConfig(os.path.join(os.path.dirname(__file__), 'config', 'log
 import warnings
 warnings.filterwarnings("ignore", message=".*Busy Wait: Held high.*")
 
-import os
-import random
-import time
 import sys
-import json
 import logging
-import threading
 import argparse
 from utils.app_utils import generate_startup_image
 from flask import Flask, request, send_from_directory
@@ -98,7 +93,7 @@ if __name__ == '__main__':
 
     try:
         # Run the Flask app
-        app.secret_key = str(random.randint(100000,999999))
+        app.secret_key = os.urandom(24).hex()
 
         # Get local IP address for display (only in dev mode when running on non-Pi)
         if DEV_MODE:
@@ -109,7 +104,7 @@ if __name__ == '__main__':
                 local_ip = s.getsockname()[0]
                 s.close()
                 logger.info(f"Serving on http://{local_ip}:{PORT}")
-            except:
+            except OSError:
                 pass  # Ignore if we can't get the IP
 
         serve(app, host="0.0.0.0", port=PORT, threads=1)

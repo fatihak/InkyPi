@@ -34,6 +34,8 @@ def write_env_file(filepath, entries):
             f.write("# InkyPi API Keys and Secrets\n")
             f.write("# Managed via web interface\n\n")
             for key, value in entries:
+                # Strip newlines to prevent injection of extra entries
+                value = value.replace('\n', '').replace('\r', '')
                 # Quote values with spaces or special characters
                 if ' ' in value or '"' in value or "'" in value:
                     value = f'"{value}"'

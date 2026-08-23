@@ -67,9 +67,9 @@ class PlaylistManager:
     DEFAULT_PLAYLIST_START = "00:00"
     DEFAULT_PLAYLIST_END = "24:00"
 
-    def __init__(self, playlists=[], active_playlist=None):
+    def __init__(self, playlists=None, active_playlist=None):
         """Initialize PlaylistManager with a list of playlists."""
-        self.playlists = playlists
+        self.playlists = playlists if playlists is not None else []
         self.active_playlist = active_playlist
 
     def get_playlist_names(self):
@@ -306,14 +306,6 @@ class PluginInstance:
                 return True
 
         # Check for scheduled refresh (HH:MM format)
-        if "scheduled" in self.refresh:
-            scheduled_time_str = self.refresh.get("scheduled")
-            latest_refresh_str = latest_refresh_dt.strftime("%H:%M")
-
-            # If the latest refresh is before the scheduled time today
-            if latest_refresh_str < scheduled_time_str:
-                return True
-        
         if "scheduled" in self.refresh:
             scheduled_time_str = self.refresh.get("scheduled")
             scheduled_time = datetime.strptime(scheduled_time_str, "%H:%M").time()
