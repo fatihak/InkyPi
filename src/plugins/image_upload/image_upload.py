@@ -90,6 +90,9 @@ class ImageUpload(BasePlugin):
                 background_color = ImageColor.getcolor(settings.get('backgroundColor') or "white", image.mode)
                 image = ImageOps.pad(image, dimensions, color=background_color, method=Image.Resampling.LANCZOS)
 
+        # Add debug overlay if enabled
+        image = self.add_debug_overlay(image, settings, device_config)
+
         logger.info("=== Image Upload Plugin: Image generation complete ===")
         return image
 

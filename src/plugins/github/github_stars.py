@@ -31,7 +31,8 @@ def stars_generate_image(plugin_instance, settings, device_config):
         dimensions,
         "github_stars.html",
         "github.css",
-        template_params
+        template_params,
+        device_config=device_config
     )
 
 def fetch_stars(github_repository):

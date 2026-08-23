@@ -6,7 +6,7 @@
     <title>Settings</title>
     <script>
         (function() {
-            const theme = localStorage.getItem('inkypi-theme') || 
+            const theme = localStorage.getItem('inkypi-theme') ||
                          (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
             if (theme === 'dark') {
                 document.documentElement.setAttribute('data-theme', 'dark');
@@ -26,7 +26,7 @@
                     method: 'POST',
                     body: formData,
                 });
-                
+
                 const result = await response.json();
                 if (response.ok) {
                     showResponseModal('success', `Success! ${result.message}`);
@@ -41,7 +41,7 @@
         }
 
         let pluginCycleIntervalSeconds = {{ device_settings.plugin_cycle_interval_seconds | default(3600) | tojson }};
-    
+
         // Function to populate the fields
         function populateIntervalFields() {
             const intervalInput = document.getElementById('interval');
@@ -122,12 +122,12 @@
                 <!-- Device Name -->
                 <div class="form-group">
                     <label for="deviceName" class="form-label">Device Name:</label>
-                    <input type="text" 
-                           id="deviceName" 
-                           name="deviceName" 
-                           placeholder="Type something..." 
-                           value="{{ device_settings.name }}" 
-                           required 
+                    <input type="text"
+                           id="deviceName"
+                           name="deviceName"
+                           placeholder="Type something..."
+                           value="{{ device_settings.name }}"
+                           required
                            class="form-input">
                 </div>
                 <div class="form-group nowrap">
@@ -190,6 +190,13 @@
                     <div class="form-group nowrap">
                         <label class="form-label" for="logSystemStats">Log System Stats</label>
                             <input type="checkbox" id="logSystemStats" name="logSystemStats" {% if device_settings.log_system_stats %}checked{% endif %}>
+                        </label>
+                    </div>
+
+                    <div class="form-group nowrap">
+                        <label class="form-label" for="showDebugInfo">Show Debug Info</label>
+                        <span title="Display debug information overlay on all plugin images, including timestamps and performance metrics">ⓘ</span>
+                        <input type="checkbox" id="showDebugInfo" name="showDebugInfo" {% if device_settings.show_debug_info %}checked{% endif %}>
                         </label>
                     </div>
                 </div>
@@ -275,7 +282,7 @@
                 </div>
             </div>
         </form>
- 
+
         <!-- Buttons -->
         <div class="buttons-container">
             <button type="button" onclick="handleAction()" class="action-button">Save</button>

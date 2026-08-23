@@ -54,11 +54,11 @@ class AIText(BasePlugin):
             "content": prompt_response,
             "plugin_settings": settings
         }
-        
-        image = self.render_image(dimensions, "ai_text.html", "ai_text.css", image_template_params)
+
+        image = self.render_image(dimensions, "ai_text.html", "ai_text.css", image_template_params, device_config=device_config)
 
         return image
-    
+
     @staticmethod
     def fetch_text_prompt(ai_client, model, text_prompt):
         logger.info(f"Getting random text prompt from input {text_prompt}, model: {model}")

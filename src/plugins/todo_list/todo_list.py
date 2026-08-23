@@ -40,6 +40,6 @@ class TodoList(BasePlugin):
             "lists": lists,
             "plugin_settings": settings
         }
-        
-        image = self.render_image(dimensions, "todo_list.html", "todo_list.css", template_params)
+
+        image = self.render_image(dimensions, "todo_list.html", "todo_list.css", template_params, device_config=device_config)
         return image

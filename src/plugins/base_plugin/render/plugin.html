@@ -14,7 +14,7 @@
         {% endfor %}
     </style>
     </head>
-    <body 
+    <body
         class="
         {% if plugin_settings.selectedFrame == 'Corner' %}corner-frame{% endif %}
         {% if plugin_settings.selectedFrame == 'Top and Bottom' %}top-bottom-frame{% endif %}
@@ -34,6 +34,34 @@
         margin-left: {{ plugin_settings.leftMargin or plugin_settings.margin or 5 }}px;
         margin-right: {{ plugin_settings.rightMargin or plugin_settings.margin or 5 }}px;
     ">
+        {% if debug_info %}
+        <div class="debug-info">
+            <div class="debug-section">
+                <div class="debug-title">DEBUG: {{ debug_info.plugin_id }}</div>
+                {% if debug_info.image_generated %}
+                <div class="debug-row">
+                    <span class="debug-label">Last Refresh:</span>
+                    <span class="debug-value">{{ debug_info.image_generated }}</span>
+                </div>
+                {% endif %}
+                {% if debug_info.refresh_interval %}
+                <div class="debug-row">
+                    <span class="debug-label">Interval:</span>
+                    <span class="debug-value">{{ debug_info.refresh_interval }}</span>
+                </div>
+                {% endif %}
+                {% if debug_info.custom %}
+                <div class="debug-divider"></div>
+                {% for key, value in debug_info.custom.items() %}
+                <div class="debug-row">
+                    <span class="debug-label">{{ key | replace('_', ' ') | title }}:</span>
+                    <span class="debug-value">{{ value }}</span>
+                </div>
+                {% endfor %}
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
         <div class="container">
             {% block content %}
             {% endblock %}

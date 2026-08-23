@@ -80,6 +80,9 @@ class Wpotd(BasePlugin):
         if shrink_to_fit:
             logger.info(f"Image resized to fit device dimensions: {max_width}x{max_height}")
 
+        # Add debug overlay if enabled
+        image = self.add_debug_overlay(image, settings, device_config)
+
         logger.info("=== Wikipedia POTD Plugin: Image generation complete ===")
         return image
 
