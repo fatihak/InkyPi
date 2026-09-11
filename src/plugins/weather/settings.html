@@ -19,7 +19,14 @@
     <select id="weatherProvider" name="weatherProvider" class="form-input" onchange="updateTitleOptions(this.value)">
         <option value="OpenMeteo">Open-Meteo</option>
         <option value="OpenWeatherMap">OpenWeatherMap</option>
+        <option value="Tempest">Tempest</option>
     </select>
+
+    <div class="form-group" id="tempestStationWrapper" style="display: none;">
+        <label for="tempestStationId" class="form-label">Tempest Station ID:</label>
+        <input type="text" id="tempestStationId" name="tempestStationId" class="form-input" inputmode="numeric" />
+        <small>Store the Tempest access token under API Keys as <code>TEMPEST_TOKEN</code>.</small>
+    </div>
 
     <label for="units" class="form-label">Units:</label>
     <select id="units" name="units" class="form-input">
@@ -185,6 +192,9 @@
         const titleTimeZone = document.getElementById('weatherTimeZone');
         const titleTimeZoneLabel = document.querySelector('label[for="weatherTimeZone"]');
         const apiKeyLabel = document.querySelector('.api-key-label');
+        const tempestStationWrapper = document.getElementById('tempestStationWrapper');
+
+        tempestStationWrapper.style.display = provider === 'Tempest' ? '' : 'none';
 
         if (provider === 'OpenMeteo') {
             // Hide or disable "Location" radio option
@@ -215,8 +225,15 @@
             titleTimeZoneLabel.style.display = '';
             titleTimeZone.disabled = false;
 
-            // Show API Key required label for OpenWeatherMap
-            if (apiKeyLabel) apiKeyLabel.style.display = '';
+            // Show the provider-specific API key hint.
+            if (apiKeyLabel) {
+                apiKeyLabel.style.display = '';
+                if (provider === 'Tempest') {
+                    apiKeyLabel.title = 'Tempest (Set TEMPEST_TOKEN in .env)';
+                } else {
+                    apiKeyLabel.title = 'OpenWeatherMap (Set OPEN_WEATHER_MAP_SECRET in .env)';
+                }
+            }
         }
     }
 
@@ -297,6 +314,7 @@
         if (loadPluginSettings) {
             document.getElementById('latitude').value = pluginSettings.latitude ?? '';
             document.getElementById('longitude').value = pluginSettings.longitude ?? '';
+            document.getElementById('tempestStationId').value = pluginSettings.tempestStationId || '';
 
             document.getElementById('units').value = pluginSettings.units;
 
@@ -348,6 +366,7 @@
             document.getElementById('moonPhase').checked = false;
 			document.getElementById('moonPhase').value = "false";
             document.getElementById('weatherTimeZone').value = "locationTimeZone";
+            document.getElementById('tempestStationId').value = '';
         }
 
         latitude = parseCoord(document.getElementById('latitude').value, 0);

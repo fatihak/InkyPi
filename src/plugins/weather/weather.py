@@ -54,6 +54,7 @@ GEOCODING_URL = "http://api.openweathermap.org/geo/1.0/reverse?lat={lat}&lon={lo
 
 OPEN_METEO_FORECAST_URL = "https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={long}&hourly=weather_code,temperature_2m,precipitation,precipitation_probability,relative_humidity_2m,surface_pressure,visibility&daily=weathercode,temperature_2m_max,temperature_2m_min,sunrise,sunset&current=temperature,windspeed,winddirection,is_day,precipitation,weather_code,apparent_temperature&timezone=auto&models=best_match&forecast_days={forecast_days}"
 OPEN_METEO_AIR_QUALITY_URL = "https://air-quality-api.open-meteo.com/v1/air-quality?latitude={lat}&longitude={long}&hourly=european_aqi,uv_index,uv_index_clear_sky&timezone=auto"
+TEMPEST_OBSERVATION_URL = "https://swd.weatherflow.com/swd/rest/observations/station/{station_id}"
 OPEN_METEO_UNIT_PARAMS = {
     "standard": "temperature_unit=celsius&wind_speed_unit=ms&precipitation_unit=mm",  # temperature is converted to Kelvin later
     "metric":   "temperature_unit=celsius&wind_speed_unit=ms&precipitation_unit=mm",
@@ -114,6 +115,41 @@ class Weather(BasePlugin):
                 weather_data = self.get_open_meteo_data(lat, long, units, forecast_days + 1)
                 aqi_data = self.get_open_meteo_air_quality(lat, long)
                 template_params = self.parse_open_meteo_data(weather_data, aqi_data, tz, units, time_format, lat)
+            elif weather_provider == "Tempest":
+                tempest_token = device_config.load_env_key("TEMPEST_TOKEN")
+                if not tempest_token:
+                    raise RuntimeError("Tempest API token not configured.")
+
+                station_id = str(settings.get('tempestStationId', '')).strip()
+                if not station_id:
+                    raise RuntimeError("Tempest Station ID is required.")
+
+                tempest_data = self.get_tempest_data(tempest_token, station_id)
+                forecast_days = 7
+                forecast_data = self.get_open_meteo_data(lat, long, units, forecast_days + 1)
+                aqi_data = self.get_open_meteo_air_quality(lat, long)
+
+                tempest_tz = tz
+                if settings.get('weatherTimeZone', 'locationTimeZone') == 'locationTimeZone':
+                    tempest_timezone = tempest_data.get('timezone')
+                    if tempest_timezone:
+                        try:
+                            tempest_tz = pytz.timezone(tempest_timezone)
+                        except pytz.UnknownTimeZoneError:
+                            logger.warning(f"Unknown Tempest timezone '{tempest_timezone}', using configured timezone.")
+
+                if settings.get('titleSelection', 'location') == 'location':
+                    title = tempest_data.get('station_name') or tempest_data.get('public_name') or title
+
+                template_params = self.parse_tempest_data(
+                    tempest_data,
+                    forecast_data,
+                    aqi_data,
+                    tempest_tz,
+                    units,
+                    time_format,
+                    lat,
+                )
             else:
                 raise RuntimeError(f"Unknown weather provider: {weather_provider}")
 
@@ -194,6 +230,144 @@ class Weather(BasePlugin):
         
         data['hourly_forecast'] = self.parse_open_meteo_hourly(weather_data.get('hourly', {}), units, tz, time_format, daily.get('sunrise', []), daily.get('sunset', []))
         return data
+
+    def parse_tempest_data(self, tempest_data, forecast_data, aqi_data, tz, units, time_format, lat):
+        """Build the existing Weather template shape using Tempest for current station observations.
+
+        Tempest's station-observation endpoint is current-conditions data. Open-Meteo remains
+        the source for forecast/hourly/astronomy values so enabling Tempest does not imply that
+        station observations are a forecast product.
+        """
+        observations = tempest_data.get("obs") or []
+        if not observations or not isinstance(observations[0], dict):
+            raise RuntimeError("Tempest response did not contain a current station observation.")
+
+        current = observations[0]
+        forecast_current = forecast_data.get("current", {})
+        daily = forecast_data.get("daily", {})
+
+        timestamp = current.get("timestamp")
+        if timestamp is not None:
+            dt = datetime.fromtimestamp(timestamp, tz=timezone.utc).astimezone(tz)
+        else:
+            dt = datetime.now(tz)
+
+        current_icon = self.map_weather_code_to_icon(
+            forecast_current.get("weather_code", 0),
+            forecast_current.get("is_day", 1),
+        )
+
+        current_temperature = self.convert_tempest_temperature(current.get("air_temperature"), units)
+        feels_like = self.convert_tempest_temperature(
+            current.get("feels_like", current.get("air_temperature")),
+            units,
+        )
+
+        if current_temperature is None:
+            raise RuntimeError("Tempest response did not contain air_temperature.")
+
+        data = {
+            "current_date": dt.strftime("%A, %B %d"),
+            "current_day_icon": self.get_plugin_dir(f'icons/{current_icon}.png'),
+            "current_temperature": str(round(current_temperature)),
+            "feels_like": str(round(feels_like if feels_like is not None else current_temperature)),
+            "temperature_unit": UNITS[units]["temperature"],
+            "units": units,
+            "time_format": time_format,
+        }
+
+        data['forecast'] = self.parse_open_meteo_forecast(
+            forecast_data.get('daily', {}), units, tz, forecast_current.get('is_day', 1), lat
+        )
+        data['data_points'] = self.parse_tempest_data_points(
+            current, forecast_data, aqi_data, units, tz, time_format
+        )
+        data['hourly_forecast'] = self.parse_open_meteo_hourly(
+            forecast_data.get('hourly', {}),
+            units,
+            tz,
+            time_format,
+            daily.get('sunrise', []),
+            daily.get('sunset', []),
+        )
+        return data
+
+    def convert_tempest_temperature(self, temperature_c, units):
+        if temperature_c is None:
+            return None
+        temperature_c = float(temperature_c)
+        if units == "imperial":
+            return temperature_c * 9 / 5 + 32
+        if units == "standard":
+            return temperature_c + 273.15
+        return temperature_c
+
+    def convert_tempest_wind_speed(self, speed_mps, units):
+        if speed_mps is None:
+            return None
+        speed_mps = float(speed_mps)
+        if units == "imperial":
+            return speed_mps * 2.2369362920544
+        return speed_mps
+
+    def convert_tempest_precipitation(self, precip_mm, units):
+        if precip_mm is None:
+            return None
+        precip_mm = float(precip_mm)
+        if units == "imperial":
+            return precip_mm / 25.4
+        return precip_mm
+
+    def parse_tempest_data_points(self, current, forecast_data, aqi_data, units, tz, time_format):
+        """Overlay Tempest sensor measurements on the existing Open-Meteo metrics grid."""
+        data_points = self.parse_open_meteo_data_points(
+            forecast_data, aqi_data, units, tz, time_format
+        )
+        by_label = {point.get("label"): point for point in data_points}
+
+        wind_speed = self.convert_tempest_wind_speed(current.get("wind_avg"), units)
+        if wind_speed is not None and "Wind" in by_label:
+            by_label["Wind"]["measurement"] = round(wind_speed, 1)
+            by_label["Wind"]["unit"] = UNITS[units]["speed"]
+            by_label["Wind"]["arrow"] = self.get_wind_arrow(current.get("wind_direction", 0))
+
+        humidity = current.get("relative_humidity")
+        if humidity is not None and "Humidity" in by_label:
+            by_label["Humidity"]["measurement"] = round(float(humidity))
+
+        pressure = current.get("sea_level_pressure")
+        if pressure is None:
+            pressure = current.get("barometric_pressure")
+        if pressure is not None and "Pressure" in by_label:
+            by_label["Pressure"]["measurement"] = round(float(pressure), 1)
+            by_label["Pressure"]["unit"] = "hPa"
+
+        uv = current.get("uv")
+        if uv is not None and "UV Index" in by_label:
+            by_label["UV Index"]["measurement"] = round(float(uv), 1)
+
+        rain_today = current.get("precip_accum_local_day")
+        if rain_today is None:
+            rain_today = current.get("local_day_precip_accumulation")
+        rain_today = self.convert_tempest_precipitation(rain_today, units)
+        if rain_today is not None:
+            data_points.append({
+                "label": "Rain Today",
+                "measurement": round(rain_today, 2),
+                "unit": "in" if units == "imperial" else "mm",
+                "icon": self.get_plugin_dir('icons/09d.png'),
+            })
+
+        strike_count = current.get("strike_count")
+        if strike_count is not None:
+            data_points.append({
+                "label": "Lightning",
+                "measurement": int(strike_count),
+                "unit": "",
+                "icon": self.get_plugin_dir('icons/11d.png'),
+            })
+
+        return data_points
 
     def map_weather_code_to_icon(self, weather_code, is_day):
 
@@ -772,6 +946,15 @@ class Weather(BasePlugin):
             logger.error(f"Failed to retrieve Open-Meteo air quality data: {response.content}")
             raise RuntimeError("Failed to retrieve Open-Meteo air quality data.")
         
+        return response.json()
+
+    def get_tempest_data(self, token, station_id):
+        url = TEMPEST_OBSERVATION_URL.format(station_id=station_id)
+        response = requests.get(url, params={"token": token}, timeout=30)
+        if not 200 <= response.status_code < 300:
+            logger.error(f"Failed to retrieve Tempest station observation: HTTP {response.status_code}")
+            raise RuntimeError("Failed to retrieve Tempest station observation.")
+
         return response.json()
     
     def format_time(self, dt, time_format, hour_only=False, include_am_pm=True):
