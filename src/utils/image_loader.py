@@ -12,6 +12,7 @@ from utils.http_client import get_http_session
 import logging
 import gc
 import psutil
+import requests
 import tempfile
 import os
 
@@ -225,9 +226,9 @@ class AdaptiveImageLoader:
     # ========== HIGH-PERFORMANCE IMPLEMENTATIONS ==========
 
     def _load_from_url_fast(self, url, dimensions, timeout_ms, resize, headers=None):
-        """High-performance URL loading using in-memory processing."""
+        """High-performance URL loading by streaming directly into PIL."""
         try:
-            logger.debug("Using in-memory processing (high-performance mode)")
+            logger.debug("Using streamed in-memory processing (high-performance mode)")
 
             # Merge provided headers with defaults
             request_headers = {**self.DEFAULT_HEADERS, **(headers or {})}
@@ -236,7 +237,14 @@ class AdaptiveImageLoader:
             response = session.get(url, timeout=timeout_ms / 1000, stream=True, headers=request_headers)
             response.raise_for_status()
 
-            img = Image.open(BytesIO(response.content))
+            # Pipe the raw socket stream directly into PIL — no intermediate bytes
+            # buffer needed. decode_content=True handles gzip/deflate transparently.
+            # img.load() forces full decode while the connection is still open,
+            # since Image.open() is otherwise lazy (header-only).
+            response.raw.decode_content = True
+            img = Image.open(response.raw)
+            img.load()
+
             original_size = img.size
             original_pixels = original_size[0] * original_size[1]
             logger.info(f"Downloaded image: {original_size[0]}x{original_size[1]} ({img.mode} mode, {original_pixels/1_000_000:.1f}MP)")
