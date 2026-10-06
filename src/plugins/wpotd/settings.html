@@ -1,3 +1,5 @@
+<div id="preview-widget"></div>
+
 <span style="color: var(--text-primary);">If the date field is blank it will default to today's date. This is useful when adding to a playlist.</span>
 <div class="form-group">
     <label for="customDate" class="form-label">Date (optional)</label>
@@ -46,5 +48,7 @@
             $date.value = "";
             $toggleShrink.checked = true;
             $toggleShrink.value = "true";}
+
+        PreviewManager.init('wpotd');
     });
 </script>

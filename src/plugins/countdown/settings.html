@@ -1,3 +1,5 @@
+<div id="preview-widget"></div>
+
 <div class="form-group">
     <div class="form-group">
         <label for="title" class="form-label">Title</label>
@@ -15,5 +17,9 @@
             document.getElementById('title').value = pluginSettings.title || '';
             document.getElementById('date').value = pluginSettings.date;
         }
+
+        PreviewManager.init('countdown', {
+            required: { date: 'select a date first' }
+        });
     });
 </script>

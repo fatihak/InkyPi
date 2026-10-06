@@ -1,3 +1,5 @@
+<div id="preview-widget"></div>
+
 <div class="form-group">
     <label for="clock-face" class="form-label">Clock Face:</label>
 
@@ -46,13 +48,15 @@
         document.getElementById('selected-clock-face').value = selectedFaceName;
         document.querySelector("[name=primaryColor]").value = element.dataset.primaryColor;
         document.querySelector("[name=secondaryColor]").value = element.dataset.secondaryColor;
+
+        PreviewManager.refresh();
     }
 
     // Default selection for the first clock face or based on plugin_settings
     document.addEventListener('DOMContentLoaded', () => {
         const clockFaceContainer = document.getElementById('clock-face-selection');
         const selectedClockFaceInput = document.getElementById('selected-clock-face');
-        
+
         // Check if pluginSettings has a selectedClockFace value
         const selectedClockFaceFromSettings = pluginSettings?.selectedClockFace;
 
@@ -75,5 +79,7 @@
         if (pluginSettings.secondaryColor) {
             document.querySelector("[name=secondaryColor]").value = pluginSettings.secondaryColor;
         }
+
+        PreviewManager.init('clock');
     });
 </script>
