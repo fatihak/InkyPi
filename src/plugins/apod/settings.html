@@ -1,8 +1,11 @@
+<!-- Date section -->
+<div class="form-group">
+  <label class="form-label">Date</label>
+</div>
 <div class="form-group">
     <label for="customDate" class="form-label">Date (optional)</label>
     <input type="date" id="customDate" name="customDate" class="form-input" />
 </div>
-
 <div class="form-group">
     <label for="randomizeApod" class="form-label">Randomize date</label>
     <div class="toggle-container">
@@ -10,6 +13,93 @@
             onclick="this.value = this.checked ? 'true' : 'false'; toggleDateField(this)">
         <label for="randomizeApod" class="toggle-label"></label>
     </div>
+</div>
+<div class="separator"></div>
+<!-- Image section -->
+<div class="form-group">
+  <label class="form-label">Image</label>
+</div>
+<div class="form-group">
+    <label for="autoResize" class="form-label">Scale to Fit</label>
+    <div class="toggle-container">
+        <input
+            type="checkbox"
+            id="autoResize"
+            name="autoResize"
+            class="toggle-checkbox"
+            value="false"
+            onclick="this.value = this.checked ? 'true' : 'false';"
+        >
+        <label for="autoResize" class="toggle-label"></label>
+    </div>
+</div>
+
+<div class="form-group">
+    <label for="autoBgColor" class="form-label">Automatic background color</label>
+    <div class="toggle-container">
+        <input
+            type="checkbox"
+            id="autoBgColor"
+            name="autoBgColor"
+            class="toggle-checkbox"
+            value="false"
+            onclick="this.value = this.checked ? 'true' : 'false';"
+        >
+        <label for="autoBgColor" class="toggle-label"></label>
+    </div>
+</div>
+<div class="separator"></div>
+<!-- Title section -->
+<div class="form-group">
+  <label class="form-label">Title</label>
+</div>
+
+<!-- Row: Show title toggle -->
+<div class="form-group">
+  <label for="showTitle" class="form-label">Show image title</label>
+  <div class="toggle-container">
+    <input
+      type="checkbox"
+      id="showTitle"
+      name="showTitle"
+      class="toggle-checkbox"
+      value="false"
+      onclick="this.value = this.checked ? 'true' : 'false';"
+    >
+    <label for="showTitle" class="toggle-label"></label>
+  </div>
+</div>
+
+<!-- Row: Padding -->
+<div class="form-group nowrap">
+  <label for="textPadding" class="form-label">Title Padding</label>
+  <input
+    type="number"
+    class="form-input"
+    id="textPadding"
+    name="textPadding"
+    min="0"
+    max="100"
+    step="5"
+    value="20"
+  >
+  <span>px</span>
+</div>
+
+<!-- Row: Font size -->
+<div class="form-group nowrap">
+  <label for="textSize" class="form-label">Title Fontsize</label>
+  <input
+    type="number"
+    class="form-input"
+    id="textSize"
+    name="textSize"
+    min="0"
+    max="100"
+    step="5"
+    value="15"
+  >
+  <span>px</span>
 </div>
 
 <script>
@@ -21,17 +111,55 @@
     document.addEventListener('DOMContentLoaded', () => {
         const $toggle = document.getElementById('randomizeApod');
         const $date = document.getElementById('customDate');
+        const $autoResize = document.getElementById('autoResize');
+        const $autoBgColor = document.getElementById('autoBgColor');
+        const $showTitle = document.getElementById('showTitle');
+        const $textPadding = document.getElementById('textPadding');
+        const $textSize = document.getElementById('textSize');
 
         const today = new Date().toISOString().split('T')[0];
 
         if (loadPluginSettings) {
+            // Randomize
             $toggle.checked = pluginSettings.randomizeApod === 'true';
-            $toggle.value = pluginSettings.randomizeApod;
+            $toggle.value = pluginSettings.randomizeApod ?? 'false';
+
+            // Title
+            $showTitle.checked = pluginSettings.showTitle === 'true';
+            $showTitle.value = pluginSettings.showTitle ?? 'false';
+
+            // Auto resize
+            $autoResize.checked = pluginSettings.autoResize === 'true';
+            $autoResize.value = pluginSettings.autoResize ?? 'false';
+
+            // Auto background color
+            $autoBgColor.checked = pluginSettings.autoBgColor === 'true';
+            $autoBgColor.value = pluginSettings.autoBgColor ?? 'false';
+
+            // Title
+            $textPadding.value = pluginSettings.textPadding ?? 20;
+            $textSize.value = pluginSettings.$textSize ?? 20;
+
+            // Custom Date
             $date.value = pluginSettings.customDate || today;
             $date.disabled = $toggle.checked;
         } else {
             $toggle.checked = false;
             $toggle.value = "false";
+
+            $showTitle.checked = true;
+            $showTitle.value = "true";
+
+            $autoBgColor.checked = true;
+            $autoBgColor.value = "true";
+
+            $autoResize.checked = true;
+            $autoResize.value = "true";
+
+            //Default padding and fontsize
+            $textPadding.value = 20;
+            $textSize.value = 20;
+
             $date.value = today;
         }
     });
