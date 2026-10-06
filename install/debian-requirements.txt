@@ -5,10 +5,12 @@ python3-pip
 avahi-daemon
 libopenblas-dev
 libopenjp2-7
+libjpeg-dev
 chromium-headless-shell
 libfreetype6-dev
 fonts-noto-color-emoji
 swig
 liblgpio-dev
 libheif-dev
+pkg-config
 jq
