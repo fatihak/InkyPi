@@ -97,9 +97,52 @@ plugins/{plugin_id}/
     ├── plugin-info.json        # Plugin manifest file
     ├── icon.png                # Plugin icon
     ├── settings.html           # Optional: Plugin settings page (if applicable)
+    ├── api.py                  # Optional: API routes (see Adding API routes below)
     ├── render/                 # Optional: If generating images from html and css files, store them here
     └── {other files/resources} # Any additional files or resources used by the plugin
 ```
+
+## Adding API routes (optional)
+
+If your plugin needs its own HTTP endpoints (for example, to receive webhooks, to be controlled by external automation, or to offer a small JSON API), you can register a Flask Blueprint. The core will discover and register it at startup so your routes are available without any changes to InkyPi core code.
+
+**When to use this:**
+
+- Your plugin needs endpoints that other systems call (e.g. Home Assistant, Node-RED, IFTTT, or custom scripts).
+- You want to receive webhooks or callbacks (e.g. calendar events, GitHub notifications).
+- You need a minimal API for your plugin's config or actions (e.g. backup tools, dashboards).
+
+**How it works:** InkyPi calls `register_plugin_blueprints(app)` after loading plugins. For each plugin that implements a `get_blueprint()` class method returning a Flask Blueprint, that blueprint is registered with the app. This is optional; plugins that don't implement `get_blueprint()` are unchanged.
+
+### Implementing API routes
+
+1. **Create a Blueprint** in your plugin directory (e.g. `api.py`):
+
+   ```python
+   from flask import Blueprint, request, jsonify
+
+   myplugin_bp = Blueprint("myplugin_api", __name__)
+
+   @myplugin_bp.route("/myplugin-api/do-something", methods=["POST"])
+   def do_something():
+       data = request.get_json() or {}
+       # Your logic here
+       return jsonify({"success": True})
+   ```
+
+2. **Expose the Blueprint** from your plugin class by implementing `get_blueprint()`:
+
+   ```python
+   class MyPlugin(BasePlugin):
+       @classmethod
+       def get_blueprint(cls):
+           from . import api
+           return api.myplugin_bp
+   ```
+
+3. **Naming convention:** Use a URL prefix that includes your plugin id (e.g. `/<plugin_id>-api/...`) to avoid clashes with core and other plugins.
+
+The Plugin Manager plugin is a full example: it uses a blueprint to expose install, uninstall, and update endpoints under `/pluginmanager-api/`.
 
 ## Prepopulating forms for Plugin Instances
 
