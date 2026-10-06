@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ widget.display_name }} Settings</title>
+    <script>
+        (function() {
+            const theme = localStorage.getItem('inkypi-theme') ||
+                         (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+            if (theme === 'dark') {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            }
+        })();
+    </script>
+    <link rel= "stylesheet" type= "text/css" href= "{{ url_for('static',filename='styles/main.css') }}">
+    <script src="{{ url_for('static', filename='scripts/dark_mode.js') }}"></script>
+    <script src="{{ url_for('static', filename='scripts/response_modal.js') }}"></script>
+    <script src="{{ url_for('static', filename='scripts/jquery.min.js') }}"></script>
+
+    <script>
+        const widgetSettings = {{ (widget_settings or {}) | tojson }};
+        
+        async function saveWidgetSettings() {
+            const form = document.getElementById('settingsForm');
+            const formData = new FormData(form);
+            const url = '{{ url_for("widget.save_widget_config", widget_id=widget.id) }}';
+            
+            // Send data to the server
+            try {
+                const response = await fetch(url, {method: 'POST', body: formData});
+                const result = await response.json();
+                if (response.ok) {
+                    showResponseModal('success', `Success! ${result.message}`);
+                } else {
+                    showResponseModal('failure', `Error!  ${result.error}`);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('An error occurred while processing your request.');
+            }
+        }
+    </script>
+</head>
+<body>
+    <div class="frame">
+        <button onclick="history.back()" class="back-button">← Back</button>
+
+        <div class="app-header">
+            <div class="header-content">
+                <div class="title-container">
+                    <h1 class="app-title">{{ widget.name }}</h1>
+                </div>
+            </div>
+        </div>
+        <div class="separator"></div>
+
+        <form id="settingsForm" class="settings-form" onsubmit="return false;">
+            <div class="settings-container">
+                <div class="form-group">
+                    <label for="use_contrast_color" class="form-label">Use Contrast Color</label>
+                    <div class="toggle-container">
+                        <input type="checkbox" id="use_contrast_color" name="use_contrast_color" class="toggle-checkbox"
+                            value="{{ 'true' if use_contrast_color else 'false' }}"
+                            onclick="this.value = this.checked ? 'true' : 'false';"
+                            {{ 'checked' if use_contrast_color else '' }}>
+                        <label for="use_contrast_color" class="toggle-label"></label>
+                    </div>
+                </div>
+
+                {% with plugin_settings=widget_settings %}
+                {% include settings_template %}
+                {% endwith %}
+            </div>
+
+            <div class="buttons-container">
+                <button type="button" onclick="saveWidgetSettings()" class="action-button">Save</button>
+            </div>
+        </form>
+    </div>
+
+    {% include 'response_modal.html' %}
+</body>
+</html>

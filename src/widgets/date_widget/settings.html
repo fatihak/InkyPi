@@ -1,0 +1,36 @@
+<div class="form-group">
+    <div class="form-group">
+        <label for="date_format" class="form-label">Date Format</label>
+        <select name="date_format" class="form-input">
+            <option value="DMY" {% if plugin_settings.date_format == 'DMY' %}selected{% endif %}>DD-MM-YYYY ({{ date_DMY }})</option>
+            <option value="YMD" {% if plugin_settings.date_format == 'YMD' or not plugin_settings.date_format %}selected{% endif %}>YYYY-MM-DD ({{ date_YMD }})</option>
+            <option value="MDY" {% if plugin_settings.date_format == 'MDY' %}selected{% endif %}>MM-DD-YYYY ({{ date_MDY }})</option>
+        </select>
+    </div>
+    <div class="form-group">
+        <label for="font_size" class="form-label">Font Size</label>
+        <input type="number" name="font_size" class="form-input" value="{{ plugin_settings.font_size | default(12) }}" min="8" max="24">
+    </div>
+</div>
+
+<div class="form-group" >
+    <div class="form-group {{ 'hidden' if use_contrast_color else '' }}" id="text-color-group">
+        <label for="text_color" class="form-label">Text Color</label>
+        <input type="color" id="text_color" name="text_color" class="color-picker" value="{{ plugin_settings.text_color | default('#FFFFFF') }}">
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const $textColorGroup = document.getElementById('text_color').parentElement;
+        const $contrastCheckbox = document.getElementById('use_contrast_color');
+        $contrastCheckbox.addEventListener('change', (event) => {
+            if (event.target.checked) {
+                $textColorGroup.classList.add('hidden');
+            } else {
+                $textColorGroup.classList.remove('hidden');
+            }
+        });
+    });
+</script>
+
