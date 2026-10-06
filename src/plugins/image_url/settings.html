@@ -4,6 +4,12 @@
 </div>
 
 <div class="form-group">
+    <label for="timeout" class="form-label">Timeout (seconds):</label>
+    <input type="number" id="timeout" name="timeout" placeholder="40" min="1" class="form-input">
+    <small class="form-hint">Maximum time to wait for image download (default: 40 seconds)</small>
+</div>
+
+<div class="form-group">
     <span style="color: var(--text-primary);">Warning: Do not run with untrusted URLs, as it may pose a security risk. This may also fail if the image takes too long to load.</span>
 </div>
 
@@ -12,6 +18,7 @@
     document.addEventListener('DOMContentLoaded', () => {        
         if (loadPluginSettings) {
             document.getElementById('url').value = pluginSettings.url;
+            document.getElementById('timeout').value = pluginSettings.timeout || '';
         }
     });
 </script>
