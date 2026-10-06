@@ -39,6 +39,46 @@
             border-color: var(--accent-primary);
         }
 
+            /* Plugin row hover effect */
+            .plugin-item {
+                transition: background-color 0.15s ease;
+            }
+
+            .plugin-item:hover {
+                background-color: #f2f2f2;
+            }
+            /* Inline edit styling */
+            .plugin-instance.editable {
+                display: inline-flex;
+                align-items: center;
+                gap: 4px;
+                cursor: pointer;
+                /* make button look like plain inline text */
+                background: none;
+                border: none;
+                padding: 0;
+                margin: 0;
+                font: inherit;
+                color: inherit;
+            }
+
+            .plugin-instance.editable:hover {
+                text-decoration: underline;
+            }
+
+            .plugin-instance.editable .instance-edit-icon {
+                width: 20px;
+                height: 20px;
+                opacity: 0.35;
+                transition: opacity 0.2s ease;
+                vertical-align: middle;
+                flex-shrink: 0;
+            }
+
+            .plugin-instance.editable:hover .instance-edit-icon {
+                opacity: 1;
+            }
+
         /* Thumbnail Preview Modal */
         .thumbnail-preview-modal {
             display: none;
@@ -131,6 +171,95 @@
             img.src = imageUrl;
             info.textContent = `Plugin: ${pluginName} | Instance: ${instanceName}`;
             modal.style.display = 'block';
+        }
+
+        // Inline edit for plugin instance name
+        function enableInlineEdit(el) {
+            const rawOldName = el.textContent.trim();
+            const playlistName = el.dataset.playlist;
+            const pluginId = el.dataset.pluginId;
+            let isSubmitting = false;
+            let isClosed = false;
+
+            // create input
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.className = 'inline-edit-input';
+            input.value = rawOldName;
+            input.style.minWidth = '120px';
+
+            // replace element with input
+            el.style.display = 'none';
+            el.parentElement.insertBefore(input, el.nextSibling);
+            input.focus();
+
+            function cancel() {
+                if (isClosed) {
+                    return;
+                }
+                isClosed = true;
+                input.remove();
+                el.style.display = '';
+            }
+
+            function _normalizeJS(s) {
+                if (!s) return '';
+                if (String.prototype.normalize) return s.normalize('NFC');
+                return s;
+            }
+
+            async function save() {
+                if (isSubmitting || isClosed) {
+                    return;
+                }
+
+                const rawNew = input.value.trim();
+                const oldName = _normalizeJS(rawOldName);
+                const newName = _normalizeJS(rawNew);
+
+                if (!newName || newName === oldName) {
+                    cancel();
+                    return;
+                }
+
+                isSubmitting = true;
+
+                try {
+                    const resp = await fetch("{{ url_for('playlist.rename_plugin_instance') }}", {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ playlist_name: playlistName, plugin_id: pluginId, old_name: oldName, new_name: newName })
+                    });
+                    const result = await resp.json();
+                    if (resp.ok) {
+                        // reload the page to avoid leaving any controls with stale server-rendered attributes
+                        sessionStorage.setItem("storedMessage", JSON.stringify({ type: "success", text: result.message || 'Renamed' }));
+                        location.reload();
+                    } else {
+                        // include server diagnostic info if present
+                        const diag = result && result.existing_instances ? ` Existing: ${result.existing_instances.join(', ')}` : '';
+                        showResponseModal('failure', (result.error || 'Failed to rename') + diag);
+                        cancel();
+                    }
+                } catch (err) {
+                    console.error(err);
+                    showResponseModal('failure', 'An error occurred');
+                    cancel();
+                } finally {
+                    isSubmitting = false;
+                }
+            }
+
+            input.addEventListener('blur', save);
+            input.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    save();
+                } else if (e.key === 'Escape') {
+                    e.preventDefault();
+                    cancel();
+                }
+            });
         }
 
         function closeThumbnailPreview() {
@@ -403,7 +532,9 @@
             <div class="playlist-item {% if playlist.name == playlist_config.active_playlist %}active{% endif %}">
                     <div class="playlist-header">
                         <span class="playlist-title">{{ playlist.name }}</span>
-                        <button class="edit-button" onclick="openEditModal('{{ playlist.name }}', '{{ playlist.start_time }}','{{ playlist.end_time }}')"><img src="{{ url_for('static', filename='icons/settings.png') }}" alt="edit playlist" class="action-icon"></button>
+                        <button class="edit-button" onclick="openEditModal('{{ playlist.name }}', '{{ playlist.start_time }}','{{ playlist.end_time }}')" title="Edit Playlist">
+                            <img src="{{ url_for('static', filename='icons/settings.png') }}" alt="edit playlist" class="action-icon">
+                        </button>
                     </div>
                     <!-- Plugin List -->
                     <div class="plugin-list">
@@ -411,7 +542,7 @@
                         <div class="plugin-item">
                             <div class="plugin-info" id="{{plugin_instance.name}}">
                                 <img src="{{ url_for('plugin.image', plugin_id=plugin_instance.plugin_id, filename='icon.png') }}" alt="Plugin Icon" class="plugin-icon">
-                                <span class="plugin-instance">{{ plugin_instance.name }}</span>
+                                <button type="button" class="plugin-instance editable" title="Edit Instance Name" data-playlist="{{ playlist.name }}" data-plugin-id="{{ plugin_instance.plugin_id }}" data-instance="{{ plugin_instance.name }}" onclick="enableInlineEdit(this)">{{ plugin_instance.name }}<img src="{{ url_for('static', filename='icons/edit_pencil.png') }}" alt="edit" class="instance-edit-icon"></button>
 
                                 <!-- Thumbnail preview - only show if image has been generated -->
                                 {% if plugin_instance.latest_refresh_time %}
@@ -441,7 +572,7 @@
                                     </span>
                                 {% endif %}
 
-                                <a href="{{ url_for('plugin.plugin_page', plugin_id=plugin_instance.plugin_id) }}?instance={{ plugin_instance.name }}" class="edit-button">
+                                <a href="{{ url_for('plugin.plugin_page', plugin_id=plugin_instance.plugin_id) }}?instance={{ plugin_instance.name }}" title="Edit Instance Settings" class="edit-button">
                                     <img src="{{ url_for('static', filename='icons/edit.png') }}" alt="edit plugin" class="action-icon">
                                 </a>
                                 <button class="edit-button refresh-settings-btn"

@@ -161,6 +161,134 @@ def delete_playlist(playlist_name):
 
     return jsonify({"success": True, "message": f"Deleted playlist '{playlist_name}'!"})
 
+
+@playlist_bp.route('/rename_plugin_instance', methods=['PUT'])
+def rename_plugin_instance():
+    """Rename a plugin instance within a playlist.
+
+    Expects JSON: { playlist_name, plugin_id, old_name, new_name }
+    """
+    device_config = current_app.config['DEVICE_CONFIG']
+    playlist_manager = device_config.get_playlist_manager()
+
+    data = request.get_json() or {}
+    playlist_name = data.get('playlist_name')
+    plugin_id = data.get('plugin_id')
+    old_name = data.get('old_name')
+    new_name = data.get('new_name')
+
+    if not playlist_name or not plugin_id or not old_name or not new_name:
+        return jsonify({"error": "Missing required fields"}), 400
+
+    # basic validation: allow alphanumeric, spaces (Unicode-aware)
+    try:
+        import unicodedata
+        def _normalize(s):
+            return unicodedata.normalize('NFC', (s or "").strip())
+    except Exception:
+        def _normalize(s):
+            return (s or "").strip()
+
+    if not all((ch.isalpha() or ch.isspace() or ch.isnumeric()) for ch in _normalize(new_name)):
+        return jsonify({"error": "Instance name can only contain alphanumeric characters and spaces"}), 400
+
+    playlist = playlist_manager.get_playlist(playlist_name)
+    if not playlist:
+        return jsonify({"error": "Playlist not found"}), 400
+
+    # Find plugin instances using normalized comparison to handle accented characters
+    def _find_plugin(playlist_obj, plugin_id_val, name_val):
+        for p in playlist_obj.plugins:
+            if p.plugin_id == plugin_id_val and _normalize(p.name) == _normalize(name_val):
+                return p
+        return None
+
+    existing = _find_plugin(playlist, plugin_id, new_name)
+    plugin_instance = _find_plugin(playlist, plugin_id, old_name)
+
+    # Add diacritics-insensitive fallback matching for old instance name
+    def _remove_diacritics(s):
+        try:
+            import unicodedata
+            nkfd = unicodedata.normalize('NFKD', s)
+            return ''.join(ch for ch in nkfd if not unicodedata.combining(ch))
+        except Exception:
+            return s
+
+    if not plugin_instance:
+        base_old = _remove_diacritics(_normalize(old_name)).lower()
+        candidates = [p for p in playlist.plugins if p.plugin_id == plugin_id and _remove_diacritics(_normalize(p.name)).lower() == base_old]
+        if len(candidates) == 1:
+            plugin_instance = candidates[0]
+        elif len(candidates) > 1:
+            # Ambiguous match: do not guess — return an error listing matches
+            matched = [p.name for p in candidates]
+            return jsonify({
+                "error": f"Ambiguous plugin instance name '{old_name}'",
+                "matches": matched
+            }), 400
+
+    if not plugin_instance:
+        # collect existing instance names for this plugin to help debugging
+        existing_names = [p.name for p in playlist.plugins if p.plugin_id == plugin_id]
+        return jsonify({"error": f"Plugin instance '{old_name}' not found", "existing_instances": existing_names}), 400
+
+    # If an existing instance with the new name exists and it's not the same instance, reject
+    if existing and existing is not plugin_instance:
+        return jsonify({"error": f"Plugin instance '{new_name}' already exists"}), 400
+
+    # Also enforce global uniqueness across all playlists, consistent with add_plugin / plugin_page
+    global_existing = playlist_manager.find_plugin(plugin_id, new_name)
+    if global_existing and global_existing is not plugin_instance:
+        return jsonify({"error": f"Plugin instance '{new_name}' already exists"}), 400
+
+    # rename image file if present — perform filesystem update first, then persist
+    try:
+        old_image = plugin_instance.get_image_path()
+
+        # compute new image path without mutating the persistent object yet
+        original_name = plugin_instance.name
+        try:
+            plugin_instance.name = new_name
+            new_image = plugin_instance.get_image_path()
+        finally:
+            # revert to original in-memory name until filesystem operations succeed
+            plugin_instance.name = original_name
+
+        plugin_image_dir = device_config.plugin_image_dir
+        old_path = os.path.join(plugin_image_dir, old_image)
+        new_path = os.path.join(plugin_image_dir, new_image)
+
+        if os.path.exists(old_path):
+            # fail early if target already exists to avoid overwriting
+            if os.path.exists(new_path):
+                return jsonify({"error": f"Target image file already exists: {new_image}"}), 400
+
+            try:
+                os.rename(old_path, new_path)
+            except OSError as e:
+                # handle cross-device rename by copying then removing
+                import errno, shutil
+                if getattr(e, 'errno', None) == errno.EXDEV:
+                    try:
+                        shutil.copy2(old_path, new_path)
+                        os.remove(old_path)
+                    except Exception:
+                        logger.exception(f"Failed to copy plugin image {old_path} -> {new_path}")
+                        return jsonify({"error": "Failed to rename plugin image file"}), 500
+                else:
+                    logger.exception(f"Failed to rename plugin image {old_path} -> {new_path}")
+                    return jsonify({"error": "Failed to rename plugin image file"}), 500
+
+        # filesystem update succeeded (or there was no image) — now update in-memory name and persist
+        plugin_instance.name = new_name
+        device_config.write_config()
+    except Exception as e:
+        logger.exception("EXCEPTION CAUGHT: " + str(e))
+        return jsonify({"error": f"An error occurred: {str(e)}"}), 500
+
+    return jsonify({"success": True, "message": f"Renamed '{old_name}' -> '{new_name}'"})
+
 @playlist_bp.app_template_filter('format_relative_time')
 def format_relative_time(iso_date_string):
     # Parse the input ISO date string
