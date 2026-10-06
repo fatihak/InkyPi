@@ -46,14 +46,29 @@ args = parser.parse_args()
 if args.dev:
     Config.config_file = os.path.join(Config.BASE_DIR, "config", "device_dev.json")
     DEV_MODE = True
-    PORT = 8080
-    logger.info("Starting InkyPi in DEVELOPMENT mode on port 8080")
+    PORT = int(os.environ.get('PORT', 8080))
+    logger.info(f"Starting InkyPi in DEVELOPMENT mode on port {PORT}")
 else:
     DEV_MODE = False
-    PORT = 80
-    logger.info("Starting InkyPi in PRODUCTION mode on port 80")
+    PORT = int(os.environ.get('PORT', 80))
+    logger.info(f"Starting InkyPi in PRODUCTION mode on port {PORT}")
 logging.getLogger('waitress.queue').setLevel(logging.ERROR)
+class IngressMiddleware:
+    """WSGI middleware to support Home Assistant ingress reverse proxy."""
+    def __init__(self, app):
+        self.app = app
+
+    def __call__(self, environ, start_response):
+        ingress_path = environ.get('HTTP_X_INGRESS_PATH', '')
+        if ingress_path:
+            environ['SCRIPT_NAME'] = ingress_path
+            path_info = environ.get('PATH_INFO', '')
+            if path_info.startswith(ingress_path):
+                environ['PATH_INFO'] = path_info[len(ingress_path):]
+        return self.app(environ, start_response)
+
 app = Flask(__name__)
+app.wsgi_app = IngressMiddleware(app.wsgi_app)
 template_dirs = [
    os.path.join(os.path.dirname(__file__), "templates"),    # Default template folder
    os.path.join(os.path.dirname(__file__), "plugins"),      # Plugin templates
