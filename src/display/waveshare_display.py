@@ -10,6 +10,12 @@ from plugins.plugin_registry import get_plugin_instance
 
 logger = logging.getLogger(__name__)
 
+# Some Waveshare drivers (e.g. epd3in7) require a display "mode" argument for
+# init()/Clear() and expose mode specific render methods (display_1Gray /
+# display_4Gray) instead of a generic display(). We drive those displays in
+# 1 grayscale (monochrome) mode, which mirrors the standard single-color path.
+GRAYSCALE_MODE = 1
+
 
 def split_image_for_bi_color_epd(image):
     """
@@ -80,15 +86,28 @@ class WaveshareDisplay(AbstractDisplay):
             if not callable(self.epd_display_init):
                 raise AttributeError("No Init/init method found")
 
+            # Drivers such as epd3in7 require a 'mode' argument for init(). Detect
+            # this and drive the display in 1 grayscale (monochrome) mode so the
+            # init() call no longer fails with a missing positional argument.
+            mode_param = inspect.signature(self.epd_display_init).parameters.get("mode")
+            self.grayscale_mode_display = (
+                mode_param is not None and mode_param.default is inspect.Parameter.empty
+            )
+            if self.grayscale_mode_display:
+                init_method = self.epd_display_init
+                self.epd_display_init = lambda: init_method(GRAYSCALE_MODE)
+
             self.epd_display_init()
 
-            display_args_spec = inspect.getfullargspec(self.epd_display.display)
+            if self.grayscale_mode_display:
+                self.bi_color_display = False
+            else:
+                display_args_spec = inspect.getfullargspec(self.epd_display.display)
+                self.bi_color_display = len(display_args_spec.args) > 2
         except ModuleNotFoundError:
             raise ValueError(f"Unsupported Waveshare display type: {display_type}")
         except AttributeError:
             raise ValueError(f"Display does not support required methods: {display_type}")
-
-        self.bi_color_display = len(display_args_spec.args) > 2
 
         # update the resolution directly from the loaded device context
         if not self.device_config.get_config("resolution"):
@@ -123,19 +142,24 @@ class WaveshareDisplay(AbstractDisplay):
         # Assume device was in sleep mode.
         self.epd_display_init()
 
-        # Clear residual pixels before updating the image.
-        self.epd_display.Clear()
-
-        # Display the image on the WS display.
-        if not self.bi_color_display:
-            self.epd_display.display(self.epd_display.getbuffer(image))
+        if self.grayscale_mode_display:
+            # Drivers such as epd3in7 use mode specific Clear/display methods.
+            self.epd_display.Clear(0xFF, GRAYSCALE_MODE)
+            self.epd_display.display_1Gray(self.epd_display.getbuffer(image))
         else:
-            black_layer, red_layer = split_image_for_bi_color_epd(image)
+            # Clear residual pixels before updating the image.
+            self.epd_display.Clear()
 
-            self.epd_display.display(
-                self.epd_display.getbuffer(black_layer),
-                self.epd_display.getbuffer(red_layer),
-            )
+            # Display the image on the WS display.
+            if not self.bi_color_display:
+                self.epd_display.display(self.epd_display.getbuffer(image))
+            else:
+                black_layer, red_layer = split_image_for_bi_color_epd(image)
+
+                self.epd_display.display(
+                    self.epd_display.getbuffer(black_layer),
+                    self.epd_display.getbuffer(red_layer),
+                )
 
         # Put device into low power mode (EPD displays maintain image when powered off)
         logger.info("Putting Waveshare display into sleep mode for power saving.")
