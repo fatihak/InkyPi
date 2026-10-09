@@ -6,44 +6,50 @@
         480
     ],
     "orientation": "horizontal",
-    "plugin_order": [
-        "calendar",
-        "ai_image",
-        "ai_text",
-        "clock",
-        "comic",
-        "countdown",
-        "github",
-        "image_album",
-        "image_folder",
-        "image_upload",
-        "apod",
-        "image_url",
-        "newspaper",
-        "rss",
-        "screenshot",
-        "todo_list",
-        "unsplash",
-        "weather",
-        "wpotd",
-        "year_progress"
-    ],
     "playlist_config": {
         "playlists": [
             {
                 "name": "Default",
                 "start_time": "00:00",
                 "end_time": "24:00",
-                "plugins": [],
-                "current_plugin_index": null
+                "plugins": [
+                    {
+                        "plugin_id": "clock",
+                        "name": "Uhrzeit",
+                        "plugin_settings": {
+                            "selectedClockFace": "Word Clock",
+                            "primaryColor": "#000000",
+                            "secondaryColor": "#ffffff",
+                            "language": "swabian"
+                        },
+                        "refresh": {
+                            "interval": 60
+                        },
+                        "latest_refresh_time": "2026-01-23T20:37:22.683075+01:00"
+                    }
+                ],
+                "current_plugin_index": 0
             }
         ],
-        "active_playlist": null
+        "active_playlist": "Default"
     },
     "refresh_info": {
-        "refresh_time": null,
-        "image_hash": null,
-        "refresh_type": null,
-        "plugin_id": null
+        "refresh_time": "2026-01-23T20:37:22.683075+01:00",
+        "image_hash": "d500f63c9ee6e800efff2fa9a946a0e0cfa80466633ea38609a2f7dcd4ad4ced",
+        "refresh_type": "Playlist",
+        "plugin_id": "clock",
+        "playlist": "Default",
+        "plugin_instance": "Uhrzeit"
+    },
+    "inverted_image": null,
+    "log_system_stats": null,
+    "timezone": "Europe/Berlin",
+    "time_format": "24h",
+    "plugin_cycle_interval_seconds": 180,
+    "image_settings": {
+        "saturation": 1.0,
+        "brightness": 1.0,
+        "sharpness": 1.0,
+        "contrast": 1.0
     }
 }
