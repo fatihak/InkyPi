@@ -1,6 +1,7 @@
 import os
 from utils.app_utils import resolve_path, get_font
 from plugins.base_plugin.base_plugin import BasePlugin
+from plugins.clock.constants import CLOCK_FACES, LOCALE_MAP, LANGUAGE_OPTIONS, LETTER_GRIDS, TEXT_BLOCKS, MINUTE_BLOCKS, HOURS_BLOCKS, HOUR_THRESHOLD
 from PIL import Image, ImageColor, ImageDraw, ImageFont
 from io import BytesIO
 import logging
@@ -11,40 +12,15 @@ import pytz
 
 logger = logging.getLogger(__name__)
 
-CLOCK_FACES = [
-    {
-        "name": "Gradient Clock",
-        "primary_color": "#db3246",
-        "secondary_color": "#000000",
-        "icon": "faces/gradient.png"
-    },
-    {
-        "name": "Digital Clock",
-        "primary_color": "#ffffff",
-        "secondary_color": "#000000",
-        "icon": "faces/digital.png"
-    },
-    {
-        "name": "Divided Clock",
-        "primary_color": "#20b7ae",
-        "secondary_color": "#ffffff",
-        "icon": "faces/divided.png"
-    },
-    {
-        "name": "Word Clock",
-        "primary_color": "#000000",
-        "secondary_color": "#ffffff",
-        "icon": "faces/word.png"
-    }
-]
-
 DEFAULT_TIMEZONE = "US/Eastern"
 DEFAULT_CLOCK_FACE = "Gradient Clock"
+DEFAULT_LANGUAGE = "en"
 
 class Clock(BasePlugin):
     def generate_settings_template(self):
         template_params = super().generate_settings_template()
         template_params['clock_faces'] = CLOCK_FACES
+        template_params['locale_map'] = LOCALE_MAP
         return template_params
 
     def generate_image(self, settings, device_config):
@@ -62,6 +38,8 @@ class Clock(BasePlugin):
         tz = pytz.timezone(timezone_name)
         current_time = datetime.now(tz)
 
+        language = settings.get('language') or DEFAULT_LANGUAGE
+
         img = None
         try:
             if clock_face == "Gradient Clock":
@@ -71,7 +49,7 @@ class Clock(BasePlugin):
             elif clock_face == "Divided Clock":
                 img = self.draw_divided_clock(dimensions, current_time, primary_color, secondary_color)
             elif clock_face == "Word Clock":
-                img = self.draw_word_clock(dimensions, current_time, primary_color, secondary_color)
+                img = self.draw_word_clock(dimensions, current_time, primary_color, secondary_color, language)
         except Exception as e:
             logger.error(f"Failed to draw clock image: {str(e)}")
             raise RuntimeError("Failed to display clock.")
@@ -164,7 +142,7 @@ class Clock(BasePlugin):
 
         return combined
 
-    def draw_word_clock(self, dimensions, time, primary_color=(0,0,0), secondary_color=(255,255,255)):
+    def draw_word_clock(self, dimensions, time, primary_color=(0,0,0), secondary_color=(255,255,255), language="en"):
         w,h = dimensions
 
         bg = Image.new("RGBA", dimensions, primary_color+(255,))
@@ -183,20 +161,9 @@ class Clock(BasePlugin):
         elif h > w:
             border[1] += (h-w)/2
 
-        letter_positions = Clock.translate_word_grid_positions(time.hour % 12, time.minute)
+        letter_positions = Clock.translate_word_grid_positions(time.hour % 12, time.minute, language)
 
-        letter_grid = [
-            ['I','T','L','I','S','A','S','A','M','P','M'],
-            ['A','C','Q','U','A','R','T','E','R','D','C'],
-            ['T','W','E','N','T','Y','F','I','V','E','X'],
-            ['H','A','L','F','S','T','E','N','F','T','O'],
-            ['P','A','S','T','E','R','U','N','I','N','E'],
-            ['O','N','E','S','I','X','T','H','R','E','E'],
-            ['F','O','U','R','F','I','V','E','T','W','O'],
-            ['E','I','G','H','T','E','L','E','V','E','N'],
-            ['S','E','V','E','N','T','W','E','L','V','E'],
-            ['T','E','N','S','E','O','C','L','O','C','K'],
-        ]
+        letter_grid = LETTER_GRIDS.get(language)
 
         canvas_size = min(w,h) - min(border)*2
         for y, row in enumerate(letter_grid):
@@ -397,51 +364,43 @@ class Clock(BasePlugin):
         return image
 
     @staticmethod
-    def translate_word_grid_positions(hour, minute):
-        letters = [
-            [0,0], [0,1], [0,3], [0,4] # IT IS
-        ]
+    def translate_word_grid_positions(hour, minute, language="en"):
+        text_blocks = TEXT_BLOCKS.get(language) # get the text blocks for the language from constants
+        minute_blocks = MINUTE_BLOCKS.get(language) # get the minute blocks for the language from constants
+
+        letters = [] # initialize list of letter positions to light up
+        letters.extend(text_blocks.get("IT IS")) # Inital letters
 
         _minute = minute
-        if (minute > 30):
-            _minute = 60 - minute
-        if _minute >= 3:
-            minute_blocks = [
-                [[2,6],[2,7],[2,8],[2,9]], # FIVE
-                [[3,5],[3,6],[3,7]], # TEN
-                [[1,0],[1,2],[1,3],[1,4],[1,5],[1,6],[1,7],[1,8]], # A QUARTER
-                [[2,0],[2,1],[2,2],[2,3],[2,4],[2,5],[2,5]], # TWENTY
-                [[2,0],[2,1],[2,2],[2,3],[2,4],[2,5],[2,5],[2,6],[2,7],[2,8],[2,9]], # TWENTYFIVE
-                [[3,0],[3,1],[3,2],[3,3]], # HALF
-            ]
-            mapped_minute_value = round((0 + (5 - 0) * ((_minute - 3) / (28 - 3))) - 0.4)
-            letters.extend(minute_blocks[mapped_minute_value])
+        if((language=="swabian") and (43 <= minute < 48)): # Swabian specific handling of "QUARTER TO"
+            letters.extend(text_blocks.get("DREIVIERTL")) # DREIVIERTL
+        else:
+            if (minute > 30):
+                _minute = 60 - minute
+            if _minute >= 3:
+                mapped_minute_value = round((0 + (5 - 0) * ((_minute - 3) / (28 - 3))) - 0.4)
+                letters.extend(minute_blocks[mapped_minute_value])
 
-        if 3 <= minute < 33:
-            letters.extend([[4,0],[4,1],[4,2],[4,3]]) # PAST
-        elif 33 <= minute <= 57:
-            letters.extend([[3,9],[3,10]]) # TO
+        
+        if(language=="swabian"): # Swabian specific handling of PAST/TO
+            if (3 <= (minute%30) < 13):
+                letters.extend(text_blocks.get("NACH")) # PAST
+            elif (18 <= (minute%30) <= 27):
+                letters.extend(text_blocks.get("VOR")) # TO
+        else:
+            if 3 <= minute < 33:
+                letters.extend(text_blocks.get("PAST")) # PAST
+            elif 33 <= minute <= 57:
+                letters.extend(text_blocks.get("TO")) # TO
 
-        hours = [
-            [[5,0],[5,1],[5,2]], #ONE
-            [[6,8],[6,9],[6,10]], # TWO
-            [[5,6],[5,7],[5,8],[5,9],[5,10]], # THREE
-            [[6,0],[6,1],[6,2],[6,3]], # FOUR
-            [[6,4],[6,5],[6,6],[6,7]], # FIVE
-            [[5,3],[5,4],[5,5]], # SIX
-            [[8,0],[8,1],[8,2],[8,3],[8,4]], # SEVEN
-            [[7,0],[7,1],[7,2],[7,3],[7,4]], # EIGHT
-            [[4,7],[4,8],[4,9],[4,10]], # NINE
-            [[9,0],[9,1],[9,2]], # TEN
-            [[7,5],[7,6],[7,7],[7,8],[7,9],[7,10]], # ELEVEN
-            [[8,5],[8,6],[8,7],[8,8],[8,9],[8,10]], # TWELVE
-        ]
-        if minute > 33:
+        hours = HOURS_BLOCKS.get(language)
+        
+        if minute >= HOUR_THRESHOLD.get(language): # handle language specific hour reference ("past current hour" or "to next hour")
             letters.extend(hours[hour])
         else:
             letters.extend(hours[hour - 1])
 
-        if (0 <= minute < 3) or (57 < minute <= 60):
-            letters.extend([[9,5],[9,6],[9,7],[9,8],[9,9],[9,10]]) # OCLOCK
-
+        if ((0 <= minute < 3) or (57 < minute <= 60)) and (LANGUAGE_OPTIONS.get(language).get("OCLOCK")==True): # Final word only if needed
+            letters.extend(text_blocks.get("OCLOCK")) # OCLOCK 
+        logger.debug(letters)
         return letters
