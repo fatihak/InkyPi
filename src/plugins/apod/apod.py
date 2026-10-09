@@ -41,7 +41,7 @@ class Apod(BasePlugin):
         logger.debug("Requesting NASA APOD API...")
         session = get_http_session()
         url = f"https://science.nasa.gov/wp-json/wp/v2/apod-basic/{apod_date}"
-        response = session.get(url, params=params)
+        response = session.get(url)
 
         if response.status_code != 200:
             logger.error(f"NASA API error (status {response.status_code}): {response.text}")
