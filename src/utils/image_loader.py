@@ -111,14 +111,14 @@ class AdaptiveImageLoader:
             with tempfile.NamedTemporaryFile(delete=False, suffix='.jpg') as tmp:
                 tmp_path = tmp.name
                 session = get_http_session()
-                response = session.get(url, timeout=timeout_ms / 1000, stream=True, headers=request_headers)
-                response.raise_for_status()
+                with session.get(url, timeout=timeout_ms / 1000, stream=True, headers=request_headers) as response:
+                    response.raise_for_status()
 
-                downloaded_bytes = 0
-                for chunk in response.iter_content(chunk_size=8192):
-                    if chunk:
-                        tmp.write(chunk)
-                        downloaded_bytes += len(chunk)
+                    downloaded_bytes = 0
+                    for chunk in response.iter_content(chunk_size=8192):
+                        if chunk:
+                            tmp.write(chunk)
+                            downloaded_bytes += len(chunk)
 
                 logger.debug(f"Downloaded {downloaded_bytes / 1024:.1f}KB to temp file")
 
@@ -166,12 +166,12 @@ class AdaptiveImageLoader:
             request_headers = {**self.DEFAULT_HEADERS, **(headers or {})}
 
             session = get_http_session()
-            response = session.get(url, timeout=timeout_ms / 1000, stream=True, headers=request_headers)
-            response.raise_for_status()
+            with session.get(url, timeout=timeout_ms / 1000, stream=True, headers=request_headers) as response:
+                response.raise_for_status()
 
-            response.raw.decode_content = True
-            img = Image.open(response.raw)
-            img.load()
+                response.raw.decode_content = True
+                img = Image.open(response.raw)
+                img.load()
 
             original_size = img.size
 
