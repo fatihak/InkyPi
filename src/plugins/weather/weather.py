@@ -657,7 +657,7 @@ class Weather(BasePlugin):
         visibility_hourly_times = hourly_data.get('time', [])
         visibility_values = hourly_data.get('visibility', [])
         if units == "imperial":
-            visibility_conversion = 1/5280.     # ft to mi
+            visibility_conversion = 1/1609.344  # m to mi
             visibility_max = 6.2                # mi
         else:
             visibility_conversion = 0.001       # m to km
