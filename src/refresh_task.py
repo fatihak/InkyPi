@@ -112,6 +112,16 @@ class RefreshTask:
                             continue
                         plugin = get_plugin_instance(plugin_config)
                         image = refresh_action.execute(plugin, self.device_config, current_dt)
+
+                        if isinstance(refresh_action, PreviewRefresh):
+                            # Preview only: process the image like the display would,
+                            # but do not push it to the device or persist any state.
+                            logger.info("Generating plugin preview (not updating display).")
+                            self.refresh_result["preview_image"] = self.display_manager.process_image(
+                                image, plugin_config.get("image_settings", [])
+                            )
+                            continue
+
                         image_hash = compute_image_hash(image)
 
                         refresh_info = refresh_action.get_refresh_info()
@@ -148,6 +158,28 @@ class RefreshTask:
                 raise self.refresh_result.get("exception")
         else:
             logger.warning("Background refresh task is not running, unable to do a manual update")
+
+    def preview(self, plugin_id, plugin_settings):
+        """Generate a plugin image for preview via the background thread without updating the display.
+
+        Rendering is serialized through the single background worker (same as a manual update) to avoid
+        concurrent browser/screenshot processes, and returns the processed image without pushing it to
+        the device.
+        """
+        if not self.running:
+            raise RuntimeError("Background refresh task is not running, unable to generate a preview")
+
+        with self.condition:
+            self.manual_update_request = PreviewRefresh(plugin_id, plugin_settings)
+            self.refresh_result = {}
+            self.refresh_event.clear()
+
+            self.condition.notify_all()  # Wake the thread to process the preview request
+
+        self.refresh_event.wait()
+        if self.refresh_result.get("exception"):
+            raise self.refresh_result.get("exception")
+        return self.refresh_result.get("preview_image")
 
     def signal_config_change(self):
         """Notify the background thread that config has changed (e.g., interval updated)."""
@@ -219,7 +251,7 @@ class RefreshAction:
 
 class ManualRefresh(RefreshAction):
     """Performs a manual refresh based on a plugin's ID and its associated settings.
-    
+
     Attributes:
         plugin_id (str): The ID of the plugin to refresh.
         plugin_settings (dict): The settings for the manual refresh.
@@ -236,6 +268,30 @@ class ManualRefresh(RefreshAction):
     def get_refresh_info(self):
         """Return refresh metadata as a dictionary."""
         return {"refresh_type": "Manual Update", "plugin_id": self.plugin_id}
+
+    def get_plugin_id(self):
+        """Return the plugin ID associated with this refresh."""
+        return self.plugin_id
+
+class PreviewRefresh(RefreshAction):
+    """Generates a plugin image for preview without updating the display.
+
+    Attributes:
+        plugin_id (str): The ID of the plugin to preview.
+        plugin_settings (dict): The settings to render the preview with.
+    """
+
+    def __init__(self, plugin_id: str, plugin_settings: dict):
+        self.plugin_id = plugin_id
+        self.plugin_settings = plugin_settings
+
+    def execute(self, plugin, device_config, current_dt: datetime):
+        """Generates the plugin image using the stored plugin ID and settings."""
+        return plugin.generate_image(self.plugin_settings, device_config)
+
+    def get_refresh_info(self):
+        """Return refresh metadata as a dictionary."""
+        return {"refresh_type": "Preview", "plugin_id": self.plugin_id}
 
     def get_plugin_id(self):
         """Return the plugin ID associated with this refresh."""
