@@ -77,6 +77,11 @@ To install InkyPi, follow these steps:
     sudo bash install/install.sh -W epd7in3f
     ```
 
+    Some models are not published in the [common driver directory](https://github.com/waveshareteam/e-Paper/tree/master/RaspberryPi_JetsonNano/python/lib/waveshare_epd) and only ship under `E-paper_Separate_Program`. For those, pass the path to the driver within the [waveshareteam/e-Paper](https://github.com/waveshareteam/e-Paper) repository instead of the bare model name:
+    ```bash
+    sudo bash install/install.sh -W E-paper_Separate_Program/3.6inch_e-Paper_E/RaspberryPi_JetsonNano/python/lib/waveshare_epd/epd3in6e.py
+    ```
+
 
 After the installation is complete, the script will prompt you to reboot your Raspberry Pi. Once rebooted, the display will update to show the InkyPi splash screen.
 

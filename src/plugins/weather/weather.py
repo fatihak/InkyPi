@@ -72,10 +72,15 @@ class Weather(BasePlugin):
         return template_params
 
     def generate_image(self, settings, device_config):
-        lat = float(settings.get('latitude'))
-        long = float(settings.get('longitude'))
-        if not lat or not long:
+        raw_lat = settings.get('latitude', '').strip()
+        raw_long = settings.get('longitude', '').strip()
+        if not raw_lat or not raw_long:
             raise RuntimeError("Latitude and Longitude are required.")
+        try:
+            lat = float(raw_lat)
+            long = float(raw_long)
+        except (ValueError, TypeError):
+            raise RuntimeError("Latitude and Longitude must be valid numbers.")
 
         units = settings.get('units')
         if not units or units not in ['metric', 'imperial', 'standard']:
@@ -341,15 +346,13 @@ class Weather(BasePlugin):
         forecast = []
 
         for i in range(0, len(times)): 
-            dt = datetime.fromisoformat(times[i]).replace(tzinfo=timezone.utc).astimezone(tz)
-            day_label = dt.strftime("%a")
-
+            local_date = date.fromisoformat(times[i])
+            day_label = local_date.strftime("%a")
             code = weather_codes[i] if i < len(weather_codes) else 0
             weather_icon = self.map_weather_code_to_icon(code, is_day=1)
             weather_icon_path = self.get_plugin_dir(f"icons/{weather_icon}.png")
 
-            timestamp = int(dt.replace(hour=12, minute=0, second=0).timestamp())
-            target_date: date = dt.date() + timedelta(days=1)
+            target_date = local_date
 
             try:
                 phase_age = moon.phase(target_date)

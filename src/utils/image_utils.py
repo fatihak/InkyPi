@@ -66,19 +66,18 @@ def apply_image_enhancement(img, image_settings={}):
     # ImageEnhance requires RGB mode for operations like blend
     if img.mode not in ('RGB', 'L'):
         img = img.convert('RGB')
-        
 
-    # Apply Brightness
-    img = ImageEnhance.Brightness(img).enhance(image_settings.get("brightness", 1.0))
-
-    # Apply Contrast
-    img = ImageEnhance.Contrast(img).enhance(image_settings.get("contrast", 1.0))
-
-    # Apply Saturation (Color)
-    img = ImageEnhance.Color(img).enhance(image_settings.get("saturation", 1.0))
-
-    # Apply Sharpness
-    img = ImageEnhance.Sharpness(img).enhance(image_settings.get("sharpness", 1.0))
+    # Each enhance() call blends over the full image, so skip factors of 1.0
+    # (the no-op default) to avoid wasted full-frame passes on low-resource devices.
+    enhancements = [
+        (ImageEnhance.Brightness, image_settings.get("brightness", 1.0)),
+        (ImageEnhance.Contrast, image_settings.get("contrast", 1.0)),
+        (ImageEnhance.Color, image_settings.get("saturation", 1.0)),
+        (ImageEnhance.Sharpness, image_settings.get("sharpness", 1.0)),
+    ]
+    for enhancer, factor in enhancements:
+        if factor != 1.0:
+            img = enhancer(img).enhance(factor)
 
     return img
 

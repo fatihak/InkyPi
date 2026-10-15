@@ -77,7 +77,7 @@ if [ "$EUID" -ne 0 ]; then
   exit 1
 fi
 
-apt-get update -y > /dev/null &
+apt-get update -y > /dev/null
 if [ -f "$APT_REQUIREMENTS_FILE" ]; then
   echo "Installing system dependencies... "
   xargs -a "$APT_REQUIREMENTS_FILE" sudo apt-get install -y > /dev/null && echo_success "Installed system dependencies."
