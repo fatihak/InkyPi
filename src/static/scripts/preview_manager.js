@@ -23,6 +23,46 @@ const PreviewManager = (() => {
     let timeout = null;
     let pluginId = null;
     let requiredFields = {};
+    // Only one request in flight; changes made meanwhile trigger a single rerun
+    // with the latest form state once it finishes.
+    let inFlight = false;
+    let rerun = false;
+    // Files the server already saved for a preview, keyed by field + file identity,
+    // so later previews send the saved path instead of uploading the file again.
+    const uploadedPaths = new Map();
+
+    function fileKey(field, file) {
+        return `${field}|${file.name}|${file.size}|${file.lastModified}`;
+    }
+
+    function buildFormData(form) {
+        const formData = new FormData();
+        const pendingUploads = {};
+        for (const [field, value] of new FormData(form).entries()) {
+            if (value instanceof File && value.name) {
+                const key = fileKey(field, value);
+                if (uploadedPaths.has(key)) {
+                    formData.append(field, uploadedPaths.get(key));
+                } else {
+                    formData.append(field, value);
+                    (pendingUploads[field] = pendingUploads[field] || []).push(key);
+                }
+            } else {
+                formData.append(field, value);
+            }
+        }
+        formData.append('plugin_id', pluginId);
+        return { formData, pendingUploads };
+    }
+
+    function rememberUploads(pendingUploads, uploadedFiles) {
+        for (const [field, keys] of Object.entries(pendingUploads)) {
+            const paths = [].concat(uploadedFiles?.[field] ?? []);
+            keys.forEach((key, i) => {
+                if (paths[i]) uploadedPaths.set(key, paths[i]);
+            });
+        }
+    }
 
     function render(containerId) {
         const container = document.getElementById(containerId);
@@ -72,59 +112,74 @@ const PreviewManager = (() => {
 
     function generate() {
         clearTimeout(timeout);
-        timeout = setTimeout(async () => {
-            const statusEl = document.getElementById('preview-status');
-            const previewImg = document.getElementById('preview-image');
-            if (!statusEl || !previewImg) return;
+        timeout = setTimeout(requestPreview, 500);
+    }
 
-            const missingLabel = checkRequired();
-            if (missingLabel) {
+    async function requestPreview() {
+        if (inFlight) {
+            rerun = true;
+            return;
+        }
+
+        const statusEl = document.getElementById('preview-status');
+        const previewImg = document.getElementById('preview-image');
+        if (!statusEl || !previewImg) return;
+
+        const missingLabel = checkRequired();
+        if (missingLabel) {
+            previewImg.style.display = 'none';
+            statusEl.textContent = `(${missingLabel})`;
+            return;
+        }
+
+        const form = document.querySelector('form');
+        if (!form) return;
+
+        statusEl.textContent = '(loading...)';
+        const { formData, pendingUploads } = buildFormData(form);
+
+        inFlight = true;
+        try {
+            const response = await fetch('/preview', {
+                method: 'POST',
+                body: formData
+            });
+
+            const result = await response.json();
+            if (result.success) rememberUploads(pendingUploads, result.uploaded_files);
+            if (rerun) return; // stale: newer settings are rendered next
+            if (result.success) {
+                previewImg.src = result.image;
+                previewImg.style.display = 'block';
+                statusEl.textContent = '';
+            } else {
                 previewImg.style.display = 'none';
-                statusEl.textContent = `(${missingLabel})`;
-                return;
-            }
-
-            statusEl.textContent = '(loading...)';
-
-            const form = document.querySelector('form');
-            if (!form) return;
-
-            const formData = new FormData(form);
-            formData.append('plugin_id', pluginId);
-
-            try {
-                const response = await fetch('/preview', {
-                    method: 'POST',
-                    body: formData
-                });
-
-                const result = await response.json();
-                if (result.success) {
-                    previewImg.src = result.image;
-                    previewImg.style.display = 'block';
-                    statusEl.textContent = '';
+                const err = result.error || '';
+                if (err.includes('Chromium') || err.includes('NoneType')) {
+                    statusEl.textContent = '(needs Chromium — works on Pi)';
+                } else if (err.includes('required')) {
+                    // Missing required field — show friendly hint
+                    const field = err.match(/(\w+) is required/i);
+                    statusEl.textContent = field ? `(no ${field[1].toLowerCase()} set yet)` : '(fill in required fields)';
                 } else {
-                    previewImg.style.display = 'none';
-                    const err = result.error || '';
-                    if (err.includes('Chromium') || err.includes('NoneType')) {
-                        statusEl.textContent = '(needs Chromium — works on Pi)';
-                    } else if (err.includes('required')) {
-                        // Missing required field — show friendly hint
-                        const field = err.match(/(\w+) is required/i);
-                        statusEl.textContent = field ? `(no ${field[1].toLowerCase()} set yet)` : '(fill in required fields)';
-                    } else {
-                        // Show the actual error (strip "An error occurred: " prefix)
-                        const msg = err.replace(/^An error occurred:\s*/i, '');
-                        statusEl.textContent = msg ? `(${msg})` : '(preview unavailable)';
-                    }
-                    console.error('Preview error:', err);
+                    // Show the actual error (strip "An error occurred: " prefix)
+                    const msg = err.replace(/^An error occurred:\s*/i, '');
+                    statusEl.textContent = msg ? `(${msg})` : '(preview unavailable)';
                 }
-            } catch (err) {
-                previewImg.style.display = 'none';
-                statusEl.textContent = '(preview unavailable)';
                 console.error('Preview error:', err);
             }
-        }, 500);
+        } catch (err) {
+            if (rerun) return;
+            previewImg.style.display = 'none';
+            statusEl.textContent = '(preview unavailable)';
+            console.error('Preview error:', err);
+        } finally {
+            inFlight = false;
+            if (rerun) {
+                rerun = false;
+                requestPreview();
+            }
+        }
     }
 
     function listenToForm() {
