@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify, current_app, render_template, send_from_directory
 from plugins.plugin_registry import get_plugin_instance
 from utils.app_utils import resolve_path, handle_request_files, parse_form
+from utils.image_utils import resize_image, apply_image_enhancement
 from refresh_task import ManualRefresh, PlaylistRefresh
 import base64
 import json
@@ -280,6 +281,14 @@ def preview():
         image = plugin.generate_image(plugin_settings, device_config)
         if image is None:
             return jsonify({"error": "An error occurred: NoneType — Chromium may not be installed"}), 500
+
+        # Scale to the display size like the device pipeline does. Plugins render in
+        # orientation-adjusted dimensions, so swap for vertical instead of rotating.
+        width, height = device_config.get_resolution()
+        if device_config.get_config("orientation") == "vertical":
+            width, height = height, width
+        image = resize_image(image, (width, height), plugin.config.get("image_settings", []))
+        image = apply_image_enhancement(image, device_config.get_config("image_settings", default={}))
 
         buffer = BytesIO()
         image.save(buffer, format='PNG')
