@@ -1,3 +1,5 @@
+<div id="preview-widget"></div>
+
 <div class="form-group nowrap">
     <label for="comic" class="form-label">Comic:</label>
     <select id="comic" name="comic" class="form-input">
@@ -35,5 +37,7 @@
             document.getElementById('titleCaption').checked = pluginSettings.titleCaption || false;
             document.getElementById('fontSize').value = pluginSettings.fontSize || '14';
         }
+
+        PreviewManager.init('comic');
     });
 </script>
