@@ -1,0 +1,283 @@
+/* System Info Page Styles */
+
+.sysinfo-hostname {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    font-weight: 400;
+}
+
+.sysinfo-icon {
+    width: 30px;
+    height: 30px;
+    color: var(--text-secondary);
+}
+
+/* ── System Overview ── */
+
+.sysinfo-overview {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 10px 0 16px;
+}
+
+.sysinfo-overview-line {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px;
+}
+
+.sysinfo-overview-item {
+    font-size: 0.85rem;
+    line-height: 1.4;
+    white-space: nowrap;
+}
+
+.sysinfo-overview-sep {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin: 0 4px;
+}
+
+.sysinfo-overview-label {
+    color: var(--text-secondary);
+    font-weight: 400;
+}
+
+.sysinfo-overview-value {
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+/* ── Highlight Cards Grid ── */
+
+.sysinfo-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    padding: 10px 0 24px;
+}
+
+/* Individual card */
+.sysinfo-card {
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 16px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+/* Card header: icon + label on same row */
+.sysinfo-card-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.sysinfo-card-icon svg {
+    width: 18px;
+    height: 18px;
+    color: var(--text-secondary);
+    stroke: var(--text-secondary);
+    flex-shrink: 0;
+}
+
+.sysinfo-card-label {
+    font-size: 0.8rem;
+    font-weight: 400;
+    color: var(--text-secondary);
+    line-height: 1;
+}
+
+/* Card main value */
+.sysinfo-card-value {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    line-height: 1.3;
+}
+
+/* Card secondary text */
+.sysinfo-card-secondary {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin-top: 6px;
+}
+
+/* ── Device Specifications Section ── */
+
+.sysinfo-specs-section {
+    padding: 24px 0 10px;
+}
+
+.sysinfo-specs-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 12px;
+}
+
+.sysinfo-specs-table {
+    display: flex;
+    flex-direction: column;
+}
+
+.sysinfo-spec-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 9px 0;
+    border-bottom: 1px solid var(--border-color);
+    gap: 16px;
+    transition: border-color 0.3s ease;
+}
+
+.sysinfo-spec-row:last-child {
+    border-bottom: none;
+}
+
+.sysinfo-spec-label {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    flex-shrink: 0;
+}
+
+.sysinfo-spec-value {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    text-align: right;
+    word-break: break-word;
+}
+
+/* ── Responsive ── */
+
+@media (max-width: 720px) {
+    .sysinfo-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 480px) {
+    .sysinfo-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ── Installed Plugins Section ── */
+
+.sysinfo-plugin-summary {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px;
+    padding-top: 9px;
+    margin-bottom: 20px;
+    font-size: 0.85rem;
+}
+
+.sysinfo-plugin-summary-item {
+    white-space: nowrap;
+}
+
+.sysinfo-plugin-group {
+    margin-bottom: 24px;
+}
+
+.sysinfo-plugin-group:last-child {
+    margin-bottom: 0;
+}
+
+.sysinfo-plugin-group-title {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    margin-bottom: 12px;
+}
+
+.sysinfo-plugin-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.sysinfo-plugin-chip {
+    display: inline-block;
+    font-size: 0.78rem;
+    font-weight: 400;
+    color: var(--text-secondary);
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 3px 10px;
+    line-height: 1.4;
+    cursor: default;
+}
+
+.sysinfo-plugin-chip--thirdparty {
+    color: var(--text-primary);
+    font-weight: 500;
+    background-color: var(--bg-primary);
+    position: relative;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.sysinfo-plugin-chip--thirdparty:hover {
+    background-color: var(--bg-secondary);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+}
+
+.sysinfo-plugin-exticon {
+    font-size: 0.78rem;
+    opacity: 0.75;
+    margin-left: 2px;
+}
+
+.sysinfo-plugin-tooltip {
+    display: none;
+    position: absolute;
+    bottom: calc(100% + 6px);
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 0.75rem;
+    font-weight: 400;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    z-index: 10;
+    flex-direction: column;
+    gap: 2px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.sysinfo-plugin-chip--thirdparty:hover .sysinfo-plugin-tooltip,
+.sysinfo-plugin-chip--thirdparty:focus .sysinfo-plugin-tooltip,
+.sysinfo-plugin-chip--thirdparty:focus-visible .sysinfo-plugin-tooltip,
+.sysinfo-plugin-chip--thirdparty:focus-within .sysinfo-plugin-tooltip {
+    display: flex;
+}
+
+.sysinfo-plugin-chip--thirdparty:focus,
+.sysinfo-plugin-chip--thirdparty:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px var(--input-focus);
+    background-color: var(--bg-secondary);
+}
+
+.sysinfo-plugin-none {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    font-style: italic;
+}
