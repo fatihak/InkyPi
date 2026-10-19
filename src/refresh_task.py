@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 from plugins.plugin_registry import get_plugin_instance
 from utils.image_utils import compute_image_hash
 from model import RefreshInfo, PlaylistManager
-from PIL import Image
+from PIL import Image, ImageDraw, ImageFont
 
 logger = logging.getLogger(__name__)
 
@@ -106,6 +106,18 @@ class RefreshTask:
                             refresh_action = PlaylistRefresh(playlist, plugin_instance)
 
                     if refresh_action:
+                        skipped_plugins = False
+                        if isinstance(refresh_action, PlaylistRefresh):
+                            if refresh_action.force:
+                                refresh_action, skipped_plugins = self._get_forced_playlist_refresh(refresh_action, current_dt)
+                            else:
+                                refresh_action, skipped_plugins = self._get_displayable_playlist_refresh(refresh_action, current_dt)
+
+                        if not refresh_action:
+                            if skipped_plugins:
+                                self.device_config.write_config()
+                            continue
+
                         plugin_config = self.device_config.get_plugin(refresh_action.get_plugin_id())
                         if plugin_config is None:
                             logger.error(f"Plugin config not found for '{refresh_action.get_plugin_id()}'.")
@@ -186,6 +198,51 @@ class RefreshTask:
         logger.info(f"Determined next plugin. | active_playlist: {playlist.name} | plugin_instance: {plugin.name}")
 
         return playlist, plugin
+
+    def _get_displayable_playlist_refresh(self, refresh_action, current_dt):
+        """Returns the next playlist refresh action whose plugin does not self-skip."""
+        playlist = refresh_action.playlist
+        skipped_plugins = False
+
+        for _ in range(len(playlist.plugins)):
+            plugin_config = self.device_config.get_plugin(refresh_action.get_plugin_id())
+            if plugin_config is None:
+                logger.error(f"Plugin config not found for '{refresh_action.get_plugin_id()}'.")
+                return None, skipped_plugins
+
+            plugin = get_plugin_instance(plugin_config)
+            skip_reason = plugin.skip_display_condition(refresh_action.plugin_instance.settings, self.device_config, current_dt)
+            if skip_reason is None:
+                return refresh_action, skipped_plugins
+
+            skipped_plugins = True
+            logger.info(
+                f"Plugin skipped display. | plugin_instance: {refresh_action.plugin_instance.name} | reason: {skip_reason}"
+            )
+            refresh_action.save_skip_image(self.device_config, current_dt, skip_reason)
+            next_plugin = playlist.get_next_plugin()
+            refresh_action = PlaylistRefresh(playlist, next_plugin)
+
+        logger.info(f"All plugins skipped display. | active_playlist: {playlist.name}")
+        return None, skipped_plugins
+
+    def _get_forced_playlist_refresh(self, refresh_action, current_dt):
+        """Returns a forced playlist refresh unless that plugin self-skips."""
+        plugin_config = self.device_config.get_plugin(refresh_action.get_plugin_id())
+        if plugin_config is None:
+            logger.error(f"Plugin config not found for '{refresh_action.get_plugin_id()}'.")
+            return None, False
+
+        plugin = get_plugin_instance(plugin_config)
+        skip_reason = plugin.skip_display_condition(refresh_action.plugin_instance.settings, self.device_config, current_dt)
+        if skip_reason is None:
+            return refresh_action, False
+
+        logger.info(
+            f"Plugin skipped forced display. | plugin_instance: {refresh_action.plugin_instance.name} | reason: {skip_reason}"
+        )
+        refresh_action.save_skip_image(self.device_config, current_dt, skip_reason)
+        return None, True
     
     def log_system_stats(self):
         metrics = {
@@ -271,13 +328,15 @@ class PlaylistRefresh(RefreshAction):
         """Performs a refresh for the specified plugin instance within its playlist context."""
         # Determine the file path for the plugin's image
         plugin_image_path = os.path.join(device_config.plugin_image_dir, self.plugin_instance.get_image_path())
+        has_skip_preview = self.plugin_instance.settings.get("_inkypi_skip_preview", False)
 
         # Check if a refresh is needed based on the plugin instance's criteria
-        if self.plugin_instance.should_refresh(current_dt) or self.force:
+        if self.plugin_instance.should_refresh(current_dt) or self.force or has_skip_preview:
             logger.info(f"Refreshing plugin instance. | plugin_instance: '{self.plugin_instance.name}'") 
             # Generate a new image
             image = plugin.generate_image(self.plugin_instance.settings, device_config)
             image.save(plugin_image_path)
+            self.plugin_instance.settings.pop("_inkypi_skip_preview", None)
             self.plugin_instance.latest_refresh_time = current_dt.isoformat()
         else:
             logger.info(f"Not time to refresh plugin instance, using latest image. | plugin_instance: {self.plugin_instance.name}.")
@@ -286,3 +345,82 @@ class PlaylistRefresh(RefreshAction):
                 image = img.copy()
 
         return image
+
+    def save_skip_image(self, device_config, current_dt, reason):
+        """Save a diagnostic image explaining why this plugin skipped display."""
+        plugin_image_path = os.path.join(device_config.plugin_image_dir, self.plugin_instance.get_image_path())
+        image = self._generate_skip_image(device_config, reason)
+        image.save(plugin_image_path)
+
+        # The skipped preview replaces the cached plugin image. Mark it so the
+        # next non-skipped cycle renders fresh content instead of displaying it.
+        self.plugin_instance.settings["_inkypi_skip_preview"] = True
+        self.plugin_instance.latest_refresh_time = current_dt.isoformat()
+
+    def _generate_skip_image(self, device_config, reason):
+        dimensions = device_config.get_resolution()
+        width, height = dimensions
+        image = Image.new("RGB", dimensions, "white")
+        draw = ImageDraw.Draw(image)
+
+        title_font = self._load_skip_image_font(max(14, min(width, height) // 10), bold=True)
+        subtitle_font = self._load_skip_image_font(max(12, min(width, height) // 12), bold=True)
+        body_font = self._load_skip_image_font(max(10, min(width, height) // 16))
+        label_font = self._load_skip_image_font(max(10, min(width, height) // 16), bold=True)
+
+        margin = max(8, min(width, height) // 12)
+        max_text_width = width - (margin * 2)
+        lines = [
+            (f"Plugin: {self.plugin_instance.name}", title_font),
+            ("Skipped Display", subtitle_font),
+        ]
+        if reason:
+            lines.append(("Reason:", label_font))
+            for line in self._wrap_skip_image_text(draw, str(reason), body_font, max_text_width):
+                lines.append((line, body_font))
+
+        line_spacing = max(2, height // 40)
+        line_heights = []
+        for text, font in lines:
+            bbox = draw.textbbox((0, 0), text, font=font)
+            line_heights.append(bbox[3] - bbox[1])
+
+        total_height = sum(line_heights) + (line_spacing * (len(lines) - 1))
+        y = max(margin, (height - total_height) // 2)
+
+        for index, (text, font) in enumerate(lines):
+            bbox = draw.textbbox((0, 0), text, font=font)
+            text_width = bbox[2] - bbox[0]
+            x = max(margin, (width - text_width) // 2)
+            draw.text((x, y), text, fill="black", font=font)
+            y += line_heights[index] + line_spacing
+
+        return image
+
+    def _load_skip_image_font(self, size, bold=False):
+        font_name = "Jost-SemiBold.ttf" if bold else "Jost.ttf"
+        font_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static", "fonts", font_name)
+        try:
+            return ImageFont.truetype(font_path, size)
+        except OSError:
+            return ImageFont.load_default()
+
+    def _wrap_skip_image_text(self, draw, text, font, max_width):
+        lines = []
+        for paragraph in text.splitlines() or [""]:
+            words = paragraph.split()
+            if not words:
+                lines.append("")
+                continue
+
+            current_line = words[0]
+            for word in words[1:]:
+                candidate = f"{current_line} {word}"
+                if draw.textlength(candidate, font=font) <= max_width:
+                    current_line = candidate
+                else:
+                    lines.append(current_line)
+                    current_line = word
+            lines.append(current_line)
+
+        return lines
