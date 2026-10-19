@@ -22,6 +22,7 @@ class Config:
     def __init__(self):
         self.config = self.read_config()
         self.plugins_list = self.read_plugins_list()
+        self.widgets_list = self.read_widgets_list()
         self.playlist_manager = self.load_playlist_manager()
         self.refresh_info = self.load_refresh_info()
 
@@ -51,6 +52,23 @@ class Config:
                     plugins_list.append(plugin_info)
 
         return plugins_list
+
+    def read_widgets_list(self):
+        """Reads the widget-info.json config JSON from each widget folder."""
+        # Iterate over all widget folders
+        widgets_list = []
+        for widget in sorted(os.listdir(os.path.join(self.BASE_DIR, "widgets"))):
+            widget_path = os.path.join(self.BASE_DIR, "widgets", widget)
+            if os.path.isdir(widget_path) and widget != "__pycache__":
+                # Check if the widget-info.json file exists
+                widget_info_file = os.path.join(widget_path, "widget-info.json")
+                if os.path.isfile(widget_info_file):
+                    logger.debug(f"Reading widget info from {widget_info_file}")
+                    with open(widget_info_file) as f:
+                        widget_info = json.load(f)
+                    widgets_list.append(widget_info)
+
+        return widgets_list
 
     def write_config(self):
         """Updates the cached config from the model objects and writes to the config file."""
@@ -94,6 +112,14 @@ class Config:
     def get_plugin(self, plugin_id):
         """Finds and returns a plugin config by its ID."""
         return next((plugin for plugin in self.plugins_list if plugin['id'] == plugin_id), None)
+
+    def get_widgets(self):
+        """Returns the list of widget configurations."""
+        return self.widgets_list
+
+    def get_widget(self, widget_id):
+        """Finds and returns a widget config by its ID."""
+        return next((widget for widget in self.widgets_list if widget['id'] == widget_id), None)
 
     def get_resolution(self):
         """Returns the display resolution as a tuple (width, height) from the configuration."""
