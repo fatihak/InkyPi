@@ -31,6 +31,10 @@ HIDDEN_METRICS = {"Visibility", "Pressure"}
 # the text colour, so pale icons (e.g. the night crescent) show up on e-ink.
 BOOST_CURRENT_ICON = True
 
+# Where the moon (% lit + next moonrise/moonset) goes: True = under the weather
+# icon, keeping the temperature column large; False = under the high/low.
+MOON_UNDER_ICON = True
+
 # Chart colours, straight from the Chart.js config in weather.html
 LINE_COLOR = (241, 122, 36, 230)
 TEMP_FILL = (252, 204, 5)
@@ -422,7 +426,13 @@ class WeatherRenderer:
         x, w = x + pad, w - 2 * pad
         # Icon gets ~40% of the block so the text column can grow.
         icon_w = w * 0.40
-        _paste_contain(self.img, self.p.get("current_day_icon"), (x, y, icon_w * 0.92, h),
+        icon_h = h
+        # Under the icon only when there is height for both (not with the graph).
+        moon_left = (MOON_UNDER_ICON and not self.compact and h >= 34 * self.vh
+                     and self._moon_block_left(x, y, icon_w * 0.92, h))
+        if moon_left:
+            icon_h = h - moon_left
+        _paste_contain(self.img, self.p.get("current_day_icon"), (x, y, icon_w * 0.92, icon_h),
                        boost=BOOST_CURRENT_ICON, outline_color=self.color)
 
         bx, bw = x + icon_w, w - icon_w
@@ -434,10 +444,15 @@ class WeatherRenderer:
         minmax = f"{today.get('high', '')}{deg} / {today.get('low', '')}{deg}" if today else ""
 
         # Tonight's moon: phase icon + % illuminated (from today's forecast entry)
-        moon_icon = today.get("moon_phase_icon") if today else None
-        moon_pct = today.get("moon_phase_pct") if today else None
-        show_moon = bool(moon_icon and moon_pct not in (None, "")) and not self.compact
+        # Prefer live values (illumination now + next rise/set) from weather.py;
+        # fall back to today's forecast entry.
+        moon_now = self.p.get("moon_now") or {}
+        moon_icon = moon_now.get("icon") or (today.get("moon_phase_icon") if today else None)
+        moon_pct = moon_now.get("pct") or (today.get("moon_phase_pct") if today else None)
+        show_moon = bool(moon_icon and moon_pct not in (None, "")) and not self.compact and not moon_left
         moon_text = f"{moon_pct}% lit" if show_moon else ""
+        events = (moon_now.get("events") or []) if show_moon else []
+        events_text = "   ".join(f"{e['label']} {e['time']}" for e in events)
 
         # Size everything from the big temperature, as large as the column
         # allows, then shrink the whole block if it is taller than the space.
@@ -445,7 +460,7 @@ class WeatherRenderer:
         # original tighter ones when height is short (e.g. graph shown), so
         # the temperature never ends up smaller than before.
         def layout(ratios):
-            r_feels, r_minmax, r_moon = ratios
+            r_feels, r_minmax, r_moon, r_ev = ratios
             size = min(0.55 * bw, 0.5 * h, 0.24 * min(self.W, self.H))
             for _ in range(5):
                 tf = self.font("normal", size)
@@ -461,20 +476,24 @@ class WeatherRenderer:
                 mf = self.fit("normal", ts * r_minmax, minmax, bw)
                 mo = self.fit("normal", ts * r_moon, moon_text, bw * 0.75) if show_moon else None
                 mo_h = mo.size * 1.6 if show_moon else 0
-                bh = ts + ff.size * 1.4 + mf.size * 1.4 + mo_h
+                ev = self.fit("normal", ts * r_ev, events_text, bw) if events_text else None
+                ev_h = ev.size * 1.35 if ev else 0
+                bh = ts + ff.size * 1.4 + mf.size * 1.4 + mo_h + ev_h
                 if bh <= h * 0.88:
                     break
                 size = ts * (h * 0.88 / bh)
             return dict(temp_font=tf, unit_font=uf, tw=tw_, uw=uw_, feels_font=ff,
-                        minmax_font=mf, moon_font=mo, moon_h=mo_h, block_h=bh)
+                        minmax_font=mf, moon_font=mo, moon_h=mo_h, ev_font=ev, ev_h=ev_h,
+                        block_h=bh)
 
-        roomy = layout((0.26, 0.30, 0.28))
-        tight = layout((0.22, 0.27, 0.27))
+        roomy = layout((0.26, 0.30, 0.28, 0.22))
+        tight = layout((0.22, 0.27, 0.27, 0.20))
         chosen = roomy if roomy["temp_font"].size >= 0.95 * tight["temp_font"].size else tight
         temp_font, unit_font = chosen["temp_font"], chosen["unit_font"]
         tw, uw = chosen["tw"], chosen["uw"]
         feels_font, minmax_font = chosen["feels_font"], chosen["minmax_font"]
         moon_font, moon_h, block_h = chosen["moon_font"], chosen["moon_h"], chosen["block_h"]
+        ev_font, ev_h = chosen["ev_font"], chosen["ev_h"]
         temp_line = temp_font.size * 1.0
         top = y + (h - block_h) / 2
 
@@ -498,6 +517,50 @@ class WeatherRenderer:
             mx = bx + (bw - total) / 2
             _paste_contain(self.img, moon_icon, (mx, cy - isz / 2, isz, isz))
             self.text((mx + isz + gap, cy), moon_text, font=moon_font, anchor="lm")
+            if ev_font:
+                # next moonrise / moonset, soonest first
+                cy += moon_h / 2 + ev_h / 2
+                self.text((bx + bw / 2, cy), events_text, font=ev_font, anchor="mm")
+
+    def _moon_block_left(self, x, y, w, h):
+        """Draw moon % and next rise/set under the weather icon.
+
+        Returns the height used (0 if there is nothing to show)."""
+        today = (self.p.get("forecast") or [{}])[0] or {}
+        moon_now = self.p.get("moon_now") or {}
+        icon = moon_now.get("icon") or today.get("moon_phase_icon")
+        pct = moon_now.get("pct") or today.get("moon_phase_pct")
+        if not icon or pct in (None, ""):
+            return 0
+        pct_text = f"{pct}% lit"
+        lines = [f"{e['label']} {e['time']}" for e in (moon_now.get("events") or [])]
+
+        # Size from the space, then fit the widest line to the column.
+        s1 = min(0.12 * h, 0.2 * w)
+        k = w / max(1, s1 * 1.7 + _text_w(self.font("normal", s1), pct_text))
+        s1 = s1 * min(1.0, k)
+        f1 = self.font("normal", s1)
+        f2 = None
+        if lines:
+            widest = max(lines, key=lambda t: _text_w(self.font("normal", 20), t))
+            f2 = self.fit("normal", min(0.095 * h, s1 * 0.9), widest, w)
+        block = f1.size * 1.55 + (len(lines) * f2.size * 1.3 if f2 else 0)
+        top = y + h - block
+        cx = x + w / 2
+
+        cy = top + f1.size * 0.75
+        isz = f1.size * 1.35
+        gap = f1.size * 0.35
+        total = isz + gap + _text_w(f1, pct_text)
+        mx = cx - total / 2
+        _paste_contain(self.img, icon, (mx, cy - isz / 2, isz, isz))
+        self.text((mx + isz + gap, cy), pct_text, font=f1, anchor="lm")
+        cy += f1.size * 0.8
+        for t in lines:
+            cy += f2.size * 0.65
+            self.text((cx, cy), t, font=f2, anchor="mm")
+            cy += f2.size * 0.65
+        return block + 0.5 * self.vh
 
     def _metrics(self, x, y, w, h, cols, rows, points):
         gx, gy = 1 * self.vw, 0.5 * self.vh

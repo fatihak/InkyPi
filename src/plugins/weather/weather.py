@@ -1,5 +1,6 @@
 from plugins.base_plugin.base_plugin import BasePlugin
 from plugins.weather.pil_renderer import render_weather
+from plugins.weather import moon as moon_calc
 from utils.image_utils import is_armv6
 from PIL import Image
 import os
@@ -120,6 +121,7 @@ class Weather(BasePlugin):
                 raise RuntimeError(f"Unknown weather provider: {weather_provider}")
 
             template_params['title'] = title
+            template_params['moon_now'] = self.get_moon_now(lat, long, tz, time_format)
         except Exception as e:
             logger.error(f"{weather_provider} request failed: {str(e)}")
             raise RuntimeError(f"{weather_provider} request failure, please check logs.")
@@ -274,6 +276,29 @@ class Weather(BasePlugin):
 
         return icon
 
+    def get_moon_now(self, lat, long, tz, time_format):
+        """Moon illumination right now plus the next moonrise and moonset."""
+        try:
+            now = datetime.now(tz)
+            pct, age, _waxing = moon_calc.illumination(now)
+            # get_moon_phase_name uses astral's 0-28 scale
+            phase_name = get_moon_phase_name(age * 28.0 / moon_calc.SYNODIC_MONTH)
+            rise, moonset = moon_calc.next_rise_set(now, lat, long)
+            events = []
+            for label, when in (("Rise", rise), ("Set", moonset)):
+                if when:
+                    when = (when + timedelta(seconds=30)).replace(second=0, microsecond=0)
+                    events.append((when, label, self.format_time(when, time_format)))
+            events.sort()
+            return {
+                "pct": f"{pct:.0f}",
+                "icon": self.get_moon_phase_icon_path(phase_name, lat),
+                "events": [{"label": label, "time": text} for _, label, text in events],
+            }
+        except Exception as e:
+            logger.error(f"Moon calculation failed: {e}")
+            return None
+
     def get_moon_phase_icon_path(self, phase_name: str, lat: float) -> str:
         """Determines the path to the moon icon, inverting it if the location is in the Southern Hemisphere."""
         # Waxing, Waning, First and Last quarter phases are inverted between hemispheres.
@@ -385,8 +410,11 @@ class Weather(BasePlugin):
             try:
                 phase_age = moon.phase(target_date)
                 phase_name_north_hemi = get_moon_phase_name(phase_age)
-                LUNAR_CYCLE_DAYS = 29.530588853
-                phase_fraction = phase_age / LUNAR_CYCLE_DAYS
+                # astral's moon.phase() returns an age on a 0-27.99 scale
+                # (not days), so divide by 28; dividing by 29.53 under-reported
+                # illumination by several percent.
+                ASTRAL_PHASE_SCALE = 28.0
+                phase_fraction = phase_age / ASTRAL_PHASE_SCALE
                 illum_pct = (1 - math.cos(2 * math.pi * phase_fraction)) / 2 * 100
             except Exception as e:
                 logger.error(f"Error calculating moon phase for {target_date}: {e}")
