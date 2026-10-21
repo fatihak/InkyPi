@@ -1,4 +1,6 @@
 from plugins.base_plugin.base_plugin import BasePlugin
+from plugins.weather.pil_renderer import render_weather
+from utils.image_utils import is_armv6
 from PIL import Image
 import os
 import requests
@@ -136,11 +138,37 @@ class Weather(BasePlugin):
             last_refresh_time = now.strftime("%Y-%m-%d %I:%M %p")
         template_params["last_refresh_time"] = last_refresh_time
 
-        image = self.render_image(dimensions, "weather.html", "weather.css", template_params)
+        image = self.render_weather(dimensions, template_params)
 
         if not image:
             raise RuntimeError("Failed to take screenshot, please check logs.")
         return image
+
+    def render_weather(self, dimensions, template_params):
+        """Render with the browser, or draw with Pillow where no browser runs.
+
+        INKYPI_WEATHER_RENDERER: "auto" (default), "browser" or "pillow".
+        "auto" uses Pillow straight away on ARMv6 boards (Pi Zero W / Pi 1),
+        where current Chromium/Firefox builds crash, and otherwise tries the
+        browser first and falls back to Pillow if the screenshot fails.
+        """
+        mode = os.environ.get("INKYPI_WEATHER_RENDERER", "auto").strip().lower()
+        if mode not in ("auto", "browser", "pillow"):
+            logger.warning(f"Unknown INKYPI_WEATHER_RENDERER '{mode}', using auto.")
+            mode = "auto"
+
+        if mode == "browser" or (mode == "auto" and not is_armv6()):
+            image = self.render_image(dimensions, "weather.html", "weather.css", dict(template_params))
+            if image or mode == "browser":
+                return image
+            logger.warning("Browser screenshot failed; drawing the weather screen with Pillow instead.")
+
+        logger.info("Rendering weather with Pillow (no browser).")
+        try:
+            return render_weather(template_params, dimensions)
+        except Exception:
+            logger.exception("Pillow weather renderer failed")
+            return None
 
     def parse_weather_data(self, weather_data, aqi_data, tz, units, time_format, lat):
         current = weather_data.get("current")
