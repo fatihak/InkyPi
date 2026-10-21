@@ -9,6 +9,7 @@ Produces the same template_params structure as the other providers.
 """
 
 import logging
+import math
 import re
 import time
 from datetime import datetime, timedelta, timezone
@@ -188,13 +189,31 @@ def icon_code(icon_url, is_day=None):
 # Fetch + parse
 # ---------------------------------------------------------------------------
 
-def _latest_observation(points):
+def _distance_km(lat1, lon1, lat2, lon2):
+    p1, p2 = math.radians(lat1), math.radians(lat2)
+    dp, dl = p2 - p1, math.radians(lon2 - lon1)
+    a = math.sin(dp / 2) ** 2 + math.cos(p1) * math.cos(p2) * math.sin(dl / 2) ** 2
+    return 6371.0 * 2 * math.asin(math.sqrt(a))
+
+
+def _station_km(st, lat, lon):
+    try:
+        slon, slat = (st.get("geometry") or {}).get("coordinates")[:2]
+        return _distance_km(lat, lon, slat, slon)
+    except Exception:
+        return float("inf")
+
+
+def _latest_observation(points, lat, lon):
     try:
         stations = _get(points["observationStations"]).get("features") or []
     except Exception as e:
         logger.warning(f"NWS stations lookup failed: {e}")
         return None, None
-    for st in stations[:3]:
+    # NWS's list isn't strictly by distance, so sort by actual distance
+    # from the configured location and use the nearest fresh reading.
+    stations = sorted(stations, key=lambda st: _station_km(st, lat, lon))
+    for st in stations[:4]:
         sid = (st.get("properties") or {}).get("stationIdentifier")
         if not sid:
             continue
@@ -207,7 +226,9 @@ def _latest_observation(points):
         if ts and temp is not None:
             age = datetime.now(timezone.utc) - datetime.fromisoformat(ts)
             if age <= OBS_MAX_AGE:
-                return sid, obs
+                km = _station_km(st, lat, lon)
+                where = f"{sid} ({km * 0.621371:.1f} mi away)" if km != float("inf") else sid
+                return where, obs
     return None, None
 
 
@@ -222,7 +243,7 @@ def fetch_and_parse(plugin, lat, lon, units, tz, time_format, aqi_data):
         grid = {}
     if not hourly:
         raise NWSError("NWS hourly forecast is empty.")
-    station, obs = _latest_observation(points)
+    station, obs = _latest_observation(points, lat, lon)
     logger.info(f"NWS: office {points.get('gridId')} grid {points.get('gridX')},{points.get('gridY')}"
                 f" | observations from {station or 'none (using forecast)'}")
 
