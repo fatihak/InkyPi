@@ -14,7 +14,7 @@ import math
 import os
 from functools import lru_cache
 
-from PIL import Image, ImageColor, ImageDraw, ImageFont, ImageOps
+from PIL import Image, ImageColor, ImageDraw, ImageEnhance, ImageFilter, ImageFont, ImageOps
 
 from utils.app_utils import resolve_path
 
@@ -26,6 +26,10 @@ FONT_DIR = resolve_path(os.path.join("static", "fonts"))
 # "Sunset", "Wind", "Humidity", "Pressure", "UV Index", "Visibility",
 # "Air Quality"). Remove a name to bring that metric back.
 HIDDEN_METRICS = {"Visibility", "Pressure"}
+
+# Deepen the colours of the large current-conditions icon and outline it in
+# the text colour, so pale icons (e.g. the night crescent) show up on e-ink.
+BOOST_CURRENT_ICON = True
 
 # Chart colours, straight from the Chart.js config in weather.html
 LINE_COLOR = (241, 122, 36, 230)
@@ -144,7 +148,33 @@ def _load_icon(path):
         return None
 
 
-def _paste_contain(canvas, path, box, align="center"):
+def _eink_boost(icon, outline_px, outline_color):
+    """Make a pastel icon read well on colour e-ink.
+
+    Pale colours (the light-yellow moon, pale-blue clouds) get dithered into
+    sparse dots against white. Deepen and saturate the colours toward the
+    panel's solid inks, and trace a dark outline so the shape stays crisp.
+    """
+    rgb = icon.convert("RGB")
+    alpha = icon.getchannel("A")
+    # pull light tones down so they land on solid ink rather than ink+white dither
+    rgb = ImageEnhance.Color(rgb).enhance(1.7)
+    rgb = rgb.point(lambda v: int(v * 0.86))
+    out = Image.merge("RGBA", (*rgb.split(), alpha))
+    if outline_px > 0:
+        pad = outline_px + 2
+        base = Image.new("RGBA", (out.width + 2 * pad, out.height + 2 * pad), (0, 0, 0, 0))
+        a = Image.new("L", base.size, 0)
+        a.paste(alpha, (pad, pad))
+        ring = a.point(lambda v: 255 if v > 96 else 0).filter(ImageFilter.MaxFilter(2 * outline_px + 1))
+        base.paste(Image.new("RGBA", base.size, tuple(outline_color[:3]) + (255,)), (0, 0), ring)
+        base.alpha_composite(out, (pad, pad))
+        out = base.crop((pad - outline_px, pad - outline_px,
+                         pad + icon.width + outline_px, pad + icon.height + outline_px))
+    return out
+
+
+def _paste_contain(canvas, path, box, align="center", boost=False, outline_color=(0, 0, 0)):
     """Paste an icon scaled to fit box (object-fit: contain). Returns the rect used."""
     x, y, w, h = [int(round(v)) for v in box]
     icon = _load_icon(path) if path else None
@@ -153,6 +183,14 @@ def _paste_contain(canvas, path, box, align="center"):
     scale = min(w / icon.width, h / icon.height)
     iw, ih = max(1, int(icon.width * scale)), max(1, int(icon.height * scale))
     resized = icon.resize((iw, ih), Image.LANCZOS)
+    if boost:
+        o = max(2, round(min(iw, ih) / 55))  # ~3px outline on a 150px icon
+        resized = _eink_boost(resized, o, outline_color)
+        iw, ih = resized.size
+        ox = x + (w - iw) // 2 if align == "center" else x
+        oy = y + (h - ih) // 2
+        canvas.alpha_composite(resized, (max(0, ox), max(0, oy)))
+        return (ox, oy, iw, ih)
     ox = x + (w - iw) // 2 if align == "center" else x
     oy = y + (h - ih) // 2
     canvas.alpha_composite(resized, (ox, oy))
@@ -290,7 +328,11 @@ class WeatherRenderer:
         if self.compact:
             show_metrics = show_graph = False
 
-        header_h = 15 * self.vh
+        # Without the hourly graph, enlarge the title/date ~20%; the header
+        # grows only slightly and the text uses the slack above the title, so
+        # the temperature and metrics below keep their size.
+        self.big_header = not show_graph and not self.compact
+        header_h = (16 if self.big_header else 15) * self.vh
         graph_h = 24 * self.vh if show_graph else 0
         forecast_h = self._forecast_height(w, h) if show_forecast else 0
 
@@ -340,8 +382,9 @@ class WeatherRenderer:
     def _header(self, x, y, w, h):
         title = str(self.p.get("title") or "")
         date = str(self.p.get("current_date") or "")
-        date_font = self.fit("normal", min(0.3 * h, 0.06 * w), date, w)
-        title_font = self.fit("bold", min(0.5 * h, 0.08 * w), title, w)
+        k_t, k_d = (0.56, 0.34) if getattr(self, "big_header", False) else (0.5, 0.3)
+        date_font = self.fit("normal", min(k_d * h, 0.06 * w), date, w)
+        title_font = self.fit("bold", min(k_t * h, 0.08 * w), title, w)
         cx = x + w / 2
         bottom = y + h
         if getattr(self, "compact", False):
@@ -377,11 +420,12 @@ class WeatherRenderer:
     def _current(self, x, y, w, h):
         pad = 2 * self.vw
         x, w = x + pad, w - 2 * pad
-        icon_w = w / 2
-        _paste_contain(self.img, self.p.get("current_day_icon"), (x, y, icon_w * 0.9, h))
+        # Icon gets ~40% of the block so the text column can grow.
+        icon_w = w * 0.40
+        _paste_contain(self.img, self.p.get("current_day_icon"), (x, y, icon_w * 0.92, h),
+                       boost=BOOST_CURRENT_ICON, outline_color=self.color)
 
         bx, bw = x + icon_w, w - icon_w
-        cqmin = min(bw, h) / 100
         deg = _deg(self.units)
         temp = str(self.p.get("current_temperature", ""))
         unit = str(self.p.get("temperature_unit", ""))
@@ -389,27 +433,49 @@ class WeatherRenderer:
         today = (self.p.get("forecast") or [{}])[0]
         minmax = f"{today.get('high', '')}{deg} / {today.get('low', '')}{deg}" if today else ""
 
-        temp_font = self.font("normal", 45 * cqmin)
-        unit_font = self.font("normal", 45 * cqmin * 0.4)
-        tw, uw = _text_w(temp_font, temp), _text_w(unit_font, unit)
-        if tw + uw > bw:
-            k = bw / (tw + uw)
-            temp_font = self.font("normal", 45 * cqmin * k)
-            unit_font = self.font("normal", 45 * cqmin * k * 0.4)
-            tw, uw = _text_w(temp_font, temp), _text_w(unit_font, unit)
-
-        feels_font = self.fit("normal", 10 * cqmin, feels, bw)
-        minmax_font = self.fit("normal", 12 * cqmin, minmax, bw)
         # Tonight's moon: phase icon + % illuminated (from today's forecast entry)
         moon_icon = today.get("moon_phase_icon") if today else None
         moon_pct = today.get("moon_phase_pct") if today else None
         show_moon = bool(moon_icon and moon_pct not in (None, "")) and not self.compact
         moon_text = f"{moon_pct}% lit" if show_moon else ""
-        moon_font = self.fit("normal", 12 * cqmin, moon_text, bw * 0.7) if show_moon else None
-        moon_h = moon_font.size * 1.6 if show_moon else 0
 
+        # Size everything from the big temperature, as large as the column
+        # allows, then shrink the whole block if it is taller than the space.
+        # Two proportion sets: roomy secondary lines when there is space, the
+        # original tighter ones when height is short (e.g. graph shown), so
+        # the temperature never ends up smaller than before.
+        def layout(ratios):
+            r_feels, r_minmax, r_moon = ratios
+            size = min(0.55 * bw, 0.5 * h, 0.24 * min(self.W, self.H))
+            for _ in range(5):
+                tf = self.font("normal", size)
+                uf = self.font("normal", size * 0.4)
+                tw_, uw_ = _text_w(tf, temp), _text_w(uf, unit)
+                if tw_ + uw_ > bw * 0.98:
+                    k = bw * 0.98 / (tw_ + uw_)
+                    tf = self.font("normal", size * k)
+                    uf = self.font("normal", size * k * 0.4)
+                    tw_, uw_ = _text_w(tf, temp), _text_w(uf, unit)
+                ts = tf.size
+                ff = self.fit("normal", ts * r_feels, feels, bw)
+                mf = self.fit("normal", ts * r_minmax, minmax, bw)
+                mo = self.fit("normal", ts * r_moon, moon_text, bw * 0.75) if show_moon else None
+                mo_h = mo.size * 1.6 if show_moon else 0
+                bh = ts + ff.size * 1.4 + mf.size * 1.4 + mo_h
+                if bh <= h * 0.88:
+                    break
+                size = ts * (h * 0.88 / bh)
+            return dict(temp_font=tf, unit_font=uf, tw=tw_, uw=uw_, feels_font=ff,
+                        minmax_font=mf, moon_font=mo, moon_h=mo_h, block_h=bh)
+
+        roomy = layout((0.26, 0.30, 0.28))
+        tight = layout((0.22, 0.27, 0.27))
+        chosen = roomy if roomy["temp_font"].size >= 0.95 * tight["temp_font"].size else tight
+        temp_font, unit_font = chosen["temp_font"], chosen["unit_font"]
+        tw, uw = chosen["tw"], chosen["uw"]
+        feels_font, minmax_font = chosen["feels_font"], chosen["minmax_font"]
+        moon_font, moon_h, block_h = chosen["moon_font"], chosen["moon_h"], chosen["block_h"]
         temp_line = temp_font.size * 1.0
-        block_h = temp_line + feels_font.size * 1.4 + minmax_font.size * 1.4 + moon_h
         top = y + (h - block_h) / 2
 
         # big temperature, unit as a superscript to its right (centered as a pair)
@@ -441,7 +507,7 @@ class WeatherRenderer:
         if rows == 0:
             return
         cell_w = (w - gx * (cols - 1)) / cols
-        cell_h = min((h - gy * (rows - 1)) / rows, 12 * self.vh)
+        cell_h = min((h * 0.9 - gy * (rows - 1)) / rows, 20 * self.vh)
         grid_h = rows * cell_h + (rows - 1) * gy
         y += (h - grid_h) / 2
         for i, dp in enumerate(points[: cols * rows]):
@@ -449,18 +515,19 @@ class WeatherRenderer:
             self._metric(x + c * (cell_w + gx), y + r * (cell_h + gy), cell_w, cell_h, dp)
 
     def _metric(self, x, y, w, h, dp):
-        icon_w = w * 0.25
+        icon_w = w * 0.27
         _paste_contain(self.img, dp.get("icon"), (x, y + h * 0.1, icon_w, h * 0.8))
 
-        tx, tw = x + icon_w, w * 0.75
+        pad = 0.8 * self.vw  # keep values clear of the icon
+        tx, tw = x + icon_w + pad, w - icon_w - pad
         label = str(dp.get("label", ""))
         meas = "" if dp.get("measurement") is None else str(dp.get("measurement"))
         unit = str(dp.get("unit") or "")
         arrow = dp.get("arrow") if label == "Wind" else None
         angle = _arrow_angle(arrow) if arrow else None
 
-        label_font = self.fit("light", max(self.min_text, min(0.32 * h, 0.15 * tw)), label, tw)
-        m_size = max(self.min_text, min(0.46 * h, 0.26 * tw))
+        label_font = self.fit("light", max(self.min_text, min(0.30 * h, 0.17 * tw)), label, tw)
+        m_size = max(self.min_text, min(0.46 * h, 0.31 * tw))
         m_font = self.font("bold", m_size)
         u_font = self.font("light", m_size * 0.6)
         gap_u = 0.2 * self.vw if unit else 0
