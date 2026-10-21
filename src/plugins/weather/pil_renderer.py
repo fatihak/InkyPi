@@ -159,11 +159,15 @@ def _eink_boost(icon, outline_px, outline_color):
     sparse dots against white. Deepen and saturate the colours toward the
     panel's solid inks, and trace a dark outline so the shape stays crisp.
     """
-    rgb = icon.convert("RGB")
     alpha = icon.getchannel("A")
-    # pull light tones down so they land on solid ink rather than ink+white dither
-    rgb = ImageEnhance.Color(rgb).enhance(1.7)
-    rgb = rgb.point(lambda v: int(v * 0.86))
+    # Work in HSV: push pale (low-saturation) colours toward full colour so
+    # they land on solid ink instead of ink+white dither, and dim only those
+    # pale tones slightly. Already-strong colours (e.g. the sun) stay bright.
+    h, sat, val = icon.convert("RGB").convert("HSV").split()
+    sat = sat.point(lambda v: min(255, int(v + (255 - v) * 0.45)))
+    pale = icon.convert("RGB").convert("HSV").getchannel("S").point(lambda v: 255 if v < 120 else 0)
+    val = Image.composite(val.point(lambda v: int(v * 0.9)), val, pale)
+    rgb = Image.merge("HSV", (h, sat, val)).convert("RGB")
     out = Image.merge("RGBA", (*rgb.split(), alpha))
     if outline_px > 0:
         pad = outline_px + 2
@@ -592,14 +596,16 @@ class WeatherRenderer:
         label_font = self.fit("light", max(self.min_text, min(0.30 * h, 0.17 * tw)), label, tw)
         m_size = max(self.min_text, min(0.46 * h, 0.31 * tw))
         m_font = self.font("bold", m_size)
-        u_font = self.font("light", m_size * 0.6)
+        # UV shows "/ 5.8 max" here: regular weight so the peak stays legible
+        u_weight = "normal" if dp.get("uv_max") is not None else "light"
+        u_font = self.font(u_weight, m_size * 0.6)
         gap_u = 0.2 * self.vw if unit else 0
         arrow_w = m_size * 0.8 if angle is not None else 0
         total = _text_w(m_font, meas) + gap_u + _text_w(u_font, unit) + (arrow_w + m_size * 0.2 if arrow_w else 0)
         if total > tw:
             k = tw / total
             m_size *= k
-            m_font, u_font = self.font("bold", m_size), self.font("light", m_size * 0.6)
+            m_font, u_font = self.font("bold", m_size), self.font(u_weight, m_size * 0.6)
             gap_u *= k
             arrow_w *= k
             total = tw

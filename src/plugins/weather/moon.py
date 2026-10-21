@@ -104,3 +104,49 @@ def next_rise_set(now, lat, lon, hours=48):
                 set_ = when
         t0, f0 = t1, f1
     return rise, set_
+
+
+# ---------------------------------------------------------------------------
+# Sun (used by the National Weather Service provider, which has no sun times)
+# ---------------------------------------------------------------------------
+
+def _sun_altitude(dt, lat, lon):
+    jd = _jd(dt)
+    T = (jd - 2451545.0) / 36525
+    lam = _sun_longitude(T)
+    eps = 23.4393 - 0.0130 * T
+    ra = math.degrees(math.atan2(_cos(eps) * _sin(lam), _cos(lam)))
+    dec = math.degrees(math.asin(_sin(eps) * _sin(lam)))
+    gmst = 280.46061837 + 360.98564736629 * (jd - 2451545.0)
+    ha = gmst + lon - ra
+    return math.degrees(math.asin(_sin(lat) * _sin(dec) + _cos(lat) * _cos(dec) * _cos(ha)))
+
+
+def sun_times(day_start, lat, lon):
+    """Sunrise and sunset on the local day beginning at `day_start` (aware).
+
+    Uses the standard -0.833 deg altitude (refraction + solar semi-diameter).
+    Either value is None during polar day/night."""
+    step = timedelta(minutes=10)
+    f = lambda t: _sun_altitude(t, lat, lon) + 0.833
+    t0, f0 = day_start, f(day_start)
+    rise = set_ = None
+    while t0 < day_start + timedelta(hours=24):
+        t1 = t0 + step
+        f1 = f(t1)
+        if (f0 < 0) != (f1 < 0):
+            a, b, fa = t0, t1, f0
+            for _ in range(20):
+                m = a + (b - a) / 2
+                fm = f(m)
+                if (fa < 0) != (fm < 0):
+                    b = m
+                else:
+                    a, fa = m, fm
+            when = (a + (b - a) / 2).astimezone(day_start.tzinfo)
+            if f0 < 0 and rise is None:
+                rise = when
+            elif f0 >= 0 and set_ is None:
+                set_ = when
+        t0, f0 = t1, f1
+    return rise, set_
