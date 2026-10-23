@@ -1,0 +1,86 @@
+<div class="form-group">
+    <label for="title" class="form-label">Titre</label>
+    <input type="text" id="title" name="title" class="form-input" value="{{ defaults.title }}">
+</div>
+
+<div class="form-group">
+    <label class="form-label">Bus</label>
+    <div class="form-group">
+        <span>Arrêt de montée (nom ou identifiant STIF:StopArea:SP:…:)</span>
+        <input type="text" id="busStop" name="busStop" class="form-input" placeholder="ex. Pont de Joinville" required>
+    </div>
+    <div class="form-group">
+        <span>Lignes (séparées par des virgules)</span>
+        <input type="text" id="busLines" name="busLines" class="form-input" value="{{ defaults.busLines }}">
+    </div>
+    <div class="form-group">
+        <span>Garder les bus dont la destination contient</span>
+        <input type="text" id="busDestination" name="busDestination" class="form-input" value="{{ defaults.busDestination }}">
+    </div>
+    <div class="form-group">
+        <span>Nombre de passages</span>
+        <input type="number" id="busCount" name="busCount" class="form-input" min="1" max="6" value="{{ defaults.busCount }}">
+    </div>
+</div>
+
+<div class="form-group">
+    <label class="form-label">RER</label>
+    <div class="form-group">
+        <span>Gare de départ (nom ou identifiant)</span>
+        <input type="text" id="rerStop" name="rerStop" class="form-input" value="{{ defaults.rerStop }}">
+    </div>
+    <div class="form-group">
+        <span>Ligne (LineRef) et libellé</span>
+        <input type="text" id="rerLineRef" name="rerLineRef" class="form-input" value="{{ defaults.rerLineRef }}">
+        <input type="text" id="rerLabel" name="rerLabel" class="form-input" value="{{ defaults.rerLabel }}">
+    </div>
+    <div class="form-group">
+        <span>Écarter les trains vers (mots séparés par des virgules)</span>
+        <input type="text" id="rerExclude" name="rerExclude" class="form-input" value="{{ defaults.rerExclude }}">
+    </div>
+    <div class="form-group">
+        <span>Nombre de trains</span>
+        <input type="number" id="rerCount" name="rerCount" class="form-input" min="1" max="5" value="{{ defaults.rerCount }}">
+    </div>
+</div>
+
+<div class="form-group">
+    <label for="destinationStop" class="form-label">Destination (pour l'heure d'arrivée)</label>
+    <input type="text" id="destinationStop" name="destinationStop" class="form-input" value="{{ defaults.destinationStop }}">
+</div>
+
+<div class="form-group">
+    <label class="form-label">Affichage</label>
+    <div class="form-group">
+        <input type="checkbox" id="showCountdown" name="showCountdown" onclick="this.value=this.checked ? 'true' : 'false';">
+        <span>Compte à rebours « X min » (redessine l'écran plus souvent)</span>
+    </div>
+    <div class="form-group">
+        <input type="checkbox" id="showRefreshTime" name="showRefreshTime" onclick="this.value=this.checked ? 'true' : 'false';">
+        <span>Heure de mise à jour (redessine l'écran à chaque rafraîchissement)</span>
+    </div>
+    <div class="form-group">
+        <input type="checkbox" id="demoMode" name="demoMode" onclick="this.value=this.checked ? 'true' : 'false';">
+        <span>Mode démo (données fictives, sans clé API)</span>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        if (loadPluginSettings) {
+            const champs = ['title', 'busStop', 'busLines', 'busDestination', 'busCount',
+                            'rerStop', 'rerLineRef', 'rerLabel', 'rerExclude', 'rerCount',
+                            'destinationStop'];
+            champs.forEach(id => {
+                if (pluginSettings[id] !== undefined) {
+                    document.getElementById(id).value = pluginSettings[id];
+                }
+            });
+            ['showCountdown', 'showRefreshTime', 'demoMode'].forEach(id => {
+                const el = document.getElementById(id);
+                el.checked = pluginSettings[id] === 'true';
+                el.value = el.checked ? 'true' : 'false';
+            });
+        }
+    });
+</script>

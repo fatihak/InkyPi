@@ -1,0 +1,66 @@
+{% extends "plugin.html" %}
+
+{% block content %}
+<div class="idfm">
+    <header class="bandeau">
+        <span class="titre">{{ title }}</span>
+        <span class="date">{{ date }}{% if maj %} · MAJ {{ maj }}{% endif %}</span>
+    </header>
+
+    <main class="colonnes">
+        <section class="col bus">
+            <h2>Bus → {{ bus_destination }}</h2>
+            {% if not bus %}
+                <p class="vide">Aucun passage</p>
+            {% endif %}
+            {% for p in bus %}
+            <div class="ligne-bus">
+                <span class="badge bleu">{{ p.ligne }}</span>
+                {% if p.annule %}
+                    <span class="supprime">{{ p.heure }} supprimé</span>
+                {% else %}
+                    <span class="heure">{{ p.heure }}</span>
+                    {% if p.dans %}<span class="dans">{{ p.dans }}</span>{% endif %}
+                {% endif %}
+            </div>
+            {% endfor %}
+        </section>
+
+        <section class="col rer">
+            <h2><span class="badge rouge petit">{{ rer_label }}</span> {{ rer_titre }}</h2>
+            {% if perturbation %}
+                <div class="etat rouge">⚠ Trafic perturbé</div>
+                <p class="message">{{ perturbation }}</p>
+            {% elif trafic_connu %}
+                <div class="etat vert">✓ Trafic normal</div>
+            {% else %}
+                <div class="etat jaune">État du trafic inconnu</div>
+            {% endif %}
+            {% for p in rer %}
+            <div class="ligne-rer {% if p.annule %}annule{% endif %}">
+                <span class="heure-rer">{{ p.heure }}</span>
+                <span class="dest">{% if p.annule %}supprimé{% else %}{{ p.destination }}{% endif %}</span>
+            </div>
+            {% endfor %}
+        </section>
+    </main>
+
+    <footer class="arrivee">
+        <div>
+            <div class="label">Arrivée estimée · {{ dest_nom }}</div>
+            <div class="heure-arrivee">{{ arrivee or "indisponible" }}</div>
+        </div>
+        {% if depart and duree is not none %}
+        <div class="detail">départ {{ depart }} · {{ duree }} min</div>
+        {% endif %}
+    </footer>
+
+    <div class="pied">
+        {% if erreurs %}
+            <span class="erreur">⚠ {{ erreurs | join(" | ") }}</span>
+        {% else %}
+            <span>{{ arret_bus }}</span><span>Source : Île-de-France Mobilités</span>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
