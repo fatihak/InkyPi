@@ -30,6 +30,9 @@ HIDDEN_METRICS = {"Visibility", "Pressure"}
 # Deepen the colours of the large current-conditions icon and outline it in
 # the text colour, so pale icons (e.g. the night crescent) show up on e-ink.
 BOOST_CURRENT_ICON = True
+# Dark outline around the large current-conditions icon: "night" outlines only
+# the night icons (pale moon), True outlines every icon, False none.
+OUTLINE_CURRENT_ICON = "night"
 
 # Where the moon (% lit + next moonrise/moonset) goes: True = under the weather
 # icon, keeping the temperature column large; False = under the high/low.
@@ -192,7 +195,7 @@ def _paste_contain(canvas, path, box, align="center", boost=False, outline_color
     iw, ih = max(1, int(icon.width * scale)), max(1, int(icon.height * scale))
     resized = icon.resize((iw, ih), Image.LANCZOS)
     if boost:
-        o = max(2, round(min(iw, ih) / 55))  # ~3px outline on a 150px icon
+        o = max(2, round(min(iw, ih) / 55)) if outline_color is not None else 0  # ~3px on a 150px icon
         resized = _eink_boost(resized, o, outline_color)
         iw, ih = resized.size
         ox = x + (w - iw) // 2 if align == "center" else x
@@ -203,6 +206,65 @@ def _paste_contain(canvas, path, box, align="center", boost=False, outline_color
     oy = y + (h - ih) // 2
     canvas.alpha_composite(resized, (ox, oy))
     return (ox, oy, iw, ih)
+
+
+# ---------------------------------------------------------------------------
+# Moon drawn from the actual illumination
+# ---------------------------------------------------------------------------
+
+MOON_LIT = (255, 214, 40)       # strong yellow: lands on the panel's yellow ink
+MOON_DARK = (62, 58, 78)        # dark side
+
+
+def _moon_lit_right(icon_path):
+    """Which limb is lit, from the phase icon's name. weather.py already swaps
+    waxing/waning names for the southern hemisphere, so this is the visual side."""
+    name = os.path.basename(str(icon_path or "")).lower()
+    return not ("waning" in name or "lastquarter" in name)
+
+
+def _draw_moon(canvas, box, pct, lit_right=True):
+    """Draw a moon whose lit area is `pct` percent of the disc."""
+    x, y, w, h = box
+    size = int(round(min(w, h)))
+    if size < 4:
+        return
+    try:
+        k = min(1.0, max(0.0, float(pct) / 100.0))
+    except (TypeError, ValueError):
+        return
+    S = 4
+    D = size * S
+    R = D / 2 - S
+    c = D / 2
+    m = Image.new("RGBA", (D, D), (0, 0, 0, 0))
+    d = ImageDraw.Draw(m)
+    d.ellipse([c - R, c - R, c + R, c + R], fill=MOON_DARK + (255,))
+    side = 1 if lit_right else -1
+    steps = 90
+    term, limb = [], []
+    for i in range(steps + 1):
+        yy = -R + 2 * R * i / steps
+        wx = math.sqrt(max(0.0, R * R - yy * yy))
+        # terminator at x = wx * (1 - 2k): lit area between it and the limb is
+        # exactly k of the disc (0 = new, 0.5 = quarter, 1 = full)
+        term.append((c + side * wx * (1 - 2 * k), c + yy))
+        limb.append((c + side * wx, c + yy))
+    if k > 0.005:
+        d.polygon(term + limb[::-1], fill=MOON_LIT + (255,))
+    rim = max(1, round(D / 70))
+    d.ellipse([c - R, c - R, c + R, c + R], outline=MOON_DARK + (255,), width=rim)
+    m = m.resize((size, size), Image.LANCZOS)
+    canvas.alpha_composite(m, (int(round(x + (w - size) / 2)), int(round(y + (h - size) / 2))))
+
+
+def _paste_moon(canvas, icon_path, pct, box):
+    """Procedural moon when the percentage is known, else the phase icon."""
+    try:
+        float(pct)
+    except (TypeError, ValueError):
+        return _paste_contain(canvas, icon_path, box)
+    _draw_moon(canvas, box, pct, _moon_lit_right(icon_path))
 
 
 # ---------------------------------------------------------------------------
@@ -437,7 +499,8 @@ class WeatherRenderer:
         if moon_left:
             icon_h = h - moon_left
         _paste_contain(self.img, self.p.get("current_day_icon"), (x, y, icon_w * 0.92, icon_h),
-                       boost=BOOST_CURRENT_ICON, outline_color=self.color)
+                       boost=BOOST_CURRENT_ICON,
+                       outline_color=self.color if self._outline_current_icon() else None)
 
         bx, bw = x + icon_w, w - icon_w
         deg = _deg(self.units)
@@ -519,7 +582,7 @@ class WeatherRenderer:
             gap = moon_font.size * 0.35
             total = isz + gap + _text_w(moon_font, moon_text)
             mx = bx + (bw - total) / 2
-            _paste_contain(self.img, moon_icon, (mx, cy - isz / 2, isz, isz))
+            _paste_moon(self.img, moon_icon, moon_pct, (mx, cy - isz / 2, isz, isz))
             self.text((mx + isz + gap, cy), moon_text, font=moon_font, anchor="lm")
             if ev_font:
                 # next moonrise / moonset, soonest first
@@ -557,7 +620,7 @@ class WeatherRenderer:
         gap = f1.size * 0.35
         total = isz + gap + _text_w(f1, pct_text)
         mx = cx - total / 2
-        _paste_contain(self.img, icon, (mx, cy - isz / 2, isz, isz))
+        _paste_moon(self.img, icon, pct, (mx, cy - isz / 2, isz, isz))
         self.text((mx + isz + gap, cy), pct_text, font=f1, anchor="lm")
         cy += f1.size * 0.8
         for t in lines:
@@ -565,6 +628,13 @@ class WeatherRenderer:
             self.text((cx, cy), t, font=f2, anchor="mm")
             cy += f2.size * 0.65
         return block + 0.5 * self.vh
+
+    def _outline_current_icon(self):
+        if OUTLINE_CURRENT_ICON == "night":
+            # night icons are named like 01n.png / 022n.png (moon instead of sun)
+            name = os.path.basename(str(self.p.get("current_day_icon") or ""))
+            return os.path.splitext(name)[0].endswith("n")
+        return bool(OUTLINE_CURRENT_ICON)
 
     def _metrics(self, x, y, w, h, cols, rows, points):
         gx, gy = 1 * self.vw, 0.5 * self.vh
@@ -574,7 +644,7 @@ class WeatherRenderer:
         if rows == 0:
             return
         cell_w = (w - gx * (cols - 1)) / cols
-        cell_h = min((h * 0.9 - gy * (rows - 1)) / rows, 20 * self.vh)
+        cell_h = min((h * 0.95 - gy * (rows - 1)) / rows, 20 * self.vh)
         grid_h = rows * cell_h + (rows - 1) * gy
         y += (h - grid_h) / 2
         for i, dp in enumerate(points[: cols * rows]):
@@ -582,8 +652,8 @@ class WeatherRenderer:
             self._metric(x + c * (cell_w + gx), y + r * (cell_h + gy), cell_w, cell_h, dp)
 
     def _metric(self, x, y, w, h, dp):
-        icon_w = w * 0.27
-        _paste_contain(self.img, dp.get("icon"), (x, y + h * 0.1, icon_w, h * 0.8))
+        icon_w = w * 0.24
+        _paste_contain(self.img, dp.get("icon"), (x, y + h * 0.12, icon_w, h * 0.76))
 
         pad = 0.8 * self.vw  # keep values clear of the icon
         tx, tw = x + icon_w + pad, w - icon_w - pad
@@ -593,8 +663,8 @@ class WeatherRenderer:
         arrow = dp.get("arrow") if label == "Wind" else None
         angle = _arrow_angle(arrow) if arrow else None
 
-        label_font = self.fit("light", max(self.min_text, min(0.30 * h, 0.17 * tw)), label, tw)
-        m_size = max(self.min_text, min(0.46 * h, 0.31 * tw))
+        label_font = self.fit("light", max(self.min_text, min(0.35 * h, 0.19 * tw)), label, tw)
+        m_size = max(self.min_text, min(0.54 * h, 0.36 * tw))
         m_font = self.font("bold", m_size)
         # UV shows "/ 5.8 max" here: regular weight so the peak stays legible
         u_weight = "normal" if dp.get("uv_max") is not None else "light"
@@ -610,8 +680,17 @@ class WeatherRenderer:
             arrow_w *= k
             total = tw
 
-        self.text((tx + tw / 2, y + h * 0.3), label, font=label_font, fill=self.color, anchor="md")
-        baseline = y + h * 0.3 + h * 0.35 + m_size * 0.35
+        # Label directly above its value, the pair centred in the cell (the
+        # label used to sit at the cell's top 30%, far from a small value).
+        cap = m_size * 0.72                   # height of digits above the baseline
+        l_cap = label_font.size * 0.72        # height of the label's capitals
+        gap_lv = max(2, label_font.size * 0.32)
+        block = l_cap + gap_lv + cap
+        top = y + (h - block) / 2
+        # anchor on the label's baseline so descenders (the y in "Quality")
+        # don't push it away from its value
+        self.text((tx + tw / 2, top + l_cap), label, font=label_font, fill=self.color, anchor="ms")
+        baseline = top + l_cap + gap_lv + cap
         cx = tx + (tw - total) / 2
         self.text((cx, baseline), meas, font=m_font, fill=self.color, anchor="ls")
         cx += _text_w(m_font, meas) + gap_u
@@ -848,7 +927,7 @@ class WeatherRenderer:
                 pf = self.font("normal", min(temps_font.size, ms * 0.8))
                 total = ms + 10 + _text_w(pf, pct)
                 mx = cx - total / 2
-                _paste_contain(self.img, day.get("moon_phase_icon"), (mx, cy, ms, ms))
+                _paste_moon(self.img, day.get("moon_phase_icon"), day.get("moon_phase_pct"), (mx, cy, ms, ms))
                 self.text((mx + ms + 10, cy + ms / 2), pct, font=pf, fill=self.color, anchor="lm")
 
     def _forecast_wide(self, x, y, w, h, days, texts, box_w, gap, pad_x, pad_y, radius, moon):
@@ -882,7 +961,7 @@ class WeatherRenderer:
                 pf = self.font("normal", moon_sz * 0.8)
                 total = moon_sz + 8 + _text_w(pf, pct)
                 mx = cx - total / 2
-                _paste_contain(self.img, day.get("moon_phase_icon"), (mx, cy, moon_sz, moon_sz))
+                _paste_moon(self.img, day.get("moon_phase_icon"), day.get("moon_phase_pct"), (mx, cy, moon_sz, moon_sz))
                 self.text((mx + moon_sz + 8, cy + moon_sz / 2), pct, font=pf, anchor="lm")
 
 

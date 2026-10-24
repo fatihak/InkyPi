@@ -6,15 +6,17 @@ through the active playlist:
     A  next plugin in the playlist
     B  previous plugin
     C  refresh the current plugin (fetches new data)
-    D  jump to the first plugin in the playlist
+    D  random NASA Astronomy Picture of the Day from the past year
 
 Behaviour can be changed in device.json (restart InkyPi afterwards):
 
     "buttons_enabled": true,                 # default: on when display_type is "inky"
-    "button_actions": {"A": "next", "B": "previous", "C": "refresh", "D": "first"},
+    "button_actions": {"A": "next", "B": "previous", "C": "refresh", "D": "apod_random"},
     "button_pins":    {"A": 5, "B": 6, "C": 16, "D": 24}
 
-Available actions: "next", "previous", "refresh", "first", "none".
+Available actions: "next", "previous", "refresh", "first", "apod_random", "none".
+"apod_random" shows the nasa_apod plugin with a random picture from the past
+year (it uses that plugin's settings from your playlist, if it is in one).
 The buttons pull the pin to ground when pressed (active low). Pins follow
 Pimoroni's own buttons example (5, 6, 16, 24). If one button does nothing on
 your board, check its pin on pinout.xyz and override it in "button_pins"
@@ -27,13 +29,14 @@ import threading
 import time
 from datetime import timedelta
 
-from refresh_task import PlaylistRefresh
+from refresh_task import ManualRefresh, PlaylistRefresh
 
 logger = logging.getLogger(__name__)
 
 DEFAULT_PINS = {"A": 5, "B": 6, "C": 16, "D": 24}
-DEFAULT_ACTIONS = {"A": "next", "B": "previous", "C": "refresh", "D": "first"}
-ACTIONS = ("next", "previous", "refresh", "first", "none")
+DEFAULT_ACTIONS = {"A": "next", "B": "previous", "C": "refresh", "D": "apod_random"}
+ACTIONS = ("next", "previous", "refresh", "first", "apod_random", "none")
+APOD_PLUGIN_ID = "nasa_apod"
 DEBOUNCE_S = 0.3
 
 
@@ -145,6 +148,8 @@ class ButtonHandler:
             self.busy.release()
 
     def _do(self, action):
+        if action == "apod_random":
+            return self._apod_random()
         playlist_manager = self.device_config.get_playlist_manager()
         now = self.refresh_task._get_current_datetime()
 
@@ -175,6 +180,33 @@ class ButtonHandler:
         saved = os.path.join(self.device_config.plugin_image_dir, plugin_instance.get_image_path())
         force = action == "refresh" or not os.path.exists(saved)
         self.refresh_task.manual_update(PlaylistRefresh(playlist, plugin_instance, force=force))
+
+
+    def _apod_random(self):
+        """Show the APOD plugin with a random picture from the past year."""
+        playlist_manager = self.device_config.get_playlist_manager()
+        now = self.refresh_task._get_current_datetime()
+        settings = {}
+        with self.refresh_task.condition:
+            active = playlist_manager.determine_active_playlist(now)
+            playlists = ([active] if active else []) + [p for p in playlist_manager.playlists if p is not active]
+            for playlist in playlists:
+                for i, inst in enumerate(playlist.plugins or []):
+                    if inst.plugin_id == APOD_PLUGIN_ID:
+                        settings = dict(inst.settings or {})
+                        if playlist is active:
+                            # continue the playlist from here on the next A/B press
+                            playlist.current_plugin_index = i
+                        break
+                else:
+                    continue
+                break
+        if not self.device_config.get_plugin(APOD_PLUGIN_ID):
+            logger.warning(f"Button D: plugin '{APOD_PLUGIN_ID}' is not installed.")
+            return
+        settings["random_last_year"] = "true"
+        logger.info("Showing a random APOD from the past year")
+        self.refresh_task.manual_update(ManualRefresh(APOD_PLUGIN_ID, settings))
 
 
 def start_buttons(device_config, refresh_task):
