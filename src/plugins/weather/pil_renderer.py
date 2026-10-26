@@ -27,6 +27,12 @@ FONT_DIR = resolve_path(os.path.join("static", "fonts"))
 # "Air Quality"). Remove a name to bring that metric back.
 HIDDEN_METRICS = {"Visibility", "Pressure"}
 
+# Shorter labels shown on screen for some metrics (display only),
+# e.g. {"Air Quality": "AQI"}.
+LABEL_ABBREVIATIONS = {}
+# Shorter rating words after the air-quality number (display only).
+AQ_RATING_ABBREVIATIONS = {"Moderate": "Mod", "Very Poor": "V Poor"}
+
 # Deepen the colours of the large current-conditions icon and outline it in
 # the text colour, so pale icons (e.g. the night crescent) show up on e-ink.
 BOOST_CURRENT_ICON = True
@@ -659,8 +665,13 @@ class WeatherRenderer:
         tx, tw = x + icon_w + pad, w - icon_w - pad
         label = str(dp.get("label", ""))
         meas = "" if dp.get("measurement") is None else str(dp.get("measurement"))
+        is_wind = label == "Wind"
+        is_aq = label == "Air Quality"
+        label = LABEL_ABBREVIATIONS.get(label, label)
         unit = str(dp.get("unit") or "")
-        arrow = dp.get("arrow") if label == "Wind" else None
+        if is_aq:
+            unit = AQ_RATING_ABBREVIATIONS.get(unit, unit)
+        arrow = dp.get("arrow") if is_wind else None
         angle = _arrow_angle(arrow) if arrow else None
 
         label_font = self.fit("light", max(self.min_text, min(0.35 * h, 0.19 * tw)), label, tw)
