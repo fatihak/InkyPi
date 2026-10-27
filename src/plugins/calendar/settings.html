@@ -77,6 +77,11 @@
         <input type="number" id="endTimeInterval" name="endTimeInterval" class="form-input" min="0" max="24" placeholder="24">
     </div>
 
+    <div class="form-group nowrap" data-visible-modes="timeGridWeek">
+        <label for="numDays">Number of Days:</label>
+        <input type="number" id="numDays" name="numDays" class="form-input" min="1" max="30" placeholder="7" value="7">
+    </div>
+
     <div class="form-group nowrap" data-visible-modes="dayGrid">
         <label for="interval">Display Weeks:</label>
         <input type="number" id="displayWeeks" name="displayWeeks" class="form-input" min="1" max="52" placeholder="4">
@@ -201,6 +206,8 @@
             document.getElementById("endTimeInterval").value = pluginSettings.endTimeInterval;
 
             document.getElementById("displayWeeks").value = pluginSettings.displayWeeks;
+
+            document.getElementById("numDays").value = pluginSettings.numDays || 7;
             
             if (pluginSettings["calendarURLs[]"]) {
                 calendars = pluginSettings["calendarURLs[]"].map((url, i) => ({
