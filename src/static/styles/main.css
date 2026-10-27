@@ -665,6 +665,30 @@ html[data-theme="dark"] .settings-button.dark-mode-toggle::before {
     transition: color 0.3s ease;
 }
 
+.preview-hint {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    text-align: center;
+    margin-bottom: 12px;
+}
+
+.preview-image-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.preview-image-container img {
+    max-width: 100%;
+    height: auto;
+    border: 1px solid var(--shadow-medium);
+    border-radius: 4px;
+}
+
+#previewModal .modal-content {
+    max-width: 700px;
+}
+
 .close-button {
     color: var(--close-btn-color);
     float: right;
