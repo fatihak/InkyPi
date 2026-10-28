@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Info</title>
+    <script>
+        (function() {
+            const theme = localStorage.getItem('inkypi-theme') || 
+                         (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+            if (theme === 'dark') {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            }
+        })();
+    </script>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='styles/main.css') }}">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='styles/system_info.css') }}">
+    <script src="{{ url_for('static', filename='scripts/dark_mode.js') }}"></script>
+</head>
+<body>
+    <div class="frame">
+        <!-- Back Button -->
+        <button onclick="history.back()" class="back-button">← Back</button>
+
+        <!-- Header -->
+        <div class="app-header">
+            <div class="header-content">
+                <div class="title-container">
+                    <img src="{{ url_for('static', filename='icons/system_info.png') }}" alt="System Info" class="app-icon sysinfo-icon">
+                    <div>
+                        <h1 class="app-title">System Info</h1>
+                        <div class="sysinfo-hostname">{{ device_name if device_name else hostname }}</div>
+                        {% if device_name and device_name != hostname %}
+                        <div class="sysinfo-hostname">{{ hostname }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="separator"></div>
+
+        <!-- System Overview -->
+        {% if overview_line1 or overview_line2 %}
+        <div class="sysinfo-overview">
+            {% if overview_line1 %}
+            <div class="sysinfo-overview-line">
+                {% for item in overview_line1 %}
+                <span class="sysinfo-overview-item">
+                    <span class="sysinfo-overview-label">{{ item.label }}:</span>
+                    <span class="sysinfo-overview-value">{{ item.value }}</span>
+                    {% if item.label == "Active playlist" %}
+                    <span role="img" tabindex="0" title="Playlist selected automatically based on the smallest time range" aria-label="Playlist selected automatically based on the smallest time range">ⓘ</span>
+                    {% endif %}
+                </span>
+                {% endfor %}
+            </div>
+            {% endif %}
+            {% if overview_line2 %}
+            <div class="sysinfo-overview-line">
+                {% for item in overview_line2 %}
+                {% if not loop.first %}<span class="sysinfo-overview-sep">•</span>{% endif %}
+                <span class="sysinfo-overview-item">
+                    <span class="sysinfo-overview-label">{{ item.label }}:</span>
+                    <span class="sysinfo-overview-value">{{ item.value }}</span>
+                </span>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        <!-- Highlight Cards -->
+        <div class="sysinfo-grid">
+            {% for card in cards %}
+            <div class="sysinfo-card">
+                <div class="sysinfo-card-header">
+                    <div class="sysinfo-card-icon">
+                        {% if card.icon == 'storage' %}
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                            <ellipse cx="12" cy="5" rx="9" ry="3"/>
+                            <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/>
+                            <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
+                        </svg>
+                        {% elif card.icon == 'memory' %}
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="2" y="6" width="20" height="12" rx="2"/>
+                            <line x1="6" y1="6" x2="6" y2="2"/><line x1="10" y1="6" x2="10" y2="2"/>
+                            <line x1="14" y1="6" x2="14" y2="2"/><line x1="18" y1="6" x2="18" y2="2"/>
+                            <line x1="6" y1="18" x2="6" y2="22"/><line x1="10" y1="18" x2="10" y2="22"/>
+                            <line x1="14" y1="18" x2="14" y2="22"/><line x1="18" y1="18" x2="18" y2="22"/>
+                        </svg>
+                        {% elif card.icon == 'cpu' %}
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="4" y="4" width="16" height="16" rx="2"/>
+                            <rect x="9" y="9" width="6" height="6"/>
+                            <line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/>
+                            <line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/>
+                            <line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/>
+                            <line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/>
+                        </svg>
+                        {% elif card.icon == 'display' %}
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+                            <line x1="8" y1="21" x2="16" y2="21"/>
+                            <line x1="12" y1="17" x2="12" y2="21"/>
+                        </svg>
+                        {% elif card.icon == 'network' %}
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M5 12.55a11 11 0 0 1 14.08 0"/>
+                            <path d="M1.42 9a16 16 0 0 1 21.16 0"/>
+                            <path d="M8.53 16.11a6 6 0 0 1 6.95 0"/>
+                            <line x1="12" y1="20" x2="12.01" y2="20"/>
+                        </svg>
+                        {% elif card.icon == 'uptime' %}
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"/>
+                            <polyline points="12 6 12 12 16 14"/>
+                        </svg>
+                        {% elif card.icon == 'temperature' %}
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/>
+                        </svg>
+                        {% endif %}
+                    </div>
+                    <span class="sysinfo-card-label">{{ card.label }}</span>
+                </div>
+                <span class="sysinfo-card-value">{{ card.value }}</span>
+                {% if card.secondary %}
+                <span class="sysinfo-card-secondary">{{ card.secondary }}</span>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Device Specifications -->
+        <div class="sysinfo-specs-section">
+            <h2 class="sysinfo-specs-title">Device specifications</h2>
+            <div class="sysinfo-specs-table">
+                {% for spec in device_specs %}
+                <div class="sysinfo-spec-row">
+                    <span class="sysinfo-spec-label">{{ spec.label }}</span>
+                    <span class="sysinfo-spec-value">{{ spec.value }}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- System Specifications -->
+        <div class="sysinfo-specs-section">
+            <h2 class="sysinfo-specs-title">System specifications</h2>
+            <div class="sysinfo-specs-table">
+                {% for spec in system_specs %}
+                <div class="sysinfo-spec-row">
+                    <span class="sysinfo-spec-label">{{ spec.label }}</span>
+                    <span class="sysinfo-spec-value">{{ spec.value }}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Installed Plugins -->
+        <div class="sysinfo-specs-section">
+            <h2 class="sysinfo-specs-title">Installed plugins</h2>
+
+            <div class="sysinfo-plugin-summary">
+                <span class="sysinfo-plugin-summary-item">
+                    <span class="sysinfo-overview-label">Total:</span>
+                    <span class="sysinfo-overview-value">{{ plugin_info.total }}</span>
+                </span>
+                <span class="sysinfo-overview-sep">•</span>
+                <span class="sysinfo-plugin-summary-item">
+                    <span class="sysinfo-overview-label">Built-in:</span>
+                    <span class="sysinfo-overview-value">{{ plugin_info.builtin_count }}</span>
+                </span>
+                <span class="sysinfo-overview-sep">•</span>
+                <span class="sysinfo-plugin-summary-item">
+                    <span class="sysinfo-overview-label">Third-party:</span>
+                    <span class="sysinfo-overview-value">{{ plugin_info.third_party_count }}</span>
+                </span>
+            </div>
+
+            {% if plugin_info.third_party %}
+            <div class="sysinfo-plugin-group">
+                <h3 class="sysinfo-plugin-group-title">Third-party</h3>
+                <div class="sysinfo-plugin-chips">
+                    {% for p in plugin_info.third_party %}
+                    <a href="{{ p.repository }}" target="_blank" rel="noopener noreferrer" class="sysinfo-plugin-chip sysinfo-plugin-chip--thirdparty">
+                        {{ p.name }} <span class="sysinfo-plugin-exticon">↗</span>
+                        <span class="sysinfo-plugin-tooltip">
+                            <span>id: {{ p.id }}</span>
+                            <span>{{ p.repository | replace('https://', '') }}</span>
+                        </span>
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="sysinfo-plugin-group">
+                <h3 class="sysinfo-plugin-group-title">Built-in</h3>
+                {% if plugin_info.builtin %}
+                <div class="sysinfo-plugin-chips">
+                    {% for p in plugin_info.builtin %}
+                    <span class="sysinfo-plugin-chip">{{ p.name }}</span>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <span class="sysinfo-plugin-none">None</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</body>
+</html>
