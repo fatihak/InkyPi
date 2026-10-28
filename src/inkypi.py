@@ -89,6 +89,11 @@ if __name__ == '__main__':
     # start the background refresh task
     refresh_task.start()
 
+    # physical buttons on the Inky Impression (see buttons.py)
+    if not DEV_MODE:
+        from buttons import start_buttons
+        start_buttons(device_config, refresh_task)
+
     # display default inkypi image on startup
     if device_config.get_config("startup") is True:
         logger.info("Startup flag is set, displaying startup image")
