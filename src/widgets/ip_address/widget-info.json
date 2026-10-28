@@ -1,0 +1,7 @@
+{
+  "id": "ip_address",
+  "display_name": "IP Address",
+  "description": "Displays the device IP address.",
+  "type": "widget",
+  "class": "IPAddressWidget"
+}

@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify, current_app, render_template, send_from_directory
 from plugins.plugin_registry import get_plugin_instance
 from utils.app_utils import resolve_path, handle_request_files, parse_form
+from utils.widget_utils import generate_and_apply_widgets
 from refresh_task import ManualRefresh, PlaylistRefresh
 import json
 import os
@@ -249,6 +250,10 @@ def update_now():
 
             plugin = get_plugin_instance(plugin_config)
             image = plugin.generate_image(plugin_settings, device_config)
+
+            # Apply widgets
+            image = generate_and_apply_widgets(image, device_config)
+
             display_manager.display_image(image, image_settings=plugin_config.get("image_settings", []))
 
     except Exception as e:
