@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify, current_app, render_template, sen
 from plugins.plugin_registry import get_plugin_instance
 from utils.app_utils import resolve_path, handle_request_files, parse_form
 from refresh_task import ManualRefresh, PlaylistRefresh
+from layout_manager import get_canvas_size
 import json
 import os
 import logging
@@ -28,6 +29,20 @@ def _delete_plugin_instance_images(device_config, plugin_instance_obj):
             plugin.cleanup(plugin_instance_obj.settings)
     except Exception as e:
         logger.warning(f"Error during plugin cleanup for {plugin_instance_obj.plugin_id}: {e}")
+
+def _list_plugin_instances(device_config):
+    """List every saved plugin instance across playlists, for layout plugins to choose from."""
+    instances = []
+    for playlist in device_config.get_playlist_manager().playlists:
+        for plugin_instance in playlist.plugins:
+            plugin_config = device_config.get_plugin(plugin_instance.plugin_id) or {}
+            instances.append({
+                "plugin_id": plugin_instance.plugin_id,
+                "plugin_name": plugin_config.get("display_name", plugin_instance.plugin_id),
+                "name": plugin_instance.name,
+                "playlist": playlist.name,
+            })
+    return instances
 
 # Removed module-level PLUGINS_DIR - will resolve dynamically in route handlers
 
@@ -56,6 +71,8 @@ def plugin_page(plugin_id):
                 template_params["refresh_settings"] = plugin_instance.refresh
 
             template_params["playlists"] = playlist_manager.get_playlist_names()
+            template_params["plugin_instances"] = _list_plugin_instances(device_config)
+            template_params["resolution"] = get_canvas_size(device_config)
         except Exception as e:
             logger.exception("EXCEPTION CAUGHT: " + str(e))
             return jsonify({"error": f"An error occurred: {str(e)}"}), 500

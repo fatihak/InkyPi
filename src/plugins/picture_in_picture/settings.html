@@ -1,0 +1,103 @@
+{% set layout_choices = plugin_instances | rejectattr("plugin_id", "equalto", plugin.id) | list %}
+
+{% macro instance_options() %}
+    <option value="" disabled selected>Select a saved plugin instance...</option>
+    {% for instance in layout_choices %}
+    <option value="{{ instance.plugin_id }}/{{ instance.name }}">{{ instance.name }} ({{ instance.plugin_name }} · {{ instance.playlist }})</option>
+    {% endfor %}
+{% endmacro %}
+
+{% if not layout_choices %}
+<div class="form-group">
+    <span>No saved plugin instances yet. Add plugins such as Calendar and Weather to a playlist first, then combine them here.</span>
+</div>
+{% endif %}
+
+<div class="form-group">
+    <label for="background" class="form-label">Background:</label>
+    <select id="background" name="background" class="form-input" required>
+        {{ instance_options() }}
+    </select>
+</div>
+
+<div class="form-group">
+    <label for="overlay" class="form-label">Overlay:</label>
+    <select id="overlay" name="overlay" class="form-input" required>
+        {{ instance_options() }}
+    </select>
+</div>
+
+<div class="form-group">
+    <label for="corner" class="form-label">Corner:</label>
+    <select id="corner" name="corner" class="form-input">
+        {% for corner in corners %}
+        <option value="{{ corner }}" {% if corner == "top-right" %}selected{% endif %}>{{ corner | replace("-", " ") | title }}</option>
+        {% endfor %}
+    </select>
+</div>
+
+<div class="form-group">
+    <label for="overlaySize" class="form-label">Overlay Size:</label>
+    <div class="form-group nowrap">
+        <input type="range" id="overlaySize" name="overlaySize" min="5" max="100" step="1" value="35">
+        <span><span id="overlaySizeValue">35</span>% of screen width and height</span>
+    </div>
+</div>
+
+<div class="form-group">
+    <label for="renderMode" class="form-label">Overlay Rendering:</label>
+    <select id="renderMode" name="renderMode" class="form-input">
+        <option value="scale" selected>Scale down full-screen layout (never clipped)</option>
+        <option value="native">Render at overlay size (larger text, may clip)</option>
+    </select>
+</div>
+
+<div class="form-group">
+    <label for="margin" class="form-label">Margin:</label>
+    <div class="form-group nowrap">
+        <input type="number" id="margin" name="margin" class="form-input" min="0" max="200" step="1" value="10"><span>px</span>
+    </div>
+</div>
+
+<div class="form-group">
+    <label for="borderWidth" class="form-label">Overlay Border:</label>
+    <div class="form-group nowrap">
+        <input type="number" id="borderWidth" name="borderWidth" class="form-input" min="0" max="20" step="1" value="2"><span>px</span>
+    </div>
+</div>
+
+<div class="form-group">
+    <label class="form-label">Preview:</label>
+    <div id="pipPreview" style="position: relative; width: 240px; aspect-ratio: {{ resolution[0] }} / {{ resolution[1] }}; border: 1px solid var(--border-color); background: var(--input-bg); box-sizing: border-box;">
+        <div id="pipPreviewOverlay" style="position: absolute; box-sizing: border-box; border: 2px solid var(--accent-hover); background: var(--input-focus);"></div>
+    </div>
+</div>
+
+<script>
+    function updatePipPreview() {
+        const size = document.getElementById('overlaySize').value;
+        const corner = document.getElementById('corner').value;
+        document.getElementById('overlaySizeValue').textContent = size;
+
+        const overlay = document.getElementById('pipPreviewOverlay');
+        overlay.style.width = size + '%';
+        overlay.style.height = size + '%';
+        overlay.style.top = corner.startsWith('top') ? '0' : '';
+        overlay.style.bottom = corner.startsWith('bottom') ? '0' : '';
+        overlay.style.left = corner.endsWith('left') ? '0' : '';
+        overlay.style.right = corner.endsWith('right') ? '0' : '';
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        if (loadPluginSettings) {
+            ['background', 'overlay', 'corner', 'overlaySize', 'renderMode', 'margin', 'borderWidth'].forEach(id => {
+                if (pluginSettings[id] !== undefined && pluginSettings[id] !== '') {
+                    document.getElementById(id).value = pluginSettings[id];
+                }
+            });
+        }
+        document.getElementById('overlaySize').addEventListener('input', updatePipPreview);
+        document.getElementById('corner').addEventListener('change', updatePipPreview);
+        updatePipPreview();
+    });
+</script>
