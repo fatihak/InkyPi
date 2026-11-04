@@ -1,4 +1,8 @@
 from plugins.base_plugin.base_plugin import BasePlugin
+from plugins.weather.pil_renderer import render_weather
+from plugins.weather import moon as moon_calc
+from plugins.weather import nws
+from utils.image_utils import is_armv6
 from PIL import Image
 import os
 import requests
@@ -109,6 +113,25 @@ class Weather(BasePlugin):
                 else:
                     logger.info("Using configured timezone for OpenWeatherMap data.")
                     template_params = self.parse_weather_data(weather_data, aqi_data, tz, units, time_format, lat)
+            elif weather_provider == "NWS":
+                # US National Weather Service; falls back to Open-Meteo if it
+                # fails so the display still updates.
+                try:
+                    aqi_data = self.get_open_meteo_air_quality(lat, long)
+                except Exception as e:
+                    logger.warning(f"Air quality/UV unavailable: {e}")
+                    aqi_data = {}
+                try:
+                    template_params = nws.fetch_and_parse(self, lat, long, units, tz, time_format, aqi_data)
+                    if not title:
+                        loc = template_params.get("nws_location") or {}
+                        title = ", ".join(x for x in (loc.get("city"), loc.get("state")) if x)
+                except Exception as e:
+                    logger.warning(f"National Weather Service failed ({e}); using Open-Meteo instead.")
+                    weather_data = self.get_open_meteo_data(lat, long, units, 8)
+                    if not aqi_data:
+                        aqi_data = self.get_open_meteo_air_quality(lat, long)
+                    template_params = self.parse_open_meteo_data(weather_data, aqi_data, tz, units, time_format, lat)
             elif weather_provider == "OpenMeteo":
                 forecast_days = 7
                 weather_data = self.get_open_meteo_data(lat, long, units, forecast_days + 1)
@@ -118,6 +141,7 @@ class Weather(BasePlugin):
                 raise RuntimeError(f"Unknown weather provider: {weather_provider}")
 
             template_params['title'] = title
+            template_params['moon_now'] = self.get_moon_now(lat, long, tz, time_format)
         except Exception as e:
             logger.error(f"{weather_provider} request failed: {str(e)}")
             raise RuntimeError(f"{weather_provider} request failure, please check logs.")
@@ -136,11 +160,37 @@ class Weather(BasePlugin):
             last_refresh_time = now.strftime("%Y-%m-%d %I:%M %p")
         template_params["last_refresh_time"] = last_refresh_time
 
-        image = self.render_image(dimensions, "weather.html", "weather.css", template_params)
+        image = self.render_weather(dimensions, template_params)
 
         if not image:
             raise RuntimeError("Failed to take screenshot, please check logs.")
         return image
+
+    def render_weather(self, dimensions, template_params):
+        """Render with the browser, or draw with Pillow where no browser runs.
+
+        INKYPI_WEATHER_RENDERER: "auto" (default), "browser" or "pillow".
+        "auto" uses Pillow straight away on ARMv6 boards (Pi Zero W / Pi 1),
+        where current Chromium/Firefox builds crash, and otherwise tries the
+        browser first and falls back to Pillow if the screenshot fails.
+        """
+        mode = os.environ.get("INKYPI_WEATHER_RENDERER", "auto").strip().lower()
+        if mode not in ("auto", "browser", "pillow"):
+            logger.warning(f"Unknown INKYPI_WEATHER_RENDERER '{mode}', using auto.")
+            mode = "auto"
+
+        if mode == "browser" or (mode == "auto" and not is_armv6()):
+            image = self.render_image(dimensions, "weather.html", "weather.css", dict(template_params))
+            if image or mode == "browser":
+                return image
+            logger.warning("Browser screenshot failed; drawing the weather screen with Pillow instead.")
+
+        logger.info("Rendering weather with Pillow (no browser).")
+        try:
+            return render_weather(template_params, dimensions)
+        except Exception:
+            logger.exception("Pillow weather renderer failed")
+            return None
 
     def parse_weather_data(self, weather_data, aqi_data, tz, units, time_format, lat):
         current = weather_data.get("current")
@@ -245,6 +295,29 @@ class Weather(BasePlugin):
                 icon = "10n"      # Rain night
 
         return icon
+
+    def get_moon_now(self, lat, long, tz, time_format):
+        """Moon illumination right now plus the next moonrise and moonset."""
+        try:
+            now = datetime.now(tz)
+            pct, age, _waxing = moon_calc.illumination(now)
+            # get_moon_phase_name uses astral's 0-28 scale
+            phase_name = get_moon_phase_name(age * 28.0 / moon_calc.SYNODIC_MONTH)
+            rise, moonset = moon_calc.next_rise_set(now, lat, long)
+            events = []
+            for label, when in (("Rise", rise), ("Set", moonset)):
+                if when:
+                    when = (when + timedelta(seconds=30)).replace(second=0, microsecond=0)
+                    events.append((when, label, self.format_time(when, time_format)))
+            events.sort()
+            return {
+                "pct": f"{pct:.0f}",
+                "icon": self.get_moon_phase_icon_path(phase_name, lat),
+                "events": [{"label": label, "time": text} for _, label, text in events],
+            }
+        except Exception as e:
+            logger.error(f"Moon calculation failed: {e}")
+            return None
 
     def get_moon_phase_icon_path(self, phase_name: str, lat: float) -> str:
         """Determines the path to the moon icon, inverting it if the location is in the Southern Hemisphere."""
@@ -357,8 +430,11 @@ class Weather(BasePlugin):
             try:
                 phase_age = moon.phase(target_date)
                 phase_name_north_hemi = get_moon_phase_name(phase_age)
-                LUNAR_CYCLE_DAYS = 29.530588853
-                phase_fraction = phase_age / LUNAR_CYCLE_DAYS
+                # astral's moon.phase() returns an age on a 0-27.99 scale
+                # (not days), so divide by 28; dividing by 29.53 under-reported
+                # illumination by several percent.
+                ASTRAL_PHASE_SCALE = 28.0
+                phase_fraction = phase_age / ASTRAL_PHASE_SCALE
                 illum_pct = (1 - math.cos(2 * math.pi * phase_fraction)) / 2 * 100
             except Exception as e:
                 logger.error(f"Error calculating moon phase for {target_date}: {e}")
@@ -520,10 +596,12 @@ class Weather(BasePlugin):
             "icon": self.get_plugin_dir('icons/pressure.png')
         })
 
+        today_uv_max = ((weather.get('daily') or [{}])[0] or {}).get("uvi")
         data_points.append({
             "label": "UV Index",
-            "measurement": weather.get('current', {}).get("uvi"),
-            "unit": '',
+            "measurement": self.format_uv(weather.get('current', {}).get("uvi")),
+            "unit": self.format_uv_max(today_uv_max),
+            "uv_max": today_uv_max,
             "icon": self.get_plugin_dir('icons/uvi.png')
         })
 
@@ -647,8 +725,18 @@ class Weather(BasePlugin):
             except ValueError:
                 logger.warning(f"Could not parse time string {time_str} for UV Index.")
                 continue
+        # Today's forecast peak: highest hourly value on today's date
+        today_uv = []
+        for time_str, value in zip(uv_index_hourly_times, uv_index_values):
+            try:
+                if value is not None and datetime.fromisoformat(time_str).astimezone(tz).date() == current_time.date():
+                    today_uv.append(value)
+            except ValueError:
+                continue
+        today_uv_max = max(today_uv) if today_uv else None
         data_points.append({
-            "label": "UV Index", "measurement": current_uv_index, "unit": '',
+            "label": "UV Index", "measurement": self.format_uv(current_uv_index),
+            "unit": self.format_uv_max(today_uv_max), "uv_max": today_uv_max,
             "icon": self.get_plugin_dir('icons/uvi.png')
         })
 
@@ -702,6 +790,23 @@ class Weather(BasePlugin):
         })
 
         return data_points
+
+    @staticmethod
+    def format_uv(value):
+        """UV index as a whole number, as the WHO standard reports it.
+
+        Forecast UV is only good to about +/-0.5-1, so tenths add false
+        precision. Rounds half up (2.5 -> 3); non-numbers pass through."""
+        try:
+            return int(math.floor(float(value) + 0.5))
+        except (TypeError, ValueError):
+            return value
+
+    @staticmethod
+    def format_uv_max(uv_max):
+        """'/ 6 max' shown after the current UV value (empty if unknown)."""
+        rounded = Weather.format_uv(uv_max)
+        return f"/ {rounded} max" if isinstance(rounded, int) else ''
 
     def get_wind_arrow(self, wind_deg: float) -> str:
         DIRECTIONS = [

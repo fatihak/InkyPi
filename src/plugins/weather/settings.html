@@ -19,6 +19,7 @@
     <select id="weatherProvider" name="weatherProvider" class="form-input" onchange="updateTitleOptions(this.value)">
         <option value="OpenMeteo">Open-Meteo</option>
         <option value="OpenWeatherMap">OpenWeatherMap</option>
+        <option value="NWS">National Weather Service (US only)</option>
     </select>
 
     <label for="units" class="form-label">Units:</label>
@@ -186,7 +187,7 @@
         const titleTimeZoneLabel = document.querySelector('label[for="weatherTimeZone"]');
         const apiKeyLabel = document.querySelector('.api-key-label');
 
-        if (provider === 'OpenMeteo') {
+        if (provider === 'OpenMeteo' || provider === 'NWS') {
             // Hide or disable "Location" radio option
             titleLocationRadio.style.display = 'none';
             titleLocationLabel.style.display = 'none';
