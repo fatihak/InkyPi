@@ -12,6 +12,9 @@ import os
 
 logger = logging.getLogger(__name__)
 
+# OpenAI shuts down gpt-4.1-nano on 2026-10-23; saved instances move to its replacement
+RETIRED_TEXT_MODELS = {"gpt-4.1-nano": "gpt-5.6-luna"}
+
 class AIText(BasePlugin):
     def generate_settings_template(self):
         template_params = super().generate_settings_template()
@@ -33,6 +36,9 @@ class AIText(BasePlugin):
         text_model = settings.get('textModel')
         if not text_model:
             raise RuntimeError("Text Model is required.")
+        if text_model in RETIRED_TEXT_MODELS:
+            logger.info(f"{text_model} is retired, using {RETIRED_TEXT_MODELS[text_model]}")
+            text_model = RETIRED_TEXT_MODELS[text_model]
 
         text_prompt = settings.get('textPrompt', '')
         if not text_prompt.strip():

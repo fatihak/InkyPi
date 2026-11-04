@@ -7,8 +7,10 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-IMAGE_MODELS = ["gpt-image-1", "gpt-image-2"]
-DEFAULT_IMAGE_MODEL = "gpt-image-1"
+IMAGE_MODELS = ["gpt-image-2"]
+DEFAULT_IMAGE_MODEL = "gpt-image-2"
+# OpenAI shuts down gpt-image-1 on 2026-10-23; saved instances move to its replacement
+RETIRED_IMAGE_MODELS = {"gpt-image-1": "gpt-image-2"}
 DEFAULT_IMAGE_QUALITY = "medium"
 
 class AIImage(BasePlugin):
@@ -31,6 +33,9 @@ class AIImage(BasePlugin):
 
         text_prompt = settings.get("textPrompt", "")
         image_model = settings.get('imageModel', DEFAULT_IMAGE_MODEL)
+        if image_model in RETIRED_IMAGE_MODELS:
+            logger.info(f"{image_model} is retired, using {RETIRED_IMAGE_MODELS[image_model]}")
+            image_model = RETIRED_IMAGE_MODELS[image_model]
 
         if image_model not in IMAGE_MODELS:
             logger.error(f"Invalid image model: {image_model}")
