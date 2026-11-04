@@ -35,9 +35,9 @@
            class="file-upload-input" onchange="addFiles()">
 </div>
 
-<!-- Display uploaded & existing file names -->
+<!-- Thumbnail grid of uploaded & existing images -->
 <div class="form-group">
-    <div id="fileNames" class="file-name-list"></div>
+    <div id="fileNames" class="uploaded-image-grid"></div>
 </div>
 
 <!-- Hidden input fields to store existing file data -->
@@ -61,14 +61,18 @@
             if (!uploadedFiles["imageFiles[]"].some(f => f.name === fileName)) {
                 uploadedFiles["imageFiles[]"].push(file);
 
+                // Preview the file from memory; revoked when the thumbnail is removed
+                const thumbUrl = URL.createObjectURL(file);
+
                 const fileElement = document.createElement("div");
                 fileElement.innerHTML = `
-                    <span id="fileNameText">${fileName}</span>
-                    <button type="button" class="remove-btn" onclick="removeAddedFile('${fileName}')">X</button>
+                    <img src="${thumbUrl}" class="uploaded-image-thumb" alt="${fileName}" title="${fileName}">
+                    <button type="button" class="uploaded-image-remove" onclick="removeAddedFile('${fileName}')" title="Remove ${fileName}">&times;</button>
                 `;
                 fileElement.id = `added-${fileName}`;
-                fileElement.classList.add("file-name");
+                fileElement.classList.add("uploaded-image-item");
                 fileElement.setAttribute('delete-on-submit', '');
+                fileElement.dataset.objectUrl = thumbUrl;
                 fileNamesDisplay.appendChild(fileElement);
             }
         });
@@ -80,9 +84,13 @@
     function removeAddedFile(fileName) {
         // Remove the file from uploadedFiles
         uploadedFiles["imageFiles[]"] = uploadedFiles["imageFiles[]"].filter(f => f.name !== fileName);
-        
-        // Remove the displayed filename
-        document.getElementById(`added-${fileName}`).remove();
+
+        // Remove the displayed thumbnail and release its preview URL
+        const fileElement = document.getElementById(`added-${fileName}`);
+        if (fileElement) {
+            URL.revokeObjectURL(fileElement.dataset.objectUrl);
+            fileElement.remove();
+        }
     }
 
     function removeExistingFile(fileName) {
@@ -106,14 +114,18 @@
             // Loop through the existing files and add them to the display and hidden inputs
             existingFiles.forEach(filePath => {
                 const fileName = filePath.split('/').pop()
-                // Create an element for the file name
+                // Uploaded images are saved under static/images/saved by handle_request_files(),
+                // so they're already reachable through Flask's static route for the thumbnail.
+                const thumbUrl = `/static/images/saved/${encodeURIComponent(fileName)}`
+
+                // Create a thumbnail element for the file
                 const fileElement = document.createElement("div");
                 fileElement.innerHTML = `
-                    <span id="fileNameText">${fileName}</span>
-                    <button type="button" class="remove-btn" onclick="removeExistingFile('${fileName}')">X</button>
+                    <img src="${thumbUrl}" class="uploaded-image-thumb" alt="${fileName}" title="${fileName}">
+                    <button type="button" class="uploaded-image-remove" onclick="removeExistingFile('${fileName}')" title="Remove ${fileName}">&times;</button>
                 `;
                 fileElement.id = `existing-${fileName}`;
-                fileElement.classList.add("file-name");
+                fileElement.classList.add("uploaded-image-item");
                 fileElement.setAttribute('delete-on-submit', '');
                 fileNamesDisplay.appendChild(fileElement);
 

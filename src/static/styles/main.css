@@ -537,6 +537,55 @@ small {
     transition: color 0.3s ease;
 }
 
+/* Thumbnail grid for the Image Upload plugin's file list */
+.uploaded-image-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 10px;
+}
+
+.uploaded-image-item {
+    position: relative;
+    width: 100px;
+    height: 100px;
+    border-radius: 6px;
+    overflow: hidden;
+    border: 1px solid var(--border-subtle);
+    background-color: var(--collapsible-bg);
+}
+
+.uploaded-image-thumb {
+    /* contain (not cover) keeps the image's true aspect ratio visible,
+       so portrait vs. landscape photos stay distinguishable at a glance */
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+}
+
+.uploaded-image-remove {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    width: 20px;
+    height: 20px;
+    line-height: 18px;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background-color: rgba(0, 0, 0, 0.6);
+    color: #fff;
+    font-size: 0.9rem;
+    text-align: center;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.uploaded-image-remove:hover {
+    background-color: var(--remove-btn-hover);
+}
+
 .image-grid {
     display: flex;
     gap: 10px;
