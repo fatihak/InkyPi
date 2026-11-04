@@ -102,3 +102,26 @@ class BasePlugin:
         rendered_html = template.render(template_params)
 
         return take_screenshot_html(rendered_html, dimensions)
+
+    def on_button_press(self, button_id, press_type, device_config) -> bool:
+        """
+        Handle physical button press. Override in subclasses for custom behavior.
+        
+        Args:
+            button_id: ButtonID enum (A, B, C, D)
+            press_type: PressType enum (SHORT, LONG)
+            device_config: Device configuration object
+            
+        Returns:
+            True if the plugin handled the event, False otherwise
+        """
+        return False
+
+    def get_button_hints(self) -> dict:
+        """
+        Return button action hints for UI display.
+        
+        Returns:
+            Dict like {"A": "Next image", "B": "Previous image"}
+        """
+        return {}

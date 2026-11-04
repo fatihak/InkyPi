@@ -24,6 +24,10 @@ class RefreshTask:
         self.condition = threading.Condition(self.lock)
         self.running = False
         self.manual_update_request = ()
+        
+        # Track refresh state for UI
+        self.is_refreshing = False
+        self.refresh_started_at = None
 
         self.refresh_event = threading.Event()
         self.refresh_event.set()
@@ -110,18 +114,27 @@ class RefreshTask:
                         if plugin_config is None:
                             logger.error(f"Plugin config not found for '{refresh_action.get_plugin_id()}'.")
                             continue
-                        plugin = get_plugin_instance(plugin_config)
-                        image = refresh_action.execute(plugin, self.device_config, current_dt)
-                        image_hash = compute_image_hash(image)
+                        
+                        # Set refreshing state for UI before image generation
+                        self.is_refreshing = True
+                        self.refresh_started_at = time.time()
+                        
+                        try:
+                            plugin = get_plugin_instance(plugin_config)
+                            image = refresh_action.execute(plugin, self.device_config, current_dt)
+                            image_hash = compute_image_hash(image)
 
-                        refresh_info = refresh_action.get_refresh_info()
-                        refresh_info.update({"refresh_time": current_dt.isoformat(), "image_hash": image_hash})
-                        # check if image is the same as current image
-                        if image_hash != latest_refresh.image_hash:
-                            logger.info(f"Updating display. | refresh_info: {refresh_info}")
-                            self.display_manager.display_image(image, image_settings=plugin.config.get("image_settings", []))
-                        else:
-                            logger.info(f"Image already displayed, skipping refresh. | refresh_info: {refresh_info}")
+                            refresh_info = refresh_action.get_refresh_info()
+                            refresh_info.update({"refresh_time": current_dt.isoformat(), "image_hash": image_hash})
+                            # check if image is the same as current image
+                            if image_hash != latest_refresh.image_hash:
+                                logger.info(f"Updating display. | refresh_info: {refresh_info}")
+                                self.display_manager.display_image(image, image_settings=plugin.config.get("image_settings", []))
+                            else:
+                                logger.info(f"Image already displayed, skipping refresh. | refresh_info: {refresh_info}")
+                        finally:
+                            self.is_refreshing = False
+                            self.refresh_started_at = None
 
                         # update latest refresh data in the device config
                         self.device_config.refresh_info = RefreshInfo(**refresh_info)
@@ -154,6 +167,13 @@ class RefreshTask:
         if self.running:
             with self.condition:
                 self.condition.notify_all()
+    
+    def get_status(self) -> dict:
+        """Get current refresh status for UI polling."""
+        return {
+            "is_refreshing": self.is_refreshing,
+            "refresh_duration": round(time.time() - self.refresh_started_at, 1) if self.refresh_started_at else None
+        }
 
     def _get_current_datetime(self):
         """Retrieves the current datetime based on the device's configured timezone."""
@@ -247,12 +267,15 @@ class PlaylistRefresh(RefreshAction):
     Attributes:
         playlist: The playlist object associated with the refresh.
         plugin_instance: The plugin instance to refresh.
+        force: If True, use cached image for quick navigation between plugins.
+        regenerate: If True, always generate a new image (for plugin state changes like button presses).
     """
 
-    def __init__(self, playlist, plugin_instance, force=False):
+    def __init__(self, playlist, plugin_instance, force=False, regenerate=False):
         self.playlist = playlist
         self.plugin_instance = plugin_instance
         self.force = force
+        self.regenerate = regenerate
 
     def get_refresh_info(self):
         """Return refresh metadata as a dictionary."""
@@ -272,11 +295,36 @@ class PlaylistRefresh(RefreshAction):
         # Determine the file path for the plugin's image
         plugin_image_path = os.path.join(device_config.plugin_image_dir, self.plugin_instance.get_image_path())
 
-        # Check if a refresh is needed based on the plugin instance's criteria
-        if self.plugin_instance.should_refresh(current_dt) or self.force:
-            logger.info(f"Refreshing plugin instance. | plugin_instance: '{self.plugin_instance.name}'") 
+        # Check if cached image exists
+        has_cached_image = os.path.exists(plugin_image_path)
+
+        # regenerate=True: always generate new image (plugin state changed, e.g. button press)
+        if self.regenerate:
+            logger.info(f"Regenerating image for plugin. | plugin_instance: '{self.plugin_instance.name}'")
+            image = plugin.generate_image(self.plugin_instance.settings, device_config)
+            if image is None:
+                raise RuntimeError(f"Plugin '{self.plugin_instance.plugin_id}' failed to generate image")
+            image.save(plugin_image_path)
+            self.plugin_instance.latest_refresh_time = current_dt.isoformat()
+        # force=True: use cache if available (for quick navigation between plugins)
+        elif self.force:
+            if has_cached_image:
+                logger.info(f"Using cached image for navigation. | plugin_instance: {self.plugin_instance.name}")
+                with Image.open(plugin_image_path) as img:
+                    image = img.copy()
+            else:
+                logger.info(f"No cached image, generating. | plugin_instance: '{self.plugin_instance.name}'")
+                image = plugin.generate_image(self.plugin_instance.settings, device_config)
+                if image is None:
+                    raise RuntimeError(f"Plugin '{self.plugin_instance.plugin_id}' failed to generate image")
+                image.save(plugin_image_path)
+                self.plugin_instance.latest_refresh_time = current_dt.isoformat()
+        elif self.plugin_instance.should_refresh(current_dt) or not has_cached_image:
+            logger.info(f"Refreshing plugin instance. | plugin_instance: '{self.plugin_instance.name}'")
             # Generate a new image
             image = plugin.generate_image(self.plugin_instance.settings, device_config)
+            if image is None:
+                raise RuntimeError(f"Plugin '{self.plugin_instance.plugin_id}' failed to generate image")
             image.save(plugin_image_path)
             self.plugin_instance.latest_refresh_time = current_dt.isoformat()
         else:
