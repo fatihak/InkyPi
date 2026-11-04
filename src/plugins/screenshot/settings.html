@@ -4,6 +4,17 @@
 </div>
 
 <div class="form-group">
+    <label for="renderWaitMs" class="form-label">Render Wait (milliseconds):</label>
+    <input type="number" id="renderWaitMs" name="renderWaitMs" min="0" step="100" value="0" class="form-input">
+    <span style="color: var(--text-primary);">Optional. Allows pages with delayed JavaScript rendering to finish before the screenshot is captured. Use 0 to disable.</span>
+</div>
+
+<div class="form-group">
+    <input type="checkbox" id="skipIfBlank" name="skipIfBlank" value="true" checked onclick="this.value=this.checked ? 'true' : 'false';">
+    <span style="color: var(--text-primary);">Skip if blank: Automatically skip display if the screenshot is a single color.</span>
+</div>
+
+<div class="form-group">
     <span style="color: var(--text-primary);">Warning: Do not run with untrusted URLs, as it may pose a security risk. This may also fail if the website takes too long to load.</span>
 </div>
 
@@ -12,6 +23,11 @@
     document.addEventListener('DOMContentLoaded', () => {        
         if (loadPluginSettings) {
             document.getElementById('url').value = pluginSettings.url;
+            document.getElementById('renderWaitMs').value = pluginSettings.renderWaitMs || '0';
+            
+            const skipIfBlank = pluginSettings.skipIfBlank !== undefined ? (pluginSettings.skipIfBlank === 'true' || pluginSettings.skipIfBlank === true) : true;
+            document.getElementById('skipIfBlank').checked = skipIfBlank;
+            document.getElementById('skipIfBlank').value = skipIfBlank ? 'true' : 'false';
         }
     });
 </script>

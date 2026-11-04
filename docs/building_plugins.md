@@ -43,6 +43,20 @@ This guide walks you through the process of creating a new plugin for InkyPi.
             # update value for next refresh
             settings["index"] = settings["index"] + 1
         ```
+- (Optional) If your plugin should sometimes skip playlist display, implement `skip_display_condition`.
+    - Return `None` to proceed with normal display.
+    - Return a string to skip this playlist cycle. The string is shown as the reason in the generated plugin preview image.
+    - This is intended for plugins that have valid periods with nothing to show, such as a sports scoreboard during the offseason.
+    - If this method fetches data and returns `None`, cache that data in `settings` using a plugin-private, JSON-serializable key so `generate_image` can reuse it instead of making the same external request again.
+        ```python
+        def skip_display_condition(self, settings, device_config, current_dt):
+            games = fetch_games(settings, current_dt)
+            if not games:
+                return "No games to display"
+
+            settings["_scoreboard_games_cache"] = games
+            return None
+        ```
 
 ### 3. Create a Settings Template (Optional)
 
@@ -185,4 +199,3 @@ Your repository must include:
 See [InkyPi-Plugin-Template](https://github.com/fatihak/InkyPi-Plugin-Template) for a sample template of a third party plugin.
 
 Once you're done, feel free to add your plugin to the [3rd Party Plugin List](https://github.com/fatihak/InkyPi/wiki/3rd-Party-Plugins) and share it in the [🙌 Show and Tell Discussion Board](https://github.com/fatihak/InkyPi/discussions/categories/show-and-tell).
-
