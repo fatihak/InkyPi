@@ -20,8 +20,13 @@ class ImageURL(BasePlugin):
         logger.info(f"Fetching image from URL: {url}")
         logger.debug(f"Target dimensions: {dimensions[0]}x{dimensions[1]}")
 
+        # Get timeout from settings, convert seconds to milliseconds
+        timeout_seconds = settings.get('timeout', 40)
+        timeout_ms = int(timeout_seconds * 1000)
+        logger.debug(f"Timeout: {timeout_seconds} seconds ({timeout_ms} ms)")
+
         # Use adaptive image loader for memory-efficient processing
-        image = self.image_loader.from_url(url, dimensions, timeout_ms=40000)
+        image = self.image_loader.from_url(url, dimensions, timeout_ms=timeout_ms)
 
         if not image:
             logger.error("Failed to load image from URL")
