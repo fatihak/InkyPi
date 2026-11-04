@@ -1,13 +1,21 @@
 from flask import Blueprint, request, jsonify, current_app, render_template, send_from_directory
 from plugins.plugin_registry import get_plugin_instance
 from utils.app_utils import resolve_path, handle_request_files, parse_form
-from refresh_task import ManualRefresh, PlaylistRefresh
+from utils.image_utils import resize_image, apply_image_enhancement
+from refresh_task import ManualRefresh, PlaylistRefresh, RENDER_LOCK
+import base64
 import json
-import os
 import logging
+import os
+from io import BytesIO
 
 logger = logging.getLogger(__name__)
 plugin_bp = Blueprint("plugin", __name__)
+
+# Previews are requested live while the user edits settings. They share the render
+# lock with the refresh thread so no two Chromium processes run in parallel, which
+# can exhaust memory on small Pis.
+PREVIEW_LOCK_TIMEOUT_S = 60
 
 def _delete_plugin_instance_images(device_config, plugin_instance_obj):
     """Delete all images associated with a plugin instance."""
@@ -248,7 +256,8 @@ def update_now():
                 return jsonify({"error": f"Plugin '{plugin_id}' not found"}), 404
 
             plugin = get_plugin_instance(plugin_config)
-            image = plugin.generate_image(plugin_settings, device_config)
+            with RENDER_LOCK:
+                image = plugin.generate_image(plugin_settings, device_config)
             display_manager.display_image(image, image_settings=plugin_config.get("image_settings", []))
 
     except Exception as e:
@@ -256,3 +265,56 @@ def update_now():
         return jsonify({"error": f"An error occurred: {str(e)}"}), 500
 
     return jsonify({"success": True, "message": "Display updated"}), 200
+
+
+@plugin_bp.route('/preview', methods=['POST'])
+def preview():
+    """Generate a preview image without updating the display"""
+    device_config = current_app.config['DEVICE_CONFIG']
+
+    try:
+        plugin_settings = parse_form(request.form)
+        plugin_id = plugin_settings.pop("plugin_id", None)
+        if not plugin_id:
+            return jsonify({"error": "plugin_id is required"}), 400
+
+        plugin_config = device_config.get_plugin(plugin_id)
+        if not plugin_config:
+            return jsonify({"error": f"Plugin '{plugin_id}' not found"}), 404
+
+        if not RENDER_LOCK.acquire(timeout=PREVIEW_LOCK_TIMEOUT_S):
+            return jsonify({"error": "Preview busy, please try again"}), 503
+        try:
+            # The client sends each newly selected file only once and reuses the
+            # returned path afterwards, so uploads are not rewritten on every preview.
+            uploaded_files = handle_request_files(request.files)
+            plugin_settings.update(uploaded_files)
+
+            plugin = get_plugin_instance(plugin_config)
+            image = plugin.generate_image(plugin_settings, device_config)
+            if image is None:
+                return jsonify({"error": "An error occurred: NoneType — Chromium may not be installed"}), 500
+
+            # Scale to the display size like the device pipeline does. Plugins render in
+            # orientation-adjusted dimensions, so swap for vertical instead of rotating.
+            width, height = device_config.get_resolution()
+            if device_config.get_config("orientation") == "vertical":
+                width, height = height, width
+            image = resize_image(image, (width, height), plugin.config.get("image_settings", []))
+            image = apply_image_enhancement(image, device_config.get_config("image_settings", default={}))
+        finally:
+            RENDER_LOCK.release()
+
+        buffer = BytesIO()
+        image.save(buffer, format='PNG')
+        image_b64 = base64.b64encode(buffer.getvalue()).decode()
+
+        return jsonify({
+            "success": True,
+            "image": f"data:image/png;base64,{image_b64}",
+            "uploaded_files": uploaded_files
+        }), 200
+
+    except Exception as e:
+        logger.exception(f"Error in preview: {str(e)}")
+        return jsonify({"error": f"An error occurred: {str(e)}"}), 500

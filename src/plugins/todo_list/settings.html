@@ -5,7 +5,7 @@
       gap: 1rem;
       margin-bottom: 1rem;
     }
-    
+
     .list {
       display: flex;
       flex-direction: column;
@@ -31,6 +31,8 @@
 
   </style>
 
+<div id="preview-widget"></div>
+
 <div class="form-group">
     <div class="form-group nowrap">
         <label for="title" class="form-label">Title</label>
@@ -39,9 +41,9 @@
     <div class="form-group nowrap">
         <label for="listStyle" class="form-label">List Style:</label>
         <select id="listStyle" name="listStyle" class="form-input">
-            <option value="disc">Disc (●)</option>
-            <option value="square">Square (◼)</option>
-            <option value="'\25C6  '">Diamond (◆)</option>
+            <option value="disc">Disc (&#9679;)</option>
+            <option value="square">Square (&#9724;)</option>
+            <option value="'\25C6  '">Diamond (&#9670;)</option>
             <option value="decimal">Decimal</option>
             <option value="lower-roman">Roman Numeral</option>
             <option value="lower-alpha">Alphabetical</option>
@@ -90,6 +92,7 @@
         list.querySelector(".delete-button").onclick = () => {
             list.remove();
             listCount--;
+            PreviewManager.refresh();
         };
 
         container.appendChild(list);
@@ -116,10 +119,17 @@
 
         // Handle Add button
         addBtn.onclick = () => {
-            if (listCount < maxLists) createList();
+            if (listCount < maxLists) {
+                createList();
+                PreviewManager.refresh();
+            }
         };
 
         document.getElementById('fontSize').value = fontSize;
         document.getElementById('listStyle').value = listStyle;
+
+        PreviewManager.init('todo_list', {
+            required: { 'list[]': 'add a list first' }
+        });
     });
 </script>

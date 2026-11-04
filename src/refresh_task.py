@@ -12,6 +12,10 @@ from PIL import Image
 
 logger = logging.getLogger(__name__)
 
+# Serializes plugin rendering across the refresh thread and web requests (e.g. live
+# previews) so at most one Chromium screenshot process runs at a time.
+RENDER_LOCK = threading.Lock()
+
 class RefreshTask:
     """Handles the logic for refreshing the display using a background thread."""
 
@@ -111,7 +115,8 @@ class RefreshTask:
                             logger.error(f"Plugin config not found for '{refresh_action.get_plugin_id()}'.")
                             continue
                         plugin = get_plugin_instance(plugin_config)
-                        image = refresh_action.execute(plugin, self.device_config, current_dt)
+                        with RENDER_LOCK:
+                            image = refresh_action.execute(plugin, self.device_config, current_dt)
                         image_hash = compute_image_hash(image)
 
                         refresh_info = refresh_action.get_refresh_info()
