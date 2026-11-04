@@ -132,6 +132,42 @@
             }
         }
 
+        async function handlePreview() {
+            const loadingIndicator = document.getElementById('loadingIndicator');
+            loadingIndicator.style.display = 'block';
+
+            const form = document.getElementById('settingsForm');
+            const formData = new FormData(form);
+
+            // Add uploaded files to the form under its key
+            Object.keys(uploadedFiles).forEach(key => {
+                if (uploadedFiles[key].length > 0) {
+                    uploadedFiles[key].forEach(file => {
+                        formData.append(key, file);
+                    });
+                }
+            });
+
+            try {
+                const response = await fetch('{{ url_for("plugin.preview_plugin") }}', {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await response.json();
+                if (response.ok) {
+                    document.getElementById('previewImage').src = result.image;
+                    openModal('previewModal');
+                } else {
+                    showResponseModal('failure', `Error!  ${result.error}`);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('An error occurred while generating the preview.');
+            } finally {
+                loadingIndicator.style.display = 'none';
+            }
+        }
+
         function openModal(modal_id) {
             // Handle refresh settings modal specially with the manager
             if (modal_id === 'refreshSettingsModal' && editRefreshManager) {
@@ -154,6 +190,10 @@
             const modal = document.getElementById('scheduleModal');
             if (event.target === modal) {
                 modal.style.display = 'none';
+            }
+            const previewModal = document.getElementById('previewModal');
+            if (event.target === previewModal) {
+                previewModal.style.display = 'none';
             }
         };
 
@@ -404,9 +444,11 @@
 
             <div class="buttons-container">
                 {% if plugin_instance %}
+                    <button type="button" onclick="handlePreview()" class="action-button">Preview</button>
                     <button type="button" onclick="handleAction('update_instance')" class="action-button">Save</button>
                     <button type="button" onclick="openModal('scheduleModal')" class="action-button right">Save As...</button>
                 {% else %}
+                    <button type="button" onclick="handlePreview()" class="action-button left">Preview</button>
                     <button type="button" onclick="handleAction()" class="action-button left">Update Now</button>
                     <button type="button" onclick="openModal('scheduleModal')" class="action-button right">Add to Playlist</button>
                 {% endif %}
@@ -461,6 +503,19 @@
             </form>
             <div class="buttons-container">
                 <button type="button" onclick="handleAction('add_to_playlist')" class="action-button">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Preview Modal -->
+    <div id="previewModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" onclick="closeModal('previewModal')">×</span>
+            <h2>Preview</h2>
+            <div class="separator"></div>
+            <p class="preview-hint">This is how the plugin will look on your display. It has not been sent to the device.</p>
+            <div class="preview-image-container">
+                <img id="previewImage" alt="Plugin preview" />
             </div>
         </div>
     </div>
