@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Widgets</title>
+    <script>
+        (function() {
+            const theme = localStorage.getItem('inkypi-theme') ||
+                         (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+            if (theme === 'dark') {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            }
+        })();
+    </script>
+    <link rel= "stylesheet" type= "text/css" href= "{{ url_for('static',filename='styles/main.css') }}">
+    <script src="{{ url_for('static', filename='scripts/dark_mode.js') }}"></script>
+    <script src="{{ url_for('static', filename='scripts/response_modal.js') }}"></script>
+    <script src="{{ url_for('static', filename='scripts/refresh_settings_manager.js') }}"></script>
+    <style>
+        .repo-link {
+            margin-left: 8px;
+            font-size: 0.85em;
+            color: var(--accent-primary);
+            text-decoration: none;
+        }
+        .repo-link:hover { text-decoration: underline }
+        /* Overlay List Styles */
+        .widget-list {
+            list-style: none;
+            padding: 0;
+            margin: 15px 0;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            background-color: var(--bg-secondary);
+        }
+
+        .widget-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 15px;
+            border-bottom: 1px solid var(--border-color);
+            transition: background-color 0.2s ease;
+        }
+
+        .widget-item.draggable {
+            cursor: move;
+        }
+
+        .widget-item:last-child {
+            border-bottom: none;
+        }
+
+        .widget-item:hover {
+            background-color: var(--button-hover);
+        }
+
+        .widget-item.static {
+            cursor: default;
+            pointer-events: none;
+        }
+
+        .widget-name {
+            flex-grow: 1;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .remove-button, .add-button {
+            padding: 6px 12px;
+            margin-left: 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.2s ease;
+        }
+
+        .remove-button {
+            background-color: var(--remove-btn-color);
+            color: white;
+        }
+
+        .remove-button:hover {
+            background-color: var(--remove-btn-hover);
+        }
+
+        .add-button {
+            background-color: var(--accent-primary);
+            color: white;
+        }
+
+        .add-button:hover {
+            background-color: var(--accent-hover);
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .widgets-content h2 {
+            font-size: 1.4em;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-align: left;
+            transition: color 0.3s ease;
+        }
+
+        .widgets-content .form-group {
+            margin: 10px 0px;
+        }
+
+    </style>
+    <script>
+        async function toggleWidget(event, widgetId, enable) {
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            try {
+                const response = await fetch("{{ url_for('widget.toggle_widget') }}", {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ widget_id: widgetId, enable: enable })
+                });
+                
+                const result = await response.json();
+                if (response.ok) {
+                    sessionStorage.setItem('showSuccessModal', 'true');
+                    location.reload();
+                } else {
+                    alert('Error: ' + result.error);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('An error occurred while toggling widget.');
+            }
+        }
+
+        document.addEventListener("DOMContentLoaded", function() {
+            if (sessionStorage.getItem('showSuccessModal') === 'true') {
+                showResponseModal('success', 'Settings saved successfully');
+                sessionStorage.removeItem('showSuccessModal');
+            }
+        });
+
+        async function saveOrder() {
+            const widgetList = document.getElementById('active-widget-list');
+            const items = widgetList.querySelectorAll('li[data-widget-id]');
+            const order = Array.from(items).map(item => item.getAttribute('data-widget-id'));
+            const response = await fetch("{{ url_for('widget.reorder_widgets') }}", {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ order: order })
+            });
+            
+            const result = await response.json();
+            return {
+                status: response.ok,
+                result: result
+            };
+        }
+
+        async function saveSettings() {
+            try {
+                const corner = document.getElementById('corner').value;
+                const orientation = document.getElementById('orientation').value;
+                const spacing = document.getElementById('spacing').value;
+                const margin = document.getElementById('margin').value;
+                
+                const response = await fetch("{{ url_for('widget.save_widget_settings') }}", {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ corner: corner, orientation: orientation, spacing: spacing, margin: margin })
+                });
+                
+                const saveResult = await response.json();
+                if (!response.ok) {
+                    showResponseModal('failure', `Error!  ${saveResult.error}`);
+                    return;
+                }
+
+                const {status, result} = await saveOrder();
+                if (!status) {
+                    showResponseModal('failure', `Error!  ${result.error}`);
+                    return;
+                }
+
+                showResponseModal('success', 'Widget settings saved successfully!');
+            } catch (error) {
+                console.error('Error:', error);
+                showResponseModal('failure', `Error!  ${error}`);
+            }
+        }
+
+        function allowDrop(ev) {
+            ev.preventDefault();
+        }
+
+        function drag(ev) {
+            ev.dataTransfer.effectAllowed = 'move';
+            ev.dataTransfer.setData('text/plain', ev.target.dataset.widgetId);
+        }
+
+        function drop(ev) {
+            ev.preventDefault();
+            const widgetId = ev.dataTransfer.getData('text/plain');
+            const draggedElement = document.querySelector(`li[data-widget-id="${widgetId}"]`);
+            const targetElement = ev.target.closest('li');
+            
+            if (draggedElement && targetElement && draggedElement !== targetElement) {
+                const widgetList = document.getElementById('active-widget-list');
+                if (widgetList.contains(targetElement)) {
+                    const rect = targetElement.getBoundingClientRect();
+                    const offset = ev.clientY - rect.top;
+                    
+                    if (offset < rect.height / 2) {
+                        targetElement.parentNode.insertBefore(draggedElement, targetElement);
+                    } else {
+                        targetElement.parentNode.insertBefore(draggedElement, targetElement.nextSibling);
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body>
+    <div class="frame">
+        <!-- Back Button -->
+        <button onclick="history.back()" class="back-button">← Back</button>
+        <!-- Settings Header -->
+        <div class="app-header">
+            <div class="header-content">
+                <div class="title-container">
+                    <img src="{{ url_for('static', filename='icons/playlist.png') }}" alt="playlist icon" class="app-icon">
+                    <h1 class="app-title">Widgets</h1>
+                </div>
+            </div>
+        </div>
+        <div class="separator"></div>
+
+        <!-- Widgets Container -->           
+        <form class="settings-form widgets-content">
+
+            <h2>Enabled Widgets</h2>
+
+            <ul id="active-widget-list" class="widget-list">
+                {% for widget in enabled_widgets %}
+                <li data-widget-id="{{ widget.id }}" draggable="true" ondragstart="drag(event)" ondrop="drop(event)" ondragover="allowDrop(event)" class="widget-item draggable">
+                    <span class="widget-name">{{ widget.display_name }}</span>
+                    {% if widget.repository %}
+                        <a href="{{ widget.repository }}" class="repo-link" target="_blank" rel="noopener">Repo</a>
+                    {% endif %}
+                    <div style="display: flex; align-items: center;">
+                        <a href="{{ url_for('widget.widget_settings_page', widget_id=widget.id) }}" class="remove-button" style="background-color: var(--button-bg, #444); color: var(--text-primary, white); text-decoration: none; margin-right: 5px;">Settings</a>
+                        <button type="button" onclick="toggleWidget(event, '{{ widget.id }}', false)" class="remove-button" title="Remove">✕</button>
+                    </div>
+                </li>
+                {% endfor %}
+                {% if not enabled_widgets %}
+                <li draggable="false" class="widget-item static">
+                    <span class="widget-name">No active widgets</span>
+                </li>
+                {% endif %}
+            </ul>
+    
+            <div class="separator"></div>
+            <h2>Available Widgets</h2>
+    
+            {% if not available_widgets %}
+            <ul class="widget-list">
+                <li class="widget-item static">
+                    <span class="widget-name">All widgets are enabled.</span>
+                </li>
+            </ul>
+            {% else %}
+            <ul class="widget-list">
+                {% for widget in available_widgets %}
+                <li class="widget-item">
+                    <span class="widget-name">{{ widget.display_name }}</span>
+                    {% if widget.repository %}
+                        <a href="{{ widget.repository }}" class="repo-link" target="_blank" rel="noopener">Repo</a>
+                    {% endif %}
+                    <button type="button" onclick="toggleWidget(event, '{{ widget.id }}', true)" class="add-button" title="Add">+</button>
+                </li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+    
+            <div class="separator"></div>
+            <h2>Global Settings</h2>
+
+
+            <div id="settings-container">
+                <div class="form-group">
+                    <label for="corner" class="form-label">Corner:</label>
+                    <select id="corner" class="form-input">
+                        <option value="top-left" {% if widget_settings.get('corner') == 'top-left' %}selected{% endif %}>Top Left</option>
+                        <option value="top-right" {% if widget_settings.get('corner') == 'top-right' %}selected{% endif %}>Top Right</option>
+                        <option value="bottom-left" {% if widget_settings.get('corner') == 'bottom-left' %}selected{% endif %}>Bottom Left</option>
+                        <option value="bottom-right" {% if widget_settings.get('corner') == 'bottom-right' %}selected{% endif %}>Bottom Right</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="orientation" class="form-label">Orientation:</label>
+                    <select id="orientation" class="form-input">
+                        <option value="horizontal" {% if widget_settings.get('orientation') == 'horizontal' %}selected{% endif %}>Horizontal</option>
+                        <option value="vertical" {% if widget_settings.get('orientation') == 'vertical' %}selected{% endif %}>Vertical</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="spacing" class="form-label">Spacing (px):</label>
+                    <input type="number" id="spacing" class="form-input" value="{{ widget_settings.get('spacing', 10) }}" min="0" max="50">
+                </div>
+
+                <div class="form-group">
+                    <label for="margin" class="form-label">Margin (px):</label>
+                    <input type="number" id="margin" class="form-input" value="{{ widget_settings.get('margin', 10) }}" min="0" max="50">
+                </div>
+            </div>
+        </form>
+
+        <div class="buttons-container">
+            <button type="button" onclick="saveSettings()" class="action-button">Save</button>
+        </div>
+    </div>
+    <!-- Success/Error Modal -->
+    {% include 'response_modal.html' %}
+</body>
+</html>

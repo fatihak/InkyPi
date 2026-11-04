@@ -7,8 +7,10 @@ import pytz
 from datetime import datetime, timezone
 from plugins.plugin_registry import get_plugin_instance
 from utils.image_utils import compute_image_hash
+from utils.widget_utils import generate_and_apply_widgets
 from model import RefreshInfo, PlaylistManager
 from PIL import Image
+
 
 logger = logging.getLogger(__name__)
 
@@ -231,7 +233,9 @@ class ManualRefresh(RefreshAction):
 
     def execute(self, plugin, device_config, current_dt: datetime):
         """Performs a manual refresh using the stored plugin ID and settings."""
-        return plugin.generate_image(self.plugin_settings, device_config)
+        image = plugin.generate_image(self.plugin_settings, device_config)
+        image = generate_and_apply_widgets(image, device_config)
+        return image
 
     def get_refresh_info(self):
         """Return refresh metadata as a dictionary."""
@@ -277,6 +281,8 @@ class PlaylistRefresh(RefreshAction):
             logger.info(f"Refreshing plugin instance. | plugin_instance: '{self.plugin_instance.name}'") 
             # Generate a new image
             image = plugin.generate_image(self.plugin_instance.settings, device_config)
+            # Apply widgets
+            image = generate_and_apply_widgets(image, device_config)
             image.save(plugin_image_path)
             self.plugin_instance.latest_refresh_time = current_dt.isoformat()
         else:
@@ -284,5 +290,7 @@ class PlaylistRefresh(RefreshAction):
             # Load the existing image from disk
             with Image.open(plugin_image_path) as img:
                 image = img.copy()
+            # Apply widgets to cached image
+            image = generate_and_apply_widgets(image, device_config)
 
         return image

@@ -17,6 +17,7 @@ usage() {
     echo "Usage:"
     echo "  inkypi run"
     echo "  inkypi plugin <subcommand> [args]"
+    echo "  inkypi widget <subcommand> [args]"
     echo ""
 }
 
@@ -29,12 +30,19 @@ run_plugin_cli() {
     exec "$PROGRAM_PATH/cli/inkypi-plugin" "$@"
 }
 
+run_widget_cli() {
+    exec "$PROGRAM_PATH/cli/inkypi-widget" "$@"
+}
+
 case "$command" in
     run)
         run_app
         ;;
     plugin)
         run_plugin_cli "$@"
+        ;;
+    widget)
+        run_widget_cli "$@"
         ;;
     ""|-h|--help|help)
         usage
