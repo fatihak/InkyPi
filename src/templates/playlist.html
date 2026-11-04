@@ -127,7 +127,7 @@
             const img = document.getElementById('thumbnailPreviewImage');
             const info = document.getElementById('thumbnailPreviewInfo');
 
-            const imageUrl = `/plugin_instance_image/${encodeURIComponent(playlistName)}/${encodeURIComponent(pluginId)}/${encodeURIComponent(instanceName)}`;
+            const imageUrl = `{{ url_for('plugin.plugin_instance_image', playlist_name='__PL__', plugin_id='__PI__', instance_name='__IN__') }}`.replace('__PL__', encodeURIComponent(playlistName)).replace('__PI__', encodeURIComponent(pluginId)).replace('__IN__', encodeURIComponent(instanceName));
             img.src = imageUrl;
             info.textContent = `Plugin: ${pluginName} | Instance: ${instanceName}`;
             modal.style.display = 'block';
