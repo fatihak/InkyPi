@@ -57,8 +57,20 @@ class Config:
         logger.debug(f"Writing device config to {self.config_file}")
         self.update_value("playlist_config", self.playlist_manager.to_dict())
         self.update_value("refresh_info", self.refresh_info.to_dict())
-        with open(self.config_file, 'w') as outfile:
-            json.dump(self.config, outfile, indent=4)
+        # Write to a temp file in the same directory and swap it in with
+        # os.replace() (atomic), so a crash or power loss mid-write leaves the
+        # previous device.json intact instead of an empty or truncated file.
+        tmp_file = f"{self.config_file}.tmp"
+        try:
+            with open(tmp_file, 'w') as outfile:
+                json.dump(self.config, outfile, indent=4)
+                outfile.flush()
+                os.fsync(outfile.fileno())
+            os.replace(tmp_file, self.config_file)
+        except BaseException:
+            if os.path.exists(tmp_file):
+                os.remove(tmp_file)
+            raise
 
     def get_config(self, key=None, default={}):
         """Gets the value of a specific configuration key or returns the entire config if none provided."""
