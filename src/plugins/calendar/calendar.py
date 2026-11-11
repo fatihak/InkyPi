@@ -8,6 +8,7 @@ import recurring_ical_events
 from io import BytesIO
 import logging
 import requests
+from utils.http_client import get_with_deadline
 import hashlib
 import time
 from datetime import datetime, timedelta
@@ -198,15 +199,18 @@ class Calendar(BasePlugin):
         deadline = time.monotonic() + FETCH_DEADLINE_SECONDS
         for attempt in range(1, FETCH_ATTEMPTS + 1):
             try:
-                response = requests.get(calendar_url, timeout=FETCH_TIMEOUT)
+                # The deadline also bounds the download itself (a slow server could
+                # otherwise keep the request open far beyond the read timeout)
+                response = get_with_deadline(calendar_url, deadline, timeout=FETCH_TIMEOUT)
                 response.raise_for_status()
                 cal = self._normalize_date_values(icalendar.Calendar.from_ical(response.text))
                 self._write_cache(cache_path, response.text)
                 return cal
             except Exception as e:
-                last_error = e
+                # Never keep the raw exception text: it can contain the private URL
+                last_error = self._describe_error(e)
                 logger.warning(f"Calendar fetch attempt {attempt}/{FETCH_ATTEMPTS} failed for "
-                               f"{self._redact(calendar_url)}: {type(e).__name__}")
+                               f"{self._redact(calendar_url)}: {last_error}")
                 backoff = RETRY_BACKOFF_SECONDS * attempt
                 # Only retry if a full attempt still fits in the time budget
                 if attempt == FETCH_ATTEMPTS or \
@@ -243,13 +247,20 @@ class Calendar(BasePlugin):
 
     @staticmethod
     def _redact(url):
-        """Strip query string/path secrets (private ICS tokens) from logs."""
+        """Strip secrets (query tokens, path, user:password@) from a URL for logs."""
         try:
             from urllib.parse import urlsplit
             parts = urlsplit(url)
-            return f"{parts.scheme}://{parts.netloc}/..."
+            port = f":{parts.port}" if parts.port else ""
+            return f"{parts.scheme}://{parts.hostname}{port}/..."
         except Exception:
             return "<calendar url>"
+
+    @staticmethod
+    def _describe_error(error):
+        """Short diagnostic without the URL (requests' messages embed the full URL)."""
+        status = getattr(getattr(error, "response", None), "status_code", None)
+        return f"{type(error).__name__} (HTTP {status})" if status else type(error).__name__
 
     def get_contrast_color(self, color):
         """

@@ -34,14 +34,17 @@ GOOD = "https://good.example/cal.ics?token=SECRET"
 BAD = "https://bad.example/cal.ics?token=SECRET"
 
 
-def _resp(text):
+def _resp(text, status=200):
     r = mock.Mock()
     r.text = text
+    r.status_code = status
+    r.iter_content = lambda chunk_size=None: [text.encode()]
+    r.close = mock.Mock()
     r.raise_for_status = mock.Mock()
     return r
 
 
-def _fake_get(url, timeout):
+def _fake_get(url, timeout=None, **kwargs):
     if url.startswith("https://bad."):
         raise requests.exceptions.ConnectTimeout("timed out")
     return _resp(ICS)
@@ -90,3 +93,27 @@ def test_duration_end_is_converted_to_timezone(plugin):
     tp = next(e for e in events if e["title"] == "TP")
     assert tp["start"] == "2026-11-13T10:00:00+01:00"
     assert tp["end"] == "2026-11-13T12:00:00+01:00"
+
+
+def test_errors_and_logs_never_contain_the_private_url(plugin, caplog):
+    err = requests.exceptions.HTTPError("404 Client Error for url: " + BAD)
+    err.response = mock.Mock(status_code=404)
+    with mock.patch.object(calendar_module.requests, "get", side_effect=err):
+        with pytest.raises(RuntimeError) as exc:
+            plugin.fetch_ics_events([BAD], ["#ff0000"], TZ, *RANGE)
+    assert "SECRET" not in str(exc.value) and "HTTP 404" in str(exc.value)
+    assert "SECRET" not in caplog.text
+
+
+def test_redact_hides_credentials():
+    assert Calendar._redact("https://user:pa55@host.example:8443/cal.ics?token=x") == "https://host.example:8443/..."
+
+
+def test_slow_download_is_cut_by_the_deadline(plugin, monkeypatch):
+    clock = iter(range(0, 100000, 30))  # every clock reading advances 30 s
+    slow = _resp(ICS)
+    slow.iter_content = lambda chunk_size=None: iter([b"x"] * 100)
+    with mock.patch("time.monotonic", side_effect=lambda: next(clock)), \
+         mock.patch.object(calendar_module.requests, "get", return_value=slow):
+        with pytest.raises(RuntimeError):
+            plugin.fetch_calendar(GOOD)
