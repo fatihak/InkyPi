@@ -2,14 +2,29 @@ from plugins.base_plugin.base_plugin import BasePlugin
 from PIL import Image
 import os
 import requests
+from urllib.parse import quote
+from utils.http_client import get_with_deadline
 import logging
 from datetime import datetime, timedelta, timezone, date
 from astral import moon
 import pytz
 from io import BytesIO
 import math
+import json
+import time
+import hashlib
 
 logger = logging.getLogger(__name__)
+
+
+class APIError(RuntimeError):
+    """Non-2xx answer from a weather API (message holds the status, never the URL)."""
+
+FETCH_ATTEMPTS = 3
+FETCH_TIMEOUT = (10, 20)            # (connect, read) seconds
+FETCH_DEADLINE_SECONDS = 60         # total budget per request, retries included
+RETRY_BACKOFF_SECONDS = 5
+CACHE_MAX_AGE_SECONDS = 6 * 3600    # serve last good data for at most 6h when the API is down
         
 def get_moon_phase_name(phase_age: float) -> str:
     """Determines the name of the lunar phase based on the age of the moon."""
@@ -52,8 +67,8 @@ WEATHER_URL = "https://api.openweathermap.org/data/3.0/onecall?lat={lat}&lon={lo
 AIR_QUALITY_URL = "http://api.openweathermap.org/data/2.5/air_pollution?lat={lat}&lon={long}&appid={api_key}"
 GEOCODING_URL = "http://api.openweathermap.org/geo/1.0/reverse?lat={lat}&lon={long}&limit=1&appid={api_key}"
 
-OPEN_METEO_FORECAST_URL = "https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={long}&hourly=weather_code,temperature_2m,precipitation,precipitation_probability,relative_humidity_2m,surface_pressure,visibility&daily=weathercode,temperature_2m_max,temperature_2m_min,sunrise,sunset&current=temperature,windspeed,winddirection,is_day,precipitation,weather_code,apparent_temperature&timezone=auto&models=best_match&forecast_days={forecast_days}"
-OPEN_METEO_AIR_QUALITY_URL = "https://air-quality-api.open-meteo.com/v1/air-quality?latitude={lat}&longitude={long}&hourly=european_aqi,uv_index,uv_index_clear_sky&timezone=auto"
+OPEN_METEO_FORECAST_URL = "https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={long}&hourly=weather_code,temperature_2m,precipitation,precipitation_probability,relative_humidity_2m,surface_pressure,visibility&daily=weathercode,temperature_2m_max,temperature_2m_min,sunrise,sunset&current=temperature,windspeed,winddirection,is_day,precipitation,weather_code,apparent_temperature&timezone={timezone}&models=best_match&forecast_days={forecast_days}"
+OPEN_METEO_AIR_QUALITY_URL = "https://air-quality-api.open-meteo.com/v1/air-quality?latitude={lat}&longitude={long}&hourly=european_aqi,uv_index,uv_index_clear_sky&timezone={timezone}"
 OPEN_METEO_UNIT_PARAMS = {
     "standard": "temperature_unit=celsius&wind_speed_unit=ms&precipitation_unit=mm",  # temperature is converted to Kelvin later
     "metric":   "temperature_unit=celsius&wind_speed_unit=ms&precipitation_unit=mm",
@@ -99,7 +114,7 @@ class Weather(BasePlugin):
                 if not api_key:
                     raise RuntimeError("Open Weather Map API Key not configured.")
                 weather_data = self.get_weather_data(api_key, units, lat, long)
-                aqi_data = self.get_air_quality(api_key, lat, long)
+                aqi_data = self._optional(self.get_air_quality, api_key, lat, long)
                 if settings.get('titleSelection', 'location') == 'location':
                     title = self.get_location(api_key, lat, long)
                 if settings.get('weatherTimeZone', 'locationTimeZone') == 'locationTimeZone':
@@ -111,8 +126,8 @@ class Weather(BasePlugin):
                     template_params = self.parse_weather_data(weather_data, aqi_data, tz, units, time_format, lat)
             elif weather_provider == "OpenMeteo":
                 forecast_days = 7
-                weather_data = self.get_open_meteo_data(lat, long, units, forecast_days + 1)
-                aqi_data = self.get_open_meteo_air_quality(lat, long)
+                weather_data = self.get_open_meteo_data(lat, long, units, forecast_days + 1, tz)
+                aqi_data = self._optional(self.get_open_meteo_air_quality, lat, long, tz)
                 template_params = self.parse_open_meteo_data(weather_data, aqi_data, tz, units, time_format, lat)
             else:
                 raise RuntimeError(f"Unknown weather provider: {weather_provider}")
@@ -172,7 +187,7 @@ class Weather(BasePlugin):
     def parse_open_meteo_data(self, weather_data, aqi_data, tz, units, time_format, lat):
         current = weather_data.get("current", {})
         daily = weather_data.get('daily', {})
-        dt = datetime.fromisoformat(current.get('time')).astimezone(tz) if current.get('time') else datetime.now(tz)
+        dt = self._parse_local(current.get('time'), tz) if current.get('time') else datetime.now(tz)
         weather_code = current.get("weather_code", 0)
         is_day = current.get("is_day", 1)
         current_icon = self.map_weather_code_to_icon(weather_code, is_day)
@@ -321,8 +336,8 @@ class Weather(BasePlugin):
             forecast.append(
                 {
                     "day": day_label,
-                    "high": int(day["temp"]["max"]),
-                    "low": int(day["temp"]["min"]),
+                    "high": round(day["temp"]["max"]),
+                    "low": round(day["temp"]["min"]),
                     "icon": weather_icon_path,
                     "moon_phase_pct": moon_pct,
                     "moon_phase_icon": moon_icon_path,
@@ -368,8 +383,8 @@ class Weather(BasePlugin):
 
             forecast.append({
                 "day": day_label,
-                "high": int(temp_max[i]) if i < len(temp_max) else 0,
-                "low": int(temp_min[i]) if i < len(temp_min) else 0,
+                "high": round(temp_max[i]) if i < len(temp_max) and temp_max[i] is not None else "-",
+                "low": round(temp_min[i]) if i < len(temp_min) and temp_min[i] is not None else "-",
                 "icon": weather_icon_path,
                 "moon_phase_pct": f"{illum_pct:.0f}",
                 "moon_phase_icon": moon_icon_path
@@ -407,7 +422,7 @@ class Weather(BasePlugin):
                 precip_value = total_precip_mm 
             hour_forecast = {
                 "time": self.format_time(dt, time_format, hour_only=True),
-                "temperature": int(hour.get("temp")),
+                "temperature": round(hour.get("temp")),
                 "precipitation": hour.get("pop"),
                 "rain": round(precip_value, 2),
                 "icon": self.get_plugin_dir(f'icons/{icon_name}.png')
@@ -427,15 +442,15 @@ class Weather(BasePlugin):
         
         sun_map = {}
         for sr_s, ss_s in zip(sunrises, sunsets):
-            sr_dt = datetime.fromisoformat(sr_s).astimezone(tz)
-            ss_dt = datetime.fromisoformat(ss_s).astimezone(tz)
+            sr_dt = self._parse_local(sr_s, tz)
+            ss_dt = self._parse_local(ss_s, tz)
             sun_map[sr_dt.date()] = (sr_dt, ss_dt)
         
         current_time_in_tz = datetime.now(tz)
         start_index = 0
         for i, time_str in enumerate(times):
             try:
-                dt_hourly = datetime.fromisoformat(time_str).astimezone(tz)
+                dt_hourly = self._parse_local(time_str, tz)
                 if dt_hourly.date() == current_time_in_tz.date() and dt_hourly.hour >= current_time_in_tz.hour:
                     start_index = i
                     break
@@ -452,7 +467,7 @@ class Weather(BasePlugin):
         sliced_codes = codes[start_index:]
 
         for i in range(min(24, len(sliced_times))):
-            dt = datetime.fromisoformat(sliced_times[i]).astimezone(tz)
+            dt = self._parse_local(sliced_times[i], tz)
             sunrise, sunset = sun_map.get(dt.date(), (None, None))
             is_day = 0
             if sunrise and sunset:
@@ -461,7 +476,7 @@ class Weather(BasePlugin):
             icon_name = self.map_weather_code_to_icon(code, is_day)
             hour_forecast = {
                 "time": self.format_time(dt, time_format, True),
-                "temperature": int(sliced_temperatures[i]) if i < len(sliced_temperatures) else 0,
+                "temperature": round(sliced_temperatures[i]) if i < len(sliced_temperatures) and sliced_temperatures[i] is not None else 0,
                 "precipitation": (sliced_precipitation_probabilities[i] / 100) if i < len(sliced_precipitation_probabilities) else 0,
                 "rain": (sliced_rain[i]) if i < len(sliced_rain) else 0,
                 "icon": self.get_plugin_dir(f"icons/{icon_name}.png")
@@ -528,17 +543,20 @@ class Weather(BasePlugin):
         })
 
         visibility = weather.get('current', {}).get("visibility")
-        if units == "imperial":
-            # convert from m to mi
-            visibility /= 1609.
-            at_max_visibility = visibility >= 6.2
+        if visibility is None:
+            visibility_str = "N/A"
         else:
-            # convert from m to km
-            visibility /= 1000.
-            at_max_visibility = visibility >= 10
-        visibility_str = f"{visibility:.1f}"
-        if at_max_visibility:
-            visibility_str = u"\u2265" + visibility_str
+            if units == "imperial":
+                # convert from m to mi
+                visibility /= 1609.
+                at_max_visibility = visibility >= 6.2
+            else:
+                # convert from m to km
+                visibility /= 1000.
+                at_max_visibility = visibility >= 10
+            visibility_str = f"{visibility:.1f}"
+            if at_max_visibility:
+                visibility_str = u"\u2265" + visibility_str
         data_points.append({
             "label": "Visibility",
             "measurement": visibility_str,
@@ -546,11 +564,12 @@ class Weather(BasePlugin):
             "icon": self.get_plugin_dir('icons/visibility.png')
         })
 
-        aqi = air_quality.get('list', [])[0].get("main", {}).get("aqi")
+        aqi_list = (air_quality or {}).get('list') or [{}]
+        aqi = aqi_list[0].get("main", {}).get("aqi")
         data_points.append({
             "label": "Air Quality",
-            "measurement": aqi,
-            "unit": ["Good", "Fair", "Moderate", "Poor", "Very Poor"][int(aqi)-1],
+            "measurement": aqi if aqi is not None else "N/A",
+            "unit": ["Good", "Fair", "Moderate", "Poor", "Very Poor"][int(aqi)-1] if aqi in (1, 2, 3, 4, 5) else "",
             "icon": self.get_plugin_dir('icons/aqi.png')
         })
 
@@ -568,7 +587,7 @@ class Weather(BasePlugin):
         # Sunrise
         sunrise_times = daily_data.get('sunrise', [])
         if sunrise_times:
-            sunrise_dt = datetime.fromisoformat(sunrise_times[0]).astimezone(tz)
+            sunrise_dt = self._parse_local(sunrise_times[0], tz)
             data_points.append({
                 "label": "Sunrise",
                 "measurement": self.format_time(sunrise_dt, time_format, include_am_pm=False),
@@ -581,7 +600,7 @@ class Weather(BasePlugin):
         # Sunset
         sunset_times = daily_data.get('sunset', [])
         if sunset_times:
-            sunset_dt = datetime.fromisoformat(sunset_times[0]).astimezone(tz)
+            sunset_dt = self._parse_local(sunset_times[0], tz)
             data_points.append({
                 "label": "Sunset",
                 "measurement": self.format_time(sunset_dt, time_format, include_am_pm=False),
@@ -602,78 +621,49 @@ class Weather(BasePlugin):
         })
 
         # Humidity
-        current_humidity = "N/A"
-        humidity_hourly_times = hourly_data.get('time', [])
-        humidity_values = hourly_data.get('relative_humidity_2m', [])
-        for i, time_str in enumerate(humidity_hourly_times):
-            try:
-                if datetime.fromisoformat(time_str).astimezone(tz).hour == current_time.hour:
-                    current_humidity = int(humidity_values[i])
-                    break
-            except ValueError:
-                logger.warning(f"Could not parse time string {time_str} for humidity.")
-                continue
+        humidity = self._value_at_current_hour(hourly_data.get('time', []),
+                                               hourly_data.get('relative_humidity_2m', []), tz, current_time)
+        current_humidity = round(humidity) if humidity is not None else "N/A"
         data_points.append({
             "label": "Humidity", "measurement": current_humidity, "unit": '%',
             "icon": self.get_plugin_dir('icons/humidity.png')
         })
 
         # Pressure
-        current_pressure = "N/A"
-        pressure_hourly_times = hourly_data.get('time', [])
-        pressure_values = hourly_data.get('surface_pressure', [])
-        for i, time_str in enumerate(pressure_hourly_times):
-            try:
-                if datetime.fromisoformat(time_str).astimezone(tz).hour == current_time.hour:
-                    current_pressure = int(pressure_values[i])
-                    break
-            except ValueError:
-                logger.warning(f"Could not parse time string {time_str} for pressure.")
-                continue
+        pressure = self._value_at_current_hour(hourly_data.get('time', []),
+                                               hourly_data.get('surface_pressure', []), tz, current_time)
+        current_pressure = round(pressure) if pressure is not None else "N/A"
         data_points.append({
             "label": "Pressure", "measurement": current_pressure, "unit": 'hPa',
             "icon": self.get_plugin_dir('icons/pressure.png')
         })
 
         # UV Index
-        uv_index_hourly_times = aqi_data.get('hourly', {}).get('time', [])
-        uv_index_values = aqi_data.get('hourly', {}).get('uv_index', [])
-        current_uv_index = "N/A"
-        for i, time_str in enumerate(uv_index_hourly_times):
-            try:
-                if datetime.fromisoformat(time_str).astimezone(tz).hour == current_time.hour:
-                    current_uv_index = uv_index_values[i]
-                    break
-            except ValueError:
-                logger.warning(f"Could not parse time string {time_str} for UV Index.")
-                continue
+        aqi_hourly = (aqi_data or {}).get('hourly', {})
+        uv_index = self._value_at_current_hour(aqi_hourly.get('time', []), aqi_hourly.get('uv_index', []),
+                                               tz, current_time)
+        current_uv_index = round(uv_index, 1) if uv_index is not None else "N/A"
         data_points.append({
             "label": "UV Index", "measurement": current_uv_index, "unit": '',
             "icon": self.get_plugin_dir('icons/uvi.png')
         })
 
         # Visibility
-        current_visibility = "N/A"
-        visibility_hourly_times = hourly_data.get('time', [])
-        visibility_values = hourly_data.get('visibility', [])
         if units == "imperial":
             visibility_conversion = 1/5280.     # ft to mi
             visibility_max = 6.2                # mi
         else:
             visibility_conversion = 0.001       # m to km
             visibility_max = 10.                # km
-        for i, time_str in enumerate(visibility_hourly_times):
-            try:
-                if datetime.fromisoformat(time_str).astimezone(tz).hour == current_time.hour:
-                    current_visibility = visibility_values[i]*visibility_conversion
-                    at_max_visibility = current_visibility >= visibility_max
-                    break
-            except ValueError:
-                logger.warning(f"Could not parse time string {time_str} for visibility.")
-                continue
-        visibility_str = f"{current_visibility:.1f}"
-        if at_max_visibility:
-            visibility_str = u"\u2265" + visibility_str
+        visibility = self._value_at_current_hour(hourly_data.get('time', []),
+                                                 hourly_data.get('visibility', []), tz, current_time)
+        if visibility is not None:
+            current_visibility = visibility * visibility_conversion
+            visibility_str = f"{current_visibility:.1f}"
+            if current_visibility >= visibility_max:
+                visibility_str = u"\u2265" + visibility_str
+        else:
+            visibility_str = "N/A"
         data_points.append({
             "label": "Visibility", 
             "measurement": visibility_str, 
@@ -682,20 +672,12 @@ class Weather(BasePlugin):
         })
 
         # Air Quality
-        aqi_hourly_times = aqi_data.get('hourly', {}).get('time', [])
-        aqi_values = aqi_data.get('hourly', {}).get('european_aqi', [])
-        current_aqi = "N/A"
-        for i, time_str in enumerate(aqi_hourly_times):
-            try:
-                if datetime.fromisoformat(time_str).astimezone(tz).hour == current_time.hour:
-                    current_aqi = round(aqi_values[i], 1)
-                    break
-            except ValueError:
-                logger.warning(f"Could not parse time string {time_str} for AQI.")
-                continue
+        aqi = self._value_at_current_hour(aqi_hourly.get('time', []), aqi_hourly.get('european_aqi', []),
+                                          tz, current_time)
+        current_aqi = round(aqi) if aqi is not None else "N/A"
         scale = ""
-        if current_aqi and current_aqi != "N/A":
-            scale = ["Good","Fair","Moderate","Poor","Very Poor","Ext Poor"][min(current_aqi//20,5)]
+        if current_aqi != "N/A":
+            scale = ["Good","Fair","Moderate","Poor","Very Poor","Ext Poor"][max(0, min(int(current_aqi)//20, 5))]
         data_points.append({
             "label": "Air Quality", "measurement": current_aqi,
             "unit": scale, "icon": self.get_plugin_dir('icons/aqi.png')
@@ -724,56 +706,115 @@ class Weather(BasePlugin):
 
     def get_weather_data(self, api_key, units, lat, long):
         url = WEATHER_URL.format(lat=lat, long=long, units=units, api_key=api_key)
-        response = requests.get(url, timeout=30)
-        if not 200 <= response.status_code < 300:
-            logger.error(f"Failed to retrieve weather data: {response.content}")
-            raise RuntimeError("Failed to retrieve weather data.")
-
-        return response.json()
+        return self._fetch_json(url, "weather data")
 
     def get_air_quality(self, api_key, lat, long):
         url = AIR_QUALITY_URL.format(lat=lat, long=long, api_key=api_key)
-        response = requests.get(url, timeout=30)
+        return self._fetch_json(url, "air quality data")
 
-        if not 200 <= response.status_code < 300:
-            logger.error(f"Failed to get air quality data: {response.content}")
-            raise RuntimeError("Failed to retrieve air quality data.")
+    @staticmethod
+    def _optional(fetch, *args):
+        """Air quality / UV are secondary: never fail the whole render because of them."""
+        try:
+            return fetch(*args)
+        except Exception as e:
+            logger.warning(f"Optional weather data unavailable: {e}")
+            return {}
 
-        return response.json()
+    def _fetch_json(self, url, label):
+        """GET a JSON API with retries; fall back to the last good response cached on disk."""
+        cache_path = self._cache_path(url)
+        deadline = time.monotonic() + FETCH_DEADLINE_SECONDS
+        last_error = None
+        for attempt in range(1, FETCH_ATTEMPTS + 1):
+            try:
+                # The deadline also bounds the download itself, not only the retries
+                response = get_with_deadline(url, deadline, timeout=FETCH_TIMEOUT)
+                if not 200 <= response.status_code < 300:
+                    raise APIError(f"HTTP {response.status_code}: {response.text[:200]}")
+                data = response.json()
+                self._write_cache(cache_path, data)
+                return data
+            except APIError as e:
+                last_error = str(e)  # status and API message, no URL
+                logger.warning(f"Failed to retrieve {label} (attempt {attempt}/{FETCH_ATTEMPTS}): {last_error}")
+            except Exception as e:
+                # requests' messages embed the full URL, which may contain an API key
+                last_error = type(e).__name__
+                logger.warning(f"Failed to retrieve {label} (attempt {attempt}/{FETCH_ATTEMPTS}): {last_error}")
+            backoff = RETRY_BACKOFF_SECONDS * attempt
+            if attempt == FETCH_ATTEMPTS or \
+                    time.monotonic() + backoff + sum(FETCH_TIMEOUT) > deadline:
+                break
+            time.sleep(backoff)
+
+        try:
+            age = time.time() - os.path.getmtime(cache_path)
+            if age <= CACHE_MAX_AGE_SECONDS:
+                with open(cache_path, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                logger.warning(f"Using cached {label} ({age / 60:.0f} min old)")
+                return data
+        except (OSError, ValueError):
+            pass
+        raise RuntimeError(f"Failed to retrieve {label}: {last_error}")
+
+    def _cache_path(self, url):
+        # Hash the URL: it may contain an API key
+        digest = hashlib.sha256(url.encode("utf-8")).hexdigest()[:32]
+        return os.path.join(self.get_plugin_dir("cache"), f"{digest}.json")
+
+    @staticmethod
+    def _write_cache(cache_path, data):
+        try:
+            os.makedirs(os.path.dirname(cache_path), exist_ok=True)
+            tmp_path = cache_path + ".tmp"
+            with open(tmp_path, "w", encoding="utf-8") as f:
+                json.dump(data, f)
+            os.replace(tmp_path, cache_path)
+        except OSError as e:
+            logger.warning(f"Could not write weather cache: {e}")
 
     def get_location(self, api_key, lat, long):
         url = GEOCODING_URL.format(lat=lat, long=long, api_key=api_key)
-        response = requests.get(url, timeout=30)
-
-        if not 200 <= response.status_code < 300:
-            logger.error(f"Failed to get location: {response.content}")
+        # Cached like the forecast, so an outage does not break renders using the location title
+        results = self._fetch_json(url, "location")
+        if not results:
             raise RuntimeError("Failed to retrieve location.")
-
-        location_data = response.json()[0]
+        location_data = results[0]
         location_str = f"{location_data.get('name')}, {location_data.get('state', location_data.get('country'))}"
 
         return location_str
 
-    def get_open_meteo_data(self, lat, long, units, forecast_days):
+    def get_open_meteo_data(self, lat, long, units, forecast_days, tz=pytz.utc):
         unit_params = OPEN_METEO_UNIT_PARAMS[units]
-        url = OPEN_METEO_FORECAST_URL.format(lat=lat, long=long, forecast_days=forecast_days) + f"&{unit_params}"
-        response = requests.get(url, timeout=30)
+        url = OPEN_METEO_FORECAST_URL.format(lat=lat, long=long, forecast_days=forecast_days,
+                                             timezone=quote(tz.zone, safe="/")) + f"&{unit_params}"
+        return self._fetch_json(url, "Open-Meteo weather data")
 
-        if not 200 <= response.status_code < 300:
-            logger.error(f"Failed to retrieve Open-Meteo weather data: {response.content}")
-            raise RuntimeError("Failed to retrieve Open-Meteo weather data.")
-        
-        return response.json()
+    def get_open_meteo_air_quality(self, lat, long, tz=pytz.utc):
+        url = OPEN_METEO_AIR_QUALITY_URL.format(lat=lat, long=long, timezone=quote(tz.zone, safe="/"))
+        return self._fetch_json(url, "Open-Meteo air quality data")
 
-    def get_open_meteo_air_quality(self, lat, long):
-        url = OPEN_METEO_AIR_QUALITY_URL.format(lat=lat, long=long)
-        response = requests.get(url, timeout=30)
-        if not 200 <= response.status_code < 300:
-            logger.error(f"Failed to retrieve Open-Meteo air quality data: {response.content}")
-            raise RuntimeError("Failed to retrieve Open-Meteo air quality data.")
-        
-        return response.json()
-    
+    @staticmethod
+    def _parse_local(time_str, tz):
+        """Open-Meteo returns naive local times in the requested timezone (tz)."""
+        dt = datetime.fromisoformat(time_str)
+        if dt.tzinfo is None:
+            return tz.localize(dt)
+        return dt.astimezone(tz)
+
+    def _value_at_current_hour(self, times, values, tz, current_time):
+        """Returns the hourly value matching the current local date and hour, or None."""
+        for i, time_str in enumerate(times):
+            try:
+                dt = self._parse_local(time_str, tz)
+            except (ValueError, TypeError):
+                continue
+            if dt.date() == current_time.date() and dt.hour == current_time.hour:
+                return values[i] if i < len(values) else None
+        return None
+
     def format_time(self, dt, time_format, hour_only=False, include_am_pm=True):
         """Format datetime based on 12h or 24h preference"""
         if time_format == "24h":
