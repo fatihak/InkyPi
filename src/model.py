@@ -308,14 +308,6 @@ class PluginInstance:
         # Check for scheduled refresh (HH:MM format)
         if "scheduled" in self.refresh:
             scheduled_time_str = self.refresh.get("scheduled")
-            latest_refresh_str = latest_refresh_dt.strftime("%H:%M")
-
-            # If the latest refresh is before the scheduled time today
-            if latest_refresh_str < scheduled_time_str:
-                return True
-        
-        if "scheduled" in self.refresh:
-            scheduled_time_str = self.refresh.get("scheduled")
             scheduled_time = datetime.strptime(scheduled_time_str, "%H:%M").time()
             
             latest_refresh_date = latest_refresh_dt.date()
