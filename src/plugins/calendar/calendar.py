@@ -53,6 +53,9 @@ class Calendar(BasePlugin):
 
         current_dt = datetime.now(tz)
         start, end = self.get_view_range(view, current_dt, settings)
+        # Aware bounds: naive ones are interpreted as UTC by recurring_ical_events,
+        # which dropped events between local midnight and the UTC offset.
+        start, end = self._localize(start, tz), self._localize(end, tz)
         logger.debug(f"Fetching events for {start} --> [{current_dt}] --> {end}")
         events = self.fetch_ics_events(calendar_urls, calendar_colors, tz, start, end)
         if not events:
@@ -110,6 +113,15 @@ class Calendar(BasePlugin):
             raise RuntimeError(f"Failed to fetch all calendars: {failures[0]}")
         return parsed_events
     
+    @staticmethod
+    def _localize(dt, tz):
+        """Attach tz to a naive datetime (floating ICS time / local bounds), convert aware ones."""
+        if not isinstance(dt, datetime):
+            return dt
+        if dt.tzinfo is None:
+            return tz.localize(dt)
+        return dt.astimezone(tz)
+
     def get_view_range(self, view, current_dt, settings):
         start = datetime(current_dt.year, current_dt.month, current_dt.day)
         if view == "timeGridDay":
@@ -136,7 +148,8 @@ class Calendar(BasePlugin):
         all_day = False
         dtstart = event.decoded("dtstart")
         if isinstance(dtstart, datetime):
-            start = dtstart.astimezone(tz).isoformat()
+            dtstart = self._localize(dtstart, tz)
+            start = dtstart.isoformat()
         else:
             start = dtstart.isoformat()
             all_day = True
@@ -145,13 +158,13 @@ class Calendar(BasePlugin):
         if "dtend" in event:
             dtend = event.decoded("dtend")
             if isinstance(dtend, datetime):
-                end = dtend.astimezone(tz).isoformat()
+                end = self._localize(dtend, tz).isoformat()
             else:
                 end = dtend.isoformat()
         elif "duration" in event:
             duration = event.decoded("duration")
             dtend = dtstart + duration
-            end = dtend.astimezone(tz).isoformat() if isinstance(dtend, datetime) else dtend.isoformat()
+            end = self._localize(dtend, tz).isoformat() if isinstance(dtend, datetime) else dtend.isoformat()
         return start, end, all_day
 
     def fetch_calendar(self, calendar_url):
