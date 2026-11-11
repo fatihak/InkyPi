@@ -16,8 +16,9 @@ import pytz
 logger = logging.getLogger(__name__)
 
 FETCH_ATTEMPTS = 3
-FETCH_TIMEOUT = (10, 30)  # (connect, read) seconds
-RETRY_BACKOFF_SECONDS = 5
+FETCH_TIMEOUT = (10, 20)  # (connect, read) seconds
+FETCH_DEADLINE_SECONDS = 45  # total budget per calendar, retries included
+RETRY_BACKOFF_SECONDS = 3
 
 class Calendar(BasePlugin):
     def generate_settings_template(self):
@@ -161,6 +162,7 @@ class Calendar(BasePlugin):
 
         cache_path = self._cache_path(calendar_url)
         last_error = None
+        deadline = time.monotonic() + FETCH_DEADLINE_SECONDS
         for attempt in range(1, FETCH_ATTEMPTS + 1):
             try:
                 response = requests.get(calendar_url, timeout=FETCH_TIMEOUT)
@@ -172,8 +174,12 @@ class Calendar(BasePlugin):
                 last_error = e
                 logger.warning(f"Calendar fetch attempt {attempt}/{FETCH_ATTEMPTS} failed for "
                                f"{self._redact(calendar_url)}: {type(e).__name__}")
-                if attempt < FETCH_ATTEMPTS:
-                    time.sleep(RETRY_BACKOFF_SECONDS * attempt)
+                backoff = RETRY_BACKOFF_SECONDS * attempt
+                # Only retry if a full attempt still fits in the time budget
+                if attempt == FETCH_ATTEMPTS or \
+                        time.monotonic() + backoff + sum(FETCH_TIMEOUT) > deadline:
+                    break
+                time.sleep(backoff)
 
         if os.path.exists(cache_path):
             try:
