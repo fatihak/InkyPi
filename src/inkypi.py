@@ -81,6 +81,11 @@ app.register_blueprint(plugin_bp)
 app.register_blueprint(playlist_bp)
 app.register_blueprint(apikeys_bp)
 
+@app.context_processor
+def inject_device_name():
+    """Device name shown in the navigation bar of every page."""
+    return {"device_name": device_config.get_config("name", default="InkyPi")}
+
 # Register opener for HEIF/HEIC images
 register_heif_opener()
 

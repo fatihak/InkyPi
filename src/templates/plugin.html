@@ -1,21 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ plugin.display_name }} Settings</title>
-    <script>
-        (function() {
-            const theme = localStorage.getItem('inkypi-theme') ||
-                         (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-            if (theme === 'dark') {
-                document.documentElement.setAttribute('data-theme', 'dark');
-            }
-        })();
-    </script>
-    <link rel= "stylesheet" type= "text/css" href= "{{ url_for('static',filename='styles/main.css') }}">
-    <script src="{{ url_for('static', filename='scripts/dark_mode.js') }}"></script>
-    <script src="{{ url_for('static', filename='scripts/response_modal.js') }}"></script>
+    {% include 'partials/head.html' %}
+    <title>{{ plugin.display_name }}{% if plugin_instance %} · {{ plugin_instance }}{% endif %}</title>
     <script src="{{ url_for('static', filename='scripts/refresh_settings_manager.js') }}"></script>
     <!-- Select2 CSS -->
     <link href="{{ url_for('static', filename='styles/select2.min.css') }}" rel="stylesheet" />
@@ -26,10 +13,11 @@
 
     <script>
         const pluginSettings = {{ plugin_settings | tojson if plugin_settings else {} }};
-        const pluginInstanceName ='{{ plugin_instance }}';
-        const loadPluginSettings = pluginInstanceName != '';
+        const pluginInstanceName = {{ (plugin_instance or '') | tojson }};
+        const loadPluginSettings = pluginInstanceName !== '';
         const styleSettings = {{ style_settings | default(false) | tojson }};
-        const refreshSettings = {{ refresh_settings | tojson if refresh_settings else {} }};
+        let refreshSettings = {{ refresh_settings | tojson if refresh_settings else {} }};
+        const playlistsUrl = "{{ url_for('playlist.playlists') }}";
 
         let uploadedFiles = {};
 
@@ -39,6 +27,16 @@
         editRefreshManager = createRefreshSettingsManager('refreshSettingsModal', 'edit');
         {% endif %}
 
+        function describeSchedule(refresh) {
+            if (!refresh) return '';
+            if (refresh.scheduled) return `Daily at ${refresh.scheduled}`;
+            const seconds = parseInt(refresh.interval || 0, 10);
+            if (!seconds) return '';
+            if (seconds % 86400 === 0) return seconds === 86400 ? 'Every day' : `Every ${seconds / 86400} days`;
+            if (seconds % 3600 === 0) return seconds === 3600 ? 'Every hour' : `Every ${seconds / 3600} h`;
+            return `Every ${Math.max(1, Math.round(seconds / 60))} min`;
+        }
+
         async function saveRefreshSettings() {
             if (!editRefreshManager) return;
 
@@ -47,24 +45,40 @@
                 data.append("plugin_id", "{{ plugin.id }}");
                 data.append("refresh_settings", JSON.stringify(formData));
 
-                const response = await fetch("{{ url_for('plugin.update_plugin_instance', instance_name='') }}" + pluginInstanceName, {
+                const response = await fetch("{{ url_for('plugin.update_plugin_instance', instance_name='') }}" + encodeURIComponent(pluginInstanceName), {
                     method: 'PUT',
                     body: data
                 });
 
                 const result = await response.json();
-                if (response.ok) {
-                    showResponseModal('success', `Success! ${result.message}`);
-                } else {
+                if (!response.ok) {
                     throw new Error(result.error || 'Failed to update refresh settings');
                 }
+                // Keep the modal in sync with what was just saved
+                refreshSettings = formData.refreshType === 'scheduled'
+                    ? { scheduled: formData.refreshTime }
+                    : { interval: secondsFromForm(formData) };
+                const label = document.getElementById('scheduleLabel');
+                if (label) label.textContent = describeSchedule(refreshSettings);
+                showResponseModal('success', result.message || 'Schedule saved.');
             });
         }
 
-        async function handleAction(action) {
-            const loadingIndicator = document.getElementById('loadingIndicator');
-            loadingIndicator.style.display = 'block';
+        function secondsFromForm(formData) {
+            const units = { minute: 60, hour: 3600, day: 86400 };
+            return parseInt(formData.interval, 10) * (units[formData.unit] || 60);
+        }
 
+        function setBusy(busy, label) {
+            document.querySelectorAll('.buttons-container button, .modal .action-button').forEach(button => {
+                button.disabled = busy;
+            });
+            const indicator = document.getElementById('loadingIndicator');
+            indicator.style.display = busy ? 'block' : 'none';
+            document.getElementById('loadingText').textContent = busy ? (label || 'Working…') : '';
+        }
+
+        async function handleAction(action) {
             // Gather plugin settings form data
             const form = document.getElementById('settingsForm');
             const scheduleForm = document.getElementById('scheduleForm');
@@ -72,63 +86,62 @@
             const formData = new FormData(form);
             let url = '{{ url_for("plugin.update_now") }}';
             let method = 'POST';
-            let clearFormOnSubmit = false;
+            let busyLabel = 'Rendering and updating the display…';
 
             // Add uploaded files to the form under its key
             Object.keys(uploadedFiles).forEach(key => {
-                if (uploadedFiles[key].length > 0) {
-                    uploadedFiles[key].forEach(file => {
-                        formData.append(key, file);
-                    });
-                }
+                (uploadedFiles[key] || []).forEach(file => formData.append(key, file));
             });
 
-            if (action == "add_to_playlist"){
+            if (action === "add_to_playlist") {
+                const nameInput = document.getElementById('instance');
+                const name = nameInput.value.trim();
+                if (!name) {
+                    showResponseModal('failure', 'Please give this item a name.');
+                    nameInput.focus();
+                    return;
+                }
+                if (!/^[\p{L}\p{N} ]+$/u.test(name)) {
+                    showResponseModal('failure', 'The name can only contain letters, numbers and spaces.');
+                    nameInput.focus();
+                    return;
+                }
                 url = '{{ url_for("playlist.add_plugin") }}';
-                const scheduleFormData = new FormData(scheduleForm);
                 const scheduleData = {};
-                for (const [key, value] of scheduleFormData.entries()) {
+                for (const [key, value] of new FormData(scheduleForm).entries()) {
                     scheduleData[key] = value;
                 }
                 formData.append("refresh_settings", JSON.stringify(scheduleData));
-                clearFormOnSubmit = true
-            } else if (action == "update_instance") {
-                url = "{{ url_for('plugin.update_plugin_instance', instance_name='') }}" + pluginInstanceName,
-                method = 'PUT'
+                busyLabel = 'Adding to the playlist…';
+            } else if (action === "update_instance") {
+                url = "{{ url_for('plugin.update_plugin_instance', instance_name='') }}" + encodeURIComponent(pluginInstanceName);
+                method = 'PUT';
+                busyLabel = 'Saving…';
             }
 
-            // Send data to the server
+            setBusy(true, busyLabel);
             try {
                 const response = await fetch(url, {method: method, body: formData});
-                const result = await response.json();
-                // Handle the response
-                if (response.ok) {
-                    showResponseModal('success', `Success! ${result.message}`);
-                } else {
-                    showResponseModal('failure', `Error!  ${result.error}`);
-                }
-                closeModal('scheduleModal');
+                let result = {};
+                try { result = await response.json(); } catch (e) { /* non-JSON error */ }
 
-                if (clearFormOnSubmit) {
-                    form.reset()
-                    uploadedFiles = {};
-                    document.querySelectorAll('input[clear-on-submit]').forEach(input => {
-                        input.value = '';
-                        input.dispatchEvent(new Event('change'));
-                    });
-                    document.querySelectorAll('[delete-on-submit]').forEach(div => {
-                        div.remove();
-                    });
-                    if (action == "add_to_playlist"){
-                        scheduleForm.reset()
-                    }
+                if (!response.ok) {
+                    // Keep the modal open and the form untouched so nothing is lost
+                    showResponseModal('failure', `Error: ${result.error || result.message || response.status}`);
+                    return;
                 }
+                if (action === "add_to_playlist") {
+                    closeModal('scheduleModal');
+                    storeMessageForNextPage('success', result.message || 'Added to the playlist.');
+                    window.location.href = playlistsUrl;
+                    return;
+                }
+                showResponseModal('success', result.message || 'Done.');
             } catch (error) {
                 console.error('Error:', error);
-                alert('An error occurred while processing your request.');
+                showResponseModal('failure', `Error: ${error.message || 'request failed'}`);
             } finally {
-                // Hide loading indicator after the action is complete
-                loadingIndicator.style.display = 'none';
+                setBusy(false);
             }
         }
 
@@ -138,10 +151,10 @@
                 editRefreshManager.open({ refreshSettings });
                 return;
             }
-
-            // Generic modal opening for other modals
             const modal = document.getElementById(modal_id);
             if (modal) modal.style.display = 'block';
+            const firstInput = modal && modal.querySelector('input[type="text"]');
+            if (firstInput) firstInput.focus();
         }
 
         function closeModal(modal_id) {
@@ -149,13 +162,15 @@
             if (modal) modal.style.display = 'none';
         }
 
-        // Close modal if the user clicks outside the modal content
-        window.onclick = function (event) {
-            const modal = document.getElementById('scheduleModal');
-            if (event.target === modal) {
-                modal.style.display = 'none';
-            }
-        };
+        // Close modals when clicking the backdrop or pressing Escape
+        window.addEventListener('click', (event) => {
+            ['scheduleModal', 'refreshSettingsModal'].forEach(id => {
+                if (event.target.id === id) closeModal(id);
+            });
+        });
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') ['scheduleModal', 'refreshSettingsModal'].forEach(closeModal);
+        });
 
         function toggleCollapsible(button) {
             const content = button.nextElementSibling;
@@ -167,19 +182,12 @@
 
         function selectedFrame(element) {
             if (!element) return; // Guard clause for null element
-
-            // Remove the selected class from any previously selected option
             const previousSelection = document.querySelector('.image-option.selected');
             if (previousSelection) {
                 previousSelection.classList.remove('selected');
             }
-
-            // Add the selected class to the clicked option
             element.classList.add('selected');
-
-            // Update the hidden input with the selected frame
-            const selectedFaceName = element.getAttribute('data-face-name');
-            document.getElementById('selected-frame').value = selectedFaceName;
+            document.getElementById('selected-frame').value = element.getAttribute('data-face-name');
         }
 
         function showFileName() {
@@ -187,16 +195,15 @@
             const fileNameDisplay = document.getElementById('fileName');
             const fileNameText = document.getElementById('fileNameText');
             const uploadButtonLabel = document.getElementById('uploadButtonLabel');
-            const removeFileButton = document.getElementById('removeFileButton');
             const file = fileInput.files[0];
 
             if (file) {
                 fileNameText.textContent = `${file.name}`;
-                fileNameDisplay.style.display = 'flex';  // Show the file name and remove button
-                uploadButtonLabel.style.display = 'none';  // Hide the upload button label
+                fileNameDisplay.style.display = 'flex';
+                uploadButtonLabel.style.display = 'none';
             } else {
-                fileNameDisplay.style.display = 'none';  // Hide if no file is selected
-                uploadButtonLabel.style.display = 'block';  // Show the upload button label
+                fileNameDisplay.style.display = 'none';
+                uploadButtonLabel.style.display = 'block';
             }
         }
 
@@ -205,9 +212,9 @@
             const fileNameDisplay = document.getElementById('fileName');
             const uploadButtonLabel = document.getElementById('uploadButtonLabel');
 
-            fileInput.value = '';  // Clear the file input
-            fileNameDisplay.style.display = 'none';  // Hide the file name and remove button
-            uploadButtonLabel.style.display = 'block';  // Show the upload button label
+            fileInput.value = '';
+            fileNameDisplay.style.display = 'none';
+            uploadButtonLabel.style.display = 'block';
 
             const hiddenElement = document.getElementById(`hidden-file-name`);
             if (hiddenElement) {
@@ -289,27 +296,41 @@
 </head>
 <body>
     <div class="frame">
-        <!-- Back Button -->
-        <button onclick="history.back()" class="back-button">← Back</button>
+        {% set active_page = 'plugin' %}
+        {% include 'partials/nav.html' %}
+
+        {% if plugin_instance %}
+        <a class="breadcrumb" href="{{ url_for('playlist.playlists') }}">← Playlists</a>
+        {% else %}
+        <a class="breadcrumb" href="{{ url_for('main.main_page') }}#plugins">← All plugins</a>
+        {% endif %}
 
         <!-- Plugin Title and Icon -->
-        <div class="app-header">
-            <div class="header-content">
-                <div class="title-container">
-                    <img src="{{ url_for('plugin.image', plugin_id=plugin.id, filename='icon.png') }}" alt="{{ plugin.display_name }} icon" class="app-icon">
-                    <h1 class="app-title">{{ plugin.display_name }}</h1>
-                    {% if api_key and api_key.required %}<span class="api-key-label" title="{{api_key.service}} (Set {{api_key.expected_key}} in .env)">Requires API Key</span>{% endif %}
+        <div class="page-header">
+            <div class="page-title">
+                <img src="{{ url_for('plugin.image', plugin_id=plugin.id, filename='icon.png') }}" alt="" class="app-icon">
+                <div>
+                    <h1>{% if plugin_instance %}{{ plugin_instance }}{% else %}{{ plugin.display_name }}{% endif %}</h1>
+                    <div class="page-subtitle">
+                        {% if plugin_instance %}{{ plugin.display_name }} · editing a playlist item
+                        {% else %}Preview it on the display, or add it to a playlist{% endif %}
+                    </div>
                 </div>
-                {% if plugin_instance %}
-                    <button class="header-button" onclick="openModal('refreshSettingsModal')">Refresh Settings</button>
+                {% if api_key and api_key.required %}
+                <a class="badge" href="{{ url_for('apikeys.apikeys_page') }}" title="{{ api_key.service }}: set {{ api_key.expected_key }} on the API Keys page">🔑 Requires API key</a>
                 {% endif %}
             </div>
-            <div id="loadingIndicator" class="loading-indicator"></div>
+            {% if plugin_instance %}
+            <button type="button" class="btn" onclick="openModal('refreshSettingsModal')" title="Change how often this plugin's image is regenerated">
+                <img src="{{ url_for('static', filename='icons/clock.svg') }}" alt="">
+                <span id="scheduleLabel">{{ refresh_settings | format_refresh_schedule or 'Refresh schedule' }}</span>
+            </button>
+            {% endif %}
         </div>
         <div class="separator"></div>
 
         <!-- Include plugin settings -->
-        <form id = "settingsForm" class="settings-form" onsubmit="return false;">
+        <form id="settingsForm" class="settings-form" onsubmit="return false;">
             <div class="settings-container">
                 {% include settings_template %}
 
@@ -338,7 +359,7 @@
                                     </div>
                                     {% endfor %}
                                 </div>
-                                <input type="hidden" id="selected-frame" name="selectedFrame" value="{{ frame_styles[0].Name }}" />
+                                <input type="hidden" id="selected-frame" name="selectedFrame" value="{{ frame_styles[0].name }}" />
                             </div>
 
                             <div class="form-group">
@@ -405,11 +426,16 @@
             <div class="buttons-container">
                 {% if plugin_instance %}
                     <button type="button" onclick="handleAction('update_instance')" class="action-button">Save</button>
-                    <button type="button" onclick="openModal('scheduleModal')" class="action-button right">Save As...</button>
+                    <button type="button" onclick="handleAction()" class="action-button secondary" title="Show these settings on the display now, without saving">Preview on display</button>
+                    <button type="button" onclick="openModal('scheduleModal')" class="action-button secondary" title="Save these settings as a new item in a playlist">Save as new…</button>
                 {% else %}
-                    <button type="button" onclick="handleAction()" class="action-button left">Update Now</button>
-                    <button type="button" onclick="openModal('scheduleModal')" class="action-button right">Add to Playlist</button>
+                    <button type="button" onclick="handleAction()" class="action-button secondary" title="Show it on the display now, without adding it to a playlist">Preview on display</button>
+                    <button type="button" onclick="openModal('scheduleModal')" class="action-button">Add to playlist</button>
                 {% endif %}
+            </div>
+            <div class="busy-row" aria-live="polite">
+                <div id="loadingIndicator" class="loading-indicator small left-align"></div>
+                <span id="loadingText" class="muted"></span>
             </div>
         </form>
     </div>
@@ -419,12 +445,12 @@
 
     <!-- Refresh Settings Modal (for editing existing instances) -->
     {% if plugin_instance %}
-    <div id="refreshSettingsModal" class="modal">
+    <div id="refreshSettingsModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="refreshModalTitle">
         <div class="modal-content">
-            <span class="close-button" onclick="closeModal('refreshSettingsModal')">×</span>
-            <h2>Refresh Settings</h2>
+            <button type="button" class="close-button" onclick="closeModal('refreshSettingsModal')" aria-label="Close">×</button>
+            <h2 id="refreshModalTitle">Refresh schedule</h2>
             <div class="separator"></div>
-            <form id="refreshSettingsForm" class="settings-form">
+            <form id="refreshSettingsForm" class="settings-form" onsubmit="return false;">
                 {% set prefix = "edit" %}
                 {% include 'refresh_settings_form.html' %}
             </form>
@@ -435,15 +461,15 @@
     </div>
     {% endif %}
 
-    <!-- Schedule Configuration Modal -->
-    <div id="scheduleModal" class="modal">
+    <!-- Add to playlist / save as new -->
+    <div id="scheduleModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="scheduleModalTitle">
         <div class="modal-content">
-            <span class="close-button" onclick="closeModal('scheduleModal')">×</span>
-            <h2>Add to Playlist</h2>
+            <button type="button" class="close-button" onclick="closeModal('scheduleModal')" aria-label="Close">×</button>
+            <h2 id="scheduleModalTitle">{% if plugin_instance %}Save as a new item{% else %}Add to playlist{% endif %}</h2>
             <div class="separator"></div>
-            <form id="scheduleForm" class="settings-form">
+            <form id="scheduleForm" class="settings-form" novalidate onsubmit="handleAction('add_to_playlist'); return false;">
                 <div class="form-group">
-                    <label for="playlist" class="form-label">Playlist:</label>
+                    <label for="playlist" class="form-label">Playlist</label>
                     <select id="playlist" name="playlist" class="form-input">
                         {% for playlist_name in playlists %}
                         <option value="{{playlist_name}}">{{playlist_name}}</option>
@@ -451,17 +477,18 @@
                     </select>
                 </div>
                 <div class="form-group">
-                    <label for="instance" class="form-label">Instance Name:</label>
-                    <input type="text" id="instance" name="instance_name" placeholder="Type something..." required class="form-input">
+                    <label for="instance" class="form-label">Name</label>
+                    <input type="text" id="instance" name="instance_name" placeholder="e.g. {{ plugin.display_name }} kitchen" required class="form-input" maxlength="60" autocomplete="off">
                 </div>
+                <p class="form-help">Letters, numbers and spaces only. The name must be unique.</p>
 
                 {% set prefix = "add" %}
                 {% include 'refresh_settings_form.html' %}
 
+                <div class="buttons-container">
+                    <button type="submit" class="action-button">{% if plugin_instance %}Save as new{% else %}Add to playlist{% endif %}</button>
+                </div>
             </form>
-            <div class="buttons-container">
-                <button type="button" onclick="handleAction('add_to_playlist')" class="action-button">Save</button>
-            </div>
         </div>
     </div>
 </body>

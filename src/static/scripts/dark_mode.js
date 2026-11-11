@@ -14,7 +14,8 @@
      */
     function getCurrentTheme() {
         // Check localStorage first
-        const stored = localStorage.getItem(THEME_KEY);
+        let stored = null;
+        try { stored = localStorage.getItem(THEME_KEY); } catch (e) { /* storage unavailable */ }
         if (stored) {
             return stored;
         }
@@ -31,7 +32,7 @@
      * Set the theme and update DOM
      * @param {string} theme - The theme to set ('light' or 'dark')
      */
-    function setTheme(theme) {
+    function setTheme(theme, persist) {
         const html = document.documentElement;
 
         if (theme === DARK_THEME) {
@@ -40,7 +41,10 @@
             html.removeAttribute('data-theme');
         }
 
-        localStorage.setItem(THEME_KEY, theme);
+        // Only remember an explicit choice, so the OS theme keeps being followed otherwise
+        if (persist) {
+            try { localStorage.setItem(THEME_KEY, theme); } catch (e) { /* storage unavailable */ }
+        }
         updateToggleButtonText(theme);
     }
 
@@ -49,11 +53,12 @@
      * @param {string} theme - The current theme
      */
     function updateToggleButtonText(theme) {
-        const toggleButton = document.querySelector('.dark-mode-toggle');
-        if (toggleButton) {
-            const hoverText = theme === DARK_THEME ? 'Toggle Light Mode' : 'Toggle Dark Mode';
+        document.querySelectorAll('.dark-mode-toggle').forEach(toggleButton => {
+            const hoverText = theme === DARK_THEME ? 'Switch to light mode' : 'Switch to dark mode';
             toggleButton.setAttribute('data-hover-text', hoverText);
-        }
+            toggleButton.setAttribute('title', hoverText);
+            toggleButton.setAttribute('aria-label', hoverText);
+        });
     }
 
     /**
@@ -62,7 +67,7 @@
     function toggleTheme() {
         const current = document.documentElement.getAttribute('data-theme');
         const newTheme = current === DARK_THEME ? LIGHT_THEME : DARK_THEME;
-        setTheme(newTheme);
+        setTheme(newTheme, true);
     }
 
     /**
@@ -70,22 +75,23 @@
      */
     function initialize() {
         const theme = getCurrentTheme();
-        setTheme(theme);
+        setTheme(theme, false);
 
-        // Add click listener to the dark mode toggle button
-        const toggleButton = document.querySelector('.dark-mode-toggle');
-        if (toggleButton) {
+        // Add click listener to the dark mode toggle button(s)
+        document.querySelectorAll('.dark-mode-toggle').forEach(toggleButton => {
             toggleButton.addEventListener('click', function (e) {
                 e.preventDefault();
                 toggleTheme();
             });
-        }
+        });
 
         // Listen for system theme changes
         if (window.matchMedia) {
             window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
                 // Only auto-switch if user hasn't set a preference
-                if (!localStorage.getItem(THEME_KEY)) {
+                let stored = null;
+                try { stored = localStorage.getItem(THEME_KEY); } catch (err) { /* ignore */ }
+                if (!stored) {
                     setTheme(e.matches ? DARK_THEME : LIGHT_THEME);
                 }
             });

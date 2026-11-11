@@ -1,21 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>API Keys</title>
-    <script>
-        (function() {
-            const theme = localStorage.getItem('inkypi-theme') || 
-                         (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-            if (theme === 'dark') {
-                document.documentElement.setAttribute('data-theme', 'dark');
-            }
-        })();
-    </script>
-    <link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='styles/main.css') }}">
-    <script src="{{ url_for('static', filename='scripts/dark_mode.js') }}"></script>
-    <script src="{{ url_for('static', filename='scripts/response_modal.js') }}"></script>
+    {% include 'partials/head.html' %}
+    <title>API Keys · {{ device_name }}</title>
     <style>
         .apikeys-container {
             max-width: 700px;
@@ -192,20 +179,20 @@
 </head>
 <body>
     <div class="frame">
-        <!-- Back Button -->
-        <button onclick="history.back()" class="back-button">← Back</button>
-        
-        <!-- Header -->
-        <div class="app-header">
-            <div class="header-content">
-                <div class="title-container">
-                    <span style="font-size: 28px; margin-right: 10px;">🔑</span>
-                    <h1 class="app-title">API Keys</h1>
+        {% set active_page = 'apikeys' %}
+        {% include 'partials/nav.html' %}
+
+        <div class="page-header">
+            <div class="page-title">
+                <span style="font-size: 28px;" aria-hidden="true">🔑</span>
+                <div>
+                    <h1>API Keys</h1>
+                    <div class="page-subtitle">Secrets used by plugins such as OpenWeatherMap, OpenAI or NASA</div>
                 </div>
             </div>
         </div>
         <div class="separator"></div>
-        
+
         <div class="apikeys-container">
             <!-- API Keys List -->
             <div id="apikeys-list">

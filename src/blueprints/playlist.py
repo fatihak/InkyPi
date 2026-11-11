@@ -95,6 +95,8 @@ def create_playlist():
         return jsonify({"error": "Playlist name is required"}), 400
     if not start_time or not end_time:
         return jsonify({"error": "Start time and End time are required"}), 400
+    if start_time == end_time:
+        return jsonify({"error": "Start and end time must be different"}), 400
 
     try:
         playlist = playlist_manager.get_playlist(playlist_name)
@@ -125,8 +127,11 @@ def update_playlist(playlist_name):
     new_name = data.get("new_name")
     start_time = data.get("start_time")
     end_time = data.get("end_time")
+    new_name = (new_name or "").strip()
     if not new_name or not start_time or not end_time:
         return jsonify({"success": False, "error": "Missing required fields"}), 400
+    if start_time == end_time:
+        return jsonify({"error": "Start and end time must be different"}), 400
 
     playlist = playlist_manager.get_playlist(playlist_name)
     if not playlist:
@@ -161,6 +166,11 @@ def delete_playlist(playlist_name):
 
     return jsonify({"success": True, "message": f"Deleted playlist '{playlist_name}'!"})
 
+def _strip_hour_zero(text, time_format):
+    """'04:30 PM' -> '4:30 PM' for 12h; 24h times keep their leading zero ('07:30')."""
+    return text.lstrip("0") if "%I" in time_format else text
+
+
 @playlist_bp.app_template_filter('format_relative_time')
 def format_relative_time(iso_date_string):
     # Parse the input ISO date string
@@ -178,8 +188,13 @@ def format_relative_time(iso_date_string):
     diff_seconds = delta.total_seconds()
     diff_minutes = diff_seconds / 60
 
-    # Define formatting
+    # Define formatting (follow the device's 12h/24h preference)
     time_format = "%I:%M %p"  # Example: 04:30 PM
+    try:
+        if current_app.config['DEVICE_CONFIG'].get_config("time_format", default="12h") == "24h":
+            time_format = "%H:%M"  # Example: 16:30
+    except (RuntimeError, KeyError):
+        pass  # outside an app context
     month_day_format = "%b %d at " + time_format  # Example: Feb 12 at 04:30 PM
 
     # Determine relative time string
@@ -188,8 +203,30 @@ def format_relative_time(iso_date_string):
     elif diff_minutes < 60:
         return f"{int(diff_minutes)} minutes ago"
     elif dt.date() == now.date():
-        return "today at " + dt.strftime(time_format).lstrip("0")
+        return "today at " + _strip_hour_zero(dt.strftime(time_format), time_format)
     elif dt.date() == (now.date() - timedelta(days=1)):
-        return "yesterday at " + dt.strftime(time_format).lstrip("0")
+        return "yesterday at " + _strip_hour_zero(dt.strftime(time_format), time_format)
     else:
         return dt.strftime(month_day_format).replace(" 0", " ")  # Removes leading zero in day
+
+
+@playlist_bp.app_template_filter('format_refresh_schedule')
+def format_refresh_schedule(refresh):
+    """Human readable refresh settings of a plugin instance: 'Every 10 min', 'Daily at 07:30'."""
+    refresh = refresh or {}
+    if refresh.get("scheduled"):
+        return f"Daily at {refresh['scheduled']}"
+    try:
+        seconds = int(refresh.get("interval") or 0)
+    except (TypeError, ValueError):
+        seconds = 0
+    if seconds <= 0:
+        return ""
+    if seconds % 86400 == 0:
+        days = seconds // 86400
+        return "Every day" if days == 1 else f"Every {days} days"
+    if seconds % 3600 == 0:
+        hours = seconds // 3600
+        return "Every hour" if hours == 1 else f"Every {hours} h"
+    minutes = max(1, round(seconds / 60))
+    return f"Every {minutes} min"
