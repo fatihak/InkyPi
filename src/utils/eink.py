@@ -25,7 +25,7 @@ import logging
 import re
 
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageFilter
 
 logger = logging.getLogger(__name__)
 
@@ -210,6 +210,30 @@ def _ordered_indices(rgb, quant_palette, neutral_inks=(), spread=96.0, neutral_c
     return indices
 
 
+def _sharpen_edges(indices, pixels, rgb, palette, neutral_inks, edge_range=64, text_threshold=170,
+                   neutral_chroma=24):
+    """Text and thin lines: grey anti-aliasing pixels on an edge become black or white.
+
+    Dithering them would give isolated dots, which e-paper renders poorly (thin, broken
+    letters). A threshold above mid-grey keeps strokes slightly bolder, like on paper.
+    """
+    if len(neutral_inks) < 2:
+        return indices
+    measured = np.array(palette["measured"], dtype=np.float32)
+    luma_of = lambda c: c @ np.array([0.299, 0.587, 0.114], dtype=np.float32)
+    black = min(neutral_inks, key=lambda i: luma_of(measured[i]))
+    white = max(neutral_inks, key=lambda i: luma_of(measured[i]))
+    grey = Image.fromarray(pixels).convert("L")
+    local_range = (np.asarray(grey.filter(ImageFilter.MaxFilter(3)), dtype=np.int16)
+                   - np.asarray(grey.filter(ImageFilter.MinFilter(3)), dtype=np.int16))
+    neutral = (rgb.max(-1) - rgb.min(-1)) < neutral_chroma
+    edge = neutral & (local_range > edge_range)
+    luma = np.asarray(grey, dtype=np.int16)
+    out = indices.copy()
+    out[edge] = np.where(luma[edge] < text_threshold, black, white)
+    return out
+
+
 def render_indices(image, palette, mode, saturation=0.5):
     """Palette indices (one per pixel) as the display will show them."""
     quant = blended(palette, saturation)
@@ -222,7 +246,9 @@ def render_indices(image, palette, mode, saturation=0.5):
         adapted = adapt_colours(Image.fromarray(unique_rgb[None, :, :], "RGB"), palette)
         snapped = _snap(np.asarray(adapted, dtype=np.float32), quant)[0]
         rgb = snapped[inverse.ravel()].reshape(pixels.shape)
-        return _ordered_indices(rgb, quant, _neutral_inks(palette))
+        neutral_inks = _neutral_inks(palette)
+        indices = _ordered_indices(rgb, quant, neutral_inks)
+        return _sharpen_edges(indices, pixels, rgb, palette, neutral_inks)
     pal_image = Image.new("P", (1, 1))
     pal_image.putpalette([int(v) for v in quant.flatten()])
     quantized = image.convert("RGB").quantize(len(quant), palette=pal_image, dither=Image.Dither.FLOYDSTEINBERG)

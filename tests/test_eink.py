@@ -93,6 +93,18 @@ def test_graphics_mode_renders_greys_with_black_and_white_only():
     assert colours_of(out) <= {(0, 0, 0), (255, 255, 255)}
 
 
+def test_graphics_mode_keeps_thin_text_solid():
+    """Anti-aliased grey text pixels become black or white, never isolated dithered dots."""
+    image = Image.new("RGB", (40, 20), "white")
+    pixels = image.load()
+    for x in range(4, 36):
+        pixels[x, 8] = (120, 120, 120)   # thin stroke, mostly covered pixel
+        pixels[x, 12] = (205, 205, 205)  # faint anti-aliasing fringe
+    indices = eink.render_indices(image, PALETTE, eink.GRAPHICS)
+    assert (indices[8, 4:36] == 0).all()    # continuous black stroke
+    assert (indices[12, 4:36] == 1).all()   # fringe dropped, no stray dots
+
+
 def test_photo_mode_matches_driver_style_dithering():
     image = weather_like_image()
     indices = eink.render_indices(image, PALETTE, eink.PHOTO)
