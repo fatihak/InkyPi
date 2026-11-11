@@ -91,6 +91,12 @@
             valueDisplay.textContent = parseFloat(slider.value).toFixed(1);
         }
         document.addEventListener('DOMContentLoaded', populateIntervalFields);
+        document.addEventListener('DOMContentLoaded', () => {
+            const mode = document.getElementById('cpuLimitMode');
+            if (mode) mode.addEventListener('change', () => {
+                document.getElementById('cpuLimitManual').hidden = mode.value !== 'manual';
+            });
+        });
 
         // Live preview of the accent colour before saving
         function hexToRgb(hex) {
@@ -306,6 +312,33 @@
                             />
                         </div>
                         {% endif %}
+                    </div>
+                </div>
+
+                <div class="collapsible">
+                    <button type="button" class="collapsible-header" onclick="toggleCollapsible(this)">
+                        {{ _('Performance') }} <span class="collapsible-icon">▼</span>
+                    </button>
+                    <div class="settings-container collapsible-content">
+                        <div class="form-group">
+                            <label for="cpuLimitMode" class="form-label">{{ _('Processor limit:') }}</label>
+                            <select id="cpuLimitMode" name="cpuLimitMode" class="form-input" {% if not cpu.available %}disabled{% endif %}>
+                                <option value="default" {% if cpu.mode == 'default' %}selected{% endif %}>{{ _('Installation default ({percent}% of one core)', percent=cpu.install_default) }}</option>
+                                <option value="auto" {% if cpu.mode == 'auto' %}selected{% endif %}>{{ _('Automatic for this board: {percent}%', percent=cpu.recommended) }}</option>
+                                <option value="manual" {% if cpu.mode == 'manual' %}selected{% endif %}>{{ _('Manual') }}</option>
+                            </select>
+                        </div>
+                        <div class="form-group" id="cpuLimitManual" {% if cpu.mode != 'manual' %}hidden{% endif %}>
+                            <label for="cpuLimitPercent" class="form-label">{{ _('Limit (100% = one core):') }}</label>
+                            <input type="number" id="cpuLimitPercent" name="cpuLimitPercent" class="form-input" style="max-width: 140px;"
+                                   min="{{ cpu.min }}" max="{{ cpu.max }}" step="10" value="{{ cpu.percent }}" {% if not cpu.available %}disabled{% endif %}>
+                            <span>%</span>
+                        </div>
+                        <p class="form-help">
+                            {% if cpu.model %}{{ cpu.model }} · {% endif %}{{ _('{count} cores', count=cpu.cpus) }} ·
+                            {% if cpu.current %}{{ _('current limit: {percent}%', percent=cpu.current) }}{% elif cpu.available %}{{ _('currently unlimited') }}{% else %}{{ _('only available when InkyPi runs as its systemd service') }}{% endif %}
+                        </p>
+                        <p class="form-help cpu-warning">⚠️ {{ _('A higher limit makes refreshes and previews faster, but while an image is being rendered InkyPi can then use more of the processor: on small boards (Pi Zero) other programs and SSH may become slow, and the board gets warmer. Applied immediately when saving.') }}</p>
                     </div>
                 </div>
             </div>

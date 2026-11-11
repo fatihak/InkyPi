@@ -1594,3 +1594,4 @@ button, input, select, textarea, optgroup { font-family: inherit; }
 }
 .preview-frame img { display: block; max-width: 100%; height: auto; background: #fff; }
 .preview-status { text-align: center; color: var(--text-secondary); padding: 24px; }
+.form-group[hidden] { display: none; }
