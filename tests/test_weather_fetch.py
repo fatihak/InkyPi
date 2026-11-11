@@ -27,6 +27,8 @@ def _resp(status=200, payload=None, text=""):
     r.status_code = status
     r.json.return_value = payload
     r.text = text
+    r.iter_content = lambda chunk_size=None: [b"{}"]
+    r.close = mock.Mock()
     return r
 
 
@@ -91,3 +93,24 @@ def test_forecast_high_low_are_rounded(weather_plugin):
              "temperature_2m_max": [12.9], "temperature_2m_min": [4.5]}
     forecast = weather_plugin.parse_open_meteo_forecast(daily, "metric", TZ, 1, 44.0)
     assert forecast[0]["high"] == 13
+
+
+def test_weather_errors_do_not_leak_api_key(weather_plugin, caplog):
+    url = "https://api.openweathermap.org/data/3.0/onecall?appid=SECRETKEY"
+    with mock.patch.object(weather_module.requests, "get",
+                           side_effect=requests.exceptions.ConnectionError(f"Max retries exceeded with url: {url}")):
+        with pytest.raises(RuntimeError) as exc:
+            weather_plugin._fetch_json(url, "test")
+    assert "SECRETKEY" not in str(exc.value) and "SECRETKEY" not in caplog.text
+
+
+def test_open_meteo_timezone_is_url_encoded(weather_plugin):
+    with mock.patch.object(weather_plugin, "_fetch_json", return_value={}) as fetch:
+        weather_plugin.get_open_meteo_data(1, 2, "metric", 3, pytz.timezone("Etc/GMT+5"))
+    assert "timezone=Etc/GMT%2B5" in fetch.call_args.args[0]
+
+
+def test_location_is_cached_for_outages(weather_plugin):
+    with mock.patch.object(weather_plugin, "_fetch_json", return_value=[{"name": "Talence", "country": "FR"}]) as fetch:
+        assert weather_plugin.get_location("KEY", 1, 2) == "Talence, FR"
+    assert fetch.call_args.args[1] == "location"

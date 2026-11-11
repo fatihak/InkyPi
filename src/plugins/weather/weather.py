@@ -2,6 +2,8 @@ from plugins.base_plugin.base_plugin import BasePlugin
 from PIL import Image
 import os
 import requests
+from urllib.parse import quote
+from utils.http_client import get_with_deadline
 import logging
 from datetime import datetime, timedelta, timezone, date
 from astral import moon
@@ -13,6 +15,10 @@ import time
 import hashlib
 
 logger = logging.getLogger(__name__)
+
+
+class APIError(RuntimeError):
+    """Non-2xx answer from a weather API (message holds the status, never the URL)."""
 
 FETCH_ATTEMPTS = 3
 FETCH_TIMEOUT = (10, 20)            # (connect, read) seconds
@@ -722,20 +728,25 @@ class Weather(BasePlugin):
         last_error = None
         for attempt in range(1, FETCH_ATTEMPTS + 1):
             try:
-                response = requests.get(url, timeout=FETCH_TIMEOUT)
+                # The deadline also bounds the download itself, not only the retries
+                response = get_with_deadline(url, deadline, timeout=FETCH_TIMEOUT)
                 if not 200 <= response.status_code < 300:
-                    raise RuntimeError(f"HTTP {response.status_code}: {response.text[:200]}")
+                    raise APIError(f"HTTP {response.status_code}: {response.text[:200]}")
                 data = response.json()
                 self._write_cache(cache_path, data)
                 return data
+            except APIError as e:
+                last_error = str(e)  # status and API message, no URL
+                logger.warning(f"Failed to retrieve {label} (attempt {attempt}/{FETCH_ATTEMPTS}): {last_error}")
             except Exception as e:
-                last_error = e
-                logger.warning(f"Failed to retrieve {label} (attempt {attempt}/{FETCH_ATTEMPTS}): {e}")
-                backoff = RETRY_BACKOFF_SECONDS * attempt
-                if attempt == FETCH_ATTEMPTS or \
-                        time.monotonic() + backoff + sum(FETCH_TIMEOUT) > deadline:
-                    break
-                time.sleep(backoff)
+                # requests' messages embed the full URL, which may contain an API key
+                last_error = type(e).__name__
+                logger.warning(f"Failed to retrieve {label} (attempt {attempt}/{FETCH_ATTEMPTS}): {last_error}")
+            backoff = RETRY_BACKOFF_SECONDS * attempt
+            if attempt == FETCH_ATTEMPTS or \
+                    time.monotonic() + backoff + sum(FETCH_TIMEOUT) > deadline:
+                break
+            time.sleep(backoff)
 
         try:
             age = time.time() - os.path.getmtime(cache_path)
@@ -766,13 +777,11 @@ class Weather(BasePlugin):
 
     def get_location(self, api_key, lat, long):
         url = GEOCODING_URL.format(lat=lat, long=long, api_key=api_key)
-        response = requests.get(url, timeout=30)
-
-        if not 200 <= response.status_code < 300:
-            logger.error(f"Failed to get location: {response.content}")
+        # Cached like the forecast, so an outage does not break renders using the location title
+        results = self._fetch_json(url, "location")
+        if not results:
             raise RuntimeError("Failed to retrieve location.")
-
-        location_data = response.json()[0]
+        location_data = results[0]
         location_str = f"{location_data.get('name')}, {location_data.get('state', location_data.get('country'))}"
 
         return location_str
@@ -780,11 +789,11 @@ class Weather(BasePlugin):
     def get_open_meteo_data(self, lat, long, units, forecast_days, tz=pytz.utc):
         unit_params = OPEN_METEO_UNIT_PARAMS[units]
         url = OPEN_METEO_FORECAST_URL.format(lat=lat, long=long, forecast_days=forecast_days,
-                                             timezone=tz.zone) + f"&{unit_params}"
+                                             timezone=quote(tz.zone, safe="/")) + f"&{unit_params}"
         return self._fetch_json(url, "Open-Meteo weather data")
 
     def get_open_meteo_air_quality(self, lat, long, tz=pytz.utc):
-        url = OPEN_METEO_AIR_QUALITY_URL.format(lat=lat, long=long, timezone=tz.zone)
+        url = OPEN_METEO_AIR_QUALITY_URL.format(lat=lat, long=long, timezone=quote(tz.zone, safe="/"))
         return self._fetch_json(url, "Open-Meteo air quality data")
 
     @staticmethod
