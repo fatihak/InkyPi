@@ -132,7 +132,6 @@ class RefreshTask:
 
     def _playlist_refresh(self):
         self._first_cycle_done = True
-        self._last_attempt_dt = self._get_current_datetime()
         if self.device_config.get_config("log_system_stats"):
             self.log_system_stats()
 
@@ -143,6 +142,9 @@ class RefreshTask:
         logger.info(f"Running interval refresh check. | current_time: {current_dt.strftime('%Y-%m-%d %H:%M:%S')}")
         playlist, plugin_instance = self._determine_next_plugin(playlist_manager, latest_refresh, current_dt)
         if plugin_instance:
+            # Only a real attempt counts as a cycle (so a failing plugin is not retried every
+            # minute); a check that selects nothing must not delay the next one.
+            self._last_attempt_dt = current_dt
             self._perform_refresh(PlaylistRefresh(playlist, plugin_instance), current_dt)
 
     def _perform_refresh(self, refresh_action, current_dt):

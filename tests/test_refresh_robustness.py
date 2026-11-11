@@ -149,3 +149,14 @@ def test_scheduled_refresh_not_triggered_before_scheduled_time():
                           latest_refresh_time=TZ.localize(datetime(2026, 11, 11, 7, 10)).isoformat())
     assert not inst.should_refresh(TZ.localize(datetime(2026, 11, 11, 7, 20)))
     assert inst.should_refresh(TZ.localize(datetime(2026, 11, 11, 8, 0)))
+
+
+def test_check_without_plugin_does_not_delay_next_check():
+    now = datetime.now(TZ)
+    cfg = FakeConfig(600, (now - timedelta(seconds=590)).isoformat())
+    task = _task(cfg)
+    task._determine_next_plugin = lambda *a: (None, None)  # e.g. nothing due / no active playlist
+    cfg.get_playlist_manager = lambda: None
+    task._playlist_refresh()
+    assert task._last_attempt_dt is None
+    assert task._compute_wait_time() <= 11
