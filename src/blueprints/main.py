@@ -1,17 +1,18 @@
 from flask import Blueprint, request, jsonify, current_app, render_template, send_file
 import os
 from datetime import datetime, timedelta
+from utils.i18n import _
 
 main_bp = Blueprint("main", __name__)
 
 def display_status(device_config):
     """What is on the display now, for the home page header."""
     info = device_config.get_refresh_info().to_dict()
-    plugins = {p["id"]: p.get("display_name", p["id"]) for p in device_config.get_plugins()}
+    plugins = {p["id"]: _(p.get("display_name", p["id"])) for p in device_config.get_plugins()}
     plugin_name = plugins.get(info.get("plugin_id"), info.get("plugin_id") or "")
     status = {
         "has_image": bool(info.get("refresh_time")),
-        "title": info.get("plugin_instance") or plugin_name or "Nothing displayed yet",
+        "title": info.get("plugin_instance") or plugin_name or _("Nothing displayed yet"),
         "plugin": plugin_name,
         "playlist": info.get("playlist") or "",
         "manual": info.get("refresh_type") == "Manual Update",

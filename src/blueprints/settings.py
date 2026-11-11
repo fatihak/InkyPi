@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify, current_app, render_template, Response
 from utils.time_utils import calculate_seconds
 from utils.accent import ACCENT_PRESETS, DEFAULT_ACCENT
+from utils.i18n import UI_LANGUAGES, DEFAULT_LANGUAGE as DEFAULT_UI_LANGUAGE, _
 from datetime import datetime, timedelta
 import os
 import pytz
@@ -41,20 +42,23 @@ def save_settings():
 
         unit, interval, time_format = form_data.get('unit'), form_data.get("interval"), form_data.get("timeFormat")
         if not unit or unit not in ["minute", "hour"]:
-            return jsonify({"error": "Plugin cycle interval unit is required"}), 400
+            return jsonify({"error": _("Plugin cycle interval unit is required")}), 400
         if not interval or not interval.isnumeric():
-            return jsonify({"error": "Refresh interval is required"}), 400
+            return jsonify({"error": _("Refresh interval is required")}), 400
         if not form_data.get("timezoneName"):
-            return jsonify({"error": "Time Zone is required"}), 400
+            return jsonify({"error": _("Time Zone is required")}), 400
         if not time_format or time_format not in ["12h", "24h"]:
-            return jsonify({"error": "Time format is required"}), 400
+            return jsonify({"error": _("Time format is required")}), 400
         previous_interval_seconds = device_config.get_config("plugin_cycle_interval_seconds")
         plugin_cycle_interval_seconds = calculate_seconds(int(interval), unit)
+        ui_language = form_data.get("uiLanguage") or device_config.get_config("ui_language", default=DEFAULT_UI_LANGUAGE)
+        if ui_language not in UI_LANGUAGES:
+            return jsonify({"error": _("Unknown language: {name}", name=ui_language)}), 400
         accent_color = form_data.get("accentColor") or device_config.get_config("accent_color", default=DEFAULT_ACCENT)
         if accent_color not in ACCENT_PRESETS:
-            return jsonify({"error": f"Unknown accent colour: {accent_color}"}), 400
+            return jsonify({"error": _("Unknown accent colour: {name}", name=accent_color)}), 400
         if plugin_cycle_interval_seconds > 86400 or plugin_cycle_interval_seconds <= 0:
-            return jsonify({"error": "Plugin cycle interval must be less than 24 hours"}), 400
+            return jsonify({"error": _("Plugin cycle interval must be less than 24 hours")}), 400
 
         settings = {
             "name": form_data.get("deviceName"),
@@ -64,6 +68,7 @@ def save_settings():
             "timezone": form_data.get("timezoneName"),
             "time_format": form_data.get("timeFormat"),
             "accent_color": accent_color,
+            "ui_language": ui_language,
             "plugin_cycle_interval_seconds": plugin_cycle_interval_seconds,
             "image_settings": {
                 "saturation": float(form_data.get("saturation", "1.0")),
@@ -83,8 +88,8 @@ def save_settings():
     except RuntimeError as e:
         return jsonify({"error": str(e)}), 500
     except Exception as e:
-        return jsonify({"error": f"An error occurred: {str(e)}"}), 500
-    return jsonify({"success": True, "message": "Saved settings."})
+        return jsonify({"error": _("An error occurred: {message}", message=str(e))}), 500
+    return jsonify({"success": True, "message": _("Saved settings.")})
 
 @settings_bp.route('/shutdown', methods=['POST'])
 def shutdown():
