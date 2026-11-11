@@ -145,6 +145,60 @@
             }
         }
 
+        // ---- in-browser preview (does not touch the e-ink display) ----
+        let previewUrl = null;
+        let previewRequest = 0;
+
+        function buildSettingsFormData() {
+            const formData = new FormData(document.getElementById('settingsForm'));
+            Object.keys(uploadedFiles).forEach(key => {
+                (uploadedFiles[key] || []).forEach(file => formData.append(key, file));
+            });
+            return formData;
+        }
+
+        async function showPreview() {
+            const requestId = ++previewRequest;
+            const img = document.getElementById('previewImage');
+            const status = document.getElementById('previewStatus');
+            const statusText = document.getElementById('previewStatusText');
+            const sendButton = document.getElementById('sendToDisplayButton');
+            document.getElementById('previewModal').style.display = 'block';
+            img.hidden = true;
+            status.hidden = false;
+            status.querySelector('.loading-indicator').style.display = 'block';
+            statusText.textContent = 'Rendering… this can take a few seconds.';
+            sendButton.disabled = true;
+            const started = performance.now();
+            try {
+                const response = await fetch('{{ url_for("plugin.preview_image") }}', { method: 'POST', body: buildSettingsFormData() });
+                if (requestId !== previewRequest) return;  // a newer preview was requested
+                if (!response.ok) {
+                    let result = {};
+                    try { result = await response.json(); } catch (e) { /* not JSON */ }
+                    throw new Error(result.error || `HTTP ${response.status}`);
+                }
+                const blob = await response.blob();
+                if (previewUrl) URL.revokeObjectURL(previewUrl);
+                previewUrl = URL.createObjectURL(blob);
+                img.src = previewUrl;
+                img.hidden = false;
+                status.hidden = true;
+                sendButton.disabled = false;
+                document.getElementById('previewHint').textContent =
+                    `Rendered in ${((performance.now() - started) / 1000).toFixed(1)} s. Nothing has been sent to the display yet.`;
+            } catch (error) {
+                if (requestId !== previewRequest) return;
+                status.querySelector('.loading-indicator').style.display = 'none';
+                statusText.textContent = `Could not render the preview: ${error.message}`;
+            }
+        }
+
+        function closePreview() {
+            previewRequest++;  // ignore a render still in progress
+            closeModal('previewModal');
+        }
+
         function openModal(modal_id) {
             // Handle refresh settings modal specially with the manager
             if (modal_id === 'refreshSettingsModal' && editRefreshManager) {
@@ -167,9 +221,13 @@
             ['scheduleModal', 'refreshSettingsModal'].forEach(id => {
                 if (event.target.id === id) closeModal(id);
             });
+            if (event.target.id === 'previewModal') closePreview();
         });
         document.addEventListener('keydown', (event) => {
-            if (event.key === 'Escape') ['scheduleModal', 'refreshSettingsModal'].forEach(closeModal);
+            if (event.key === 'Escape') {
+                ['scheduleModal', 'refreshSettingsModal'].forEach(closeModal);
+                closePreview();
+            }
         });
 
         function toggleCollapsible(button) {
@@ -426,10 +484,10 @@
             <div class="buttons-container">
                 {% if plugin_instance %}
                     <button type="button" onclick="handleAction('update_instance')" class="action-button">Save</button>
-                    <button type="button" onclick="handleAction()" class="action-button secondary" title="Show these settings on the display now, without saving">Preview on display</button>
+                    <button type="button" onclick="showPreview()" class="action-button secondary" title="See the image these settings produce, without touching the display">Preview</button>
                     <button type="button" onclick="openModal('scheduleModal')" class="action-button secondary" title="Save these settings as a new item in a playlist">Save as new…</button>
                 {% else %}
-                    <button type="button" onclick="handleAction()" class="action-button secondary" title="Show it on the display now, without adding it to a playlist">Preview on display</button>
+                    <button type="button" onclick="showPreview()" class="action-button secondary" title="See the image it produces, without touching the display">Preview</button>
                     <button type="button" onclick="openModal('scheduleModal')" class="action-button">Add to playlist</button>
                 {% endif %}
             </div>
@@ -442,6 +500,26 @@
 
     <!-- Success/Error Modal -->
     {% include 'response_modal.html' %}
+
+    <!-- In-browser preview of the rendered image -->
+    <div id="previewModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="previewModalTitle">
+        <div class="modal-content preview-modal-content">
+            <button type="button" class="close-button" onclick="closePreview()" aria-label="Close">×</button>
+            <h2 id="previewModalTitle">Preview</h2>
+            <div class="preview-frame" id="previewFrame">
+                <div class="preview-status" id="previewStatus">
+                    <div class="loading-indicator" style="display:block; margin: 0 auto 10px;"></div>
+                    <span id="previewStatusText">Rendering… this can take a few seconds.</span>
+                </div>
+                <img id="previewImage" alt="Preview of the image" hidden>
+            </div>
+            <p class="form-help" id="previewHint">This is what the display will show. Nothing has been sent to the display yet.</p>
+            <div class="buttons-container">
+                <button type="button" class="action-button secondary" onclick="showPreview()">Render again</button>
+                <button type="button" class="action-button" id="sendToDisplayButton" onclick="closePreview(); handleAction();" disabled>Show on the display</button>
+            </div>
+        </div>
+    </div>
 
     <!-- Refresh Settings Modal (for editing existing instances) -->
     {% if plugin_instance %}

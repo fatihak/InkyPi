@@ -28,6 +28,7 @@
                     <span id="nowNext">{% if status.next_change %}Next change around {{ status.next_change }}{% endif %}</span>
                 </div>
                 <div class="now-actions">
+                    <button type="button" class="btn" id="nextButton" title="Show the next item of the active playlist now">Next ⏭</button>
                     <a class="btn btn-primary" href="{{ url_for('playlist.playlists') }}">Manage playlists</a>
                     <a class="btn" href="#plugins">Add a plugin</a>
                 </div>
@@ -113,6 +114,28 @@
             refreshImage();
             setInterval(refreshImage, refreshIntervalMs);
             document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshImage(); });
+        });
+
+        // ---- skip to the next item of the active playlist ----
+        document.getElementById('nextButton').addEventListener('click', async (event) => {
+            const button = event.currentTarget;
+            const label = button.textContent;
+            button.disabled = true;
+            button.textContent = 'Updating the display…';
+            try {
+                const response = await fetch('{{ url_for("playlist.display_next") }}', { method: 'POST' });
+                let result = {};
+                try { result = await response.json(); } catch (e) { /* ignore */ }
+                if (!response.ok) throw new Error(result.error || `HTTP ${response.status}`);
+                showResponseModal('success', result.message || 'Display updated.');
+                await refreshImage();
+                await refreshStatus();
+            } catch (error) {
+                showResponseModal('failure', `Error: ${error.message}`);
+            } finally {
+                button.disabled = false;
+                button.textContent = label;
+            }
         });
 
         // ---- grid / list view ----

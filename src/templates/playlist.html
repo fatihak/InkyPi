@@ -80,10 +80,16 @@
             {% for plugin_instance in playlist.plugins %}
             {% set plugin_name = plugins.get(plugin_instance.plugin_id, {}).display_name or plugin_instance.plugin_id %}
             {% set on_display = playlist.name == refresh_info.playlist and plugin_instance.name == refresh_info.plugin_instance %}
-            <div class="inst-row {% if on_display %}on-display{% endif %}"
+            <div class="inst-row {% if on_display %}on-display{% endif %} {% if not plugin_instance.enabled %}paused{% endif %}"
                  data-plugin-id="{{ plugin_instance.plugin_id }}"
                  data-instance="{{ plugin_instance.name }}"
                  data-plugin-name="{{ plugin_name }}">
+                <div class="inst-order">
+                    <button type="button" class="order-btn js-move" data-direction="up" title="Move up"
+                            aria-label="Move {{ plugin_instance.name }} up" {% if loop.first %}disabled{% endif %}>▲</button>
+                    <button type="button" class="order-btn js-move" data-direction="down" title="Move down"
+                            aria-label="Move {{ plugin_instance.name }} down" {% if loop.last %}disabled{% endif %}>▼</button>
+                </div>
                 {% if plugin_instance.latest_refresh_time %}
                 <button type="button" class="inst-thumb js-preview" title="Show the last image of {{ plugin_instance.name }}">
                     <img class="thumb" alt="Last image of {{ plugin_instance.name }}" loading="lazy"
@@ -100,6 +106,7 @@
                     <div class="inst-title">
                         <span>{{ plugin_instance.name }}</span>
                         {% if on_display %}<span class="badge badge-live">On display</span>{% endif %}
+                        {% if not plugin_instance.enabled %}<span class="badge badge-paused" title="Skipped by the rotation; settings are kept">Paused</span>{% endif %}
                     </div>
                     <div class="inst-sub">
                         <span>{{ plugin_name }}</span>
@@ -115,6 +122,14 @@
 
                 <div class="inst-actions">
                     <div class="loading-indicator small"></div>
+                    <label class="enable-toggle" title="Include this item in the rotation">
+                        <span class="toggle-container">
+                            <input type="checkbox" class="toggle-checkbox js-enable" {% if plugin_instance.enabled %}checked{% endif %}
+                                   aria-label="Include {{ plugin_instance.name }} in the rotation">
+                            <span class="toggle-label"></span>
+                        </span>
+                        <span class="enable-text">In rotation</span>
+                    </label>
                     <a class="icon-btn" title="Edit settings"
                        href="{{ url_for('plugin.plugin_page', plugin_id=plugin_instance.plugin_id, instance=plugin_instance.name) }}">
                         <img src="{{ url_for('static', filename='icons/edit.png') }}" alt=""><span>Edit</span>
@@ -200,6 +215,8 @@
             updatePlaylist: "{{ url_for('playlist.update_playlist', playlist_name='') }}",
             deletePlaylist: "{{ url_for('playlist.delete_playlist', playlist_name='') }}",
             updateInstance: "{{ url_for('plugin.update_plugin_instance', instance_name='') }}",
+            moveInstance: "{{ url_for('playlist.move_plugin_instance') }}",
+            enableInstance: "{{ url_for('playlist.set_plugin_instance_enabled') }}",
         };
 
         function openModal(id) { document.getElementById(id).style.display = 'block'; }
@@ -238,7 +255,7 @@
             const closer = event.target.closest('[data-close]');
             if (closer) { closeModal(closer.dataset.close); return; }
 
-            const button = event.target.closest('.js-delete, .js-display, .js-preview, .js-refresh-settings, .js-edit-playlist');
+            const button = event.target.closest('.js-delete, .js-display, .js-preview, .js-refresh-settings, .js-edit-playlist, .js-move');
             if (!button) return;
 
             if (button.classList.contains('js-edit-playlist')) {
@@ -249,6 +266,26 @@
 
             const ctx = rowContext(button);
             const payload = { playlist_name: ctx.playlist, plugin_id: ctx.pluginId, plugin_instance: ctx.instance };
+
+            if (button.classList.contains('js-move')) {
+                button.disabled = true;
+                try {
+                    await postJson(urls.moveInstance, 'POST', { ...payload, direction: button.dataset.direction });
+                    // Move the row in place (no reload) and refresh the first/last arrows
+                    const row = ctx.row;
+                    if (button.dataset.direction === 'up' && row.previousElementSibling?.classList.contains('inst-row')) {
+                        row.parentNode.insertBefore(row, row.previousElementSibling);
+                    } else if (button.dataset.direction === 'down' && row.nextElementSibling?.classList.contains('inst-row')) {
+                        row.parentNode.insertBefore(row.nextElementSibling, row);
+                    }
+                    updateOrderButtons(row.closest('.pl-card'));
+                    row.querySelector(`.js-move[data-direction="${button.dataset.direction}"]`)?.focus();
+                } catch (error) {
+                    showResponseModal('failure', `Error: ${error.message}`);
+                    updateOrderButtons(ctx.row.closest('.pl-card'));
+                }
+                return;
+            }
 
             if (button.classList.contains('js-preview')) {
                 const img = document.getElementById('thumbnailPreviewImage');
@@ -280,6 +317,42 @@
                     spinner.style.display = 'none';
                     button.removeAttribute('aria-busy');
                 }
+            }
+        });
+
+        function updateOrderButtons(card) {
+            const rows = [...card.querySelectorAll('.inst-row')];
+            rows.forEach((row, i) => {
+                row.querySelector('.js-move[data-direction="up"]').disabled = i === 0;
+                row.querySelector('.js-move[data-direction="down"]').disabled = i === rows.length - 1;
+            });
+        }
+
+        // Pause / resume an item without deleting it
+        document.addEventListener('change', async (event) => {
+            const toggle = event.target.closest('.js-enable');
+            if (!toggle) return;
+            const ctx = rowContext(toggle);
+            toggle.disabled = true;
+            try {
+                await postJson(urls.enableInstance, 'POST', {
+                    playlist_name: ctx.playlist, plugin_id: ctx.pluginId, plugin_instance: ctx.instance, enabled: toggle.checked });
+                ctx.row.classList.toggle('paused', !toggle.checked);
+                let badge = ctx.row.querySelector('.badge-paused');
+                if (!toggle.checked && !badge) {
+                    badge = document.createElement('span');
+                    badge.className = 'badge badge-paused';
+                    badge.textContent = 'Paused';
+                    ctx.row.querySelector('.inst-title').appendChild(badge);
+                } else if (toggle.checked && badge) {
+                    badge.remove();
+                }
+                showResponseModal('success', toggle.checked ? `“${ctx.instance}” is back in the rotation.` : `“${ctx.instance}” is paused.`);
+            } catch (error) {
+                toggle.checked = !toggle.checked;
+                showResponseModal('failure', `Error: ${error.message}`);
+            } finally {
+                toggle.disabled = false;
             }
         });
 
