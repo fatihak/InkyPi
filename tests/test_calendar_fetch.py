@@ -1,0 +1,92 @@
+import os
+import sys
+from datetime import datetime
+from unittest import mock
+
+import pytest
+import pytz
+import requests
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
+
+from plugins.calendar import calendar as calendar_module  # noqa: E402
+from plugins.calendar.calendar import Calendar  # noqa: E402
+
+ICS = """BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//test//EN
+BEGIN:VEVENT
+UID:1
+DTSTART:20261112T090000Z
+DTEND:20261112T100000Z
+SUMMARY:Cours
+END:VEVENT
+BEGIN:VEVENT
+UID:2
+DTSTART:20261113T090000Z
+DURATION:PT2H
+SUMMARY:TP
+END:VEVENT
+END:VCALENDAR
+"""
+
+GOOD = "https://good.example/cal.ics?token=SECRET"
+BAD = "https://bad.example/cal.ics?token=SECRET"
+
+
+def _resp(text):
+    r = mock.Mock()
+    r.text = text
+    r.raise_for_status = mock.Mock()
+    return r
+
+
+def _fake_get(url, timeout):
+    if url.startswith("https://bad."):
+        raise requests.exceptions.ConnectTimeout("timed out")
+    return _resp(ICS)
+
+
+@pytest.fixture
+def plugin(tmp_path, monkeypatch):
+    monkeypatch.setattr(calendar_module, "RETRY_BACKOFF_SECONDS", 0)
+    p = Calendar({"id": "calendar"})
+    monkeypatch.setattr(p, "get_plugin_dir", lambda path=None: str(tmp_path / (path or "")))
+    return p
+
+
+RANGE = (datetime(2026, 11, 11), datetime(2026, 12, 1))
+TZ = pytz.timezone("Europe/Paris")
+
+
+def test_one_failing_calendar_does_not_break_others(plugin):
+    with mock.patch.object(calendar_module.requests, "get", side_effect=_fake_get) as get:
+        events = plugin.fetch_ics_events([GOOD, BAD], ["#ff0000", "#00ff00"], TZ, *RANGE)
+    assert {e["title"] for e in events} == {"Cours", "TP"}
+    assert all(e["backgroundColor"] == "#ff0000" for e in events)
+    # bad url retried FETCH_ATTEMPTS times
+    assert sum(1 for c in get.call_args_list if c.args[0] == BAD) == calendar_module.FETCH_ATTEMPTS
+
+
+def test_all_failing_raises(plugin):
+    with mock.patch.object(calendar_module.requests, "get", side_effect=_fake_get):
+        with pytest.raises(RuntimeError) as exc:
+            plugin.fetch_ics_events([BAD], ["#ff0000"], TZ, *RANGE)
+    assert "SECRET" not in str(exc.value)
+
+
+def test_falls_back_to_cache(plugin):
+    with mock.patch.object(calendar_module.requests, "get", return_value=_resp(ICS)):
+        plugin.fetch_calendar(GOOD)
+    with mock.patch.object(calendar_module.requests, "get",
+                           side_effect=requests.exceptions.ConnectionError("down")):
+        events = plugin.fetch_ics_events([GOOD], ["#ff0000"], TZ, *RANGE)
+    assert len(events) == 2
+
+
+def test_duration_end_is_converted_to_timezone(plugin):
+    with mock.patch.object(calendar_module.requests, "get", return_value=_resp(ICS)):
+        events = plugin.fetch_ics_events([GOOD], ["#ff0000"], TZ, *RANGE)
+    tp = next(e for e in events if e["title"] == "TP")
+    assert tp["start"] == "2026-11-13T10:00:00+01:00"
+    assert tp["end"] == "2026-11-13T12:00:00+01:00"

@@ -8,10 +8,16 @@ import recurring_ical_events
 from io import BytesIO
 import logging
 import requests
+import hashlib
+import time
 from datetime import datetime, timedelta
 import pytz
 
 logger = logging.getLogger(__name__)
+
+FETCH_ATTEMPTS = 3
+FETCH_TIMEOUT = (10, 30)  # (connect, read) seconds
+RETRY_BACKOFF_SECONDS = 5
 
 class Calendar(BasePlugin):
     def generate_settings_template(self):
@@ -73,8 +79,15 @@ class Calendar(BasePlugin):
     def fetch_ics_events(self, calendar_urls, colors, tz, start_range, end_range):
         parsed_events = []
 
+        failures = []
         for calendar_url, color in zip(calendar_urls, colors):
-            cal = self.fetch_calendar(calendar_url)
+            try:
+                cal = self.fetch_calendar(calendar_url)
+            except RuntimeError as e:
+                # One unreachable calendar must not blank the whole display.
+                logger.error(f"Skipping calendar {self._redact(calendar_url)}: {e}")
+                failures.append(e)
+                continue
             events = recurring_ical_events.of(cal).between(start_range, end_range)
             contrast_color = self.get_contrast_color(color)
 
@@ -92,6 +105,8 @@ class Calendar(BasePlugin):
 
                 parsed_events.append(parsed_event)
 
+        if failures and len(failures) == len(calendar_urls):
+            raise RuntimeError(f"Failed to fetch all calendars: {failures[0]}")
         return parsed_events
     
     def get_view_range(self, view, current_dt, settings):
@@ -134,19 +149,68 @@ class Calendar(BasePlugin):
                 end = dtend.isoformat()
         elif "duration" in event:
             duration = event.decoded("duration")
-            end = (dtstart + duration).isoformat()
+            dtend = dtstart + duration
+            end = dtend.astimezone(tz).isoformat() if isinstance(dtend, datetime) else dtend.isoformat()
         return start, end, all_day
 
     def fetch_calendar(self, calendar_url):
+        """Fetch and parse an ICS feed, with retries and a last-known-good disk cache."""
         # workaround for webcal urls
         if calendar_url.startswith("webcal://"):
             calendar_url = calendar_url.replace("webcal://", "https://")
+
+        cache_path = self._cache_path(calendar_url)
+        last_error = None
+        for attempt in range(1, FETCH_ATTEMPTS + 1):
+            try:
+                response = requests.get(calendar_url, timeout=FETCH_TIMEOUT)
+                response.raise_for_status()
+                cal = icalendar.Calendar.from_ical(response.text)
+                self._write_cache(cache_path, response.text)
+                return cal
+            except Exception as e:
+                last_error = e
+                logger.warning(f"Calendar fetch attempt {attempt}/{FETCH_ATTEMPTS} failed for "
+                               f"{self._redact(calendar_url)}: {type(e).__name__}")
+                if attempt < FETCH_ATTEMPTS:
+                    time.sleep(RETRY_BACKOFF_SECONDS * attempt)
+
+        if os.path.exists(cache_path):
+            try:
+                with open(cache_path, "r", encoding="utf-8") as f:
+                    cal = icalendar.Calendar.from_ical(f.read())
+                age_h = (time.time() - os.path.getmtime(cache_path)) / 3600
+                logger.warning(f"Using cached calendar for {self._redact(calendar_url)} ({age_h:.1f}h old)")
+                return cal
+            except Exception as e:
+                logger.error(f"Failed to read calendar cache {cache_path}: {e}")
+
+        raise RuntimeError(f"Failed to fetch iCalendar url {self._redact(calendar_url)}: {last_error}")
+
+    def _cache_path(self, calendar_url):
+        digest = hashlib.sha256(calendar_url.encode("utf-8")).hexdigest()[:32]
+        return os.path.join(self.get_plugin_dir("cache"), f"{digest}.ics")
+
+    @staticmethod
+    def _write_cache(cache_path, text):
         try:
-            response = requests.get(calendar_url, timeout=30)
-            response.raise_for_status()
-            return icalendar.Calendar.from_ical(response.text)
-        except Exception as e:
-            raise RuntimeError(f"Failed to fetch iCalendar url: {str(e)}")
+            os.makedirs(os.path.dirname(cache_path), exist_ok=True)
+            tmp_path = cache_path + ".tmp"
+            with open(tmp_path, "w", encoding="utf-8") as f:
+                f.write(text)
+            os.replace(tmp_path, cache_path)
+        except OSError as e:
+            logger.warning(f"Could not write calendar cache: {e}")
+
+    @staticmethod
+    def _redact(url):
+        """Strip query string/path secrets (private ICS tokens) from logs."""
+        try:
+            from urllib.parse import urlsplit
+            parts = urlsplit(url)
+            return f"{parts.scheme}://{parts.netloc}/..."
+        except Exception:
+            return "<calendar url>"
 
     def get_contrast_color(self, color):
         """
