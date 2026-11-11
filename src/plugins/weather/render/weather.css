@@ -243,6 +243,7 @@
 .chart-container {
   width: 100%;
   height: 24dvh;
+  flex-shrink: 0;  /* the top section adapts to its size; the graph needs its height */
 }
 
 .separator {

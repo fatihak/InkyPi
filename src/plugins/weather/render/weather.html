@@ -103,7 +103,46 @@
     // Find min and max temperatures
     const minTemp = Math.min(...temperatures);
     var maxTemp = Math.max(...temperatures);
+    // Temperature axis: the curve uses the upper part of the chart (rain bars are below,
+    // up to RAIN_SHARE of the height) and leaves room above it for the labels
+    const RAIN_SHARE = 0.4;
+    const CURVE_BOTTOM = 0.3, CURVE_TOP = 0.88;  // share of the chart height
+    const tempSpan = Math.max(2, maxTemp - minTemp);
+    const axisSpan = tempSpan / (CURVE_TOP - CURVE_BOTTOM);
+    const tempAxisMin = minTemp - axisSpan * CURVE_BOTTOM;
+    const tempAxisMax = tempAxisMin + axisSpan;
+    const rainTopTemp = tempAxisMin + (tempAxisMax - tempAxisMin) * RAIN_SHARE;
 	
+    // Temperatures written on the curve, at the hours shown on the time axis
+    Chart.register({
+      id: 'temperatureLabels',
+      afterDatasetsDraw(chart) {
+        const { ctx, scales: { x } } = chart;
+        const points = chart.getDatasetMeta(0).data;
+        const shown = new Set(x.ticks.map(tick => tick.value));
+        ctx.save();
+        ctx.font = "600 12px Jost, sans-serif";
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.lineJoin = 'round';
+        ctx.lineWidth = 4;
+        ctx.strokeStyle = "{{ plugin_settings.backgroundColor or '#ffffff' }}";
+        ctx.fillStyle = "{{ plugin_settings.textColor }}";
+        chart.$temperatureLabelBoxes = [];
+        points.forEach((point, i) => {
+          if (!shown.has(i) || i === 0) return;
+          const text = Math.round(temperatures[i]) + (units !== "standard" ? "°" : "");
+          // above the curve (the chart has top padding for them), below it only at the very top
+          const y = point.y - 12 < 8 ? point.y + 12 : point.y - 12;
+          ctx.strokeText(text, point.x, y);
+          ctx.fillText(text, point.x, y);
+          const half = ctx.measureText(text).width / 2;
+          chart.$temperatureLabelBoxes.push({ left: point.x - half, right: point.x + half, top: y - 8, bottom: y + 8 });
+        });
+        ctx.restore();
+      }
+    });
+
     Chart.register({
       id: 'annotationRain',
       afterDatasetsDraw(chart, args, pluginOptions) {
@@ -133,6 +172,11 @@
           const width = ctx.measureText(text).width;
           if (bar.x - width / 2 < lastRight + 3) return;
           const y = Math.min(bar.y, bar.base) - 3;
+          // temperatures have priority: skip an amount that would overlap one
+          const box = { left: bar.x - width / 2, right: bar.x + width / 2, top: y - 12, bottom: y };
+          const overlaps = (chart.$temperatureLabelBoxes || []).some(t =>
+            box.left < t.right && box.right > t.left && box.top < t.bottom && box.bottom > t.top);
+          if (overlaps) return;
           ctx.strokeText(text, bar.x, y);
           ctx.fillText(text, bar.x, y);
           lastRight = bar.x + width / 2;
@@ -182,7 +226,7 @@
           borderColor: 'rgba(241, 122, 36, 0.9)', // Line color
           borderWidth: 2,
           pointRadius: 0, // Hide points
-          fill: true, // Enable filling the area under the line
+          fill: { target: { value: rainTopTemp } },  // band above the rain zone
           tension: 0.5
         },
         {
@@ -206,7 +250,7 @@
       options: {
         layout: {
 		  padding: {
-		    top: {% if plugin_settings.displayRain == "true" %}16{% elif plugin_settings.displayGraphIcons == "true" %}3{% else %}0{% endif %},
+		    top: 18,  // room for the temperature labels above the curve
 		    bottom: {% if plugin_settings.displayGraphIcons == "true" %}11{% else %}0{% endif %}
 		  }
         },
@@ -219,6 +263,7 @@
           x: {
             ticks: {
               autoSkip: true,
+              maxTicksLimit: 12,
               padding: 10,
               maxRotation: 0, // Prevent label rotation
               minRotation: 0, // Prevent label rotation
@@ -237,22 +282,12 @@
             }
           },
           y: {
-            ticks: {
-              padding: 5,
-              color: "{{ plugin_settings.textColor }}",
-              font: {
-                family: 'Jost'
-              },
-              autoSkip: false,
-              callback: function(value, index, values) {
-                if (index === values.length-1) return (units != "standard") ? maxTemp + "°" : maxTemp;
-                else if (index === 0) return (units != "standard") ? minTemp + "°" : minTemp;
-                else return '';
-              }
-            },
-            grid: { display: false },
-            min: minTemp,
-            max: maxTemp,
+            // no axis labels: temperatures are written on the curve; padded range so the
+            // curve never runs along the chart edges
+            // the curve uses the upper part of the chart, above the rain bars
+            display: false,
+            min: tempAxisMin,
+            max: tempAxisMax,
           },
           y1: {
             position: 'right',
@@ -264,14 +299,12 @@
                 family: 'Jost'
               },
               autoSkip: false,
-              callback: function(value, index, values) {
-                if (index === values.length - 1) return "100%";
-                else if (index === 0) return "0%";
-                else return '';
-              }
+              callback: (value) => value + "%"
             },
+            // rain bars in the lower part of the chart: 100% is 45% of its height
+            afterBuildTicks: (axis) => { axis.ticks = [{ value: 0 }, { value: 100 }]; },
             min: 0,
-            max: 100,
+            max: 100 / RAIN_SHARE,
           }
         },
         plugins: {
@@ -290,24 +323,9 @@
 
     chart.update();
 
-    // Now, after the chart is created, we can access the scales
-    const gradientStart = chart.scales['y'].getPixelForValue(maxTemp); // Max temperature
-    const gradientEnd = chart.scales['y'].getPixelForValue(minTemp);   // Min temperature
-
-    // Create gradient based on y-axis values
-    const tempGradient = ctx.createLinearGradient(0, gradientStart, 0, gradientEnd+10);
-    tempGradient.addColorStop(0, 'rgba(252,204,5, 0.95)'); // Top of the gradient (max temperature)
-    tempGradient.addColorStop(1, 'rgba(252,204,5, 0.01)'); // Bottom of the gradient (min temperature)
-
-    // Update the chart to apply the gradient
-    chart.data.datasets[0].backgroundColor = tempGradient;
-
-    // Create gradient based on y-axis values
-    const precipitationGradient = ctx.createLinearGradient(0, gradientStart, 0, gradientEnd);
-    precipitationGradient.addColorStop(0, 'rgba(26, 111, 176, 0.8)'); // Top of the gradient (max temperature)
-    precipitationGradient.addColorStop(1, 'rgba(194, 223, 246, 0)'); // Bottom of the gradient (min temperature)
-
-    chart.data.datasets[1].backgroundColor = precipitationGradient;
+    // Flat, light fills: on e-paper, gradients turn into irregular dot textures
+    chart.data.datasets[0].backgroundColor = 'rgba(252, 204, 5, 0.35)';
+    chart.data.datasets[1].backgroundColor = 'rgba(26, 111, 176, 0.35)';
 
     chart.update();
   });
