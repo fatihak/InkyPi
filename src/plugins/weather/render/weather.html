@@ -114,27 +114,29 @@
         ctx.save();
         ctx.textAlign = 'center';
 
+        // Amounts are written above the bars (inside a dark bar they are unreadable on
+        // e-paper), with a halo so the temperature curve can't hide them. Labels that would
+        // overlap their neighbour are skipped; the unit is written once, on the first label.
+        ctx.font = "600 11px Jost, sans-serif";
+        ctx.textBaseline = 'bottom';
+        ctx.lineJoin = 'round';
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = "{{ plugin_settings.backgroundColor or '#ffffff' }}";
+        ctx.fillStyle = "{{ plugin_settings.textColor }}";
+        let lastRight = -Infinity;
+        let unitShown = false;
         meta.data.forEach((bar, i) => {
           const rainAmount = rainData[i];
-          if (rainAmount && rainAmount > threshold) {
-            const x = bar.x;
-            const y = bar.y;
-			const base = bar.base;
-			const height = base - y;
-			
-			let textY, unitY;
-			
-			if (height < 25) {
-			  textY = y - 10;
-			  unitY = y - 3;
-			} else {
-			  textY = y + 13;
-			  unitY = y + 20;
-			}
-            ctx.fillStyle = "{{ plugin_settings.textColor }}";
-            ctx.fillText(rainAmount.toFixed(2), x, textY);
-            ctx.fillText(unit, x, unitY); 
-          }
+          if (!rainAmount || rainAmount <= threshold) return;
+          const value = rainAmount.toFixed(isImperial ? 2 : 1);
+          const text = unitShown ? value : `${value} ${unit}`;
+          const width = ctx.measureText(text).width;
+          if (bar.x - width / 2 < lastRight + 3) return;
+          const y = Math.min(bar.y, bar.base) - 3;
+          ctx.strokeText(text, bar.x, y);
+          ctx.fillText(text, bar.x, y);
+          lastRight = bar.x + width / 2;
+          unitShown = true;
         });
 
         ctx.restore();
@@ -204,7 +206,7 @@
       options: {
         layout: {
 		  padding: {
-		    top: {% if plugin_settings.displayGraphIcons == "true" %}3{% else %}0{% endif %},
+		    top: {% if plugin_settings.displayRain == "true" %}16{% elif plugin_settings.displayGraphIcons == "true" %}3{% else %}0{% endif %},
 		    bottom: {% if plugin_settings.displayGraphIcons == "true" %}11{% else %}0{% endif %}
 		  }
         },
