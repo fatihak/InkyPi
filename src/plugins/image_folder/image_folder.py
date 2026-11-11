@@ -9,10 +9,12 @@ from utils.image_utils import pad_image_blur
 logger = logging.getLogger(__name__)
 
 def list_files_in_folder(folder_path):
-    """Return a list of image file paths in the given folder, excluding hidden files."""
+    """Return a list of image file paths in the given folder, excluding hidden files and folders."""
     image_extensions = ('.avif', '.jpg', '.jpeg', '.png', '.gif', '.bmp', '.tiff', '.webp', '.heif', '.heic')
     image_files = []
     for root, dirs, files in os.walk(folder_path):
+        # Skip hidden/system folders (.thumbnails, .Trash-1000, Synology @eaDir...) in place
+        dirs[:] = [d for d in dirs if not d.startswith(('.', '@'))]
         for f in files:
             if f.lower().endswith(image_extensions) and not f.startswith('.'):
                 image_files.append(os.path.join(root, f))
