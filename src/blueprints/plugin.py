@@ -1,10 +1,12 @@
-from flask import Blueprint, request, jsonify, current_app, render_template, send_from_directory
+from flask import Blueprint, request, jsonify, current_app, render_template, send_from_directory, send_file
 from plugins.plugin_registry import get_plugin_instance
 from utils.app_utils import resolve_path, handle_request_files, parse_form
 from refresh_task import ManualRefresh, PlaylistRefresh
+import io
 import json
 import os
 import logging
+import threading
 
 logger = logging.getLogger(__name__)
 plugin_bp = Blueprint("plugin", __name__)
@@ -256,3 +258,43 @@ def update_now():
         return jsonify({"error": f"An error occurred: {str(e)}"}), 500
 
     return jsonify({"success": True, "message": "Display updated"}), 200
+
+
+# One preview at a time: each one may start a headless browser on a small device
+_preview_lock = threading.Lock()
+
+
+@plugin_bp.route('/preview_image', methods=['POST'])
+def preview_image():
+    """Renders a plugin with the submitted (unsaved) settings and returns the PNG,
+    without touching the e-ink display or any playlist."""
+    device_config = current_app.config['DEVICE_CONFIG']
+    if not _preview_lock.acquire(blocking=False):
+        return jsonify({"error": "A preview is already being generated, please wait."}), 429
+
+    try:
+        plugin_settings = parse_form(request.form)
+        # Existing files sent back by the form are merged with newly uploaded ones
+        plugin_settings.update(handle_request_files(request.files, request.form))
+        plugin_id = plugin_settings.pop("plugin_id", None)
+
+        plugin_config = device_config.get_plugin(plugin_id)
+        if not plugin_config:
+            return jsonify({"error": f"Plugin '{plugin_id}' not found"}), 404
+
+        plugin = get_plugin_instance(plugin_config)
+        image = plugin.generate_image(plugin_settings, device_config)
+        if image is None:
+            return jsonify({"error": "The plugin did not produce an image"}), 500
+
+        buffer = io.BytesIO()
+        image.save(buffer, format="PNG")
+        buffer.seek(0)
+        response = send_file(buffer, mimetype="image/png")
+        response.headers["Cache-Control"] = "no-store"
+        return response
+    except Exception as e:
+        logger.exception(f"Error in preview_image: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+    finally:
+        _preview_lock.release()
