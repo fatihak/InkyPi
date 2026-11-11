@@ -1564,3 +1564,7 @@ button.close-button { background: none; border: none; line-height: 1; padding: 0
 .accent-swatch input:checked ~ .accent-name { color: var(--text-primary); font-weight: 700; }
 /* Plain text links follow the accent colour (readable in both themes) */
 .frame a:not([class]), .form-help a { color: var(--accent-text); }
+
+/* Form controls do not inherit the page font by default: keep one typeface everywhere */
+button, input, select, textarea, optgroup { font-family: inherit; }
+.collapsible-header { font-size: 0.95rem; font-weight: 600; color: var(--text-primary); }
