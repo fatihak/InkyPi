@@ -44,6 +44,23 @@
 <div id="hiddenFileInputs"></div>
 
 <script>
+    // Build a file row with DOM APIs: file names are user-controlled and must never be parsed as HTML.
+    function createFileRow(fileName, onRemove) {
+        const fileElement = document.createElement("div");
+        const nameSpan = document.createElement("span");
+        nameSpan.className = "file-name-text";
+        nameSpan.textContent = fileName;
+        const removeBtn = document.createElement("button");
+        removeBtn.type = "button";
+        removeBtn.className = "remove-btn";
+        removeBtn.textContent = "X";
+        removeBtn.addEventListener("click", onRemove);
+        fileElement.append(nameSpan, removeBtn);
+        fileElement.classList.add("file-name");
+        fileElement.setAttribute('delete-on-submit', '');
+        return fileElement;
+    }
+
     function addFiles() {
         const fileInput = document.getElementById("imageUpload");
         const fileNamesDisplay = document.getElementById("fileNames");
@@ -61,33 +78,16 @@
             if (!uploadedFiles["imageFiles[]"].some(f => f.name === fileName)) {
                 uploadedFiles["imageFiles[]"].push(file);
 
-                const fileElement = document.createElement("div");
-                fileElement.innerHTML = `
-                    <span id="fileNameText">${fileName}</span>
-                    <button type="button" class="remove-btn" onclick="removeAddedFile('${fileName}')">X</button>
-                `;
-                fileElement.id = `added-${fileName}`;
-                fileElement.classList.add("file-name");
-                fileElement.setAttribute('delete-on-submit', '');
+                const fileElement = createFileRow(fileName, () => {
+                    uploadedFiles["imageFiles[]"] = uploadedFiles["imageFiles[]"].filter(f => f.name !== fileName);
+                    fileElement.remove();
+                });
                 fileNamesDisplay.appendChild(fileElement);
             }
         });
 
         // Clear the input to allow adding the same file again if needed
         fileInput.value = "";
-    }
-
-    function removeAddedFile(fileName) {
-        // Remove the file from uploadedFiles
-        uploadedFiles["imageFiles[]"] = uploadedFiles["imageFiles[]"].filter(f => f.name !== fileName);
-        
-        // Remove the displayed filename
-        document.getElementById(`added-${fileName}`).remove();
-    }
-
-    function removeExistingFile(fileName) {
-        document.getElementById(`existing-${fileName}`).remove(); // Remove from display
-        document.getElementById(`hidden-${fileName}`).remove(); // Remove hidden input
     }
 
     // populate form values from plugin settings
@@ -106,25 +106,21 @@
             // Loop through the existing files and add them to the display and hidden inputs
             existingFiles.forEach(filePath => {
                 const fileName = filePath.split('/').pop()
-                // Create an element for the file name
-                const fileElement = document.createElement("div");
-                fileElement.innerHTML = `
-                    <span id="fileNameText">${fileName}</span>
-                    <button type="button" class="remove-btn" onclick="removeExistingFile('${fileName}')">X</button>
-                `;
-                fileElement.id = `existing-${fileName}`;
-                fileElement.classList.add("file-name");
-                fileElement.setAttribute('delete-on-submit', '');
-                fileNamesDisplay.appendChild(fileElement);
 
                 // Create a hidden input for the existing file
                 const hiddenInput = document.createElement("input");
                 hiddenInput.type = "hidden";
                 hiddenInput.name = "imageFiles[]";
                 hiddenInput.value = filePath;
-                hiddenInput.id = `hidden-${fileName}`;
                 hiddenInput.setAttribute('delete-on-submit', '');
                 hiddenFileInputs.appendChild(hiddenInput);
+
+                // Display row; removing it also drops the hidden input
+                const fileElement = createFileRow(fileName, () => {
+                    fileElement.remove();
+                    hiddenInput.remove();
+                });
+                fileNamesDisplay.appendChild(fileElement);
             });
         }
         document.querySelector(`input[name="backgroundOption"][value="${backgroundOption}"]`).checked = true;

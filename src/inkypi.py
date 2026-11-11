@@ -19,8 +19,8 @@ import json
 import logging
 import threading
 import argparse
-from utils.app_utils import generate_startup_image
-from flask import Flask, request, send_from_directory
+from utils.app_utils import generate_startup_image, is_cross_origin_request
+from flask import Flask, request, send_from_directory, jsonify
 from werkzeug.serving import is_running_from_reloader
 from config import Config
 from display.display_manager import DisplayManager
@@ -73,6 +73,19 @@ app.config['REFRESH_TASK'] = refresh_task
 
 # Set additional parameters
 app.config['MAX_FORM_PARTS'] = 10_000
+# Reject oversized uploads early (waitress otherwise accepts bodies up to 1 GB)
+app.config['MAX_CONTENT_LENGTH'] = 200 * 1024 * 1024
+
+@app.before_request
+def reject_cross_origin_writes():
+    """Basic CSRF protection: the UI has no authentication, so refuse state-changing
+    requests sent by another site's page (browsers always send Origin on those)."""
+    if request.method in ("GET", "HEAD", "OPTIONS"):
+        return None
+    if is_cross_origin_request(request.headers.get("Origin"), request.headers.get("Sec-Fetch-Site"), request.host):
+        logger.warning(f"Rejected cross-origin {request.method} {request.path} from {request.headers.get('Origin')}")
+        return jsonify({"error": "Cross-origin request rejected"}), 403
+    return None
 
 # Register Blueprints
 app.register_blueprint(main_bp)
