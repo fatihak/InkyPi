@@ -230,3 +230,48 @@ def format_refresh_schedule(refresh):
         return "Every hour" if hours == 1 else f"Every {hours} h"
     minutes = max(1, round(seconds / 60))
     return f"Every {minutes} min"
+
+
+def _find_instance(data):
+    """Returns (playlist, plugin_instance, error_response) for a JSON request body."""
+    device_config = current_app.config['DEVICE_CONFIG']
+    playlist = device_config.get_playlist_manager().get_playlist(data.get("playlist_name"))
+    if not playlist:
+        return None, None, (jsonify({"error": "Playlist not found"}), 400)
+    plugin_instance = playlist.find_plugin(data.get("plugin_id"), data.get("plugin_instance"))
+    if not plugin_instance:
+        return playlist, None, (jsonify({"error": "Plugin instance not found"}), 400)
+    return playlist, plugin_instance, None
+
+
+@playlist_bp.route('/move_plugin_instance', methods=['POST'])
+def move_plugin_instance():
+    """Moves a plugin instance up or down in its playlist (display order)."""
+    data = request.get_json(silent=True) or {}
+    direction = data.get("direction")
+    if direction not in ("up", "down"):
+        return jsonify({"error": "direction must be 'up' or 'down'"}), 400
+
+    playlist, plugin_instance, error = _find_instance(data)
+    if error:
+        return error
+    playlist.move_plugin(plugin_instance.plugin_id, plugin_instance.name, -1 if direction == "up" else 1)
+    current_app.config['DEVICE_CONFIG'].write_config()
+    return jsonify({"success": True, "message": f"Moved '{plugin_instance.name}' {direction}."})
+
+
+@playlist_bp.route('/set_plugin_instance_enabled', methods=['POST'])
+def set_plugin_instance_enabled():
+    """Enables or disables a plugin instance: disabled ones keep their settings but are skipped."""
+    data = request.get_json(silent=True) or {}
+    enabled = data.get("enabled")
+    if not isinstance(enabled, bool):
+        return jsonify({"error": "enabled must be true or false"}), 400
+
+    playlist, plugin_instance, error = _find_instance(data)
+    if error:
+        return error
+    plugin_instance.enabled = enabled
+    current_app.config['DEVICE_CONFIG'].write_config()
+    state = "enabled" if enabled else "paused"
+    return jsonify({"success": True, "message": f"'{plugin_instance.name}' {state}."})

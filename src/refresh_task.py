@@ -183,6 +183,9 @@ class RefreshTask:
             return None, None
 
         plugin = playlist.get_next_plugin()
+        if plugin is None:
+            logger.info(f"Active playlist '{playlist.name}' has no enabled plugins.")
+            return None, None
         logger.info(f"Determined next plugin. | active_playlist: {playlist.name} | plugin_instance: {plugin.name}")
 
         return playlist, plugin

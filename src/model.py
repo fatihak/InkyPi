@@ -223,13 +223,40 @@ class Playlist:
         return next((p for p in self.plugins if p.plugin_id == plugin_id and p.name == name), None)
 
     def get_next_plugin(self):
-        """Returns the next plugin instance in the playlist and update the current_plugin_index."""
-        if self.current_plugin_index is None:
-            self.current_plugin_index = 0
-        else:
-            self.current_plugin_index = (self.current_plugin_index + 1) % len(self.plugins)
-        
-        return self.plugins[self.current_plugin_index]
+        """Returns the next enabled plugin instance and updates current_plugin_index.
+
+        Disabled instances are skipped. Returns None (index unchanged) when the playlist
+        has no enabled instance.
+        """
+        count = len(self.plugins)
+        if count == 0:
+            return None
+        start = 0 if self.current_plugin_index is None else self.current_plugin_index + 1
+        for offset in range(count):
+            index = (start + offset) % count
+            if self.plugins[index].enabled:
+                self.current_plugin_index = index
+                return self.plugins[index]
+        return None
+
+    def move_plugin(self, plugin_id, name, offset):
+        """Moves an instance up (offset < 0) or down (offset > 0) in the playlist.
+
+        The rotation keeps pointing at the same instance, so moving items never makes
+        the display skip or repeat one. Returns False if the instance is not found.
+        """
+        plugin = self.find_plugin(plugin_id, name)
+        if plugin is None:
+            return False
+        current = None
+        if self.current_plugin_index is not None and 0 <= self.current_plugin_index < len(self.plugins):
+            current = self.plugins[self.current_plugin_index]
+        old_index = self.plugins.index(plugin)
+        new_index = max(0, min(len(self.plugins) - 1, old_index + offset))
+        self.plugins.insert(new_index, self.plugins.pop(old_index))
+        if current is not None:
+            self.current_plugin_index = self.plugins.index(current)
+        return True
 
     def get_priority(self):
         """Determine priority of a playlist, based on the time range"""
@@ -279,14 +306,17 @@ class PluginInstance:
         settings (dict): Settings associated with the plugin.
         refresh (dict): Refresh settings, such as interval and scheduled time.
         latest_refresh (str): ISO-formatted string representing the last refresh time.
+        enabled (bool): Whether the playlist rotation includes this instance.
     """
 
-    def __init__(self, plugin_id, name, settings, refresh, latest_refresh_time=None):
+    def __init__(self, plugin_id, name, settings, refresh, latest_refresh_time=None, enabled=True):
         self.plugin_id = plugin_id
         self.name = name
         self.settings = settings
         self.refresh = refresh
         self.latest_refresh_time = latest_refresh_time
+        # Disabled instances stay in the playlist (with their settings) but are skipped
+        self.enabled = enabled
 
     def update(self, updated_data):
         """Update attributes of the class with the dictionary values."""
@@ -346,6 +376,7 @@ class PluginInstance:
             "plugin_settings": self.settings,
             "refresh": self.refresh,
             "latest_refresh_time": self.latest_refresh_time,
+            "enabled": self.enabled,
         }
 
     @classmethod
@@ -356,4 +387,5 @@ class PluginInstance:
             settings=data["plugin_settings"],
             refresh=data["refresh"],
             latest_refresh_time=data.get("latest_refresh_time"),
+            enabled=data.get("enabled", True) is not False,
         )
