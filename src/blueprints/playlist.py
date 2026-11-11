@@ -93,6 +93,8 @@ def create_playlist():
 
     if not playlist_name or not playlist_name.strip():
         return jsonify({"error": "Playlist name is required"}), 400
+    if "/" in playlist_name:
+        return jsonify({"error": "Playlist name cannot contain '/'"}), 400
     if not start_time or not end_time:
         return jsonify({"error": "Start time and End time are required"}), 400
 
@@ -131,10 +133,14 @@ def update_playlist(playlist_name):
     playlist = playlist_manager.get_playlist(playlist_name)
     if not playlist:
         return jsonify({"error": f"Playlist '{playlist_name}' does not exist"}), 400
+    if "/" in new_name:
+        return jsonify({"error": "Playlist name cannot contain '/'"}), 400
+    if new_name != playlist_name and playlist_manager.get_playlist(new_name):
+        return jsonify({"error": f"Playlist with name '{new_name}' already exists"}), 400
 
     result = playlist_manager.update_playlist(playlist_name, new_name, start_time, end_time)
     if not result:
-        return jsonify({"error": "Failed to delete playlist"}), 500
+        return jsonify({"error": "Failed to update playlist"}), 500
     device_config.write_config()
 
     return jsonify({"success": True, "message": f"Updated playlist '{playlist_name}'!"})
