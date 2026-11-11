@@ -149,6 +149,18 @@
         let previewUrl = null;
         let previewRequest = 0;
 
+        function syncColourMode(value) {
+            const field = document.getElementById('colourMode');
+            if (field) { field.value = value; updateColourManual(); }
+            showPreview(true);
+        }
+
+        function updateColourManual() {
+            const field = document.getElementById('colourMode');
+            const panel = document.getElementById('colourManual');
+            if (field && panel) panel.hidden = field.value !== 'manual';
+        }
+
         function buildSettingsFormData() {
             const formData = new FormData(document.getElementById('settingsForm'));
             Object.keys(uploadedFiles).forEach(key => {
@@ -157,21 +169,33 @@
             return formData;
         }
 
-        async function showPreview() {
+        // reuse: only the colour rendering changed, the server can reuse the last plugin output
+        async function showPreview(reuse = false) {
             const requestId = ++previewRequest;
+            const simulateBox = document.getElementById('simulateDisplay');
+            const modeField = document.getElementById('colourMode');
+            const previewMode = document.getElementById('previewColourMode');
+            if (modeField && previewMode) previewMode.value = modeField.value;
             const img = document.getElementById('previewImage');
             const status = document.getElementById('previewStatus');
             const statusText = document.getElementById('previewStatusText');
             const sendButton = document.getElementById('sendToDisplayButton');
             document.getElementById('previewModal').style.display = 'block';
-            img.hidden = true;
-            status.hidden = false;
-            status.querySelector('.loading-indicator').style.display = 'block';
-            statusText.textContent = t('Rendering… this can take a few seconds.');
+            const keepImage = reuse && !img.hidden;  // quick update: keep the current image meanwhile
+            img.classList.toggle('updating', keepImage);
+            if (!keepImage) {
+                img.hidden = true;
+                status.hidden = false;
+                status.querySelector('.loading-indicator').style.display = 'block';
+                statusText.textContent = t('Rendering… this can take a few seconds.');
+            }
             sendButton.disabled = true;
             const started = performance.now();
             try {
-                const response = await fetch('{{ url_for("plugin.preview_image") }}', { method: 'POST', body: buildSettingsFormData() });
+                const previewData = buildSettingsFormData();
+                if (simulateBox) previewData.append('simulateDisplay', simulateBox.checked ? 'true' : 'false');
+                if (reuse) previewData.append('reuseRender', 'true');
+                const response = await fetch('{{ url_for("plugin.preview_image") }}', { method: 'POST', body: previewData });
                 if (requestId !== previewRequest) return;  // a newer preview was requested
                 if (!response.ok) {
                     let result = {};
@@ -183,12 +207,18 @@
                 previewUrl = URL.createObjectURL(blob);
                 img.src = previewUrl;
                 img.hidden = false;
+                img.classList.remove('updating');
                 status.hidden = true;
                 sendButton.disabled = false;
-                document.getElementById('previewHint').textContent =
-                    t('Rendered in {seconds} s. Nothing has been sent to the display yet.', { seconds: ((performance.now() - started) / 1000).toFixed(1) });
+                const seconds = ((performance.now() - started) / 1000).toFixed(1);
+                document.getElementById('previewHint').textContent = response.headers.get('X-Preview-Reused') === '1'
+                    ? t('Colours updated in {seconds} s (same plugin image). Nothing has been sent to the display yet.', { seconds })
+                    : t('Rendered in {seconds} s. Nothing has been sent to the display yet.', { seconds });
             } catch (error) {
                 if (requestId !== previewRequest) return;
+                img.hidden = true;
+                img.classList.remove('updating');
+                status.hidden = false;
                 status.querySelector('.loading-indicator').style.display = 'none';
                 statusText.textContent = t('Could not render the preview: {message}', { message: error.message });
             }
@@ -279,6 +309,25 @@
                 hiddenElement.remove();
             }
         }
+
+        // colour rendering of this instance (recommended mode when not chosen yet)
+        document.addEventListener('DOMContentLoaded', () => {
+            const modeField = document.getElementById('colourMode');
+            if (!modeField) return;
+            const saved = loadPluginSettings ? pluginSettings : {};
+            modeField.value = ['photo', 'graphics', 'manual'].includes(saved.colourMode) ? saved.colourMode : modeField.dataset.default;
+            const rendering = document.getElementById('colourRendering');
+            rendering.value = ['photo', 'graphics'].includes(saved.colourRendering) ? saved.colourRendering : modeField.dataset.default;
+            document.querySelectorAll('.colour-slider input').forEach(slider => {
+                if (saved[slider.name] !== undefined && saved[slider.name] !== '') slider.value = saved[slider.name];
+                const output = slider.parentElement.querySelector('output');
+                const show = () => { output.textContent = Number(slider.value).toFixed(slider.step === '0.05' ? 2 : 1); };
+                slider.addEventListener('input', show);
+                show();
+            });
+            modeField.addEventListener('change', updateColourManual);
+            updateColourManual();
+        });
 
         // populate form values from plugin settings
         document.addEventListener('DOMContentLoaded', () => {
@@ -391,6 +440,44 @@
         <form id="settingsForm" class="settings-form" onsubmit="return false;">
             <div class="settings-container">
                 {% include settings_template %}
+
+                {% if has_palette %}
+                <!-- How colours are converted for the e-paper palette -->
+                {% set recommended = ' (' ~ _('recommended') ~ ')' %}
+                <div class="form-group colour-mode-group">
+                    <label for="colourMode" class="form-label">{{ _('Colours on the display:') }}</label>
+                    <select id="colourMode" name="colourMode" class="form-input" data-default="{{ default_colour_mode }}">
+                        <option value="photo">{{ _('Photo: smooth shades (dithering)') }}{{ recommended if default_colour_mode == 'photo' }}</option>
+                        <option value="graphics">{{ _('Graphics: vivid colours, crisp text') }}{{ recommended if default_colour_mode == 'graphics' }}</option>
+                        <option value="manual">{{ _('Manual: my own settings') }}</option>
+                    </select>
+                    <p class="form-help" style="flex-basis: 100%;">{{ _('Graphics mode adapts colours to the inks of the display (pastel colours become readable, text stays black). Use Preview with “Simulate the e-ink display” to compare.') }}</p>
+                </div>
+                <div class="colour-manual" id="colourManual" hidden>
+                    <p class="form-help">{{ _('These values replace the image settings of the Settings page for this instance only.') }}</p>
+                    <div class="form-group">
+                        <label for="colourRendering" class="form-label">{{ _('Rendering:') }}</label>
+                        <select id="colourRendering" name="colourRendering" class="form-input">
+                            <option value="photo">{{ _('Photo') }}</option>
+                            <option value="graphics">{{ _('Graphics') }}</option>
+                        </select>
+                    </div>
+                    {% for field, key, label, max, step in [
+                        ('colourSaturation', 'saturation', _('Saturation:'), 2, 0.1),
+                        ('colourContrast', 'contrast', _('Contrast:'), 2, 0.1),
+                        ('colourBrightness', 'brightness', _('Brightness:'), 2, 0.1),
+                        ('colourSharpness', 'sharpness', _('Sharpness:'), 2, 0.1),
+                        ('colourInk', 'inky_saturation', _('Inky Driver Saturation:'), 1, 0.05)] %}
+                    <div class="form-group colour-slider">
+                        <label for="{{ field }}" class="form-label">{{ label }}</label>
+                        <input type="range" id="{{ field }}" name="{{ field }}" class="form-input"
+                               min="0" max="{{ max }}" step="{{ step }}"
+                               value="{{ global_image_settings.get(key, 0.5 if key == 'inky_saturation' else 1.0) }}">
+                        <output for="{{ field }}" class="colour-slider-value">{{ global_image_settings.get(key, 0.5 if key == 'inky_saturation' else 1.0) }}</output>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
 
                 <!-- Collapsible Style Settings Section -->
                 {% if style_settings %}
@@ -506,6 +593,19 @@
         <div class="modal-content preview-modal-content">
             <button type="button" class="close-button" onclick="closePreview()" aria-label="{{ _('Close') }}">×</button>
             <h2 id="previewModalTitle">{{ _('Preview') }}</h2>
+            {% if has_palette %}
+            <div class="preview-options">
+                <label class="check-label">
+                    <input type="checkbox" id="simulateDisplay" checked onchange="showPreview(true)">
+                    <span>{{ _('Simulate the e-ink display') }}</span>
+                </label>
+                <select id="previewColourMode" class="form-input" onchange="syncColourMode(this.value)" aria-label="{{ _('Colours on the display:') }}">
+                    <option value="photo">{{ _('Photo') }}{{ recommended if default_colour_mode == 'photo' }}</option>
+                    <option value="graphics">{{ _('Graphics') }}{{ recommended if default_colour_mode == 'graphics' }}</option>
+                    <option value="manual">{{ _('Manual') }}</option>
+                </select>
+            </div>
+            {% endif %}
             <div class="preview-frame" id="previewFrame">
                 <div class="preview-status" id="previewStatus">
                     <div class="loading-indicator" style="display:block; margin: 0 auto 10px;"></div>

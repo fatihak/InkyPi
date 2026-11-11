@@ -1587,10 +1587,18 @@ button, input, select, textarea, optgroup { font-family: inherit; }
 
 /* In-browser preview dialog */
 .modal-content.preview-modal-content { max-width: 880px; margin: 6vh auto; }
+.colour-manual { border-left: 3px solid var(--accent-primary); padding: 4px 0 4px 14px; margin: 0 0 16px; }
+.colour-manual[hidden] { display: none; }
+.colour-manual .form-label { min-width: 190px; }
+.colour-slider input[type=range] { flex: 1; max-width: 360px; padding: 0; accent-color: var(--accent-primary); }
+.colour-slider-value { min-width: 3ch; font-variant-numeric: tabular-nums; }
+.preview-options { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; margin-bottom: 10px; }
+.preview-options select { width: auto; min-width: 180px; }
 .preview-frame {
     display: flex; align-items: center; justify-content: center;
     min-height: 220px; border: 1px solid var(--border-color); border-radius: 8px;
     background: var(--bg-primary); overflow: hidden; margin-bottom: 10px;
 }
+.preview-frame img.updating { opacity: 0.5; transition: opacity 0.2s; }
 .preview-frame img { display: block; max-width: 100%; height: auto; background: #fff; }
 .preview-status { text-align: center; color: var(--text-secondary); padding: 24px; }

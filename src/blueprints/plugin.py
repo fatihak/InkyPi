@@ -1,5 +1,7 @@
 from flask import Blueprint, request, jsonify, current_app, render_template, send_from_directory, send_file
 from plugins.plugin_registry import get_plugin_instance
+from utils import eink
+from utils.image_utils import apply_image_enhancement
 from utils.app_utils import resolve_path, handle_request_files, parse_form
 from refresh_task import ManualRefresh, PlaylistRefresh
 import io
@@ -8,6 +10,7 @@ import os
 import logging
 from utils.i18n import _
 import threading
+import time
 
 logger = logging.getLogger(__name__)
 plugin_bp = Blueprint("plugin", __name__)
@@ -59,6 +62,14 @@ def plugin_page(plugin_id):
                 template_params["refresh_settings"] = plugin_instance.refresh
 
             template_params["playlists"] = playlist_manager.get_playlist_names()
+            # Colour rendering: recommended mode for this plugin, global values used as the
+            # starting point of manual settings, and whether the display has a known palette
+            # (graphics mode and e-ink simulation available)
+            template_params["default_colour_mode"] = eink.default_mode(plugin_id)
+            template_params["global_image_settings"] = eink.colour_plan(
+                plugin_id, {}, device_config.get_config("image_settings"))["enhance"]
+            display_manager = current_app.config.get('DISPLAY_MANAGER')
+            template_params["has_palette"] = bool(display_manager and display_manager.get_palette())
         except Exception as e:
             logger.exception("EXCEPTION CAUGHT: " + str(e))
             return jsonify({"error": _("An error occurred: {message}", message=str(e))}), 500
@@ -252,7 +263,9 @@ def update_now():
 
             plugin = get_plugin_instance(plugin_config)
             image = plugin.generate_image(plugin_settings, device_config)
-            display_manager.display_image(image, image_settings=plugin_config.get("image_settings", []))
+            display_manager.display_image(image, image_settings=plugin_config.get("image_settings", []),
+                                          colour_plan=eink.colour_plan(plugin_id, plugin_settings,
+                                                                       device_config.get_config("image_settings")))
 
     except Exception as e:
         logger.exception(f"Error in update_now: {str(e)}")
@@ -263,6 +276,22 @@ def update_now():
 
 # One preview at a time: each one may start a headless browser on a small device
 _preview_lock = threading.Lock()
+
+# Last plugin output, so that changing only the colour rendering of a preview (simulation,
+# photo/graphics/manual) does not render the plugin again (seconds of headless browser on a Pi).
+PREVIEW_CACHE_SECONDS = 600
+_preview_cache = {}
+
+
+def _preview_cache_key(plugin_id, plugin_settings):
+    content = {k: v for k, v in plugin_settings.items() if k not in eink.RENDER_FIELDS}
+    return json.dumps([plugin_id, content], sort_keys=True, default=str)
+
+
+def _cached_plugin_image(key):
+    if _preview_cache.get("key") == key and time.monotonic() - _preview_cache["time"] < PREVIEW_CACHE_SECONDS:
+        return _preview_cache["image"].copy()
+    return None
 
 
 @plugin_bp.route('/preview_image', methods=['POST'])
@@ -283,16 +312,33 @@ def preview_image():
         if not plugin_config:
             return jsonify({"error": _("Plugin '{name}' not found", name=plugin_id)}), 404
 
-        plugin = get_plugin_instance(plugin_config)
-        image = plugin.generate_image(plugin_settings, device_config)
+        simulate = plugin_settings.pop("simulateDisplay", None) == "true"
+        # (new uploads get new file names, so they never match a cached render)
+        reuse = plugin_settings.pop("reuseRender", None) == "true"
+        cache_key = _preview_cache_key(plugin_id, plugin_settings)
+        image = _cached_plugin_image(cache_key) if reuse else None
+        reused = image is not None
         if image is None:
-            return jsonify({"error": _("The plugin did not produce an image")}), 500
+            plugin = get_plugin_instance(plugin_config)
+            image = plugin.generate_image(plugin_settings, device_config)
+            if image is None:
+                return jsonify({"error": _("The plugin did not produce an image")}), 500
+            _preview_cache.clear()
+            _preview_cache.update(key=cache_key, image=image.copy(), time=time.monotonic())
+        display_manager = current_app.config.get('DISPLAY_MANAGER')
+        palette = display_manager.get_palette() if display_manager else None
+        if simulate and palette:
+            # What the panel will show: same enhancement and colour rendering as a real refresh
+            plan = eink.colour_plan(plugin_id, plugin_settings, device_config.get_config("image_settings"))
+            image = apply_image_enhancement(image.convert("RGB"), plan["enhance"])
+            image = eink.simulate(image, palette, plan["mode"], plan["saturation"])
 
         buffer = io.BytesIO()
         image.save(buffer, format="PNG")
         buffer.seek(0)
         response = send_file(buffer, mimetype="image/png")
         response.headers["Cache-Control"] = "no-store"
+        response.headers["X-Preview-Reused"] = "1" if reused else "0"
         return response
     except Exception as e:
         logger.exception(f"Error in preview_image: {str(e)}")
