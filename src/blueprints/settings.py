@@ -45,6 +45,10 @@ def save_settings():
             return jsonify({"error": "Refresh interval is required"}), 400
         if not form_data.get("timezoneName"):
             return jsonify({"error": "Time Zone is required"}), 400
+        if form_data.get("timezoneName") not in pytz.all_timezones_set:
+            return jsonify({"error": f"Unknown time zone: {form_data.get('timezoneName')}"}), 400
+        if form_data.get("orientation") not in ("horizontal", "vertical"):
+            return jsonify({"error": "Orientation must be horizontal or vertical"}), 400
         if not time_format or time_format not in ["12h", "24h"]:
             return jsonify({"error": "Time format is required"}), 400
         previous_interval_seconds = device_config.get_config("plugin_cycle_interval_seconds")

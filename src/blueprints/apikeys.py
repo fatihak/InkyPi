@@ -27,17 +27,23 @@ def parse_env_file(filepath):
         return []
 
 
+def quote_env_value(value):
+    """Double-quote a value for python-dotenv, escaping backslashes and quotes.
+    Unquoted values broke on '#', '$' or quotes, and silently disappeared on reload."""
+    escaped = value.replace("\\", "\\\\").replace('"', '\\"')
+    return f'"{escaped}"'
+
+
 def write_env_file(filepath, entries):
-    """Write entries to .env file."""
+    """Write entries to .env file (readable by its owner only: it holds secrets)."""
     try:
-        with open(filepath, 'w') as f:
+        fd = os.open(filepath, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+        with os.fdopen(fd, 'w') as f:
             f.write("# InkyPi API Keys and Secrets\n")
             f.write("# Managed via web interface\n\n")
             for key, value in entries:
-                # Quote values with spaces or special characters
-                if ' ' in value or '"' in value or "'" in value:
-                    value = f'"{value}"'
-                f.write(f"{key}={value}\n")
+                f.write(f"{key}={quote_env_value(value)}\n")
+        os.chmod(filepath, 0o600)
         return True
     except Exception as e:
         logger.error(f"Error writing .env file: {e}")
@@ -100,6 +106,8 @@ def save_apikeys():
             else:
                 # Use provided value
                 value = entry.get('value', '').strip()
+                if "\n" in value or "\r" in value:
+                    return jsonify({"error": f"Invalid value for {key}: line breaks are not allowed"}), 400
             
             valid_entries.append((key, value))
         

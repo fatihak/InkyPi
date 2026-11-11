@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify, current_app, render_template, send_from_directory
 from plugins.plugin_registry import get_plugin_instance
-from utils.app_utils import resolve_path, handle_request_files, parse_form
+from utils.app_utils import (resolve_path, handle_request_files, parse_form, delete_upload_files,
+                             collect_upload_paths, referenced_upload_paths)
 from refresh_task import ManualRefresh, PlaylistRefresh
 import json
 import os
@@ -20,14 +21,28 @@ def _delete_plugin_instance_images(device_config, plugin_instance_obj):
         except Exception as e:
             logger.warning(f"Failed to delete plugin instance image {plugin_image_path}: {e}")
 
-    # Call the plugin's cleanup method to handle plugin-specific resource cleanup
+    # Call the plugin's cleanup method to handle plugin-specific resource cleanup,
+    # hiding uploads that another instance still uses (shared by "Save as")
     try:
         plugin_config = device_config.get_plugin(plugin_instance_obj.plugin_id)
         if plugin_config:
             plugin = get_plugin_instance(plugin_config)
-            plugin.cleanup(plugin_instance_obj.settings)
+            still_used = referenced_upload_paths(device_config.get_playlist_manager(), exclude=plugin_instance_obj)
+            plugin.cleanup(_without_paths(plugin_instance_obj.settings, still_used))
+            # Generic part: any other upload (e.g. the Style background image) nobody else uses
+            delete_upload_files(sorted(collect_upload_paths(plugin_instance_obj.settings) - still_used))
     except Exception as e:
         logger.warning(f"Error during plugin cleanup for {plugin_instance_obj.plugin_id}: {e}")
+
+def _without_paths(settings, paths):
+    """Copy of settings where the given upload paths are removed from scalar/list values."""
+    cleaned = {}
+    for key, value in (settings or {}).items():
+        if isinstance(value, list):
+            cleaned[key] = [item for item in value if item not in paths]
+        else:
+            cleaned[key] = None if value in paths else value
+    return cleaned
 
 # Removed module-level PLUGINS_DIR - will resolve dynamically in route handlers
 
@@ -193,7 +208,14 @@ def update_plugin_instance(instance_name):
         plugin_settings.update(handle_request_files(request.files, request.form))
 
         if plugin_settings:  # Only update if there are actual plugin settings
+            old_paths = collect_upload_paths(plugin_instance.settings)
             plugin_instance.settings = plugin_settings
+            # Delete uploads removed from this instance in the edit form (lists such as
+            # imageFiles[] and scalar fields such as backgroundImageFile), unless another
+            # instance still uses them
+            removed = old_paths - collect_upload_paths(plugin_settings)
+            still_used = referenced_upload_paths(playlist_manager, exclude=plugin_instance)
+            delete_upload_files(sorted(removed - still_used))
 
         device_config.write_config()
     except Exception as e:
