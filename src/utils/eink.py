@@ -2,8 +2,11 @@
 
 Two rendering modes:
 
-- "photo": the driver's own conversion (Floyd-Steinberg dithering towards a palette
-  blended by the "Inky Driver Saturation" setting). Best for photographs.
+- "photo": Floyd-Steinberg dithering towards the inks as they really look (measured
+  palette, relative to the paper white), after lifting the midtones a little. Colours
+  stay faithful (a green sofa stays green) instead of being washed out.
+- "classic": the driver's own conversion (dithering towards a palette blended by the
+  "Inky Driver Saturation" setting), available in manual mode.
 - "graphics": tuned for UI-like images (weather, calendar, text):
     1. colours are adapted to the inks that will render them: coloured pixels are
        saturated, and darkened according to how dark the matching ink really is
@@ -25,12 +28,19 @@ import logging
 import re
 
 import numpy as np
-from PIL import Image, ImageFilter
+from PIL import Image, ImageEnhance, ImageFilter
 
 logger = logging.getLogger(__name__)
 
 PHOTO, GRAPHICS, MANUAL = "photo", "graphics", "manual"
+CLASSIC = "classic"  # the driver's own dithering (former photo rendering), manual mode only
 MODES = (PHOTO, GRAPHICS, MANUAL)
+RENDERINGS = (PHOTO, GRAPHICS, CLASSIC)
+
+# Photo rendering: midtones lifted (the inks are darker than a screen) and a little more
+# saturation, chosen by comparing variants side by side on a Spectra 6 panel.
+PHOTO_GAMMA = 0.75
+PHOTO_SATURATION = 1.15
 
 # Manual mode: per-instance values replacing the global image settings
 MANUAL_FIELDS = {"saturation": "colourSaturation", "contrast": "colourContrast",
@@ -66,7 +76,8 @@ def resolve_mode(plugin_id, settings):
     settings = settings or {}
     mode = settings.get("colourMode")
     if mode == MANUAL:
-        mode = settings.get("colourRendering")
+        rendering = settings.get("colourRendering")
+        return rendering if rendering in RENDERINGS else default_mode(plugin_id)
     return mode if mode in (PHOTO, GRAPHICS) else default_mode(plugin_id)
 
 
@@ -249,9 +260,14 @@ def render_indices(image, palette, mode, saturation=0.5):
         neutral_inks = _neutral_inks(palette)
         indices = _ordered_indices(rgb, quant, neutral_inks)
         return _sharpen_edges(indices, pixels, rgb, palette, neutral_inks)
+    image = image.convert("RGB")
+    if mode == PHOTO:
+        quant = perceived_palette(palette)
+        lift = [round(255 * (i / 255) ** PHOTO_GAMMA) for i in range(256)] * 3
+        image = ImageEnhance.Color(image.point(lift)).enhance(PHOTO_SATURATION)
     pal_image = Image.new("P", (1, 1))
-    pal_image.putpalette([int(v) for v in quant.flatten()])
-    quantized = image.convert("RGB").quantize(len(quant), palette=pal_image, dither=Image.Dither.FLOYDSTEINBERG)
+    pal_image.putpalette([int(v) for v in np.asarray(quant).flatten()])
+    quantized = image.quantize(len(quant), palette=pal_image, dither=Image.Dither.FLOYDSTEINBERG)
     return np.asarray(quantized, dtype=np.uint8)
 
 
@@ -262,10 +278,14 @@ def to_pure_palette_image(indices, palette):
     return image
 
 
+def perceived_palette(palette):
+    """The inks as the eye sees them: measured colours relative to the paper white."""
+    measured = np.array(palette["measured"], dtype=np.float32)
+    white = measured[_white_index(palette)]
+    return np.clip(measured / np.maximum(white, 1) * 255.0, 0, 255)
+
+
 def simulate(image, palette, mode, saturation=0.5):
     """What the panel will look like (measured ink colours, normalised to the paper white)."""
     indices = render_indices(image, palette, mode, saturation)
-    measured = np.array(palette["measured"], dtype=np.float32)
-    white = measured[_white_index(palette)]
-    perceived = np.clip(measured / np.maximum(white, 1) * 255.0, 0, 255).astype(np.uint8)
-    return Image.fromarray(perceived[indices], "RGB")
+    return Image.fromarray(perceived_palette(palette).astype(np.uint8)[indices], "RGB")

@@ -317,7 +317,7 @@
             const saved = loadPluginSettings ? pluginSettings : {};
             modeField.value = ['photo', 'graphics', 'manual'].includes(saved.colourMode) ? saved.colourMode : modeField.dataset.default;
             const rendering = document.getElementById('colourRendering');
-            rendering.value = ['photo', 'graphics'].includes(saved.colourRendering) ? saved.colourRendering : modeField.dataset.default;
+            rendering.value = ['photo', 'graphics', 'classic'].includes(saved.colourRendering) ? saved.colourRendering : modeField.dataset.default;
             document.querySelectorAll('.colour-slider input').forEach(slider => {
                 if (saved[slider.name] !== undefined && saved[slider.name] !== '') slider.value = saved[slider.name];
                 const output = slider.parentElement.querySelector('output');
@@ -460,6 +460,7 @@
                         <select id="colourRendering" name="colourRendering" class="form-input">
                             <option value="photo">{{ _('Photo') }}</option>
                             <option value="graphics">{{ _('Graphics') }}</option>
+                            <option value="classic">{{ _('Classic (driver dithering)') }}</option>
                         </select>
                     </div>
                     {% for field, key, label, max, step in [
