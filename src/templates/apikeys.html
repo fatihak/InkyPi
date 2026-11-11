@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ ui_lang }}">
 <head>
     {% include 'partials/head.html' %}
-    <title>API Keys · {{ device_name }}</title>
+    <title>{{ _('API Keys') }} · {{ device_name }}</title>
     <style>
         .apikeys-container {
             max-width: 700px;
@@ -186,8 +186,8 @@
             <div class="page-title">
                 <span style="font-size: 28px;" aria-hidden="true">🔑</span>
                 <div>
-                    <h1>API Keys</h1>
-                    <div class="page-subtitle">Secrets used by plugins such as OpenWeatherMap, OpenAI or NASA</div>
+                    <h1>{{ _('API Keys') }}</h1>
+                    <div class="page-subtitle">{{ _('Secrets used by plugins such as OpenWeatherMap, OpenAI or NASA') }}</div>
                 </div>
             </div>
         </div>
@@ -201,14 +201,14 @@
                     <div class="apikey-row" data-existing="true">
                         <input type="text" class="apikey-key" value="{{ entry.key }}" placeholder="KEY_NAME" readonly>
                         <input type="text" class="apikey-value masked" value="{{ entry.masked }}" placeholder="(unchanged)" readonly>
-                        <button type="button" class="btn-delete" onclick="deleteRow(this)" title="Delete">×</button>
+                        <button type="button" class="btn-delete" onclick="deleteRow(this)" title="{{ _('Delete') }}">×</button>
                     </div>
                     {% endfor %}
                 {% else %}
                     <div class="empty-state" id="empty-state">
                         <div class="empty-state-icon">🔐</div>
-                        <p>No API keys configured yet.</p>
-                        <p>Add keys below to enable plugin features.</p>
+                        <p>{{ _('No API keys configured yet.') }}</p>
+                        <p>{{ _('Add keys below to enable plugin features.') }}</p>
                     </div>
                 {% endif %}
             </div>
@@ -216,7 +216,7 @@
             <!-- Add Buttons -->
             <div class="add-buttons-grid">
                 <button type="button" class="btn-add" onclick="addRow()">
-                    <span>+</span> Add API Key
+                    <span>+</span> {{ _('Add API Key') }}
                 </button>
                 <button type="button" class="btn-preset" data-key="OPEN_WEATHER_MAP_SECRET" onclick="addPreset(this)">OPEN_WEATHER_MAP_SECRET</button>
                 <button type="button" class="btn-preset" data-key="OPEN_AI_SECRET" onclick="addPreset(this)">OPEN_AI_SECRET</button>
@@ -229,16 +229,14 @@
             <div class="info-banner">
                 <span class="info-banner-icon">ℹ️</span>
                 <span class="info-banner-text">
-                    API keys are stored in the <code>.env</code> file on the device.
-                    For security, existing values are never displayed. To change a key, delete it and add a new one.
-                    Some plugins may require a restart after changing keys.
+                    {{ _('API keys are stored in the .env file on the device. For security, existing values are never displayed. To change a key, delete it and add a new one. Some plugins may require a restart after changing keys.') }}
                 </span>
             </div>
         </div>
         
         <!-- Save Button -->
         <div class="buttons-container">
-            <button type="button" onclick="saveKeys()" class="action-button">Save</button>
+            <button type="button" onclick="saveKeys()" class="action-button">{{ _('Save') }}</button>
         </div>
     </div>
     
@@ -259,8 +257,8 @@
             row.dataset.existing = 'false';
             row.innerHTML = `
                 <input type="text" class="apikey-key" value="${key}" placeholder="KEY_NAME">
-                <input type="text" class="apikey-value" value="${value}" placeholder="Enter value">
-                <button type="button" class="btn-delete" onclick="deleteRow(this)" title="Delete">×</button>
+                <input type="text" class="apikey-value" value="${value}" placeholder="${t('Enter value')}">
+                <button type="button" class="btn-delete" onclick="deleteRow(this)" title="${t('Delete')}">×</button>
             `;
             list.appendChild(row);
             
@@ -313,8 +311,8 @@
                 list.innerHTML = `
                     <div class="empty-state" id="empty-state">
                         <div class="empty-state-icon">🔐</div>
-                        <p>No API keys configured yet.</p>
-                        <p>Add keys below to enable plugin features.</p>
+                        <p>${t('No API keys configured yet.')}</p>
+                        <p>${t('Add keys below to enable plugin features.')}</p>
                     </div>
                 `;
             }
@@ -356,7 +354,7 @@
                     const valueInput = row.querySelector('.apikey-value');
                     if (!valueInput.value.trim()) {
                         valueInput.focus();
-                        showResponseModal('failure', 'Please enter a value for new API keys');
+                        showResponseModal('failure', t('Please enter a value for new API keys'));
                         return;
                     }
                 }
@@ -380,7 +378,7 @@
                 }
             } catch (error) {
                 console.error('Error saving:', error);
-                showResponseModal('failure', 'Failed to save API keys');
+                showResponseModal('failure', t('Failed to save API keys'));
             }
         }
     </script>

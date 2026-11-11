@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ ui_lang }}">
 <head>
     {% include 'partials/head.html' %}
-    <title>Playlists · {{ device_name }}</title>
+    <title>{{ _('Playlists') }} · {{ device_name }}</title>
     <script src="{{ url_for('static', filename='scripts/refresh_settings_manager.js') }}"></script>
     <style>
         .thumbnail-preview-modal {
@@ -44,13 +44,13 @@
             <div class="page-title">
                 <img src="{{ url_for('static', filename='icons/playlist.png') }}" alt="" class="app-icon">
                 <div>
-                    <h1>Playlists</h1>
-                    <div class="page-subtitle">The display cycles through the plugins of the playlist active at the current time.</div>
+                    <h1>{{ _('Playlists') }}</h1>
+                    <div class="page-subtitle">{{ _('The display cycles through the plugins of the playlist active at the current time.') }}</div>
                 </div>
             </div>
             <div class="page-actions">
-                <a class="btn" href="{{ url_for('main.main_page') }}#plugins">Add a plugin</a>
-                <button type="button" class="btn btn-primary" id="newPlaylistButton">New playlist</button>
+                <a class="btn" href="{{ url_for('main.main_page') }}#plugins">{{ _('Add a plugin') }}</a>
+                <button type="button" class="btn btn-primary" id="newPlaylistButton">{{ _('New playlist') }}</button>
             </div>
         </div>
 
@@ -60,44 +60,44 @@
             <div class="pl-header">
                 <div class="pl-title">
                     <h2>{{ playlist.name }}</h2>
-                    <span class="badge" title="Time range when this playlist is active">
+                    <span class="badge" title="{{ _('Time range when this playlist is active') }}">
                         🕒 {{ playlist.start_time }} – {{ playlist.end_time }}
                     </span>
-                    {% if is_active %}<span class="badge badge-accent">Active now</span>{% endif %}
+                    {% if is_active %}<span class="badge badge-accent">{{ _('Active now') }}</span>{% endif %}
                 </div>
                 <button type="button" class="icon-btn js-edit-playlist"
                         data-start="{{ playlist.start_time }}" data-end="{{ playlist.end_time }}">
-                    <img src="{{ url_for('static', filename='icons/settings.png') }}" alt=""><span>Edit playlist</span>
+                    <img src="{{ url_for('static', filename='icons/settings.png') }}" alt=""><span>{{ _('Edit playlist') }}</span>
                 </button>
             </div>
 
             {% if not playlist.plugins %}
             <div class="pl-empty">
-                No plugins yet. <a href="{{ url_for('main.main_page') }}#plugins">Pick a plugin</a> and use “Add to playlist”.
+                {{ _('No plugins yet.') }} <a href="{{ url_for('main.main_page') }}#plugins">{{ _('Pick a plugin') }}</a> {{ _('and use “Add to playlist”.') }}
             </div>
             {% endif %}
 
             {% for plugin_instance in playlist.plugins %}
-            {% set plugin_name = plugins.get(plugin_instance.plugin_id, {}).display_name or plugin_instance.plugin_id %}
+            {% set plugin_name = _(plugins.get(plugin_instance.plugin_id, {}).display_name or plugin_instance.plugin_id) %}
             {% set on_display = playlist.name == refresh_info.playlist and plugin_instance.name == refresh_info.plugin_instance %}
             <div class="inst-row {% if on_display %}on-display{% endif %} {% if not plugin_instance.enabled %}paused{% endif %}"
                  data-plugin-id="{{ plugin_instance.plugin_id }}"
                  data-instance="{{ plugin_instance.name }}"
                  data-plugin-name="{{ plugin_name }}">
                 <div class="inst-order">
-                    <button type="button" class="order-btn js-move" data-direction="up" title="Move up"
-                            aria-label="Move {{ plugin_instance.name }} up" {% if loop.first %}disabled{% endif %}>▲</button>
-                    <button type="button" class="order-btn js-move" data-direction="down" title="Move down"
-                            aria-label="Move {{ plugin_instance.name }} down" {% if loop.last %}disabled{% endif %}>▼</button>
+                    <button type="button" class="order-btn js-move" data-direction="up" title="{{ _('Move up') }}"
+                            aria-label="{{ _('Move {name} up', name=plugin_instance.name) }}" {% if loop.first %}disabled{% endif %}>▲</button>
+                    <button type="button" class="order-btn js-move" data-direction="down" title="{{ _('Move down') }}"
+                            aria-label="{{ _('Move {name} down', name=plugin_instance.name) }}" {% if loop.last %}disabled{% endif %}>▼</button>
                 </div>
                 {% if plugin_instance.latest_refresh_time %}
-                <button type="button" class="inst-thumb js-preview" title="Show the last image of {{ plugin_instance.name }}">
-                    <img class="thumb" alt="Last image of {{ plugin_instance.name }}" loading="lazy"
+                <button type="button" class="inst-thumb js-preview" title="{{ _('Show the last image of {name}', name=plugin_instance.name) }}">
+                    <img class="thumb" alt="{{ _('Last image of {name}', name=plugin_instance.name) }}" loading="lazy"
                          src="{{ url_for('plugin.plugin_instance_image', playlist_name=playlist.name, plugin_id=plugin_instance.plugin_id, instance_name=plugin_instance.name) }}?v={{ plugin_instance.latest_refresh_time | urlencode }}"
                          onerror="this.className='thumb-icon'; this.src='{{ url_for('plugin.image', plugin_id=plugin_instance.plugin_id, filename='icon.png') }}';">
                 </button>
                 {% else %}
-                <div class="inst-thumb" title="Not displayed yet">
+                <div class="inst-thumb" title="{{ _('Not displayed yet') }}">
                     <img class="thumb-icon" alt="" src="{{ url_for('plugin.image', plugin_id=plugin_instance.plugin_id, filename='icon.png') }}">
                 </div>
                 {% endif %}
@@ -105,44 +105,44 @@
                 <div class="inst-main">
                     <div class="inst-title">
                         <span>{{ plugin_instance.name }}</span>
-                        {% if on_display %}<span class="badge badge-live">On display</span>{% endif %}
-                        {% if not plugin_instance.enabled %}<span class="badge badge-paused" title="Skipped by the rotation; settings are kept">Paused</span>{% endif %}
+                        {% if on_display %}<span class="badge badge-live">{{ _('On display') }}</span>{% endif %}
+                        {% if not plugin_instance.enabled %}<span class="badge badge-paused" title="{{ _('Skipped by the rotation; settings are kept') }}">{{ _('Paused') }}</span>{% endif %}
                     </div>
                     <div class="inst-sub">
                         <span>{{ plugin_name }}</span>
                         {% set schedule = plugin_instance.refresh | format_refresh_schedule %}
-                        {% if schedule %}<span title="How often this plugin's image is regenerated">⟳ {{ schedule }}</span>{% endif %}
+                        {% if schedule %}<span title="{{ _('How often the image is regenerated') }}">⟳ {{ schedule }}</span>{% endif %}
                         {% if plugin_instance.latest_refresh_time %}
-                        <span title="{{ plugin_instance.latest_refresh_time }}">Updated {{ plugin_instance.latest_refresh_time | format_relative_time }}</span>
+                        <span title="{{ plugin_instance.latest_refresh_time }}">{{ _('Updated {when}', when=(plugin_instance.latest_refresh_time | format_relative_time)) }}</span>
                         {% else %}
-                        <span>Not displayed yet</span>
+                        <span>{{ _('Not displayed yet') }}</span>
                         {% endif %}
                     </div>
                 </div>
 
                 <div class="inst-actions">
                     <div class="loading-indicator small"></div>
-                    <label class="enable-toggle" title="Include this item in the rotation">
+                    <label class="enable-toggle" title="{{ _('Include this item in the rotation') }}">
                         <span class="toggle-container">
                             <input type="checkbox" class="toggle-checkbox js-enable" {% if plugin_instance.enabled %}checked{% endif %}
-                                   aria-label="Include {{ plugin_instance.name }} in the rotation">
+                                   aria-label="{{ _('Include {name} in the rotation', name=plugin_instance.name) }}">
                             <span class="toggle-label"></span>
                         </span>
-                        <span class="enable-text">In rotation</span>
+                        <span class="enable-text">{{ _('In rotation') }}</span>
                     </label>
-                    <a class="icon-btn" title="Edit settings"
+                    <a class="icon-btn" title="{{ _('Edit settings') }}"
                        href="{{ url_for('plugin.plugin_page', plugin_id=plugin_instance.plugin_id, instance=plugin_instance.name) }}">
-                        <img src="{{ url_for('static', filename='icons/edit.png') }}" alt=""><span>Edit</span>
+                        <img src="{{ url_for('static', filename='icons/edit.png') }}" alt=""><span>{{ _('Edit') }}</span>
                     </a>
-                    <button type="button" class="icon-btn js-refresh-settings" title="Change how often it refreshes"
+                    <button type="button" class="icon-btn js-refresh-settings" title="{{ _('Change how often it refreshes') }}"
                             data-refresh='{{ plugin_instance.refresh | tojson }}'>
-                        <img src="{{ url_for('static', filename='icons/clock.svg') }}" alt=""><span>Schedule</span>
+                        <img src="{{ url_for('static', filename='icons/clock.svg') }}" alt=""><span>{{ _('Schedule') }}</span>
                     </button>
-                    <button type="button" class="icon-btn js-display" title="Show it on the display now">
-                        <img src="{{ url_for('static', filename='icons/display.png') }}" alt=""><span>Display now</span>
+                    <button type="button" class="icon-btn js-display" title="{{ _('Show it on the display now') }}">
+                        <img src="{{ url_for('static', filename='icons/display.png') }}" alt=""><span>{{ _('Display now') }}</span>
                     </button>
-                    <button type="button" class="icon-btn danger js-delete" title="Remove from this playlist">
-                        <img src="{{ url_for('static', filename='icons/remove.png') }}" alt=""><span>Remove</span>
+                    <button type="button" class="icon-btn danger js-delete" title="{{ _('Remove from this playlist') }}">
+                        <img src="{{ url_for('static', filename='icons/remove.png') }}" alt=""><span>{{ _('Remove') }}</span>
                     </button>
                 </div>
             </div>
@@ -154,27 +154,27 @@
     <!-- Create / edit playlist -->
     <div id="playlistModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
         <div class="modal-content">
-            <button type="button" class="close-button" data-close="playlistModal" aria-label="Close">×</button>
-            <h2 id="modalTitle">New playlist</h2>
+            <button type="button" class="close-button" data-close="playlistModal" aria-label="{{ _('Close') }}">×</button>
+            <h2 id="modalTitle">{{ _('New playlist') }}</h2>
             <div class="separator"></div>
             <form id="scheduleForm" class="settings-form">
                 <input type="hidden" id="editingPlaylistName" value="">
                 <div class="form-group">
-                    <label for="playlist_name" class="form-label">Name</label>
-                    <input type="text" id="playlist_name" name="playlist_name" placeholder="e.g. Morning" required class="form-input" maxlength="60">
+                    <label for="playlist_name" class="form-label">{{ _('Name') }}</label>
+                    <input type="text" id="playlist_name" name="playlist_name" placeholder="{{ _('e.g. Morning') }}" required class="form-input" maxlength="60">
                 </div>
                 <div class="form-group">
-                    <label for="start_time" class="form-label">Active from</label>
+                    <label for="start_time" class="form-label">{{ _('Active from') }}</label>
                     <div class="time-range">
                         <select id="start_time" name="start_time" class="form-input"></select>
-                        <span>to</span>
+                        <span>{{ _('to') }}</span>
                         <select id="end_time" name="end_time" class="form-input"></select>
                     </div>
                 </div>
-                <p class="form-help">When several playlists overlap, the one with the shortest time range wins.</p>
+                <p class="form-help">{{ _('When several playlists overlap, the one with the shortest time range wins.') }}</p>
                 <div class="buttons-container">
-                    <button type="submit" class="action-button" id="saveButton">Save</button>
-                    <button type="button" class="action-button warn hidden" id="deleteButton">Delete playlist</button>
+                    <button type="submit" class="action-button" id="saveButton">{{ _('Save') }}</button>
+                    <button type="button" class="action-button warn hidden" id="deleteButton">{{ _('Delete playlist') }}</button>
                 </div>
             </form>
         </div>
@@ -183,15 +183,15 @@
     <!-- Refresh settings of a plugin instance -->
     <div id="refreshSettingsModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="refreshModalTitle">
         <div class="modal-content">
-            <button type="button" class="close-button" data-close="refreshSettingsModal" aria-label="Close">×</button>
-            <h2 id="refreshModalTitle">Refresh schedule</h2>
+            <button type="button" class="close-button" data-close="refreshSettingsModal" aria-label="{{ _('Close') }}">×</button>
+            <h2 id="refreshModalTitle">{{ _('Refresh schedule') }}</h2>
             <div class="separator"></div>
             <form id="refreshSettingsForm" class="settings-form" onsubmit="return false;">
                 {% set prefix = "modal" %}
                 {% include 'refresh_settings_form.html' %}
             </form>
             <div class="buttons-container">
-                <button type="button" class="action-button" id="saveRefreshButton">Save</button>
+                <button type="button" class="action-button" id="saveRefreshButton">{{ _('Save') }}</button>
             </div>
         </div>
     </div>
@@ -201,7 +201,7 @@
     <!-- Full size preview of an instance image -->
     <div id="thumbnailPreviewModal" class="thumbnail-preview-modal" role="dialog" aria-modal="true">
         <div class="thumbnail-preview-content">
-            <button type="button" class="thumbnail-preview-close" data-close="thumbnailPreviewModal" aria-label="Close">×</button>
+            <button type="button" class="thumbnail-preview-close" data-close="thumbnailPreviewModal" aria-label="{{ _('Close') }}">×</button>
             <img id="thumbnailPreviewImage" src="" alt="">
             <div class="thumbnail-preview-info" id="thumbnailPreviewInfo"></div>
         </div>
@@ -281,7 +281,7 @@
                     updateOrderButtons(row.closest('.pl-card'));
                     row.querySelector(`.js-move[data-direction="${button.dataset.direction}"]`)?.focus();
                 } catch (error) {
-                    showResponseModal('failure', `Error: ${error.message}`);
+                    showResponseModal('failure', t('Error: {message}', { message: error.message }));
                     updateOrderButtons(ctx.row.closest('.pl-card'));
                 }
                 return;
@@ -290,19 +290,19 @@
             if (button.classList.contains('js-preview')) {
                 const img = document.getElementById('thumbnailPreviewImage');
                 img.src = button.querySelector('img').src;
-                img.alt = `Last image of ${ctx.instance}`;
+                img.alt = t('Last image of {name}', { name: ctx.instance });
                 document.getElementById('thumbnailPreviewInfo').textContent = `${ctx.instance} · ${ctx.pluginName}`;
                 openModal('thumbnailPreviewModal');
             } else if (button.classList.contains('js-refresh-settings')) {
                 currentEdit = ctx;
                 playlistRefreshManager.open({ refreshSettings: JSON.parse(button.dataset.refresh || '{}') });
             } else if (button.classList.contains('js-delete')) {
-                if (!confirm(`Remove “${ctx.instance}” from the playlist “${ctx.playlist}”?\nIts settings and uploaded images will be deleted.`)) return;
+                if (!confirm(t('Remove “{name}” from the playlist “{playlist}”?', { name: ctx.instance, playlist: ctx.playlist }) + '\n' + t('Its settings and uploaded images will be deleted.'))) return;
                 try {
                     const result = await postJson(urls.deleteInstance, 'POST', payload);
-                    reloadWith(result.message || 'Removed.');
+                    reloadWith(result.message || t('Removed.'));
                 } catch (error) {
-                    showResponseModal('failure', `Error: ${error.message}`);
+                    showResponseModal('failure', t('Error: {message}', { message: error.message }));
                 }
             } else if (button.classList.contains('js-display')) {
                 const spinner = ctx.row.querySelector('.loading-indicator');
@@ -310,9 +310,9 @@
                 button.setAttribute('aria-busy', 'true');
                 try {
                     const result = await postJson(urls.displayInstance, 'POST', payload);
-                    reloadWith(result.message || 'Display updated.');
+                    reloadWith(result.message || t('Display updated.'));
                 } catch (error) {
-                    showResponseModal('failure', `Error: ${error.message}`);
+                    showResponseModal('failure', t('Error: {message}', { message: error.message }));
                 } finally {
                     spinner.style.display = 'none';
                     button.removeAttribute('aria-busy');
@@ -342,15 +342,15 @@
                 if (!toggle.checked && !badge) {
                     badge = document.createElement('span');
                     badge.className = 'badge badge-paused';
-                    badge.textContent = 'Paused';
+                    badge.textContent = t('Paused');
                     ctx.row.querySelector('.inst-title').appendChild(badge);
                 } else if (toggle.checked && badge) {
                     badge.remove();
                 }
-                showResponseModal('success', toggle.checked ? `“${ctx.instance}” is back in the rotation.` : `“${ctx.instance}” is paused.`);
+                showResponseModal('success', toggle.checked ? t('“{name}” is back in the rotation.', { name: ctx.instance }) : t('“{name}” is paused.', { name: ctx.instance }));
             } catch (error) {
                 toggle.checked = !toggle.checked;
-                showResponseModal('failure', `Error: ${error.message}`);
+                showResponseModal('failure', t('Error: {message}', { message: error.message }));
             } finally {
                 toggle.disabled = false;
             }
@@ -388,7 +388,7 @@
 
         function openPlaylistModal(name, start, end) {
             const editing = name !== null;
-            document.getElementById('modalTitle').textContent = editing ? 'Edit playlist' : 'New playlist';
+            document.getElementById('modalTitle').textContent = editing ? t('Edit playlist') : t('New playlist');
             document.getElementById('playlist_name').value = editing ? name : '';
             document.getElementById('editingPlaylistName').value = editing ? name : '';
             ensureOption(document.getElementById('start_time'), editing ? start : '00:00');
@@ -406,17 +406,17 @@
             const name = document.getElementById('playlist_name').value.trim();
             const start = document.getElementById('start_time').value;
             const end = document.getElementById('end_time').value;
-            if (!name) { showResponseModal('failure', 'Please enter a playlist name.'); return; }
-            if (start === end) { showResponseModal('failure', 'Start and end time must be different.'); return; }
+            if (!name) { showResponseModal('failure', t('Please enter a playlist name.')); return; }
+            if (start === end) { showResponseModal('failure', t('Start and end time must be different.')); return; }
             const saveButton = document.getElementById('saveButton');
             saveButton.disabled = true;
             try {
                 const result = oldName
                     ? await postJson(urls.updatePlaylist + encodeURIComponent(oldName), 'PUT', { new_name: name, start_time: start, end_time: end })
                     : await postJson(urls.createPlaylist, 'POST', { playlist_name: name, start_time: start, end_time: end });
-                reloadWith(result.message || 'Saved.');
+                reloadWith(result.message || t('Saved.'));
             } catch (error) {
-                showResponseModal('failure', `Error: ${error.message}`);
+                showResponseModal('failure', t('Error: {message}', { message: error.message }));
             } finally {
                 saveButton.disabled = false;
             }
@@ -424,12 +424,12 @@
 
         document.getElementById('deleteButton').addEventListener('click', async () => {
             const name = document.getElementById('editingPlaylistName').value;
-            if (!confirm(`Delete the playlist “${name}” and all its plugins?`)) return;
+            if (!confirm(t('Delete the playlist “{name}” and all its plugins?', { name }))) return;
             try {
                 const result = await postJson(urls.deletePlaylist + encodeURIComponent(name), 'DELETE');
-                reloadWith(result.message || 'Deleted.');
+                reloadWith(result.message || t('Deleted.'));
             } catch (error) {
-                showResponseModal('failure', `Error: ${error.message}`);
+                showResponseModal('failure', t('Error: {message}', { message: error.message }));
             }
         });
 
@@ -445,7 +445,7 @@
                 const response = await fetch(urls.updateInstance + encodeURIComponent(currentEdit.instance), { method: 'PUT', body: data });
                 const result = await response.json();
                 if (!response.ok) throw new Error(result.error || 'Failed to update refresh settings');
-                reloadWith(result.message || 'Saved.');
+                reloadWith(result.message || t('Saved.'));
             });
         });
 

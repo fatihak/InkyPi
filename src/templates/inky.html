@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ ui_lang }}">
 <head>
     {% include 'partials/head.html' %}
     <title>{{ config.name }}</title>
@@ -12,54 +12,54 @@
 
         <!-- What is on the display right now -->
         <section class="now-showing card" aria-labelledby="nowTitle">
-            <div class="image-container" title="Click to enlarge">
-                <img src="{{ url_for('static', filename='images/current_image.png') }}" alt="Image currently on the display">
+            <div class="image-container" title="{{ _('Click to enlarge') }}">
+                <img src="{{ url_for('static', filename='images/current_image.png') }}" alt="{{ _('Image currently on the display') }}">
             </div>
             <div class="now-info">
-                <div class="now-label">On the display</div>
+                <div class="now-label">{{ _('On the display') }}</div>
                 <div class="now-title" id="nowTitle">{{ status.title }}</div>
                 <div class="now-meta">
                     <span id="nowSource">
-                        {% if status.manual %}Manual update{% if status.plugin %} · {{ status.plugin }}{% endif %}
-                        {% elif status.playlist %}{{ status.plugin }} · playlist “{{ status.playlist }}”
+                        {% if status.manual %}{{ _('Manual update') }}{% if status.plugin %} · {{ status.plugin }}{% endif %}
+                        {% elif status.playlist %}{{ status.plugin }} · {{ _('playlist “{name}”', name=status.playlist) }}
                         {% else %}{{ status.plugin }}{% endif %}
                     </span>
-                    <span id="nowRefreshed">{% if status.refreshed %}Updated {{ status.refreshed }}{% endif %}</span>
-                    <span id="nowNext">{% if status.next_change %}Next change around {{ status.next_change }}{% endif %}</span>
+                    <span id="nowRefreshed">{% if status.refreshed %}{{ _('Updated {when}', when=status.refreshed) }}{% endif %}</span>
+                    <span id="nowNext">{% if status.next_change %}{{ _('Next change around {time}', time=status.next_change) }}{% endif %}</span>
                 </div>
                 <div class="now-actions">
-                    <button type="button" class="btn" id="nextButton" title="Show the next item of the active playlist now">Next ⏭</button>
-                    <a class="btn btn-primary" href="{{ url_for('playlist.playlists') }}">Manage playlists</a>
-                    <a class="btn" href="#plugins">Add a plugin</a>
+                    <button type="button" class="btn" id="nextButton" title="{{ _('Show the next item of the active playlist now') }}">{{ _('Next') }} ⏭</button>
+                    <a class="btn btn-primary" href="{{ url_for('playlist.playlists') }}">{{ _('Manage playlists') }}</a>
+                    <a class="btn" href="#plugins">{{ _('Add a plugin') }}</a>
                 </div>
             </div>
         </section>
 
         <div class="plugins-header" id="plugins">
-            <h2 class="plugins-title">Plugins</h2>
+            <h2 class="plugins-title">{{ _('Plugins') }}</h2>
             <div class="plugins-controls">
-                <button type="button" class="sort-toggle" id="sortToggle" title="Change the order of the plugins">Reorder</button>
-                <button type="button" class="view-toggle sort-toggle" id="viewToggle" title="Switch between grid and list">List view</button>
+                <button type="button" class="sort-toggle" id="sortToggle" title="{{ _('Change the order of the plugins') }}">{{ _('Reorder') }}</button>
+                <button type="button" class="view-toggle sort-toggle" id="viewToggle" title="{{ _('Switch between grid and list') }}">{{ _('List view') }}</button>
             </div>
         </div>
-        <p class="form-help" style="margin: 2px 0 8px;">Pick a plugin to preview it on the display or add it to a playlist.</p>
+        <p class="form-help" style="margin: 2px 0 8px;">{{ _('Pick a plugin to preview it or add it to a playlist.') }}</p>
 
-        <div class="sort-hint" id="sortHint">Drag the plugins (or use the arrows) to reorder them, then click “Done”.</div>
+        <div class="sort-hint" id="sortHint">{{ _('Drag the plugins (or use the arrows) to reorder them, then click “Done”.') }}</div>
 
         <div class="plugins-container" id="pluginsContainer">
             {% for plugin in plugins %}
             <a href="{{ url_for('plugin.plugin_page', plugin_id=plugin.id) }}"
                class="plugin-item"
                data-plugin-id="{{ plugin.id }}"
-               title="{{ plugin.display_name }}"
+               title="{{ _(plugin.display_name) }}"
                draggable="false">
                 <img src="{{ url_for('plugin.image', plugin_id=plugin.id, filename='icon.png') }}"
                      alt=""
                      class="icon-image">
-                <span class="plugin-name">{{ plugin.display_name }}</span>
+                <span class="plugin-name">{{ _(plugin.display_name) }}</span>
                 <span class="plugin-move">
-                    <button type="button" data-move="-1" aria-label="Move {{ plugin.display_name }} earlier">◀</button>
-                    <button type="button" data-move="1" aria-label="Move {{ plugin.display_name }} later">▶</button>
+                    <button type="button" data-move="-1" aria-label="{{ _('Move {name} earlier', name=_(plugin.display_name)) }}">◀</button>
+                    <button type="button" data-move="1" aria-label="{{ _('Move {name} later', name=_(plugin.display_name)) }}">▶</button>
                 </span>
             </a>
             {% endfor %}
@@ -102,11 +102,11 @@
                 const s = await response.json();
                 document.getElementById('nowTitle').textContent = s.title;
                 let source = s.plugin;
-                if (s.manual) source = 'Manual update' + (s.plugin ? ' · ' + s.plugin : '');
-                else if (s.playlist) source = `${s.plugin} · playlist “${s.playlist}”`;
+                if (s.manual) source = t('Manual update') + (s.plugin ? ' · ' + s.plugin : '');
+                else if (s.playlist) source = `${s.plugin} · ` + t('playlist “{name}”', { name: s.playlist });
                 document.getElementById('nowSource').textContent = source;
-                document.getElementById('nowRefreshed').textContent = s.refreshed ? 'Updated ' + s.refreshed : '';
-                document.getElementById('nowNext').textContent = s.next_change ? 'Next change around ' + s.next_change : '';
+                document.getElementById('nowRefreshed').textContent = s.refreshed ? t('Updated {when}', { when: s.refreshed }) : '';
+                document.getElementById('nowNext').textContent = s.next_change ? t('Next change around {time}', { time: s.next_change }) : '';
             } catch (error) { /* keep current text */ }
         }
 
@@ -121,17 +121,17 @@
             const button = event.currentTarget;
             const label = button.textContent;
             button.disabled = true;
-            button.textContent = 'Updating the display…';
+            button.textContent = t('Updating the display…');
             try {
                 const response = await fetch('{{ url_for("playlist.display_next") }}', { method: 'POST' });
                 let result = {};
                 try { result = await response.json(); } catch (e) { /* ignore */ }
                 if (!response.ok) throw new Error(result.error || `HTTP ${response.status}`);
-                showResponseModal('success', result.message || 'Display updated.');
+                showResponseModal('success', result.message || t('Display updated.'));
                 await refreshImage();
                 await refreshStatus();
             } catch (error) {
-                showResponseModal('failure', `Error: ${error.message}`);
+                showResponseModal('failure', t('Error: {message}', { message: error.message }));
             } finally {
                 button.disabled = false;
                 button.textContent = label;
@@ -147,7 +147,7 @@
         function updateView() {
             const list = currentView === 'list';
             pluginsContainer.classList.toggle('list-view', list);
-            viewToggle.textContent = list ? 'Grid view' : 'List view';
+            viewToggle.textContent = list ? t('Grid view') : t('List view');
         }
         viewToggle.addEventListener('click', () => {
             currentView = currentView === 'grid' ? 'list' : 'grid';
@@ -170,7 +170,7 @@
         function setSorting(enabled) {
             isSorting = enabled;
             sortToggle.classList.toggle('active', enabled);
-            sortToggle.textContent = enabled ? 'Done' : 'Reorder';
+            sortToggle.textContent = enabled ? t('Done') : t('Reorder');
             sortHint.classList.toggle('visible', enabled);
             pluginsContainer.classList.toggle('sorting', enabled);
             document.querySelectorAll('.plugin-item').forEach(item => { item.draggable = enabled; });
@@ -234,12 +234,12 @@
                     body: JSON.stringify({ order: currentOrder() })
                 });
                 if (response.ok) {
-                    showResponseModal('success', 'Plugin order saved.');
+                    showResponseModal('success', t('Plugin order saved.'));
                 } else {
-                    showResponseModal('failure', 'Could not save the plugin order.');
+                    showResponseModal('failure', t('Could not save the plugin order.'));
                 }
             } catch (error) {
-                showResponseModal('failure', 'Could not save the plugin order: ' + error);
+                showResponseModal('failure', t('Could not save the plugin order.') + ' ' + error);
             }
         }
 

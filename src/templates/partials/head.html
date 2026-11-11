@@ -3,6 +3,15 @@
 <meta name="color-scheme" content="light dark">
 <link rel="icon" type="image/png" href="{{ url_for('static', filename='icons/display.png') }}">
 <script>
+    // Translations for strings built in JavaScript (Settings > Interface language)
+    window.I18N = {{ i18n_catalog | tojson }};
+    function t(text, vars) {
+        let out = (window.I18N && window.I18N[text]) || text;
+        if (vars) Object.keys(vars).forEach(k => { out = out.split('{' + k + '}').join(vars[k]); });
+        return out;
+    }
+</script>
+<script>
     // Apply the theme before first paint (no flash of the wrong theme)
     (function () {
         var theme = null;
