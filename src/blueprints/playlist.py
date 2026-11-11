@@ -275,3 +275,21 @@ def set_plugin_instance_enabled():
     current_app.config['DEVICE_CONFIG'].write_config()
     state = "enabled" if enabled else "paused"
     return jsonify({"success": True, "message": f"'{plugin_instance.name}' {state}."})
+
+
+@playlist_bp.route('/display_next', methods=['POST'])
+def display_next():
+    """Skips to the next plugin of the active playlist and shows it now."""
+    refresh_task = current_app.config['REFRESH_TASK']
+    if not refresh_task.running:
+        return jsonify({"error": "The refresh task is not running"}), 503
+    try:
+        refresh_task.display_next()
+    except TimeoutError as e:
+        return jsonify({"error": str(e)}), 504
+    except Exception as e:
+        logger.exception("Error while skipping to the next plugin")
+        return jsonify({"error": str(e)}), 400
+    info = current_app.config['DEVICE_CONFIG'].get_refresh_info()
+    return jsonify({"success": True, "message": f"Now showing '{info.plugin_instance or info.plugin_id}'.",
+                    "plugin_instance": info.plugin_instance, "playlist": info.playlist})

@@ -80,3 +80,38 @@ def test_move_endpoint_rejects_bad_requests(client, payload):
 def test_enable_endpoint_requires_boolean(client):
     body = {"playlist_name": "P", "plugin_id": "clock", "plugin_instance": "a", "enabled": "false"}
     assert client[0].post("/set_plugin_instance_enabled", json=body).status_code == 400
+
+
+# ---------------------------------------------------------------- skip to next
+
+import refresh_task as refresh_module  # noqa: E402
+from refresh_task import RefreshTask  # noqa: E402
+
+
+def _task_for(playlists):
+    config = mock.Mock()
+    config.get_config.side_effect = lambda key, default=None: default
+    return RefreshTask(config, display_manager=mock.Mock()), PlaylistManager(playlists)
+
+
+def test_next_in_active_playlist_skips_paused_items():
+    from datetime import datetime
+    task, manager = _task_for([_playlist(["a", "b", "c"], index=0, disabled=("b",))])
+    now = datetime(2026, 11, 11, 12, 0)
+    assert task._next_in_active_playlist(manager, now).plugin_instance.name == "c"
+    assert task._next_in_active_playlist(manager, now).plugin_instance.name == "a"
+
+
+@pytest.mark.parametrize("playlists", [[], [_playlist(["a"], disabled=("a",))]])
+def test_next_in_active_playlist_errors(playlists):
+    from datetime import datetime
+    task, manager = _task_for(playlists)
+    with pytest.raises(RuntimeError):
+        task._next_in_active_playlist(manager, datetime(2026, 11, 11, 12, 0))
+
+
+def test_display_next_sends_the_next_request():
+    task, _ = _task_for([])
+    with mock.patch.object(task, "manual_update") as manual:
+        task.display_next()
+    manual.assert_called_once_with(refresh_module.NEXT_IN_PLAYLIST)

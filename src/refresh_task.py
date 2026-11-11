@@ -12,6 +12,9 @@ from PIL import Image
 
 logger = logging.getLogger(__name__)
 
+# Manual request meaning "show the next plugin of the active playlist"
+NEXT_IN_PLAYLIST = object()
+
 class RefreshTask:
     """Handles the logic for refreshing the display using a background thread."""
 
@@ -94,6 +97,10 @@ class RefreshTask:
                         logger.info("Manual update requested")
                         refresh_action = self.manual_update_request
                         self.manual_update_request = ()
+                        if refresh_action is NEXT_IN_PLAYLIST:
+                            # Resolved here, in the refresh thread, so the playlist index is
+                            # never advanced concurrently by the web thread and the scheduler.
+                            refresh_action = self._next_in_active_playlist(playlist_manager, current_dt)
                     else:
 
                         if self.device_config.get_config("log_system_stats"):
@@ -148,6 +155,21 @@ class RefreshTask:
                 raise self.refresh_result.get("exception")
         else:
             logger.warning("Background refresh task is not running, unable to do a manual update")
+
+    def display_next(self):
+        """Shows the next plugin of the active playlist now (like a skip button)."""
+        self.manual_update(NEXT_IN_PLAYLIST)
+
+    def _next_in_active_playlist(self, playlist_manager, current_dt):
+        playlist = playlist_manager.determine_active_playlist(current_dt)
+        if not playlist:
+            raise RuntimeError("No playlist is active at this time.")
+        playlist_manager.active_playlist = playlist.name
+        plugin_instance = playlist.get_next_plugin()
+        if plugin_instance is None:
+            raise RuntimeError(f"Playlist '{playlist.name}' has no enabled plugin.")
+        logger.info(f"Skipping to next plugin. | playlist: {playlist.name} | plugin_instance: {plugin_instance.name}")
+        return PlaylistRefresh(playlist, plugin_instance)
 
     def signal_config_change(self):
         """Notify the background thread that config has changed (e.g., interval updated)."""
