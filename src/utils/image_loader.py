@@ -19,19 +19,34 @@ import os
 logger = logging.getLogger(__name__)
 
 
-def _cgroup_memory_limit():
-    """Memory limit (bytes) of this process' cgroup v2 (systemd MemoryMax=), or None."""
+def _cgroup_memory_limit(cgroup_root="/sys/fs/cgroup"):
+    """Effective cgroup v2 memory limit (bytes) of this process, or None.
+
+    cgroup v2 enforces every ancestor's memory.max too (e.g. a limited parent slice),
+    so the smallest finite value from the process' cgroup up to the root is returned.
+    """
     try:
         with open("/proc/self/cgroup") as f:
-            for line in f:
-                if line.startswith("0::"):
-                    path = os.path.join("/sys/fs/cgroup", line.strip()[3:].lstrip("/"), "memory.max")
-                    with open(path) as limit_file:
-                        value = limit_file.read().strip()
-                    return None if value == "max" else int(value)
-    except (OSError, ValueError):
-        pass
-    return None
+            relative = next((line.strip()[3:] for line in f if line.startswith("0::")), None)
+    except OSError:
+        return None
+    if relative is None:
+        return None
+    limits = []
+    parts = [p for p in relative.split("/") if p]
+    for depth in range(len(parts), -1, -1):
+        path = os.path.join(cgroup_root, *parts[:depth], "memory.max")
+        try:
+            with open(path) as limit_file:
+                value = limit_file.read().strip()
+        except OSError:
+            continue
+        if value != "max":
+            try:
+                limits.append(int(value))
+            except ValueError:
+                pass
+    return min(limits) if limits else None
 
 
 def _is_low_resource_device():
@@ -257,16 +272,20 @@ class AdaptiveImageLoader:
                 # since Image.open() is otherwise lazy (header-only).
                 response.raw.decode_content = True
                 img = Image.open(response.raw)
-                img.load()
+                original_size = img.size
+                if resize:
+                    img.load()
+                else:
+                    # Bounded load while the stream is open: draft mode must be set
+                    # before decoding to have any effect
+                    img = self._load_bounded(img, dimensions, original_size)
+                    img.load()
 
-            original_size = img.size
             original_pixels = original_size[0] * original_size[1]
             logger.info(f"Downloaded image: {original_size[0]}x{original_size[1]} ({img.mode} mode, {original_pixels/1_000_000:.1f}MP)")
 
             if resize:
                 img = self._process_and_resize(img, dimensions, original_size)
-            else:
-                img = self._load_bounded(img, dimensions, original_size)
 
             return img
 
@@ -298,19 +317,41 @@ class AdaptiveImageLoader:
 
     # ========== SHARED PROCESSING LOGIC ==========
 
+    @staticmethod
+    def _bounded_target(size, dimensions, swapped):
+        """Largest size worth keeping for an image of `size` (as stored), or None to keep it.
+
+        Enough pixels to *cover* twice the display in both directions, so callers can
+        either crop (fit) or pad without upscaling; panoramas keep their full height.
+        `swapped`: the EXIF orientation rotates the image by 90°.
+        """
+        width, height = size
+        if swapped:
+            width, height = height, width
+        target_w, target_h = 2 * int(dimensions[0]), 2 * int(dimensions[1])
+        scale = max(target_w / width, target_h / height)
+        if scale >= 1:
+            return None
+        bounded = (max(1, round(width * scale)), max(1, round(height * scale)))
+        return (bounded[1], bounded[0]) if swapped else bounded
+
     def _load_bounded(self, img, dimensions, original_size):
         """Load without resizing to the target, but never keep more pixels than needed.
 
         Callers that pad/crop themselves (resize=False) used to decode full-resolution
-        photos (e.g. 24MP -> ~144MB with the EXIF copy). Keep at most 2x the display's
-        largest side, which is plenty for fit/pad/blur while bounding memory.
+        photos (e.g. 24MP -> ~144MB with the EXIF copy).
         """
-        max_side = 2 * max(int(dimensions[0]), int(dimensions[1]))
-        # JPEG not decoded yet: decode directly at a reduced scale (no-op otherwise)
-        img.draft('RGB', (max_side, max_side))
+        try:
+            orientation = img.getexif().get(0x0112, 1)  # reads the header only
+        except Exception:
+            orientation = 1
+        target = self._bounded_target(img.size, dimensions, orientation in (5, 6, 7, 8))
+        if target:
+            # JPEG not decoded yet: decode directly at a reduced scale (no-op otherwise)
+            img.draft('RGB', target)
+            # Shrink *before* the EXIF rotation, which would otherwise copy the full image
+            img.thumbnail(target, Image.LANCZOS)
         img = ImageOps.exif_transpose(img)
-        if max(img.size) > max_side:
-            img.thumbnail((max_side, max_side), Image.LANCZOS)
         if img.size != original_size:
             logger.debug(f"Image loaded at {img.size[0]}x{img.size[1]} (original {original_size[0]}x{original_size[1]})")
         return img

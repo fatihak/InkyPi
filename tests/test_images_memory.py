@@ -28,8 +28,9 @@ def test_unresized_load_is_bounded_and_oriented(big_rotated_jpeg, low_resource):
     with mock.patch.object(image_loader, "_is_low_resource_device", return_value=low_resource):
         loader = AdaptiveImageLoader()
     img = loader.from_file(big_rotated_jpeg, (800, 480), resize=False)
-    assert max(img.size) <= 1600
     assert img.size[1] > img.size[0]  # EXIF rotation applied (portrait)
+    # just enough to cover twice the display (1600x960) without upscaling
+    assert img.size[0] == 1600 and img.size[1] >= 960 and img.size[1] < 6000
 
 
 def test_small_images_are_not_upscaled(tmp_path):
@@ -54,3 +55,55 @@ def test_cgroup_limit_makes_device_low_resource():
     with mock.patch.object(image_loader, "_cgroup_memory_limit", return_value=None), \
          mock.patch.object(image_loader.psutil, "virtual_memory", return_value=mock.Mock(total=4 * 1024 ** 3)):
         assert image_loader._is_low_resource_device() is False
+
+
+
+def test_panorama_keeps_enough_height_for_cropping(tmp_path):
+    path = tmp_path / "pano.jpg"
+    Image.new("RGB", (12000, 2000), "red").save(path, "JPEG")
+    img = AdaptiveImageLoader().from_file(str(path), (800, 480), resize=False)
+    assert img.size == (5760, 960)  # covers 1600x960; a square bound would give 1600x267
+
+
+def test_png_is_shrunk_without_a_full_size_rotation_copy(tmp_path):
+    path = tmp_path / "big.png"
+    img = Image.new("RGB", (5000, 4000), "green")
+    exif = Image.Exif()
+    exif[0x0112] = 6
+    img.save(path, "PNG", exif=exif.tobytes())
+    loaded = AdaptiveImageLoader().from_file(str(path), (800, 480), resize=False)
+    assert loaded.size[1] > loaded.size[0] and max(loaded.size) < 5000
+
+
+def test_cgroup_limit_uses_smallest_ancestor(tmp_path, monkeypatch):
+    root = tmp_path / "cg"
+    (root / "system.slice" / "inkypi.service").mkdir(parents=True)
+    (root / "memory.max").write_text("max")
+    (root / "system.slice" / "memory.max").write_text(str(200 * 1024 * 1024))
+    (root / "system.slice" / "inkypi.service" / "memory.max").write_text("max")
+    real_open = open
+    fake = mock.mock_open(read_data="0::/system.slice/inkypi.service\n")
+    monkeypatch.setattr("builtins.open", lambda p, *a, **k: fake(p) if p == "/proc/self/cgroup" else real_open(p, *a, **k))
+    assert image_loader._cgroup_memory_limit(str(root)) == 200 * 1024 * 1024
+
+
+def test_url_fast_path_uses_draft_before_decoding(tmp_path):
+    import io
+    buf = io.BytesIO()
+    Image.new("RGB", (6000, 4000), "blue").save(buf, "JPEG")
+    buf.seek(0)
+    response = mock.MagicMock()
+    response.__enter__.return_value = response
+    response.raw = buf
+    session = mock.Mock(get=mock.Mock(return_value=response))
+    with mock.patch.object(image_loader, "_is_low_resource_device", return_value=False):
+        loader = AdaptiveImageLoader()
+    from PIL import JpegImagePlugin
+    seen = []
+    real_draft = JpegImagePlugin.JpegImageFile.draft
+    with mock.patch.object(image_loader, "get_http_session", return_value=session), \
+         mock.patch.object(JpegImagePlugin.JpegImageFile, "draft", autospec=True,
+                           side_effect=lambda self, *a: seen.append(getattr(self, "_im", None)) or real_draft(self, *a)):
+        img = loader.from_url("http://example/x.jpg", (800, 480), resize=False)
+    assert img.size == (1600, 1067)
+    assert seen and seen[0] is None  # draft was applied before the pixels were decoded
