@@ -108,3 +108,59 @@ def test_env_values_round_trip(tmp_path, value):
 
 def test_env_quote_is_always_quoted():
     assert quote_env_value("abc") == '"abc"'
+
+
+# ---------------------------------------------------------------- review follow-ups
+
+def test_cross_origin_compares_scheme_and_port():
+    assert is_cross_origin_request("https://inkypi.local", None, "inkypi.local", "http")
+    assert not is_cross_origin_request("http://inkypi.local:80", None, "inkypi.local", "http")
+    assert is_cross_origin_request("http://inkypi.local:8080", None, "inkypi.local", "http")
+    assert not is_cross_origin_request("http://localhost:8080", None, "localhost:8080", "http")
+
+
+def test_long_upload_names_are_shortened(upload_dir):
+    name = "a" * 250 + ".png"
+    files = MultiDict([("f", FileStorage(io.BytesIO(b"x"), filename=name))])
+    path = handle_request_files(files)["f"]
+    assert os.path.exists(path) and len(os.path.basename(path)) < 130 and path.endswith(".png")
+
+
+def test_shared_uploads_are_kept_until_unreferenced(upload_dir):
+    from model import PlaylistManager, Playlist
+    from utils.app_utils import collect_upload_paths, referenced_upload_paths
+    shared = str(upload_dir / "shared.png")
+    own = str(upload_dir / "own.png")
+    manager = PlaylistManager([Playlist("P", "00:00", "24:00", [
+        {"plugin_id": "image_upload", "name": "a", "plugin_settings": {"imageFiles[]": [shared, own]}, "refresh": {}},
+        {"plugin_id": "image_upload", "name": "b", "plugin_settings": {"imageFiles[]": [shared],
+                                                                       "backgroundImageFile": own}, "refresh": {}},
+    ])])
+    a, b = manager.playlists[0].plugins
+    assert collect_upload_paths(b.settings) == {shared, own}
+    assert referenced_upload_paths(manager, exclude=a) == {shared, own}
+    assert referenced_upload_paths(manager, exclude=b) == {shared, own}
+
+
+def test_removing_an_image_keeps_files_used_by_a_save_as_copy(upload_dir):
+    from unittest import mock
+    from flask import Flask
+    from model import PlaylistManager, Playlist
+    from blueprints import plugin as plugin_module
+    shared, extra = upload_dir / "shared.png", upload_dir / "extra.png"
+    shared.write_bytes(b"s")
+    extra.write_bytes(b"e")
+    manager = PlaylistManager([Playlist("P", "00:00", "24:00", [
+        {"plugin_id": "image_upload", "name": "A", "plugin_settings": {"imageFiles[]": [str(shared), str(extra)]}, "refresh": {}},
+        {"plugin_id": "image_upload", "name": "B", "plugin_settings": {"imageFiles[]": [str(shared)]}, "refresh": {}},
+    ])])
+    app = Flask(__name__)
+    app.register_blueprint(plugin_module.plugin_bp)
+    config = mock.Mock()
+    config.get_playlist_manager.return_value = manager
+    app.config["DEVICE_CONFIG"] = config
+    # Edit A and remove both images from its list
+    response = app.test_client().put("/update_plugin_instance/A", data={"plugin_id": "image_upload", "padImage": "true"})
+    assert response.status_code == 200
+    assert shared.exists()          # still used by B
+    assert not extra.exists()       # only A used it

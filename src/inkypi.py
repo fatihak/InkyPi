@@ -82,7 +82,8 @@ def reject_cross_origin_writes():
     requests sent by another site's page (browsers always send Origin on those)."""
     if request.method in ("GET", "HEAD", "OPTIONS"):
         return None
-    if is_cross_origin_request(request.headers.get("Origin"), request.headers.get("Sec-Fetch-Site"), request.host):
+    if is_cross_origin_request(request.headers.get("Origin"), request.headers.get("Sec-Fetch-Site"),
+                               request.host, request.scheme):
         logger.warning(f"Rejected cross-origin {request.method} {request.path} from {request.headers.get('Origin')}")
         return jsonify({"error": "Cross-origin request rejected"}), 403
     return None
@@ -125,6 +126,8 @@ if __name__ == '__main__':
             except:
                 pass  # Ignore if we can't get the IP
 
-        serve(app, host="0.0.0.0", port=PORT, threads=1)
+        # Reject oversized bodies while receiving them (waitress buffers up to 1 GB otherwise)
+        serve(app, host="0.0.0.0", port=PORT, threads=1,
+              max_request_body_size=app.config['MAX_CONTENT_LENGTH'])
     finally:
         refresh_task.stop()

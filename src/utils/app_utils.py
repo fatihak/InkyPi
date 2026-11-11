@@ -137,15 +137,27 @@ def generate_startup_image(dimensions=(800,480)):
 
     return image
 
-def is_cross_origin_request(origin, sec_fetch_site, host):
-    """True when a browser tells us the request was initiated by a page from another origin."""
+def is_cross_origin_request(origin, sec_fetch_site, host, scheme="http"):
+    """True when a browser tells us the request was initiated by a page from another origin.
+
+    Origins are compared on scheme, host and port (https://x is not the same origin as http://x).
+    """
     if sec_fetch_site and sec_fetch_site not in ("same-origin", "none"):
         return True
     if origin:
         if origin == "null":
             return True
         from urllib.parse import urlsplit
-        return urlsplit(origin).netloc.lower() != (host or "").lower()
+        default_ports = {"http": 80, "https": 443}
+        try:
+            source = urlsplit(origin)
+            target = urlsplit(f"{scheme}://{host}")
+            source_port = source.port or default_ports.get(source.scheme)
+            target_port = target.port or default_ports.get(target.scheme)
+        except ValueError:
+            return True
+        return (source.scheme.lower(), (source.hostname or ""), source_port) != \
+               (target.scheme.lower(), (target.hostname or ""), target_port)
     return False  # non-browser clients (curl, scripts) send neither header
 
 def parse_form(request_form):
@@ -179,6 +191,31 @@ def filter_upload_paths(paths):
             logger.warning(f"Ignoring file path outside of upload directory: {path!r}")
     return safe
 
+def collect_upload_paths(settings):
+    """Upload-directory paths referenced by plugin settings (scalar or list values)."""
+    found = set()
+    for value in (settings or {}).values():
+        for item in (value if isinstance(value, list) else [value]):
+            if is_upload_path(item):
+                found.add(item)
+    return found
+
+
+def referenced_upload_paths(playlist_manager, exclude=None):
+    """Upload paths still used by any plugin instance other than `exclude`.
+
+    Files can be shared between instances ("Save as" reuses the same paths, and older
+    versions saved uploads under their original name), so they must only be deleted
+    once nothing references them anymore.
+    """
+    used = set()
+    for playlist in getattr(playlist_manager, "playlists", []) or []:
+        for instance in playlist.plugins:
+            if instance is not exclude:
+                used |= collect_upload_paths(instance.settings)
+    return used
+
+
 def delete_upload_files(paths):
     for path in filter_upload_paths(paths):
         if os.path.exists(path):
@@ -208,7 +245,10 @@ def handle_request_files(request_files, form_data={}):
             continue
 
         # Unique prefix: identical names from different instances must not overwrite each other
-        file_name = f"{uuid.uuid4().hex[:8]}_{secure_filename(os.path.basename(file_name)) or 'image.' + extension}"
+        # Unique prefix; keep the stored name well under the 255-byte filename limit
+        safe_name = secure_filename(os.path.basename(file_name)) or f"image.{extension}"
+        stem, ext = os.path.splitext(safe_name)
+        file_name = f"{uuid.uuid4().hex[:8]}_{stem[:100]}{ext[:10]}"
 
         file_save_dir = get_upload_dir()
         os.makedirs(file_save_dir, exist_ok=True)

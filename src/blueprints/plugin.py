@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify, current_app, render_template, send_from_directory
 from plugins.plugin_registry import get_plugin_instance
-from utils.app_utils import resolve_path, handle_request_files, parse_form, delete_upload_files
+from utils.app_utils import (resolve_path, handle_request_files, parse_form, delete_upload_files,
+                             collect_upload_paths, referenced_upload_paths)
 from refresh_task import ManualRefresh, PlaylistRefresh
 import json
 import os
@@ -20,14 +21,28 @@ def _delete_plugin_instance_images(device_config, plugin_instance_obj):
         except Exception as e:
             logger.warning(f"Failed to delete plugin instance image {plugin_image_path}: {e}")
 
-    # Call the plugin's cleanup method to handle plugin-specific resource cleanup
+    # Call the plugin's cleanup method to handle plugin-specific resource cleanup,
+    # hiding uploads that another instance still uses (shared by "Save as")
     try:
         plugin_config = device_config.get_plugin(plugin_instance_obj.plugin_id)
         if plugin_config:
             plugin = get_plugin_instance(plugin_config)
-            plugin.cleanup(plugin_instance_obj.settings)
+            still_used = referenced_upload_paths(device_config.get_playlist_manager(), exclude=plugin_instance_obj)
+            plugin.cleanup(_without_paths(plugin_instance_obj.settings, still_used))
+            # Generic part: any other upload (e.g. the Style background image) nobody else uses
+            delete_upload_files(sorted(collect_upload_paths(plugin_instance_obj.settings) - still_used))
     except Exception as e:
         logger.warning(f"Error during plugin cleanup for {plugin_instance_obj.plugin_id}: {e}")
+
+def _without_paths(settings, paths):
+    """Copy of settings where the given upload paths are removed from scalar/list values."""
+    cleaned = {}
+    for key, value in (settings or {}).items():
+        if isinstance(value, list):
+            cleaned[key] = [item for item in value if item not in paths]
+        else:
+            cleaned[key] = None if value in paths else value
+    return cleaned
 
 # Removed module-level PLUGINS_DIR - will resolve dynamically in route handlers
 
@@ -193,13 +208,14 @@ def update_plugin_instance(instance_name):
         plugin_settings.update(handle_request_files(request.files, request.form))
 
         if plugin_settings:  # Only update if there are actual plugin settings
-            old_settings = plugin_instance.settings or {}
+            old_paths = collect_upload_paths(plugin_instance.settings)
             plugin_instance.settings = plugin_settings
-            # Delete uploads that were removed from this instance in the edit form
-            for key, old_value in old_settings.items():
-                if key.endswith("Files[]") and isinstance(old_value, list):
-                    kept = set(plugin_settings.get(key) or [])
-                    delete_upload_files([p for p in old_value if p not in kept])
+            # Delete uploads removed from this instance in the edit form (lists such as
+            # imageFiles[] and scalar fields such as backgroundImageFile), unless another
+            # instance still uses them
+            removed = old_paths - collect_upload_paths(plugin_settings)
+            still_used = referenced_upload_paths(playlist_manager, exclude=plugin_instance)
+            delete_upload_files(sorted(removed - still_used))
 
         device_config.write_config()
     except Exception as e:
@@ -238,11 +254,9 @@ def update_now():
     refresh_task = current_app.config['REFRESH_TASK']
     display_manager = current_app.config['DISPLAY_MANAGER']
 
-    preview_files = {}
     try:
         plugin_settings = parse_form(request.form)
-        preview_files = handle_request_files(request.files)
-        plugin_settings.update(preview_files)
+        plugin_settings.update(handle_request_files(request.files))
         plugin_id = plugin_settings.pop("plugin_id")
 
         # Check if refresh task is running
@@ -259,17 +273,8 @@ def update_now():
             image = plugin.generate_image(plugin_settings, device_config)
             display_manager.display_image(image, image_settings=plugin_config.get("image_settings", []))
 
-    except TimeoutError as e:
-        # The refresh thread may still be rendering from the uploaded files: keep them.
-        preview_files = {}
-        logger.error(f"Error in update_now: {str(e)}")
-        return jsonify({"error": f"An error occurred: {str(e)}"}), 504
     except Exception as e:
         logger.exception(f"Error in update_now: {str(e)}")
         return jsonify({"error": f"An error occurred: {str(e)}"}), 500
-    finally:
-        # Files uploaded only for a one-off preview are not referenced by any instance
-        for paths in preview_files.values():
-            delete_upload_files(paths)
 
     return jsonify({"success": True, "message": "Display updated"}), 200
