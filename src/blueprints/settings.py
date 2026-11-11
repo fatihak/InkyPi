@@ -1,5 +1,6 @@
 from flask import Blueprint, request, jsonify, current_app, render_template, Response
 from utils.time_utils import calculate_seconds
+from utils.accent import ACCENT_PRESETS, DEFAULT_ACCENT
 from datetime import datetime, timedelta
 import os
 import pytz
@@ -49,6 +50,9 @@ def save_settings():
             return jsonify({"error": "Time format is required"}), 400
         previous_interval_seconds = device_config.get_config("plugin_cycle_interval_seconds")
         plugin_cycle_interval_seconds = calculate_seconds(int(interval), unit)
+        accent_color = form_data.get("accentColor") or device_config.get_config("accent_color", default=DEFAULT_ACCENT)
+        if accent_color not in ACCENT_PRESETS:
+            return jsonify({"error": f"Unknown accent colour: {accent_color}"}), 400
         if plugin_cycle_interval_seconds > 86400 or plugin_cycle_interval_seconds <= 0:
             return jsonify({"error": "Plugin cycle interval must be less than 24 hours"}), 400
 
@@ -59,6 +63,7 @@ def save_settings():
             "log_system_stats": form_data.get("logSystemStats"),
             "timezone": form_data.get("timezoneName"),
             "time_format": form_data.get("timeFormat"),
+            "accent_color": accent_color,
             "plugin_cycle_interval_seconds": plugin_cycle_interval_seconds,
             "image_settings": {
                 "saturation": float(form_data.get("saturation", "1.0")),

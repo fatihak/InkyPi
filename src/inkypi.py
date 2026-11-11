@@ -32,6 +32,7 @@ from blueprints.playlist import playlist_bp
 from blueprints.apikeys import apikeys_bp
 from jinja2 import ChoiceLoader, FileSystemLoader
 from plugins.plugin_registry import load_plugins
+from utils.accent import ACCENT_PRESETS, DEFAULT_ACCENT, get_accent
 from waitress import serve
 
 
@@ -83,8 +84,10 @@ app.register_blueprint(apikeys_bp)
 
 @app.context_processor
 def inject_device_name():
-    """Device name shown in the navigation bar of every page."""
-    return {"device_name": device_config.get_config("name", default="InkyPi")}
+    """Device name (navigation bar) and accent colour, available to every page."""
+    return {"device_name": device_config.get_config("name", default="InkyPi"),
+            "accent": get_accent(device_config.get_config("accent_color", default=DEFAULT_ACCENT)),
+            "accent_presets": ACCENT_PRESETS}
 
 # Register opener for HEIF/HEIC images
 register_heif_opener()

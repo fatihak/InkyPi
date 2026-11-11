@@ -86,3 +86,13 @@ def test_display_status(app):
     assert status["next_change"] == (refreshed + timedelta(seconds=600)).strftime("%H:%M")
     empty = main_module.display_status(FakeConfig())
     assert empty["title"] == "Nothing displayed yet" and not empty["has_image"]
+
+
+def test_accent_presets():
+    from utils.accent import ACCENT_PRESETS, get_accent
+    assert get_accent("violet")["primary"] == ACCENT_PRESETS["violet"]["primary"]
+    assert get_accent("violet")["rgb"] == "142, 68, 173"
+    assert get_accent("does-not-exist")["key"] == "teal"
+    for preset in ACCENT_PRESETS.values():
+        assert all(preset[k].startswith("#") and len(preset[k]) == 7
+                   for k in ("primary", "hover", "text_light", "text_dark"))

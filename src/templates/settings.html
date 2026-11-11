@@ -86,6 +86,23 @@
             valueDisplay.textContent = parseFloat(slider.value).toFixed(1);
         }
         document.addEventListener('DOMContentLoaded', populateIntervalFields);
+
+        // Live preview of the accent colour before saving
+        function hexToRgb(hex) {
+            const n = parseInt(hex.slice(1), 16);
+            return `${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}`;
+        }
+        function previewAccent(input) {
+            const d = input.dataset;
+            document.getElementById('accentStyle').textContent = `
+                :root { --accent-primary: ${d.primary}; --accent-hover: ${d.hover}; --accent-rgb: ${hexToRgb(d.primary)};
+                        --accent-text: ${d.textLight}; --success-color: ${d.primary}; }
+                html[data-theme="dark"] { --accent-primary: ${d.primary}; --accent-hover: ${d.hover};
+                        --accent-text: ${d.textDark}; --success-color: ${d.primary}; }`;
+        }
+        document.addEventListener('change', (event) => {
+            if (event.target.name === 'accentColor') previewAccent(event.target);
+        });
     </script>
 </head>
 <body>
@@ -179,6 +196,24 @@
                         </label>
                     </div>
                 </div>
+
+                <!-- Appearance of this web interface -->
+                <div class="form-group" role="radiogroup" aria-labelledby="accentLabel">
+                    <span class="form-label" id="accentLabel">Accent colour:</span>
+                    <div class="accent-swatches">
+                        {% for key, preset in accent_presets.items() %}
+                        <label class="accent-swatch" title="{{ preset.label }}">
+                            <input type="radio" name="accentColor" value="{{ key }}"
+                                   data-primary="{{ preset.primary }}" data-hover="{{ preset.hover }}"
+                                   data-text-light="{{ preset.text_light }}" data-text-dark="{{ preset.text_dark }}"
+                                   {% if key == accent.key %}checked{% endif %}>
+                            <span class="accent-dot" style="background-color: {{ preset.primary }};"></span>
+                            <span class="accent-name">{{ preset.label }}</span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
+                <p class="form-help" style="margin-bottom: 8px;">Colour of buttons and highlights in this web interface (not on the display). Click Save to keep it.</p>
 
                 <div class="collapsible">
                     <button type="button" class="collapsible-header" onclick="toggleCollapsible(this)">

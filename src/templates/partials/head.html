@@ -16,5 +16,21 @@
     })();
 </script>
 <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='styles/main.css') }}">
+{# Accent colour chosen in Settings (overrides the defaults of main.css) #}
+<style id="accentStyle">
+    :root {
+        --accent-primary: {{ accent.primary }};
+        --accent-hover: {{ accent.hover }};
+        --accent-rgb: {{ accent.rgb }};
+        --accent-text: {{ accent.text_light }};
+        --success-color: {{ accent.primary }};
+    }
+    html[data-theme="dark"] {
+        --accent-primary: {{ accent.primary }};
+        --accent-hover: {{ accent.hover }};
+        --accent-text: {{ accent.text_dark }};
+        --success-color: {{ accent.primary }};
+    }
+</style>
 <script src="{{ url_for('static', filename='scripts/dark_mode.js') }}"></script>
 <script src="{{ url_for('static', filename='scripts/response_modal.js') }}"></script>
