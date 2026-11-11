@@ -172,3 +172,9 @@ mock_display_output/
 # Static Files added by install/update_vendors.sh
 /src/static/scripts/
 /src/static/styles/
+
+# Local device state (contains private calendar URLs)
+src/config/device.json
+src/static/images/current_image.png
+src/plugins/calendar/cache/
+.venv/

@@ -8,10 +8,18 @@ import recurring_ical_events
 from io import BytesIO
 import logging
 import requests
+from utils.http_client import get_with_deadline
+import hashlib
+import time
 from datetime import datetime, timedelta
 import pytz
 
 logger = logging.getLogger(__name__)
+
+FETCH_ATTEMPTS = 3
+FETCH_TIMEOUT = (10, 20)  # (connect, read) seconds
+FETCH_DEADLINE_SECONDS = 45  # total budget per calendar, retries included
+RETRY_BACKOFF_SECONDS = 3
 
 class Calendar(BasePlugin):
     def generate_settings_template(self):
@@ -46,6 +54,9 @@ class Calendar(BasePlugin):
 
         current_dt = datetime.now(tz)
         start, end = self.get_view_range(view, current_dt, settings)
+        # Aware bounds: naive ones are interpreted as UTC by recurring_ical_events,
+        # which dropped events between local midnight and the UTC offset.
+        start, end = self._localize(start, tz), self._localize(end, tz)
         logger.debug(f"Fetching events for {start} --> [{current_dt}] --> {end}")
         events = self.fetch_ics_events(calendar_urls, calendar_colors, tz, start, end)
         if not events:
@@ -73,8 +84,15 @@ class Calendar(BasePlugin):
     def fetch_ics_events(self, calendar_urls, colors, tz, start_range, end_range):
         parsed_events = []
 
+        failures = []
         for calendar_url, color in zip(calendar_urls, colors):
-            cal = self.fetch_calendar(calendar_url)
+            try:
+                cal = self.fetch_calendar(calendar_url)
+            except RuntimeError as e:
+                # One unreachable calendar must not blank the whole display.
+                logger.error(f"Skipping calendar {self._redact(calendar_url)}: {e}")
+                failures.append(e)
+                continue
             events = recurring_ical_events.of(cal).between(start_range, end_range)
             contrast_color = self.get_contrast_color(color)
 
@@ -92,8 +110,19 @@ class Calendar(BasePlugin):
 
                 parsed_events.append(parsed_event)
 
+        if failures and len(failures) == len(calendar_urls):
+            raise RuntimeError(f"Failed to fetch all calendars: {failures[0]}")
         return parsed_events
     
+    @staticmethod
+    def _localize(dt, tz):
+        """Attach tz to a naive datetime (floating ICS time / local bounds), convert aware ones."""
+        if not isinstance(dt, datetime):
+            return dt
+        if dt.tzinfo is None:
+            return tz.localize(dt)
+        return dt.astimezone(tz)
+
     def get_view_range(self, view, current_dt, settings):
         start = datetime(current_dt.year, current_dt.month, current_dt.day)
         if view == "timeGridDay":
@@ -116,11 +145,32 @@ class Calendar(BasePlugin):
             end = start + timedelta(weeks=5)
         return start, end
         
+    @staticmethod
+    def _normalize_date_values(cal):
+        """Keep VALUE=DATE start/end values as dates.
+
+        icalendar >= 7 parses the non-standard 'DTSTART;TZID=X;VALUE=DATE:...' as a
+        midnight datetime, and recurring_ical_events then drops the VALUE parameter,
+        so an all-day event would be shown as a 0-minute event at midnight.
+        """
+        for component in cal.walk("VEVENT"):
+            for name in ("DTSTART", "DTEND"):
+                prop = component.get(name)
+                params = getattr(prop, "params", None)
+                if not params or str(params.get("VALUE", "")).upper() != "DATE":
+                    continue
+                value = component.decoded(name)
+                if isinstance(value, datetime):
+                    component.pop(name)
+                    component.add(name, value.date())
+        return cal
+
     def parse_data_points(self, event, tz):
         all_day = False
         dtstart = event.decoded("dtstart")
         if isinstance(dtstart, datetime):
-            start = dtstart.astimezone(tz).isoformat()
+            dtstart = self._localize(dtstart, tz)
+            start = dtstart.isoformat()
         else:
             start = dtstart.isoformat()
             all_day = True
@@ -129,24 +179,88 @@ class Calendar(BasePlugin):
         if "dtend" in event:
             dtend = event.decoded("dtend")
             if isinstance(dtend, datetime):
-                end = dtend.astimezone(tz).isoformat()
+                end = self._localize(dtend, tz).isoformat()
             else:
                 end = dtend.isoformat()
         elif "duration" in event:
             duration = event.decoded("duration")
-            end = (dtstart + duration).isoformat()
+            dtend = dtstart + duration
+            end = self._localize(dtend, tz).isoformat() if isinstance(dtend, datetime) else dtend.isoformat()
         return start, end, all_day
 
     def fetch_calendar(self, calendar_url):
+        """Fetch and parse an ICS feed, with retries and a last-known-good disk cache."""
         # workaround for webcal urls
         if calendar_url.startswith("webcal://"):
             calendar_url = calendar_url.replace("webcal://", "https://")
+
+        cache_path = self._cache_path(calendar_url)
+        last_error = None
+        deadline = time.monotonic() + FETCH_DEADLINE_SECONDS
+        for attempt in range(1, FETCH_ATTEMPTS + 1):
+            try:
+                # The deadline also bounds the download itself (a slow server could
+                # otherwise keep the request open far beyond the read timeout)
+                response = get_with_deadline(calendar_url, deadline, timeout=FETCH_TIMEOUT)
+                response.raise_for_status()
+                cal = self._normalize_date_values(icalendar.Calendar.from_ical(response.text))
+                self._write_cache(cache_path, response.text)
+                return cal
+            except Exception as e:
+                # Never keep the raw exception text: it can contain the private URL
+                last_error = self._describe_error(e)
+                logger.warning(f"Calendar fetch attempt {attempt}/{FETCH_ATTEMPTS} failed for "
+                               f"{self._redact(calendar_url)}: {last_error}")
+                backoff = RETRY_BACKOFF_SECONDS * attempt
+                # Only retry if a full attempt still fits in the time budget
+                if attempt == FETCH_ATTEMPTS or \
+                        time.monotonic() + backoff + sum(FETCH_TIMEOUT) > deadline:
+                    break
+                time.sleep(backoff)
+
+        if os.path.exists(cache_path):
+            try:
+                with open(cache_path, "r", encoding="utf-8") as f:
+                    cal = self._normalize_date_values(icalendar.Calendar.from_ical(f.read()))
+                age_h = (time.time() - os.path.getmtime(cache_path)) / 3600
+                logger.warning(f"Using cached calendar for {self._redact(calendar_url)} ({age_h:.1f}h old)")
+                return cal
+            except Exception as e:
+                logger.error(f"Failed to read calendar cache {cache_path}: {e}")
+
+        raise RuntimeError(f"Failed to fetch iCalendar url {self._redact(calendar_url)}: {last_error}")
+
+    def _cache_path(self, calendar_url):
+        digest = hashlib.sha256(calendar_url.encode("utf-8")).hexdigest()[:32]
+        return os.path.join(self.get_plugin_dir("cache"), f"{digest}.ics")
+
+    @staticmethod
+    def _write_cache(cache_path, text):
         try:
-            response = requests.get(calendar_url, timeout=30)
-            response.raise_for_status()
-            return icalendar.Calendar.from_ical(response.text)
-        except Exception as e:
-            raise RuntimeError(f"Failed to fetch iCalendar url: {str(e)}")
+            os.makedirs(os.path.dirname(cache_path), exist_ok=True)
+            tmp_path = cache_path + ".tmp"
+            with open(tmp_path, "w", encoding="utf-8") as f:
+                f.write(text)
+            os.replace(tmp_path, cache_path)
+        except OSError as e:
+            logger.warning(f"Could not write calendar cache: {e}")
+
+    @staticmethod
+    def _redact(url):
+        """Strip secrets (query tokens, path, user:password@) from a URL for logs."""
+        try:
+            from urllib.parse import urlsplit
+            parts = urlsplit(url)
+            port = f":{parts.port}" if parts.port else ""
+            return f"{parts.scheme}://{parts.hostname}{port}/..."
+        except Exception:
+            return "<calendar url>"
+
+    @staticmethod
+    def _describe_error(error):
+        """Short diagnostic without the URL (requests' messages embed the full URL)."""
+        status = getattr(getattr(error, "response", None), "status_code", None)
+        return f"{type(error).__name__} (HTTP {status})" if status else type(error).__name__
 
     def get_contrast_color(self, color):
         """

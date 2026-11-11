@@ -72,3 +72,35 @@ def close_http_session():
         _HTTP_SESSION.close()
         _HTTP_SESSION = None
 
+
+
+class DeadlineExceeded(requests.exceptions.Timeout):
+    """The whole request (including the body download) took longer than allowed."""
+
+
+def get_with_deadline(url, deadline, timeout=(10, 20), headers=None, chunk_size=64 * 1024):
+    """GET url and read the whole body, aborting once time.monotonic() passes deadline.
+
+    requests' read timeout only bounds the gap between two received chunks, so a server
+    trickling bytes could otherwise keep a request open indefinitely. Returns the
+    response with its content already read (.content / .text / .json() work).
+    """
+    import time
+
+    remaining = deadline - time.monotonic()
+    if remaining <= 0:
+        raise DeadlineExceeded("no time left for this request")
+    connect, read = timeout if isinstance(timeout, tuple) else (timeout, timeout)
+    response = requests.get(url, headers=headers, stream=True,
+                            timeout=(min(connect, remaining), min(read, remaining)))
+    try:
+        chunks = []
+        for chunk in response.iter_content(chunk_size=chunk_size):
+            chunks.append(chunk)
+            if time.monotonic() > deadline:
+                raise DeadlineExceeded("download took longer than allowed")
+        response._content = b"".join(chunks)
+        response._content_consumed = True
+    finally:
+        response.close()
+    return response
