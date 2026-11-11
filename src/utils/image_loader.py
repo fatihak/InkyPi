@@ -19,13 +19,33 @@ import os
 logger = logging.getLogger(__name__)
 
 
+def _cgroup_memory_limit():
+    """Memory limit (bytes) of this process' cgroup v2 (systemd MemoryMax=), or None."""
+    try:
+        with open("/proc/self/cgroup") as f:
+            for line in f:
+                if line.startswith("0::"):
+                    path = os.path.join("/sys/fs/cgroup", line.strip()[3:].lstrip("/"), "memory.max")
+                    with open(path) as limit_file:
+                        value = limit_file.read().strip()
+                    return None if value == "max" else int(value)
+    except (OSError, ValueError):
+        pass
+    return None
+
+
 def _is_low_resource_device():
     """
     Detect if running on a low-resource device (e.g., Raspberry Pi Zero).
-    Returns True if device has less than 1GB RAM, False otherwise.
+    Returns True if the memory available to this process (system RAM, or the
+    service's cgroup memory limit when lower) is under 1GB, False otherwise.
     """
     try:
-        total_memory_gb = psutil.virtual_memory().total / (1024 ** 3)
+        available = psutil.virtual_memory().total
+        cgroup_limit = _cgroup_memory_limit()
+        if cgroup_limit:
+            available = min(available, cgroup_limit)
+        total_memory_gb = available / (1024 ** 3)
         is_low_resource = total_memory_gb < 1.0
         logger.debug(f"Device RAM: {total_memory_gb:.2f}GB - Low resource mode: {is_low_resource}")
         return is_low_resource
@@ -132,10 +152,7 @@ class AdaptiveImageLoader:
             if resize:
                 img = self._process_and_resize(img, dimensions, original_size)
             else:
-                # Even without resizing, apply EXIF orientation correction
-                img = ImageOps.exif_transpose(img)
-                if img.size != original_size:
-                    logger.debug(f"EXIF orientation applied: {original_size[0]}x{original_size[1]} -> {img.size[0]}x{img.size[1]}")
+                img = self._load_bounded(img, dimensions, original_size)
 
             return img
         except Exception as e:
@@ -207,10 +224,7 @@ class AdaptiveImageLoader:
 
                 img = self._process_and_resize(img, dimensions, original_size)
             else:
-                # Even without resizing, apply EXIF orientation correction
-                img = ImageOps.exif_transpose(img)
-                if img.size != original_size:
-                    logger.debug(f"EXIF orientation applied: {original_size[0]}x{original_size[1]} -> {img.size[0]}x{img.size[1]}")
+                img = self._load_bounded(img, dimensions, original_size)
 
             return img
 
@@ -252,10 +266,7 @@ class AdaptiveImageLoader:
             if resize:
                 img = self._process_and_resize(img, dimensions, original_size)
             else:
-                # Even without resizing, apply EXIF orientation correction
-                img = ImageOps.exif_transpose(img)
-                if img.size != original_size:
-                    logger.debug(f"EXIF orientation applied: {original_size[0]}x{original_size[1]} -> {img.size[0]}x{img.size[1]}")
+                img = self._load_bounded(img, dimensions, original_size)
 
             return img
 
@@ -277,10 +288,7 @@ class AdaptiveImageLoader:
             if resize:
                 img = self._process_and_resize(img, dimensions, original_size)
             else:
-                # Even without resizing, apply EXIF orientation correction
-                img = ImageOps.exif_transpose(img)
-                if img.size != original_size:
-                    logger.debug(f"EXIF orientation applied: {original_size[0]}x{original_size[1]} -> {img.size[0]}x{img.size[1]}")
+                img = self._load_bounded(img, dimensions, original_size)
 
             return img
 
@@ -289,6 +297,23 @@ class AdaptiveImageLoader:
             return None
 
     # ========== SHARED PROCESSING LOGIC ==========
+
+    def _load_bounded(self, img, dimensions, original_size):
+        """Load without resizing to the target, but never keep more pixels than needed.
+
+        Callers that pad/crop themselves (resize=False) used to decode full-resolution
+        photos (e.g. 24MP -> ~144MB with the EXIF copy). Keep at most 2x the display's
+        largest side, which is plenty for fit/pad/blur while bounding memory.
+        """
+        max_side = 2 * max(int(dimensions[0]), int(dimensions[1]))
+        # JPEG not decoded yet: decode directly at a reduced scale (no-op otherwise)
+        img.draft('RGB', (max_side, max_side))
+        img = ImageOps.exif_transpose(img)
+        if max(img.size) > max_side:
+            img.thumbnail((max_side, max_side), Image.LANCZOS)
+        if img.size != original_size:
+            logger.debug(f"Image loaded at {img.size[0]}x{img.size[1]} (original {original_size[0]}x{original_size[1]})")
+        return img
 
     def _process_and_resize(self, img, dimensions, original_size):
         """
