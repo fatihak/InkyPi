@@ -104,6 +104,36 @@
     const minTemp = Math.min(...temperatures);
     var maxTemp = Math.max(...temperatures);
 	
+    // A few temperatures written on the curve (every other hour label of the time axis)
+    Chart.register({
+      id: 'temperatureLabels',
+      afterDatasetsDraw(chart) {
+        const { ctx, scales: { x } } = chart;
+        const points = chart.getDatasetMeta(0).data;
+        const shown = new Set(x.ticks.filter((tick, n) => n % 2 === 1).map(tick => tick.value));
+        ctx.save();
+        ctx.font = "600 12px Jost, sans-serif";
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.lineJoin = 'round';
+        ctx.lineWidth = 4;
+        ctx.strokeStyle = "{{ plugin_settings.backgroundColor or '#ffffff' }}";
+        ctx.fillStyle = "{{ plugin_settings.textColor }}";
+        chart.$temperatureLabelBoxes = [];
+        points.forEach((point, i) => {
+          if (!shown.has(i)) return;
+          const text = Math.round(temperatures[i]) + (units !== "standard" ? "°" : "");
+          // below the curve: the area above it is used by the rain amounts
+          const y = point.y + 11;
+          ctx.strokeText(text, point.x, y);
+          ctx.fillText(text, point.x, y);
+          const half = ctx.measureText(text).width / 2;
+          chart.$temperatureLabelBoxes.push({ left: point.x - half, right: point.x + half, top: y - 8, bottom: y + 8 });
+        });
+        ctx.restore();
+      }
+    });
+
     Chart.register({
       id: 'annotationRain',
       afterDatasetsDraw(chart, args, pluginOptions) {
@@ -133,6 +163,10 @@
           const width = ctx.measureText(text).width;
           if (bar.x - width / 2 < lastRight + 3) return;
           const y = Math.min(bar.y, bar.base) - 3;
+          // temperatures have priority: skip an amount that would overlap one
+          const box = { left: bar.x - width / 2, right: bar.x + width / 2, top: y - 12, bottom: y };
+          if ((chart.$temperatureLabelBoxes || []).some(t =>
+            box.left < t.right && box.right > t.left && box.top < t.bottom && box.bottom > t.top)) return;
           ctx.strokeText(text, bar.x, y);
           ctx.fillText(text, bar.x, y);
           lastRight = bar.x + width / 2;
@@ -251,8 +285,11 @@
               }
             },
             grid: { display: false },
-            min: minTemp,
-            max: maxTemp,
+            // small margin so the curve never runs along the top or bottom edge; the axis
+            // labels stay on the real minimum and maximum
+            afterBuildTicks: (axis) => { axis.ticks = [{ value: minTemp }, { value: maxTemp }]; },
+            min: minTemp - Math.max(0.5, (maxTemp - minTemp) * 0.12),
+            max: maxTemp + Math.max(0.5, (maxTemp - minTemp) * 0.12),
           },
           y1: {
             position: 'right',
