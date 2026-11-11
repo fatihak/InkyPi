@@ -2,11 +2,11 @@
 
 Two rendering modes:
 
-- "photo": Floyd-Steinberg dithering towards the inks as they really look (measured
+- "photo": the driver's own conversion (Floyd-Steinberg dithering towards a palette
+  blended by the "Inky Driver Saturation" setting): soft, light, pastel colours.
+- "vivid": Floyd-Steinberg dithering towards the inks as they really look (measured
   palette, relative to the paper white), after lifting the midtones a little. Colours
-  stay faithful (a green sofa stays green) instead of being washed out.
-- "classic": the driver's own conversion (dithering towards a palette blended by the
-  "Inky Driver Saturation" setting), available in manual mode.
+  stay faithful (a green sofa stays green) but the picture is darker and stronger.
 - "graphics": tuned for UI-like images (weather, calendar, text):
     1. colours are adapted to the inks that will render them: coloured pixels are
        saturated, and darkened according to how dark the matching ink really is
@@ -32,12 +32,12 @@ from PIL import Image, ImageEnhance, ImageFilter
 
 logger = logging.getLogger(__name__)
 
-PHOTO, GRAPHICS, MANUAL = "photo", "graphics", "manual"
-CLASSIC = "classic"  # the driver's own dithering (former photo rendering), manual mode only
-MODES = (PHOTO, GRAPHICS, MANUAL)
-RENDERINGS = (PHOTO, GRAPHICS, CLASSIC)
+PHOTO, VIVID, GRAPHICS, MANUAL = "photo", "vivid", "graphics", "manual"
+MODES = (PHOTO, VIVID, GRAPHICS, MANUAL)
+RENDERINGS = (PHOTO, VIVID, GRAPHICS)
+_ALIASES = {"classic": PHOTO}  # name used briefly for the driver rendering
 
-# Photo rendering: midtones lifted (the inks are darker than a screen) and a little more
+# Vivid rendering: midtones lifted (the inks are darker than a screen) and a little more
 # saturation, chosen by comparing variants side by side on a Spectra 6 panel.
 PHOTO_GAMMA = 0.75
 PHOTO_SATURATION = 1.15
@@ -76,9 +76,9 @@ def resolve_mode(plugin_id, settings):
     settings = settings or {}
     mode = settings.get("colourMode")
     if mode == MANUAL:
-        rendering = settings.get("colourRendering")
+        rendering = _ALIASES.get(settings.get("colourRendering"), settings.get("colourRendering"))
         return rendering if rendering in RENDERINGS else default_mode(plugin_id)
-    return mode if mode in (PHOTO, GRAPHICS) else default_mode(plugin_id)
+    return mode if mode in RENDERINGS else default_mode(plugin_id)
 
 
 def _number(value, default, low, high):
@@ -261,7 +261,7 @@ def render_indices(image, palette, mode, saturation=0.5):
         indices = _ordered_indices(rgb, quant, neutral_inks)
         return _sharpen_edges(indices, pixels, rgb, palette, neutral_inks)
     image = image.convert("RGB")
-    if mode == PHOTO:
+    if mode == VIVID:
         quant = perceived_palette(palette)
         lift = [round(255 * (i / 255) ** PHOTO_GAMMA) for i in range(256)] * 3
         image = ImageEnhance.Color(image.point(lift)).enhance(PHOTO_SATURATION)

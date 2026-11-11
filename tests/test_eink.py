@@ -105,13 +105,14 @@ def test_graphics_mode_keeps_thin_text_solid():
     assert (indices[12, 4:36] == 1).all()   # fringe dropped, no stray dots
 
 
-def test_photo_mode_uses_the_real_ink_colours():
-    """A muted green is rendered with green ink (faithful), not washed out to grey/white."""
+def test_vivid_mode_uses_the_real_ink_colours():
+    """A muted green is rendered with more green ink (faithful) than the soft photo rendering."""
     sofa = Image.new("RGB", (40, 40), (120, 140, 100))
+    vivid = eink.render_indices(sofa, PALETTE, eink.VIVID)
     photo = eink.render_indices(sofa, PALETTE, eink.PHOTO)
-    classic = eink.render_indices(sofa, PALETTE, eink.CLASSIC)
-    assert (photo == 5).mean() > (classic == 5).mean()
-    assert eink.resolve_mode("weather", {"colourMode": "manual", "colourRendering": "classic"}) == eink.CLASSIC
+    assert (vivid == 5).mean() > (photo == 5).mean()
+    assert eink.resolve_mode("weather", {"colourMode": "vivid"}) == eink.VIVID
+    assert eink.resolve_mode("weather", {"colourMode": "manual", "colourRendering": "classic"}) == eink.PHOTO
 
 
 def test_photo_mode_matches_driver_style_dithering():
@@ -163,11 +164,10 @@ def test_display_manager_prepare_colours():
     photo = eink.colour_plan("image_folder", {}, {})
     graphics = eink.colour_plan("weather", {}, {})
     manual_photo = eink.colour_plan("image_folder", {"colourMode": "manual", "colourInk": "0.9"}, {})
-    classic = eink.colour_plan("image_folder", {"colourMode": "manual", "colourRendering": "classic"}, {})
-    classic["manual"] = False                                          # classic without own settings
+    vivid = eink.colour_plan("image_folder", {"colourMode": "vivid"}, {})
     assert manager.prepare_colours(image, None) is image
-    assert manager.prepare_colours(image, classic) is image           # left to the driver
-    for plan in (photo, graphics, manual_photo):                       # rendered here
+    assert manager.prepare_colours(image, photo) is image             # the driver dithers photos itself
+    for plan in (vivid, graphics, manual_photo):                       # rendered here
         out = manager.prepare_colours(image, plan)
         assert out.mode == "P" and len(out.palette.colors) <= 6
 

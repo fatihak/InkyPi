@@ -61,12 +61,12 @@ class DisplayManager:
     def prepare_colours(self, image, plan):
         """Applies the colour rendering of limited-palette displays (see utils.eink).
 
-        Photo and graphics renderings are converted here to an image in the display's pure
-        colours, which the driver sends without dithering again. The classic rendering is
-        left to the driver, unless manual settings give it their own ink saturation.
+        Vivid and graphics renderings are converted here to an image in the display's pure
+        colours, which the driver sends without dithering again. The photo rendering is the
+        driver's own, unless manual settings give it their own ink saturation.
         """
         palette = self.get_palette()
-        if not plan or not palette or (plan["mode"] == eink.CLASSIC and not plan["manual"]):
+        if not plan or not palette or (plan["mode"] == eink.PHOTO and not plan["manual"]):
             return image
         indices = eink.render_indices(image, palette, plan["mode"], plan["saturation"])
         return eink.to_pure_palette_image(indices, palette)

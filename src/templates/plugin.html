@@ -315,9 +315,10 @@
             const modeField = document.getElementById('colourMode');
             if (!modeField) return;
             const saved = loadPluginSettings ? pluginSettings : {};
-            modeField.value = ['photo', 'graphics', 'manual'].includes(saved.colourMode) ? saved.colourMode : modeField.dataset.default;
+            modeField.value = ['photo', 'vivid', 'graphics', 'manual'].includes(saved.colourMode) ? saved.colourMode : modeField.dataset.default;
             const rendering = document.getElementById('colourRendering');
-            rendering.value = ['photo', 'graphics', 'classic'].includes(saved.colourRendering) ? saved.colourRendering : modeField.dataset.default;
+            const savedRendering = saved.colourRendering === 'classic' ? 'photo' : saved.colourRendering;
+            rendering.value = ['photo', 'vivid', 'graphics'].includes(savedRendering) ? savedRendering : modeField.dataset.default;
             document.querySelectorAll('.colour-slider input').forEach(slider => {
                 if (saved[slider.name] !== undefined && saved[slider.name] !== '') slider.value = saved[slider.name];
                 const output = slider.parentElement.querySelector('output');
@@ -447,7 +448,8 @@
                 <div class="form-group colour-mode-group">
                     <label for="colourMode" class="form-label">{{ _('Colours on the display:') }}</label>
                     <select id="colourMode" name="colourMode" class="form-input" data-default="{{ default_colour_mode }}">
-                        <option value="photo">{{ _('Photo: smooth shades (dithering)') }}{{ recommended if default_colour_mode == 'photo' }}</option>
+                        <option value="photo">{{ _('Photo: soft, light colours') }}{{ recommended if default_colour_mode == 'photo' }}</option>
+                        <option value="vivid">{{ _('Vivid photo: faithful, stronger colours') }}</option>
                         <option value="graphics">{{ _('Graphics: vivid colours, crisp text') }}{{ recommended if default_colour_mode == 'graphics' }}</option>
                         <option value="manual">{{ _('Manual: my own settings') }}</option>
                     </select>
@@ -459,8 +461,8 @@
                         <label for="colourRendering" class="form-label">{{ _('Rendering:') }}</label>
                         <select id="colourRendering" name="colourRendering" class="form-input">
                             <option value="photo">{{ _('Photo') }}</option>
+                            <option value="vivid">{{ _('Vivid photo') }}</option>
                             <option value="graphics">{{ _('Graphics') }}</option>
-                            <option value="classic">{{ _('Classic (driver dithering)') }}</option>
                         </select>
                     </div>
                     {% for field, key, label, max, step in [
@@ -602,6 +604,7 @@
                 </label>
                 <select id="previewColourMode" class="form-input" onchange="syncColourMode(this.value)" aria-label="{{ _('Colours on the display:') }}">
                     <option value="photo">{{ _('Photo') }}{{ recommended if default_colour_mode == 'photo' }}</option>
+                    <option value="vivid">{{ _('Vivid photo') }}</option>
                     <option value="graphics">{{ _('Graphics') }}{{ recommended if default_colour_mode == 'graphics' }}</option>
                     <option value="manual">{{ _('Manual') }}</option>
                 </select>
