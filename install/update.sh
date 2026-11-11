@@ -106,12 +106,23 @@ source "$VENV_PATH/bin/activate"
 
 # Upgrade pip
 echo "Upgrading pip..."
-$VENV_PATH/bin/python -m pip install --upgrade pip setuptools wheel > /dev/null && echo_success "Pip upgraded successfully."
+if $VENV_PATH/bin/python -m pip install --retries 10 --timeout 60 --upgrade pip setuptools wheel > /dev/null; then
+  echo_success "Pip upgraded successfully."
+else
+  echo_error "WARNING: failed to upgrade pip, continuing with the current version."
+fi
 
 # Install or update Python dependencies
 if [ -f "$PIP_REQUIREMENTS_FILE" ]; then
   echo "Updating Python dependencies..."
-  $VENV_PATH/bin/python -m pip install --upgrade -r "$PIP_REQUIREMENTS_FILE" -qq > /dev/null && echo_success "Dependencies updated successfully."
+  # Errors used to be swallowed (stdout to /dev/null, no exit status check): the script
+  # reported success while the venv kept old packages. Fail loudly instead.
+  if $VENV_PATH/bin/python -m pip install --retries 10 --timeout 60 --upgrade -r "$PIP_REQUIREMENTS_FILE" -qq > /dev/null; then
+    echo_success "Dependencies updated successfully."
+  else
+    echo_error "ERROR: Failed to install Python dependencies (see pip errors above). Re-run the update."
+    exit 1
+  fi
 else
   echo_error "ERROR: Requirements file $PIP_REQUIREMENTS_FILE not found!"
   exit 1
@@ -122,7 +133,10 @@ cp $SCRIPT_DIR/inkypi $BINPATH/
 sudo chmod +x $BINPATH/$APPNAME
 
 echo "Update JS and CSS files"
-bash $SCRIPT_DIR/update_vendors.sh > /dev/null
+if ! bash $SCRIPT_DIR/update_vendors.sh > /dev/null; then
+  echo_error "ERROR: Failed to download JS/CSS vendor files. Re-run the update."
+  exit 1
+fi
 
 update_app_service
 update_cli
