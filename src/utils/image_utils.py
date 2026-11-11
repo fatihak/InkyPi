@@ -7,8 +7,12 @@ import hashlib
 import tempfile
 import subprocess
 import shutil
+import signal
 
 logger = logging.getLogger(__name__)
+
+# Hard limit for a headless Chromium screenshot; a hung browser must not block the refresh loop.
+SCREENSHOT_PROCESS_TIMEOUT = 90
 
 def get_image(image_url):
     response = requests.get(image_url, timeout=30)
@@ -20,10 +24,7 @@ def get_image(image_url):
     return img
 
 def change_orientation(image, orientation, inverted=False):
-    if orientation == 'horizontal':
-        angle = 0
-    elif orientation == 'vertical':
-        angle = 90
+    angle = 90 if orientation == 'vertical' else 0
 
     if inverted:
         angle = (angle + 180) % 360
@@ -88,22 +89,33 @@ def compute_image_hash(image):
     return hashlib.sha256(img_bytes).hexdigest()
 
 def take_screenshot_html(html_str, dimensions, timeout_ms=None):
-    image = None
+    html_file_path = None
     try:
         # Create a temporary HTML file
         with tempfile.NamedTemporaryFile(suffix=".html", delete=False) as html_file:
-            html_file.write(html_str.encode("utf-8"))
             html_file_path = html_file.name
+            html_file.write(html_str.encode("utf-8"))
 
-        image = take_screenshot(html_file_path, dimensions, timeout_ms)
-
-        # Remove html file
-        os.remove(html_file_path)
-
+        return take_screenshot(html_file_path, dimensions, timeout_ms)
     except Exception as e:
         logger.error(f"Failed to take screenshot: {str(e)}")
+        return None
+    finally:
+        _remove_quietly(html_file_path)
 
-    return image
+def _remove_quietly(path):
+    if path and os.path.exists(path):
+        try:
+            os.remove(path)
+        except OSError as e:
+            logger.warning(f"Failed to remove temporary file {path}: {e}")
+
+def _kill_process_group(proc):
+    try:
+        os.killpg(proc.pid, signal.SIGKILL)
+    except (ProcessLookupError, PermissionError):
+        proc.kill()
+    proc.communicate()
 
 def _find_chromium_binary():
     """Find the first available Chromium-based binary in system PATH."""
@@ -117,7 +129,7 @@ def _find_chromium_binary():
 
 
 def take_screenshot(target, dimensions, timeout_ms=None):
-    image = None
+    img_file_path = None
     try:
         # Find available browser binary
         browser = _find_chromium_binary()
@@ -152,24 +164,31 @@ def take_screenshot(target, dimensions, timeout_ms=None):
         ]
         if timeout_ms:
             command.append(f"--timeout={timeout_ms}")
-        result = subprocess.run(command, capture_output=True, check=False)
+        # Own process group so the whole browser tree (renderer, gpu...) can be killed on timeout
+        proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                                start_new_session=True)
+        try:
+            _, stderr = proc.communicate(timeout=SCREENSHOT_PROCESS_TIMEOUT)
+        except subprocess.TimeoutExpired:
+            _kill_process_group(proc)
+            logger.error(f"Screenshot timed out after {SCREENSHOT_PROCESS_TIMEOUT}s, browser killed")
+            return None
 
         # Check if the process failed or the output file is missing
-        if result.returncode != 0 or not os.path.exists(img_file_path):
-            logger.error(f"Failed to take screenshot (return code: {result.returncode})")
+        if proc.returncode != 0 or not os.path.exists(img_file_path) or os.path.getsize(img_file_path) == 0:
+            stderr = stderr.decode(errors="replace").strip()[-500:] if stderr else ""
+            logger.error(f"Failed to take screenshot (return code: {proc.returncode}) {stderr}")
             return None
 
         # Load the image using PIL
         with Image.open(img_file_path) as img:
-            image = img.copy()
-
-        # Remove image files
-        os.remove(img_file_path)
+            return img.copy()
 
     except Exception as e:
         logger.error(f"Failed to take screenshot: {str(e)}")
-
-    return image
+        return None
+    finally:
+        _remove_quietly(img_file_path)
 
 def pad_image_blur(img: Image, dimensions: tuple[int, int]) -> Image:
     bkg = ImageOps.fit(img, dimensions)
