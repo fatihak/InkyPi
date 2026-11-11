@@ -166,6 +166,9 @@ cython_debug/
 # Development artifacts
 mock_display_output/
 
+# Weather API responses cached by the weather plugin
+src/plugins/weather/cache/
+
 # IDE files
 .idea
 
