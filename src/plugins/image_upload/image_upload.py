@@ -5,6 +5,7 @@ import random
 import os
 
 from utils.image_utils import pad_image_blur
+from utils.app_utils import filter_upload_paths, delete_upload_files
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +40,8 @@ class ImageUpload(BasePlugin):
 
         # Get the current index from the device json
         img_index = settings.get("image_index", 0)
-        image_locations = settings.get("imageFiles[]")
+        # Only ever read files from the upload directory, whatever the settings contain
+        image_locations = filter_upload_paths(settings.get("imageFiles[]"))
 
         if not image_locations:
             logger.error("No images uploaded")
@@ -95,14 +97,5 @@ class ImageUpload(BasePlugin):
 
     def cleanup(self, settings):
         """Delete all uploaded image files associated with this plugin instance."""
-        image_locations = settings.get("imageFiles[]", [])
-        if not image_locations:
-            return
-
-        for image_path in image_locations:
-            if os.path.exists(image_path):
-                try:
-                    os.remove(image_path)
-                    logger.info(f"Deleted uploaded image: {image_path}")
-                except Exception as e:
-                    logger.warning(f"Failed to delete uploaded image {image_path}: {e}")
+        # Never delete anything outside the upload directory (paths come from client-submitted settings)
+        delete_upload_files(settings.get("imageFiles[]", []))

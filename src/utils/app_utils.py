@@ -1,5 +1,7 @@
 import logging
 import os
+import uuid
+from werkzeug.utils import secure_filename
 import socket
 import subprocess
 
@@ -135,6 +137,17 @@ def generate_startup_image(dimensions=(800,480)):
 
     return image
 
+def is_cross_origin_request(origin, sec_fetch_site, host):
+    """True when a browser tells us the request was initiated by a page from another origin."""
+    if sec_fetch_site and sec_fetch_site not in ("same-origin", "none"):
+        return True
+    if origin:
+        if origin == "null":
+            return True
+        from urllib.parse import urlsplit
+        return urlsplit(origin).netloc.lower() != (host or "").lower()
+    return False  # non-browser clients (curl, scripts) send neither header
+
 def parse_form(request_form):
     request_dict = request_form.to_dict()
     for key in request_form.keys():
@@ -142,14 +155,47 @@ def parse_form(request_form):
             request_dict[key] = request_form.getlist(key)
     return request_dict
 
+ALLOWED_UPLOAD_EXTENSIONS = {'png', 'avif', 'jpg', 'jpeg', 'gif', 'webp', 'heif', 'heic'}
+
+def get_upload_dir():
+    return resolve_path(os.path.join("static", "images", "saved"))
+
+def is_upload_path(path):
+    """True only for files inside the upload directory (rejects traversal and arbitrary paths)."""
+    if not isinstance(path, str) or not path:
+        return False
+    upload_dir = os.path.realpath(get_upload_dir())
+    return os.path.realpath(path).startswith(upload_dir + os.sep)
+
+def filter_upload_paths(paths):
+    """Keeps only paths that point inside the upload directory, logging anything else."""
+    if isinstance(paths, str):
+        paths = [paths]
+    safe = []
+    for path in paths or []:
+        if is_upload_path(path):
+            safe.append(path)
+        else:
+            logger.warning(f"Ignoring file path outside of upload directory: {path!r}")
+    return safe
+
+def delete_upload_files(paths):
+    for path in filter_upload_paths(paths):
+        if os.path.exists(path):
+            try:
+                os.remove(path)
+                logger.info(f"Deleted uploaded image: {path}")
+            except OSError as e:
+                logger.warning(f"Failed to delete uploaded image {path}: {e}")
+
 def handle_request_files(request_files, form_data={}):
-    allowed_file_extensions = {'pdf', 'png', 'avif', 'jpg', 'jpeg', 'gif', 'webp', 'heif', 'heic'}
     file_location_map = {}
     # handle existing file locations being provided as part of the form data
     for key in set(request_files.keys()):
         is_list = key.endswith('[]')
         if key in form_data:
-            file_location_map[key] = form_data.getlist(key) if is_list else form_data.get(key)
+            existing = filter_upload_paths(form_data.getlist(key) if is_list else [form_data.get(key)])
+            file_location_map[key] = existing if is_list else (existing[0] if existing else None)
     # add new files in the request
     for key, file in request_files.items(multi=True):
         is_list = key.endswith('[]')
@@ -157,13 +203,15 @@ def handle_request_files(request_files, form_data={}):
         if not file_name:
             continue
 
-        extension = os.path.splitext(file_name)[1].replace('.', '')
-        if not extension or extension.lower() not in allowed_file_extensions:
+        extension = os.path.splitext(file_name)[1].replace('.', '').lower()
+        if not extension or extension not in ALLOWED_UPLOAD_EXTENSIONS:
             continue
 
-        file_name = os.path.basename(file_name)
+        # Unique prefix: identical names from different instances must not overwrite each other
+        file_name = f"{uuid.uuid4().hex[:8]}_{secure_filename(os.path.basename(file_name)) or 'image.' + extension}"
 
-        file_save_dir = resolve_path(os.path.join("static", "images", "saved"))
+        file_save_dir = get_upload_dir()
+        os.makedirs(file_save_dir, exist_ok=True)
         file_path = os.path.join(file_save_dir, file_name)
 
         # Open the image and apply EXIF transformation before saving
@@ -171,9 +219,10 @@ def handle_request_files(request_files, form_data={}):
             try:
                 with Image.open(file) as img:
                     img = ImageOps.exif_transpose(img)
-                    img.save(file_path)
+                    img.save(file_path, quality=95)
             except Exception as e:
                 logger.warning(f"EXIF processing error for {file_name}: {e}")
+                file.stream.seek(0)  # the failed decode consumed part of the stream
                 file.save(file_path)
         else:
             # Directly save non-JPEG files
