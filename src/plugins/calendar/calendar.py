@@ -54,6 +54,12 @@ class Calendar(BasePlugin):
         if view == 'timeGridWeek' and settings.get("displayPreviousDays") != "true":
             view = 'timeGrid'
 
+        # Events are fetched from today for 5 weeks (see get_view_range), but
+        # FullCalendar's listMonth renders from the 1st to the end of the month.
+        # Render a rolling list starting today so it matches the fetched range.
+        if view == 'listMonth':
+            view = 'list'
+
         template_params = {
             "view": view,
             "events": events,
