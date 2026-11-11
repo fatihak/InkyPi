@@ -144,6 +144,26 @@ class Calendar(BasePlugin):
             end = start + timedelta(weeks=5)
         return start, end
         
+    @staticmethod
+    def _normalize_date_values(cal):
+        """Keep VALUE=DATE start/end values as dates.
+
+        icalendar >= 7 parses the non-standard 'DTSTART;TZID=X;VALUE=DATE:...' as a
+        midnight datetime, and recurring_ical_events then drops the VALUE parameter,
+        so an all-day event would be shown as a 0-minute event at midnight.
+        """
+        for component in cal.walk("VEVENT"):
+            for name in ("DTSTART", "DTEND"):
+                prop = component.get(name)
+                params = getattr(prop, "params", None)
+                if not params or str(params.get("VALUE", "")).upper() != "DATE":
+                    continue
+                value = component.decoded(name)
+                if isinstance(value, datetime):
+                    component.pop(name)
+                    component.add(name, value.date())
+        return cal
+
     def parse_data_points(self, event, tz):
         all_day = False
         dtstart = event.decoded("dtstart")
@@ -180,7 +200,7 @@ class Calendar(BasePlugin):
             try:
                 response = requests.get(calendar_url, timeout=FETCH_TIMEOUT)
                 response.raise_for_status()
-                cal = icalendar.Calendar.from_ical(response.text)
+                cal = self._normalize_date_values(icalendar.Calendar.from_ical(response.text))
                 self._write_cache(cache_path, response.text)
                 return cal
             except Exception as e:
@@ -197,7 +217,7 @@ class Calendar(BasePlugin):
         if os.path.exists(cache_path):
             try:
                 with open(cache_path, "r", encoding="utf-8") as f:
-                    cal = icalendar.Calendar.from_ical(f.read())
+                    cal = self._normalize_date_values(icalendar.Calendar.from_ical(f.read()))
                 age_h = (time.time() - os.path.getmtime(cache_path)) / 3600
                 logger.warning(f"Using cached calendar for {self._redact(calendar_url)} ({age_h:.1f}h old)")
                 return cal
