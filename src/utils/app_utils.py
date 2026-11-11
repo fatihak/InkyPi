@@ -50,16 +50,20 @@ def resolve_path(file_path):
     return str(src_path / file_path)
 
 def get_ip_address():
-    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
-        s.connect(("8.8.8.8", 80))
-        ip_address = s.getsockname()[0]
-    return ip_address
+    """Returns the LAN IP address used for the default route, or None without network."""
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+            s.connect(("8.8.8.8", 80))
+            return s.getsockname()[0]
+    except OSError as e:
+        logger.warning(f"Could not determine IP address: {e}")
+        return None
 
 def get_wifi_name():
     try:
         output = subprocess.check_output(['iwgetid', '-r']).decode('utf-8').strip()
         return output
-    except subprocess.CalledProcessError:
+    except (subprocess.CalledProcessError, OSError):
         return None
 
 def is_connected():
@@ -126,7 +130,7 @@ def generate_startup_image(dimensions=(800,480)):
     image_draw.text((width/2, y_text), text, anchor="mm", fill=text_color, font=get_font("Jost", text_font_size))
 
     # Draw the IP on a line below
-    ip_text = f"or http://{ip}"
+    ip_text = f"or http://{ip}" if ip else "(no network connection detected)"
     ip_text_font_size = width * 0.032
     bbox = image_draw.textbbox((0, 0), text, font=get_font("Jost", text_font_size))
     text_height = bbox[3] - bbox[1]
