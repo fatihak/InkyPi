@@ -190,17 +190,17 @@
 
             document.getElementById('displayNowIndicator').checked = pluginSettings.displayNowIndicator;
             document.getElementById('displayNowIndicator').value = pluginSettings.displayNowIndicator;
-            document.getElementById('nowIndicatorColor').value = pluginSettings.nowIndicatorColor;
+            document.getElementById('nowIndicatorColor').value = pluginSettings.nowIndicatorColor || '#ff0000';
 
             document.getElementById('displayPreviousDays').checked = pluginSettings.displayPreviousDays;
             document.getElementById('displayPreviousDays').value = pluginSettings.displayPreviousDays;
 
-            document.getElementById('weekStartDay').value = pluginSettings.weekStartDay;
+            document.getElementById('weekStartDay').value = pluginSettings.weekStartDay ?? '0';
 
-            document.getElementById("startTimeInterval").value = pluginSettings.startTimeInterval;
-            document.getElementById("endTimeInterval").value = pluginSettings.endTimeInterval;
+            document.getElementById("startTimeInterval").value = pluginSettings.startTimeInterval ?? '0';
+            document.getElementById("endTimeInterval").value = pluginSettings.endTimeInterval ?? '24';
 
-            document.getElementById("displayWeeks").value = pluginSettings.displayWeeks;
+            document.getElementById("displayWeeks").value = pluginSettings.displayWeeks ?? '4';
             
             if (pluginSettings["calendarURLs[]"]) {
                 calendars = pluginSettings["calendarURLs[]"].map((url, i) => ({

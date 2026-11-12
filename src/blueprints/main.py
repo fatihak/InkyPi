@@ -1,13 +1,50 @@
 from flask import Blueprint, request, jsonify, current_app, render_template, send_file
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
+from utils.i18n import _
 
 main_bp = Blueprint("main", __name__)
+
+def display_status(device_config):
+    """What is on the display now, for the home page header."""
+    info = device_config.get_refresh_info().to_dict()
+    plugins = {p["id"]: _(p.get("display_name", p["id"])) for p in device_config.get_plugins()}
+    plugin_name = plugins.get(info.get("plugin_id"), info.get("plugin_id") or "")
+    status = {
+        "has_image": bool(info.get("refresh_time")),
+        "title": info.get("plugin_instance") or plugin_name or _("Nothing displayed yet"),
+        "plugin": plugin_name,
+        "playlist": info.get("playlist") or "",
+        "manual": info.get("refresh_type") == "Manual Update",
+        "refreshed": "",
+        "next_change": "",
+    }
+    refresh_time = info.get("refresh_time")
+    if refresh_time:
+        try:
+            from blueprints.playlist import format_relative_time
+            refreshed_dt = datetime.fromisoformat(refresh_time)
+            status["refreshed"] = format_relative_time(refresh_time)
+            interval = int(device_config.get_config("plugin_cycle_interval_seconds", default=3600) or 3600)
+            next_dt = refreshed_dt + timedelta(seconds=interval)
+            fmt = "%H:%M" if device_config.get_config("time_format", default="12h") == "24h" else "%I:%M %p"
+            if next_dt > datetime.now(refreshed_dt.tzinfo):
+                status["next_change"] = next_dt.strftime(fmt).lstrip("0") if "%p" in fmt else next_dt.strftime(fmt)
+        except (ValueError, TypeError):
+            pass
+    return status
+
 
 @main_bp.route('/')
 def main_page():
     device_config = current_app.config['DEVICE_CONFIG']
-    return render_template('inky.html', config=device_config.get_config(), plugins=device_config.get_plugins())
+    return render_template('inky.html', config=device_config.get_config(), plugins=device_config.get_plugins(),
+                           status=display_status(device_config))
+
+
+@main_bp.route('/api/status')
+def get_status():
+    return jsonify(display_status(current_app.config['DEVICE_CONFIG']))
 
 @main_bp.route('/api/current_image')
 def get_current_image():

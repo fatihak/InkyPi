@@ -38,7 +38,9 @@
         let fontSize = "normal";
         if (loadPluginSettings) {
             document.getElementById('title').value = pluginSettings.title || '';
-            document.getElementById('includeImages').checked = pluginSettings.includeImages;
+            { const toggle = document.getElementById('includeImages');
+              toggle.checked = pluginSettings.includeImages === true || pluginSettings.includeImages === 'true';
+              toggle.value = toggle.checked ? 'true' : 'false'; }
             document.getElementById('feedUrl').value = pluginSettings.feedUrl || '';
 
             fontSize = pluginSettings.fontSize;

@@ -154,19 +154,19 @@ class RefreshSettingsManager {
      */
     validate(data) {
         if (!data.refreshType) {
-            return { valid: false, error: 'Please select a refresh type' };
+            return { valid: false, error: (window.t ? t('Please select a refresh type') : 'Please select a refresh type') };
         }
 
         if (data.refreshType === 'interval') {
             if (!data.interval || data.interval < 1) {
-                return { valid: false, error: 'Please enter a valid interval' };
+                return { valid: false, error: (window.t ? t('Please enter a valid interval') : 'Please enter a valid interval') };
             }
             if (!data.unit) {
-                return { valid: false, error: 'Please select a time unit' };
+                return { valid: false, error: (window.t ? t('Please select a time unit') : 'Please select a time unit') };
             }
         } else if (data.refreshType === 'scheduled') {
             if (!data.refreshTime) {
-                return { valid: false, error: 'Please select a refresh time' };
+                return { valid: false, error: (window.t ? t('Please select a refresh time') : 'Please select a refresh time') };
             }
         }
 
@@ -214,7 +214,7 @@ class RefreshSettingsManager {
 
         if (!validation.valid) {
             if (window.showResponseModal) {
-                showResponseModal('failure', `Error! ${validation.error}`);
+                showResponseModal('failure', validation.error);
             } else {
                 alert(validation.error);
             }
@@ -227,7 +227,7 @@ class RefreshSettingsManager {
         } catch (error) {
             console.error('RefreshSettingsManager: Submit error:', error);
             if (window.showResponseModal) {
-                showResponseModal('failure', `Error! ${error.message}`);
+                showResponseModal('failure', (window.t ? t('Error: {message}', { message: error.message }) : `Error: ${error.message}`));
             } else {
                 alert(`Error: ${error.message}`);
             }
