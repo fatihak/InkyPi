@@ -25,6 +25,8 @@ InkyPi is an open-source, customizable E-Ink display powered by a Raspberry Pi. 
 
 And additional plugins coming soon! For documentation on building custom plugins, see [Building InkyPi Plugins](./docs/building_plugins.md).
 
+To trigger a display refresh from other software such as Home Assistant, see the [HTTP API](./docs/api.md).
+
 See [the wiki](https://github.com/fatihak/InkyPi/wiki) for a list of community-maintained third-party plugins.
 
 ## Hardware 
