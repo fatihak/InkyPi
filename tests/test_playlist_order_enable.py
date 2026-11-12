@@ -115,3 +115,30 @@ def test_display_next_sends_the_next_request():
     with mock.patch.object(task, "manual_update") as manual:
         task.display_next()
     manual.assert_called_once_with(refresh_module.NEXT_IN_PLAYLIST)
+
+
+def test_reordering_and_rotation_share_a_lock():
+    import threading
+    from model import Playlist
+    playlist = Playlist("P", "00:00", "24:00", plugins=[
+        {"plugin_id": "x", "name": n, "plugin_settings": {}, "refresh": {}} for n in ("a", "b", "c")])
+    acquired = threading.Event()
+    release = threading.Event()
+
+    def hold():
+        with Playlist._order_lock:
+            acquired.set()
+            release.wait(2)
+
+    thread = threading.Thread(target=hold)
+    thread.start()
+    acquired.wait(2)
+    moved = []
+    mover = threading.Thread(target=lambda: moved.append(playlist.move_plugin("x", "a", 1)))
+    mover.start()
+    mover.join(0.2)
+    assert mover.is_alive() and not moved      # waits for the rotation to finish
+    release.set()
+    mover.join(2)
+    thread.join(2)
+    assert moved == [True]

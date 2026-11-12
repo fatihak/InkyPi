@@ -1396,6 +1396,7 @@ html[data-theme="dark"] .topbar-link.dark-mode-toggle::before { content: "🌙";
     font-weight: 600;
     background-color: var(--badge-bg);
     color: var(--badge-text);
+    font-style: normal;  /* also used with .api-key-label, which plugins' scripts look up */
     white-space: nowrap;
 }
 .badge-accent { background-color: var(--accent-soft); color: var(--accent-text); }
@@ -1526,7 +1527,11 @@ html[data-theme="dark"] .topbar-link.dark-mode-toggle::before { content: "🌙";
     .topbar { flex-wrap: nowrap; }
     .topbar-brand { flex: 1 1 auto; }
     .topbar-links { flex-wrap: nowrap; gap: 0; }
-    .topbar-link span:not(.topbar-emoji) { display: none; }
+    /* icons only, but the labels stay readable by screen readers */
+    .topbar-link span:not(.topbar-emoji) {
+        position: absolute; width: 1px; height: 1px; overflow: hidden;
+        clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap;
+    }
     .topbar-link { padding: 8px; }
     .now-showing { grid-template-columns: 1fr; padding: 12px; }
     .inst-row { grid-template-columns: auto auto minmax(0, 1fr); }
@@ -1593,5 +1598,6 @@ button, input, select, textarea, optgroup { font-family: inherit; }
     background: var(--bg-primary); overflow: hidden; margin-bottom: 10px;
 }
 .preview-frame img { display: block; max-width: 100%; height: auto; background: #fff; }
+.preview-frame img[hidden] { display: none; }
 .preview-status { text-align: center; color: var(--text-secondary); padding: 24px; }
 .form-group[hidden] { display: none; }
