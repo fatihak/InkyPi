@@ -148,6 +148,33 @@
         // ---- in-browser preview (does not touch the e-ink display) ----
         let previewUrl = null;
         let previewRequest = 0;
+        let previewId = null;
+
+        // Sends the previewed image itself (not a new render) to the display
+        async function sendPreviewToDisplay() {
+            closePreview();
+            if (!previewId) return handleAction();
+            setBusy(true, 'Updating the display…');
+            try {
+                const response = await fetch('{{ url_for("plugin.display_preview") }}', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ preview_id: previewId })
+                });
+                let result = {};
+                try { result = await response.json(); } catch (e) { /* not JSON */ }
+                if (response.status === 410) {  // preview expired: render and display
+                    setBusy(false);
+                    return await handleAction();
+                }
+                if (!response.ok) throw new Error(result.error || `HTTP ${response.status}`);
+                showResponseModal('success', result.message || 'Display updated.');
+            } catch (error) {
+                showResponseModal('failure', `Error: ${error.message}`);
+            } finally {
+                setBusy(false);
+            }
+        }
 
         function buildSettingsFormData() {
             const formData = new FormData(document.getElementById('settingsForm'));
@@ -178,6 +205,7 @@
                     try { result = await response.json(); } catch (e) { /* not JSON */ }
                     throw new Error(result.error || `HTTP ${response.status}`);
                 }
+                previewId = response.headers.get('X-Preview-Id');
                 const blob = await response.blob();
                 if (previewUrl) URL.revokeObjectURL(previewUrl);
                 previewUrl = URL.createObjectURL(blob);
@@ -375,7 +403,7 @@
                     </div>
                 </div>
                 {% if api_key and api_key.required %}
-                <a class="badge" href="{{ url_for('apikeys.apikeys_page') }}" title="{{ _('Set {key} on the API Keys page', key=api_key.expected_key) }}">🔑 {{ _('{service} needs an API key', service=api_key.service) }}</a>
+                <a class="badge api-key-label" href="{{ url_for('apikeys.apikeys_page') }}" title="{{ _('Set {key} on the API Keys page', key=api_key.expected_key) }}">🔑 {{ _('{service} needs an API key', service=api_key.service) }}</a>
                 {% endif %}
             </div>
             {% if plugin_instance %}
@@ -516,7 +544,7 @@
             <p class="form-help" id="previewHint">{{ _('This is what the display will show. Nothing has been sent to the display yet.') }}</p>
             <div class="buttons-container">
                 <button type="button" class="action-button secondary" onclick="showPreview()">{{ _('Render again') }}</button>
-                <button type="button" class="action-button" id="sendToDisplayButton" onclick="closePreview(); handleAction();" disabled>{{ _('Show on the display') }}</button>
+                <button type="button" class="action-button" id="sendToDisplayButton" onclick="sendPreviewToDisplay()" disabled>{{ _('Show on the display') }}</button>
             </div>
         </div>
     </div>

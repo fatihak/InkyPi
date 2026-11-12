@@ -1,6 +1,7 @@
 import os
 import json
 import logging
+import threading
 from datetime import datetime, timedelta
 
 logger = logging.getLogger(__name__)
@@ -222,12 +223,20 @@ class Playlist:
         """Find a plugin instance by its plugin_id and name."""
         return next((p for p in self.plugins if p.plugin_id == plugin_id and p.name == name), None)
 
+    # Serialises the rotation (refresh thread) with reordering (web requests), so a move
+    # can't make the scheduler repeat or skip an item
+    _order_lock = threading.RLock()
+
     def get_next_plugin(self):
         """Returns the next enabled plugin instance and updates current_plugin_index.
 
         Disabled instances are skipped. Returns None (index unchanged) when the playlist
         has no enabled instance.
         """
+        with Playlist._order_lock:
+            return self._next_enabled_plugin()
+
+    def _next_enabled_plugin(self):
         count = len(self.plugins)
         if count == 0:
             return None
@@ -245,6 +254,10 @@ class Playlist:
         The rotation keeps pointing at the same instance, so moving items never makes
         the display skip or repeat one. Returns False if the instance is not found.
         """
+        with Playlist._order_lock:
+            return self._move(plugin_id, name, offset)
+
+    def _move(self, plugin_id, name, offset):
         plugin = self.find_plugin(plugin_id, name)
         if plugin is None:
             return False
