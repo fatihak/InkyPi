@@ -223,7 +223,11 @@
           type: 'bar',
           label: 'Precipitation Probability',
           data: precipitation,
-          borderColor: 'rgba(26, 111, 176, 1)', // Semi-transparent blue
+          // solid fill drawn in front of the temperature area: a gradient over the whole
+          // chart height left low bars almost transparent, invisible on e-ink
+          backgroundColor: 'rgba(26, 111, 176, 0.3)',
+          borderColor: 'rgba(26, 111, 176, 1)',
+          order: -1,
           borderWidth: {
             top: 2,
             right: 0,
@@ -234,6 +238,17 @@
           barPercentage: 1.0, // Ensures full width
           categoryPercentage: 1.0,  // Ensures full width
           fill: true, // Enable filling the area under the line
+        },
+        {
+          type: 'line',
+          label: 'Hourly Temperature (line)',
+          data: temperatures,
+          borderColor: 'rgba(241, 122, 36, 0.9)',
+          borderWidth: 2,
+          pointRadius: 0,
+          fill: false,
+          tension: 0.5,
+          order: -2  // curve stays readable in front of the rain bars
         }
       ]
       },
@@ -338,13 +353,6 @@
 
     // Update the chart to apply the gradient
     chart.data.datasets[0].backgroundColor = tempGradient;
-
-    // Create gradient based on y-axis values
-    const precipitationGradient = ctx.createLinearGradient(0, gradientStart, 0, gradientEnd);
-    precipitationGradient.addColorStop(0, 'rgba(26, 111, 176, 0.8)'); // Top of the gradient (max temperature)
-    precipitationGradient.addColorStop(1, 'rgba(194, 223, 246, 0)'); // Bottom of the gradient (min temperature)
-
-    chart.data.datasets[1].backgroundColor = precipitationGradient;
 
     chart.update();
   });
