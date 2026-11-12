@@ -79,6 +79,9 @@
             try {
                 const headers = lastModified ? { 'If-Modified-Since': lastModified } : {};
                 const response = await fetch('{{ url_for("main.get_current_image") }}', { headers });
+                // The status can change without a new image (same image skipped, next change
+                // time, relative times), so it is refreshed on every cycle.
+                if (lastModified !== null) refreshStatus();
                 if (response.status === 304 || !response.ok) return;
 
                 const blob = await response.blob();
@@ -86,9 +89,7 @@
                 img.src = objectUrl;
                 if (currentObjectUrl) URL.revokeObjectURL(currentObjectUrl);  // avoid leaking old images
                 currentObjectUrl = objectUrl;
-                const firstLoad = lastModified === null;
                 lastModified = response.headers.get('Last-Modified');
-                if (!firstLoad) refreshStatus();
             } catch (error) {
                 console.error('Error refreshing image:', error);
             }
