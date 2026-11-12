@@ -10,6 +10,7 @@ from flask import Flask
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 from blueprints import main as main_module  # noqa: E402
+from blueprints import playlist as playlist_module  # noqa: E402
 from blueprints.playlist import format_refresh_schedule, format_relative_time, playlist_bp  # noqa: E402
 from model import RefreshInfo  # noqa: E402
 
@@ -49,11 +50,16 @@ def app():
     return app
 
 
-def test_relative_time_follows_24h_setting(app):
+def test_relative_time_follows_24h_setting(app, monkeypatch):
     tz = pytz.timezone("Europe/Paris")
-    earlier = (datetime.now(tz) - timedelta(hours=3)).replace(hour=7, minute=5)
-    if earlier.date() != datetime.now(tz).date():
-        pytest.skip("crosses midnight")
+    earlier = tz.localize(datetime(2026, 3, 10, 7, 5))
+
+    class FrozenDatetime(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return earlier.astimezone(tz) + timedelta(hours=5)  # same day, at 12:05
+
+    monkeypatch.setattr(playlist_module, "datetime", FrozenDatetime)
     app.config["DEVICE_CONFIG"] = FakeConfig("24h")
     with app.app_context():
         assert format_relative_time(earlier.isoformat()) == "today at 07:05"
