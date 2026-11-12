@@ -54,7 +54,10 @@
      */
     function updateToggleButtonText(theme) {
         document.querySelectorAll('.dark-mode-toggle').forEach(toggleButton => {
-            const hoverText = theme === DARK_THEME ? 'Switch to light mode' : 'Switch to dark mode';
+            // translated in the UI language (t() is defined by partials/head.html)
+            const hoverText = typeof t !== 'function'
+                ? (theme === DARK_THEME ? 'Switch to light mode' : 'Switch to dark mode')
+                : (theme === DARK_THEME ? t('Switch to light mode') : t('Switch to dark mode'));
             toggleButton.setAttribute('data-hover-text', hoverText);
             toggleButton.setAttribute('title', hoverText);
             toggleButton.setAttribute('aria-label', hoverText);

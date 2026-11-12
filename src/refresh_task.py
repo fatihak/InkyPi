@@ -278,6 +278,27 @@ class ManualRefresh(RefreshAction):
         """Return the plugin ID associated with this refresh."""
         return self.plugin_id
 
+class PreviewRefresh(RefreshAction):
+    """Displays an image already rendered for a preview, without rendering it again
+    (a random or AI-generated image would otherwise differ from the one previewed)."""
+
+    def __init__(self, plugin_id: str, image, plugin_settings=None):
+        self.plugin_id = plugin_id
+        self.image = image
+        self.plugin_settings = plugin_settings or {}
+
+    def execute(self, plugin, device_config, current_dt: datetime):
+        return self.image.copy()
+
+    def get_settings(self):
+        return self.plugin_settings
+
+    def get_refresh_info(self):
+        return {"refresh_type": "Manual Update", "plugin_id": self.plugin_id}
+
+    def get_plugin_id(self):
+        return self.plugin_id
+
 class PlaylistRefresh(RefreshAction):
     """Performs a refresh using a plugin instance within a playlist context.
 
