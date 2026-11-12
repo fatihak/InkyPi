@@ -335,7 +335,7 @@ def display_preview():
     preview = dict(_last_preview)
     if not preview_id or preview.get("id") != preview_id or \
             time.monotonic() - preview["time"] > PREVIEW_KEEP_SECONDS:
-        return jsonify({"error": "This preview is no longer available, render it again."}), 410
+        return jsonify({"error": _("This preview is no longer available, render it again.")}), 410
     try:
         if refresh_task.running:
             refresh_task.manual_update(PreviewRefresh(preview["plugin_id"], preview["image"]))
@@ -346,5 +346,5 @@ def display_preview():
                 preview["image"].copy(), image_settings=plugin_config.get("image_settings", []))
     except Exception as e:
         logger.exception(f"Error in display_preview: {str(e)}")
-        return jsonify({"error": f"An error occurred: {str(e)}"}), 500
-    return jsonify({"success": True, "message": "Display updated"}), 200
+        return jsonify({"error": _("An error occurred: {message}", message=str(e))}), 500
+    return jsonify({"success": True, "message": _("Display updated")}), 200

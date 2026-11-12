@@ -154,7 +154,7 @@
         async function sendPreviewToDisplay() {
             closePreview();
             if (!previewId) return handleAction();
-            setBusy(true, 'Updating the display…');
+            setBusy(true, t('Updating the display…'));
             try {
                 const response = await fetch('{{ url_for("plugin.display_preview") }}', {
                     method: 'POST',
@@ -168,9 +168,9 @@
                     return await handleAction();
                 }
                 if (!response.ok) throw new Error(result.error || `HTTP ${response.status}`);
-                showResponseModal('success', result.message || 'Display updated.');
+                showResponseModal('success', result.message || t('Display updated.'));
             } catch (error) {
-                showResponseModal('failure', `Error: ${error.message}`);
+                showResponseModal('failure', t('Error: {message}', { message: error.message }));
             } finally {
                 setBusy(false);
             }
