@@ -32,6 +32,7 @@ def setup(tmp_path, monkeypatch):
     app.register_blueprint(plugin_module.plugin_bp)
     config = mock.Mock()
     config.get_plugin.side_effect = lambda pid: {"id": pid} if pid == "demo" else None
+    config.get_config.side_effect = lambda key, default=None: default
     app.config["DEVICE_CONFIG"] = config
     display = mock.Mock()
     app.config["DISPLAY_MANAGER"] = display
@@ -61,3 +62,39 @@ def test_only_one_preview_at_a_time(setup):
         assert client.post("/preview_image", data={"plugin_id": "demo"}).status_code == 429
     finally:
         plugin_module._preview_lock.release()
+
+
+def test_preview_uploads_do_not_overwrite_saved_images(setup, tmp_path, monkeypatch):
+    client, fake, _, _ = setup
+    saved = tmp_path / "static" / "images" / "saved"
+    saved.mkdir(parents=True)
+    (saved / "photo.png").write_bytes(b"used by a playlist item")
+    from utils import app_utils
+    monkeypatch.setattr(app_utils, "resolve_path", lambda rel: str(tmp_path / rel))
+    buf = io.BytesIO()
+    Image.new("RGB", (4, 4), "blue").save(buf, "PNG")
+    buf.seek(0)
+    response = client.post("/preview_image", content_type="multipart/form-data",
+                           data={"plugin_id": "demo", "imageFiles[]": (buf, "photo.png")})
+    assert response.status_code == 200
+    preview_path = fake.calls[-1]["imageFiles[]"][0]
+    assert not preview_path.startswith(str(saved))
+    assert not os.path.exists(preview_path)                     # temporary copy removed
+    assert (saved / "photo.png").read_bytes() == b"used by a playlist item"
+
+
+def test_show_on_display_sends_the_previewed_image(setup):
+    client, fake, _, display = setup
+    refresh_task = mock.Mock(running=True)
+    client.application.config["REFRESH_TASK"] = refresh_task
+    response = client.post("/preview_image", data={"plugin_id": "demo"})
+    preview_id = response.headers["X-Preview-Id"]
+
+    response = client.post("/display_preview", json={"preview_id": preview_id})
+    assert response.status_code == 200
+    action = refresh_task.manual_update.call_args[0][0]
+    assert action.get_plugin_id() == "demo"
+    assert action.execute(None, None, None).getpixel((0, 0)) == (255, 0, 0)
+    assert len(fake.calls) == 1                                   # not rendered again
+
+    assert client.post("/display_preview", json={"preview_id": "other"}).status_code == 410
