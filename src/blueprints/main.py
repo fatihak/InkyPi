@@ -1,7 +1,10 @@
 from flask import Blueprint, request, jsonify, current_app, render_template, send_file
+import logging
 import os
 from datetime import datetime
+from refresh_task import PlaylistRefresh
 
+logger = logging.getLogger(__name__)
 main_bp = Blueprint("main", __name__)
 
 @main_bp.route('/')
@@ -56,3 +59,49 @@ def save_plugin_order():
     device_config.set_plugin_order(order)
 
     return jsonify({"success": True})
+
+
+@main_bp.route('/api/refresh', methods=['POST'])
+def refresh_current():
+    """Regenerate what the display is currently showing, ignoring the refresh interval.
+
+    Meant for external triggers (e.g. a Home Assistant automation or a webhook) that want the
+    display updated now instead of waiting for the next scheduled refresh. The item to refresh is
+    taken from the latest refresh info, so callers do not need to know playlist or plugin names.
+    """
+    device_config = current_app.config['DEVICE_CONFIG']
+    refresh_task = current_app.config['REFRESH_TASK']
+
+    def error(message, status):
+        return jsonify({"success": False, "error": message}), status
+
+    if not refresh_task.running:
+        return error("The refresh task is not running.", 503)
+
+    info = device_config.get_refresh_info()
+    if not info.plugin_id:
+        return error("Nothing has been displayed yet, there is nothing to refresh.", 409)
+    if info.refresh_type != "Playlist":
+        # A manual "Update now" is not stored in a playlist, so its settings cannot be replayed.
+        return error("The current image comes from a manual update and is not part of a playlist, "
+                     "so it cannot be refreshed. Add it to a playlist to enable this.", 409)
+
+    playlist = device_config.get_playlist_manager().get_playlist(info.playlist)
+    plugin_instance = playlist.find_plugin(info.plugin_id, info.plugin_instance) if playlist else None
+    if not plugin_instance:
+        return error(f"The plugin instance '{info.plugin_instance}' shown on the display no longer "
+                     f"exists in playlist '{info.playlist}'.", 409)
+
+    try:
+        refresh_task.manual_update(PlaylistRefresh(playlist, plugin_instance, force=True))
+    except Exception as e:
+        logger.exception("Error in refresh_current")
+        return error(f"An error occurred: {str(e)}", 500)
+
+    return jsonify({
+        "success": True,
+        "message": "Display refreshed",
+        "playlist": playlist.name,
+        "plugin_id": plugin_instance.plugin_id,
+        "plugin_instance": plugin_instance.name,
+    }), 200
