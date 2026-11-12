@@ -223,9 +223,20 @@
           type: 'bar',
           label: 'Precipitation Probability',
           data: precipitation,
-          // solid fill drawn in front of the temperature area: a gradient over the whole
-          // chart height left low bars almost transparent, invisible on e-ink
-          backgroundColor: 'rgba(26, 111, 176, 0.3)',
+          // light gradient from the top of each bar to the axis, drawn in front of the
+          // temperature area (a gradient over the whole chart height left low bars almost
+          // transparent, invisible on e-ink)
+          backgroundColor: (context) => {
+            const { chart, parsed } = context;
+            const area = chart.chartArea;
+            if (!area || !parsed) return 'rgba(26, 111, 176, 0.3)';
+            const top = chart.scales.y1.getPixelForValue(parsed.y);
+            if (!(area.bottom - top > 1)) return 'rgba(26, 111, 176, 0.3)';
+            const gradient = chart.ctx.createLinearGradient(0, top, 0, area.bottom);
+            gradient.addColorStop(0, 'rgba(26, 111, 176, 0.55)');
+            gradient.addColorStop(1, 'rgba(26, 111, 176, 0.1)');
+            return gradient;
+          },
           borderColor: 'rgba(26, 111, 176, 1)',
           order: -1,
           borderWidth: {
