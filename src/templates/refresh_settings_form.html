@@ -1,22 +1,22 @@
 <!-- Refresh Settings Form - Reusable Component -->
 <div class="form-group">
-    <label>Refresh</label>
-    <span title="Determines how often the data and image should be refreshed.">ⓘ</span>
+    <label>{{ _('Refresh') }}</label>
+    <span title="{{ _('Determines how often the data and image should be refreshed.') }}">ⓘ</span>
 </div>
 <div class="form-group nowrap" id="{{ prefix }}-group-interval">
   <input type="radio" name="refreshType" id="{{ prefix }}-refresh-interval" value="interval" checked>
-  <label for="{{ prefix }}-refresh-interval">Every</label>
-  <input type="number" id="{{ prefix }}-interval" name="interval" class="form-input" required min="1" placeholder="Enter a number">
+  <label for="{{ prefix }}-refresh-interval">{{ _('Every') }}</label>
+  <input type="number" id="{{ prefix }}-interval" name="interval" class="form-input" required min="1" placeholder="{{ _('Enter a number') }}">
   <select id="{{ prefix }}-unit" name="unit" class="form-input" required>
-    <option value="minute">Minute</option>
-    <option value="hour">Hour</option>
-    <option value="day">Day</option>
+    <option value="minute">{{ _('minutes') }}</option>
+    <option value="hour">{{ _('hours') }}</option>
+    <option value="day">{{ _('days') }}</option>
   </select>
 </div>
 
 <div class="form-group nowrap" id="{{ prefix }}-group-scheduled">
   <input type="radio" name="refreshType" id="{{ prefix }}-refresh-scheduled" value="scheduled">
-  <label for="{{ prefix }}-refresh-scheduled">Daily at</label>
+  <label for="{{ prefix }}-refresh-scheduled">{{ _('Daily at') }}</label>
   <input id="{{ prefix }}-scheduled" class="time-input" type="time" name="refreshTime" step="900">
 </div>
 

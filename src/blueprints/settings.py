@@ -1,5 +1,8 @@
 from flask import Blueprint, request, jsonify, current_app, render_template, Response
 from utils.time_utils import calculate_seconds
+from utils.accent import ACCENT_PRESETS, DEFAULT_ACCENT
+from utils import cpu_limit
+from utils.i18n import UI_LANGUAGES, DEFAULT_LANGUAGE as DEFAULT_UI_LANGUAGE, _
 from datetime import datetime, timedelta
 import os
 import pytz
@@ -29,7 +32,26 @@ settings_bp = Blueprint("settings", __name__)
 def settings_page():
     device_config = current_app.config['DEVICE_CONFIG']
     timezones = sorted(pytz.all_timezones_set)
-    return render_template('settings.html', device_settings=device_config.get_config(), timezones = timezones)
+    return render_template('settings.html', device_settings=device_config.get_config(), timezones = timezones,
+                           cpu=_cpu_limit_info(device_config))
+
+
+def _cpu_limit_info(device_config):
+    available = cpu_limit.is_available()
+    mode = device_config.get_config("cpu_limit_mode", default=cpu_limit.DEFAULT)
+    recommended = cpu_limit.recommended_percent()
+    return {
+        "available": available,
+        "mode": mode if mode in cpu_limit.MODES else cpu_limit.DEFAULT,
+        "percent": device_config.get_config("cpu_limit_percent", default=recommended),
+        "recommended": recommended,
+        "install_default": cpu_limit.INSTALL_DEFAULT_PERCENT,
+        "current": cpu_limit.current_percent() if available else None,
+        "model": cpu_limit.board_model(),
+        "cpus": cpu_limit.cpu_count(),
+        "min": cpu_limit.MIN_PERCENT,
+        "max": cpu_limit.max_percent(),
+    }
 
 @settings_bp.route('/save_settings', methods=['POST'])
 def save_settings():
@@ -40,17 +62,34 @@ def save_settings():
 
         unit, interval, time_format = form_data.get('unit'), form_data.get("interval"), form_data.get("timeFormat")
         if not unit or unit not in ["minute", "hour"]:
-            return jsonify({"error": "Plugin cycle interval unit is required"}), 400
+            return jsonify({"error": _("Plugin cycle interval unit is required")}), 400
         if not interval or not interval.isnumeric():
-            return jsonify({"error": "Refresh interval is required"}), 400
+            return jsonify({"error": _("Refresh interval is required")}), 400
         if not form_data.get("timezoneName"):
-            return jsonify({"error": "Time Zone is required"}), 400
+            return jsonify({"error": _("Time Zone is required")}), 400
         if not time_format or time_format not in ["12h", "24h"]:
-            return jsonify({"error": "Time format is required"}), 400
+            return jsonify({"error": _("Time format is required")}), 400
+        cpu_mode = form_data.get("cpuLimitMode")  # absent when the setting is unavailable
+        cpu_percent = device_config.get_config("cpu_limit_percent")
+        if cpu_mode is not None:
+            if cpu_mode not in cpu_limit.MODES:
+                return jsonify({"error": _("Unknown processor limit mode: {name}", name=cpu_mode)}), 400
+            if cpu_mode == cpu_limit.MANUAL:
+                try:
+                    cpu_percent = cpu_limit.parse_percent(form_data.get("cpuLimitPercent", ""))
+                except ValueError:
+                    return jsonify({"error": _("The processor limit must be between {low}% and {high}%",
+                                               low=cpu_limit.MIN_PERCENT, high=cpu_limit.max_percent())}), 400
         previous_interval_seconds = device_config.get_config("plugin_cycle_interval_seconds")
         plugin_cycle_interval_seconds = calculate_seconds(int(interval), unit)
+        ui_language = form_data.get("uiLanguage") or device_config.get_config("ui_language", default=DEFAULT_UI_LANGUAGE)
+        if ui_language not in UI_LANGUAGES:
+            return jsonify({"error": _("Unknown language: {name}", name=ui_language)}), 400
+        accent_color = form_data.get("accentColor") or device_config.get_config("accent_color", default=DEFAULT_ACCENT)
+        if accent_color not in ACCENT_PRESETS:
+            return jsonify({"error": _("Unknown accent colour: {name}", name=accent_color)}), 400
         if plugin_cycle_interval_seconds > 86400 or plugin_cycle_interval_seconds <= 0:
-            return jsonify({"error": "Plugin cycle interval must be less than 24 hours"}), 400
+            return jsonify({"error": _("Plugin cycle interval must be less than 24 hours")}), 400
 
         settings = {
             "name": form_data.get("deviceName"),
@@ -59,6 +98,8 @@ def save_settings():
             "log_system_stats": form_data.get("logSystemStats"),
             "timezone": form_data.get("timezoneName"),
             "time_format": form_data.get("timeFormat"),
+            "accent_color": accent_color,
+            "ui_language": ui_language,
             "plugin_cycle_interval_seconds": plugin_cycle_interval_seconds,
             "image_settings": {
                 "saturation": float(form_data.get("saturation", "1.0")),
@@ -69,6 +110,17 @@ def save_settings():
         }
         if "inky_saturation" in form_data:
             settings["image_settings"]["inky_saturation"] = float(form_data.get("inky_saturation", "0.5"))
+        if cpu_mode is not None:
+            previous = (device_config.get_config("cpu_limit_mode", default=cpu_limit.DEFAULT),
+                        device_config.get_config("cpu_limit_percent"))
+            if (cpu_mode, cpu_percent) != previous and cpu_limit.is_available():
+                try:
+                    cpu_limit.apply(cpu_limit.target_percent(cpu_mode, cpu_percent))
+                except Exception as e:
+                    logger.exception("Could not change the CPU limit")
+                    return jsonify({"error": _("Could not change the processor limit: {message}", message=str(e))}), 500
+            settings["cpu_limit_mode"] = cpu_mode
+            settings["cpu_limit_percent"] = cpu_percent
         device_config.update_config(settings)
 
         if plugin_cycle_interval_seconds != previous_interval_seconds:
@@ -78,8 +130,8 @@ def save_settings():
     except RuntimeError as e:
         return jsonify({"error": str(e)}), 500
     except Exception as e:
-        return jsonify({"error": f"An error occurred: {str(e)}"}), 500
-    return jsonify({"success": True, "message": "Saved settings."})
+        return jsonify({"error": _("An error occurred: {message}", message=str(e))}), 500
+    return jsonify({"success": True, "message": _("Saved settings.")})
 
 @settings_bp.route('/shutdown', methods=['POST'])
 def shutdown():
