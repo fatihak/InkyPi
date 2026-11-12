@@ -1,24 +1,12 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ ui_lang }}">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Settings</title>
-    <script>
-        (function() {
-            const theme = localStorage.getItem('inkypi-theme') || 
-                         (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-            if (theme === 'dark') {
-                document.documentElement.setAttribute('data-theme', 'dark');
-            }
-        })();
-    </script>
-    <link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='styles/main.css') }}">
-    <script src="{{ url_for('static', filename='scripts/dark_mode.js') }}"></script>
-    <script src="{{ url_for('static', filename='scripts/response_modal.js') }}"></script>
+    {% include 'partials/head.html' %}
+    <title>{{ _('Settings') }} · {{ device_name }}</title>
     <script>
         async function handleAction() {
             const form = document.querySelector('.settings-form');
+            if (!form.reportValidity()) return;
             const formData = new FormData(form);
 
             try {
@@ -29,14 +17,19 @@
                 
                 const result = await response.json();
                 if (response.ok) {
-                    showResponseModal('success', `Success! ${result.message}`);
+                    if (formData.get('uiLanguage') && formData.get('uiLanguage') !== {{ ui_lang | tojson }}) {
+                        storeMessageForNextPage('success', result.message || t('Settings saved.'));
+                        location.reload();  // switch the whole page to the new language
+                        return;
+                    }
+                    showResponseModal('success', result.message || t('Settings saved.'));
                 } else {
-                    showResponseModal('failure', `Error!  ${result.error}`);
-                    form.reset();
+                    // Keep what the user typed so they can fix the faulty field
+                    showResponseModal('failure', t('Error: {message}', { message: result.error }));
                 }
             } catch (error) {
                 console.error('Error:', error);
-                alert('An error occurred while processing your request.');
+                showResponseModal('failure', t('Could not save the settings: {message}', { message: error.message }));
             }
         }
 
@@ -49,12 +42,11 @@
 
             // Check if pluginCycleIntervalSeconds is valid
             if (pluginCycleIntervalSeconds !== null && pluginCycleIntervalSeconds !== undefined) {
-                // Convert seconds to minutes and hours
-                let intervalInMinutes = Math.floor(pluginCycleIntervalSeconds / 60);
-                let intervalInHours = Math.floor(pluginCycleIntervalSeconds / 3600);
+                // Use hours only for whole hours: 90 min must stay "90 minutes", not "1 hour"
+                let intervalInMinutes = Math.max(1, Math.round(pluginCycleIntervalSeconds / 60));
+                let intervalInHours = pluginCycleIntervalSeconds / 3600;
 
-                // Determine which unit to use (minute or hour) based on the interval
-                if (intervalInHours > 0) {
+                if (pluginCycleIntervalSeconds % 3600 === 0 && intervalInHours > 0) {
                     intervalInput.value = intervalInHours;
                     unitSelect.value = "hour";
                 } else {
@@ -73,14 +65,18 @@
         }
 
         async function handleShutdown(reboot) {
+            const question = reboot
+                ? t('Reboot the device now? The display and this page will be unavailable for about a minute.')
+                : t('Shut the device down now? You will have to unplug and replug it to start it again.');
+            if (!confirm(question)) return;
             if (reboot) {
-                showResponseModal('success', 'The system is rebooting. The UI will be unavailable until the reboot is complete.');
+                showResponseModal('success', t('The system is rebooting. The UI will be unavailable until the reboot is complete.'));
             } else {
-                showResponseModal('success', 'The system is shutting down. The UI will remain unavailable until it is manually restarted.');
+                showResponseModal('success', t('The system is shutting down. The UI will remain unavailable until it is manually restarted.'));
             }
             await new Promise(resolve => setTimeout(resolve, 1000));
-            // we cannot await a response here
-            await fetch("{{ url_for('settings.shutdown') }}", {
+            // we cannot await a response here (the device goes down)
+            fetch("{{ url_for('settings.shutdown') }}", {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -95,23 +91,36 @@
             valueDisplay.textContent = parseFloat(slider.value).toFixed(1);
         }
         document.addEventListener('DOMContentLoaded', populateIntervalFields);
+
+        // Live preview of the accent colour before saving
+        function hexToRgb(hex) {
+            const n = parseInt(hex.slice(1), 16);
+            return `${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}`;
+        }
+        function previewAccent(input) {
+            const d = input.dataset;
+            document.getElementById('accentStyle').textContent = `
+                :root { --accent-primary: ${d.primary}; --accent-hover: ${d.hover}; --accent-rgb: ${hexToRgb(d.primary)};
+                        --accent-text: ${d.textLight}; --success-color: ${d.primary}; }
+                html[data-theme="dark"] { --accent-primary: ${d.primary}; --accent-hover: ${d.hover};
+                        --accent-text: ${d.textDark}; --success-color: ${d.primary}; }`;
+        }
+        document.addEventListener('change', (event) => {
+            if (event.target.name === 'accentColor') previewAccent(event.target);
+        });
     </script>
 </head>
 <body>
     <div class="frame">
-        <!-- Back Button -->
-        <button onclick="history.back()" class="back-button">← Back</button>
-        <!-- Settings Header -->
-        <div class="app-header">
-            <div class="header-content">
-                <div class="title-container">
-                    <img src="{{ url_for('static', filename='icons/settings.png') }}" alt="settings icon" class="app-icon">
-                    <h1 class="app-title">Settings</h1>
-                </div>
+        {% set active_page = 'settings' %}
+        {% include 'partials/nav.html' %}
+
+        <div class="page-header">
+            <div class="page-title">
+                <img src="{{ url_for('static', filename='icons/settings.png') }}" alt="" class="app-icon">
                 <div>
-                    <a class="header-button" style="text-decoration: none; background-color: #2c66b1; color: #fff;" href="{{ url_for('settings.download_logs', hours=24) }}" download>Download Logs</a>
-                    <button class="header-button" style="background-color: #FFD600; color: #333;" onclick="handleShutdown(true)">Reboot</button>
-                    <button class="header-button" style="background-color: #E53935; color: #fff;" onclick="handleShutdown(false)">Shutdown</button>
+                    <h1>{{ _('Settings') }}</h1>
+                    <div class="page-subtitle">{{ _('Device, time and image settings') }}</div>
                 </div>
             </div>
         </div>
@@ -121,11 +130,11 @@
             <div id="settings-container">
                 <!-- Device Name -->
                 <div class="form-group">
-                    <label for="deviceName" class="form-label">Device Name:</label>
+                    <label for="deviceName" class="form-label">{{ _('Device name:') }}</label>
                     <input type="text" 
                            id="deviceName" 
                            name="deviceName" 
-                           placeholder="Type something..." 
+                           placeholder="{{ _('Type something...') }}" 
                            value="{{ device_settings.name }}" 
                            required 
                            class="form-input">
@@ -133,15 +142,15 @@
                 <div class="form-group nowrap">
                     <!-- Orientation Dropdown -->
                     <div class="form-group">
-                        <label for="orientation" class="form-label">Orientation:</label>
+                        <label for="orientation" class="form-label">{{ _('Orientation:') }}</label>
                         <select id="orientation" name="orientation" class="form-input">
-                            <option value="horizontal" {% if device_settings.orientation == "horizontal" %}selected{% endif %}>Horizontal</option>
-                            <option value="vertical" {% if device_settings.orientation == "vertical" %}selected{% endif %}>Vertical</option>
+                            <option value="horizontal" {% if device_settings.orientation == "horizontal" %}selected{% endif %}>{{ _('Horizontal') }}</option>
+                            <option value="vertical" {% if device_settings.orientation == "vertical" %}selected{% endif %}>{{ _('Vertical') }}</option>
                         </select>
                     </div>
                     <div class="form-group nowrap">
                         <!-- Invert Image Checkbox -->
-                        <label class="form-label" for="invertImage">Invert Image</label>
+                        <label class="form-label" for="invertImage">{{ _('Upside down (rotate 180°)') }}</label>
                         <input type="checkbox" id="invertImage" name="invertImage" {% if device_settings.inverted_image %}checked{% endif %}>
                         </label>
                     </div>
@@ -149,14 +158,14 @@
                 <div class="form-group">
                     <!-- Timezone Dropdown -->
                     <div class="form-group nowrap">
-                        <label for="timezone" class="form-label">Time Zone:</label>
+                        <label for="timezone" class="form-label">{{ _('Time zone:') }}</label>
                         <input
                             type="text"
                             id="timezone"
                             name="timezoneName"
                             class="form-input"
                             list="timezoneList"
-                            placeholder="Type to search..."
+                            placeholder="{{ _('Type to search...') }}"
                             value="{{ device_settings.timezone }}"
                         />
                         <datalist id="timezoneList">
@@ -168,39 +177,65 @@
 
                     <!-- Time Format Dropdown -->
                     <div class="form-group nowrap">
-                        <label for="timeFormat" class="form-label">Time Format:</label>
+                        <label for="timeFormat" class="form-label">{{ _('Time format:') }}</label>
                         <select id="timeFormat" name="timeFormat" class="form-input">
-                            <option value="12h" {% if device_settings.time_format == "12h" %}selected{% endif %}>12 Hour (AM/PM)</option>
-                            <option value="24h" {% if device_settings.time_format == "24h" %}selected{% endif %}>24 Hour</option>
+                            <option value="12h" {% if device_settings.time_format == "12h" %}selected{% endif %}>{{ _('12 Hour (AM/PM)') }}</option>
+                            <option value="24h" {% if device_settings.time_format == "24h" %}selected{% endif %}>{{ _('24 Hour') }}</option>
                         </select>
                     </div>
                 </div>
                 <div class="form-group">
                     <div class="form-group">
-                        <label for="interval">Plugin Cycle Interval:</label>
-                        <span title="Determines how often the display switches to a new plugin.">ⓘ</span>
-                        <span>Every</span>
+                        <label for="interval">{{ _('Change plugin every') }}</label>
+                        <span title="{{ _('How often the display switches to the next plugin of the active playlist.') }}">ⓘ</span>
                         <input type="number" id="interval" name="interval" class="form-input" required min="1">
                         <select id="unit" name="unit" class="form-input" required>
-                            <option value="minute">Minute</option>
-                            <option value="hour">Hour</option>
+                            <option value="minute">{{ _('minutes') }}</option>
+                            <option value="hour">{{ _('hours') }}</option>
                         </select>
                     </div>
 
                     <div class="form-group nowrap">
-                        <label class="form-label" for="logSystemStats">Log System Stats</label>
+                        <label class="form-label" for="logSystemStats">{{ _('Log system stats') }}</label>
                             <input type="checkbox" id="logSystemStats" name="logSystemStats" {% if device_settings.log_system_stats %}checked{% endif %}>
                         </label>
                     </div>
                 </div>
 
+                <div class="form-group nowrap">
+                    <label for="uiLanguage" class="form-label">{{ _('Interface language:') }}</label>
+                    <select id="uiLanguage" name="uiLanguage" class="form-input">
+                        {% for code, name in ui_languages.items() %}
+                        <option value="{{ code }}" {% if code == ui_lang %}selected{% endif %}>{{ name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Appearance of this web interface -->
+                <div class="form-group" role="radiogroup" aria-labelledby="accentLabel">
+                    <span class="form-label" id="accentLabel">{{ _('Accent colour:') }}</span>
+                    <div class="accent-swatches">
+                        {% for key, preset in accent_presets.items() %}
+                        <label class="accent-swatch" title="{{ _(preset.label) }}">
+                            <input type="radio" name="accentColor" value="{{ key }}"
+                                   data-primary="{{ preset.primary }}" data-hover="{{ preset.hover }}"
+                                   data-text-light="{{ preset.text_light }}" data-text-dark="{{ preset.text_dark }}"
+                                   {% if key == accent.key %}checked{% endif %}>
+                            <span class="accent-dot" style="background-color: {{ preset.primary }};"></span>
+                            <span class="accent-name">{{ _(preset.label) }}</span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
+                <p class="form-help" style="margin-bottom: 8px;">{{ _('Colour of buttons and highlights in this web interface (not on the display). Click Save to keep it.') }}</p>
+
                 <div class="collapsible">
                     <button type="button" class="collapsible-header" onclick="toggleCollapsible(this)">
-                        Image Settings <span class="collapsible-icon">▼</span>
+                        {{ _('Image Settings') }} <span class="collapsible-icon">▼</span>
                     </button>
                     <div class="settings-container collapsible-content">
                         <div class="form-group">
-                            <label for="saturation" class="form-label" style="min-width: 100px;">Saturation:</label>
+                            <label for="saturation" class="form-label" style="min-width: 100px;">{{ _('Saturation:') }}</label>
                             <span id="saturation-value">{{ device_settings.get('image_settings', {}).get('saturation', 1.0) }}</span>
                             <input
                                 type="range"
@@ -214,7 +249,7 @@
                             />
                         </div>
                         <div class="form-group">
-                            <label for="contrast" class="form-label" style="min-width: 100px;">Contrast:</label>
+                            <label for="contrast" class="form-label" style="min-width: 100px;">{{ _('Contrast:') }}</label>
                             <span id="contrast-value">{{ device_settings.get('image_settings', {}).get('contrast', 1.0) }}</span>
                             <input
                                 type="range"
@@ -228,7 +263,7 @@
                             />
                          </div>
                         <div class="form-group">
-                            <label for="sharpness" class="form-label" style="min-width: 100px;">Sharpness:</label>
+                            <label for="sharpness" class="form-label" style="min-width: 100px;">{{ _('Sharpness:') }}</label>
                             <span id="sharpness-value">{{ device_settings.get('image_settings', {}).get('sharpness', 1.0) }}</span>
                             <input
                                 type="range"
@@ -242,7 +277,7 @@
                             />
                         </div>
                         <div class="form-group">
-                            <label for="brightness" class="form-label" style="min-width: 100px;">Brightness:</label>
+                            <label for="brightness" class="form-label" style="min-width: 100px;">{{ _('Brightness:') }}</label>
                             <span id="brightness-value">{{ device_settings.get('image_settings', {}).get('brightness', 1.0) }}</span>
                             <input
                                 type="range"
@@ -257,7 +292,7 @@
                         </div>
                         {% if device_settings.get('display_type', 'inky') == 'inky' %}
                         <div class="form-group">
-                            <label for="inky_saturation" class="form-label" style="min-width: 100px;">Inky Driver Saturation:</label>
+                            <label for="inky_saturation" class="form-label" style="min-width: 100px;">{{ _('Inky Driver Saturation:') }}</label>
                             <span id="inky_saturation-value">{{ device_settings.get('image_settings', {}).get('inky_saturation', 0.5) }}</span>
                             <input
                                 type="range"
@@ -278,8 +313,18 @@
  
         <!-- Buttons -->
         <div class="buttons-container">
-            <button type="button" onclick="handleAction()" class="action-button">Save</button>
+            <button type="button" onclick="handleAction()" class="action-button">{{ _('Save') }}</button>
         </div>
+
+        <section class="danger-zone" aria-labelledby="deviceTitle">
+            <h2 class="section-title" id="deviceTitle">{{ _('Device') }}</h2>
+            <p>{{ _('Logs help diagnose problems. Reboot and shut down act on the Raspberry Pi itself.') }}</p>
+            <div class="page-actions">
+                <a class="btn" href="{{ url_for('settings.download_logs', hours=24) }}" download>{{ _('Download logs (24 h)') }}</a>
+                <button type="button" class="btn" onclick="handleShutdown(true)">{{ _('Reboot') }}</button>
+                <button type="button" class="btn btn-danger" onclick="handleShutdown(false)">{{ _('Shut down') }}</button>
+            </div>
+        </section>
     </div>
     <!-- Success/Error Modal -->
     {% include 'response_modal.html' %}
