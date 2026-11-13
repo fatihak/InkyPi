@@ -104,6 +104,36 @@
     const minTemp = Math.min(...temperatures);
     var maxTemp = Math.max(...temperatures);
 	
+    // A few temperatures written on the curve (every other hour label of the time axis)
+    Chart.register({
+      id: 'temperatureLabels',
+      afterDatasetsDraw(chart) {
+        const { ctx, scales: { x } } = chart;
+        const points = chart.getDatasetMeta(0).data;
+        const shown = new Set(x.ticks.filter((tick, n) => n % 2 === 1).map(tick => tick.value));
+        ctx.save();
+        ctx.font = "600 12px Jost, sans-serif";
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.lineJoin = 'round';
+        ctx.lineWidth = 4;
+        ctx.strokeStyle = "{{ plugin_settings.backgroundColor or '#ffffff' }}";
+        ctx.fillStyle = "{{ plugin_settings.textColor }}";
+        chart.$temperatureLabelBoxes = [];
+        points.forEach((point, i) => {
+          if (!shown.has(i)) return;
+          const text = Math.round(temperatures[i]) + (units !== "standard" ? "°" : "");
+          // below the curve: the area above it is used by the rain amounts
+          const y = point.y + 11;
+          ctx.strokeText(text, point.x, y);
+          ctx.fillText(text, point.x, y);
+          const half = ctx.measureText(text).width / 2;
+          chart.$temperatureLabelBoxes.push({ left: point.x - half, right: point.x + half, top: y - 8, bottom: y + 8 });
+        });
+        ctx.restore();
+      }
+    });
+
     Chart.register({
       id: 'annotationRain',
       afterDatasetsDraw(chart, args, pluginOptions) {
@@ -114,27 +144,33 @@
         ctx.save();
         ctx.textAlign = 'center';
 
+        // Amounts are written above the bars (inside a dark bar they are unreadable on
+        // e-paper), with a halo so the temperature curve can't hide them. Labels that would
+        // overlap their neighbour are skipped; the unit is written once, on the first label.
+        ctx.font = "600 11px Jost, sans-serif";
+        ctx.textBaseline = 'bottom';
+        ctx.lineJoin = 'round';
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = "{{ plugin_settings.backgroundColor or '#ffffff' }}";
+        ctx.fillStyle = "{{ plugin_settings.textColor }}";
+        let lastRight = -Infinity;
+        let unitShown = false;
         meta.data.forEach((bar, i) => {
           const rainAmount = rainData[i];
-          if (rainAmount && rainAmount > threshold) {
-            const x = bar.x;
-            const y = bar.y;
-			const base = bar.base;
-			const height = base - y;
-			
-			let textY, unitY;
-			
-			if (height < 25) {
-			  textY = y - 10;
-			  unitY = y - 3;
-			} else {
-			  textY = y + 13;
-			  unitY = y + 20;
-			}
-            ctx.fillStyle = "{{ plugin_settings.textColor }}";
-            ctx.fillText(rainAmount.toFixed(2), x, textY);
-            ctx.fillText(unit, x, unitY); 
-          }
+          if (!rainAmount || rainAmount <= threshold) return;
+          const value = rainAmount.toFixed(isImperial ? 2 : 1);
+          const text = unitShown ? value : `${value} ${unit}`;
+          const width = ctx.measureText(text).width;
+          if (bar.x - width / 2 < lastRight + 3) return;
+          const y = Math.min(bar.y, bar.base) - 3;
+          // temperatures have priority: skip an amount that would overlap one
+          const box = { left: bar.x - width / 2, right: bar.x + width / 2, top: y - 12, bottom: y };
+          if ((chart.$temperatureLabelBoxes || []).some(t =>
+            box.left < t.right && box.right > t.left && box.top < t.bottom && box.bottom > t.top)) return;
+          ctx.strokeText(text, bar.x, y);
+          ctx.fillText(text, bar.x, y);
+          lastRight = bar.x + width / 2;
+          unitShown = true;
         });
 
         ctx.restore();
@@ -187,7 +223,22 @@
           type: 'bar',
           label: 'Precipitation Probability',
           data: precipitation,
-          borderColor: 'rgba(26, 111, 176, 1)', // Semi-transparent blue
+          // light gradient from the top of each bar to the axis, drawn in front of the
+          // temperature area (a gradient over the whole chart height left low bars almost
+          // transparent, invisible on e-ink)
+          backgroundColor: (context) => {
+            const { chart, parsed } = context;
+            const area = chart.chartArea;
+            if (!area || !parsed) return 'rgba(26, 111, 176, 0.3)';
+            const top = chart.scales.y1.getPixelForValue(parsed.y);
+            if (!(area.bottom - top > 1)) return 'rgba(26, 111, 176, 0.3)';
+            const gradient = chart.ctx.createLinearGradient(0, top, 0, area.bottom);
+            gradient.addColorStop(0, 'rgba(26, 111, 176, 0.55)');
+            gradient.addColorStop(1, 'rgba(26, 111, 176, 0.1)');
+            return gradient;
+          },
+          borderColor: 'rgba(26, 111, 176, 1)',
+          order: -1,
           borderWidth: {
             top: 2,
             right: 0,
@@ -198,13 +249,24 @@
           barPercentage: 1.0, // Ensures full width
           categoryPercentage: 1.0,  // Ensures full width
           fill: true, // Enable filling the area under the line
+        },
+        {
+          type: 'line',
+          label: 'Hourly Temperature (line)',
+          data: temperatures,
+          borderColor: 'rgba(241, 122, 36, 0.9)',
+          borderWidth: 2,
+          pointRadius: 0,
+          fill: false,
+          tension: 0.5,
+          order: -2  // curve stays readable in front of the rain bars
         }
       ]
       },
       options: {
         layout: {
 		  padding: {
-		    top: {% if plugin_settings.displayGraphIcons == "true" %}3{% else %}0{% endif %},
+		    top: {% if plugin_settings.displayRain == "true" %}16{% elif plugin_settings.displayGraphIcons == "true" %}3{% else %}0{% endif %},
 		    bottom: {% if plugin_settings.displayGraphIcons == "true" %}11{% else %}0{% endif %}
 		  }
         },
@@ -249,8 +311,11 @@
               }
             },
             grid: { display: false },
-            min: minTemp,
-            max: maxTemp,
+            // small margin so the curve never runs along the top or bottom edge; the axis
+            // labels stay on the real minimum and maximum
+            afterBuildTicks: (axis) => { axis.ticks = [{ value: minTemp }, { value: maxTemp }]; },
+            min: minTemp - Math.max(0.5, (maxTemp - minTemp) * 0.12),
+            max: maxTemp + Math.max(0.5, (maxTemp - minTemp) * 0.12),
           },
           y1: {
             position: 'right',
@@ -299,13 +364,6 @@
 
     // Update the chart to apply the gradient
     chart.data.datasets[0].backgroundColor = tempGradient;
-
-    // Create gradient based on y-axis values
-    const precipitationGradient = ctx.createLinearGradient(0, gradientStart, 0, gradientEnd);
-    precipitationGradient.addColorStop(0, 'rgba(26, 111, 176, 0.8)'); // Top of the gradient (max temperature)
-    precipitationGradient.addColorStop(1, 'rgba(194, 223, 246, 0)'); // Bottom of the gradient (min temperature)
-
-    chart.data.datasets[1].backgroundColor = precipitationGradient;
 
     chart.update();
   });
