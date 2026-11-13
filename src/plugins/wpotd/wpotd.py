@@ -24,6 +24,7 @@ Flow:
 from plugins.base_plugin.base_plugin import BasePlugin
 from PIL import Image, UnidentifiedImageError
 from io import BytesIO
+from urllib.parse import urlparse
 from utils.http_client import get_http_session
 import logging
 from random import randint
@@ -36,6 +37,11 @@ logger = logging.getLogger(__name__)
 class Wpotd(BasePlugin):
     HEADERS = {'User-Agent': 'InkyPi/1.0 (https://github.com/fatihak/InkyPi/)'}
     API_URL = "https://en.wikipedia.org/w/api.php"
+    # Commons also hosts video/audio/documents as POTD; these cannot be shown and can be GBs.
+    NON_IMAGE_EXTENSIONS = (
+        ".webm", ".ogv", ".ogg", ".oga", ".ogx", ".opus", ".mp4", ".mpg", ".mpeg",
+        ".mp3", ".wav", ".flac", ".mid", ".pdf", ".djvu", ".stl",
+    )
 
     def generate_settings_template(self) -> Dict[str, Any]:
         template_params = super().generate_settings_template()
@@ -103,6 +109,11 @@ class Wpotd(BasePlugin):
             resize: Whether to use adaptive resizing
         """
         try:
+            path = urlparse(url).path.lower()
+            if path.endswith(self.NON_IMAGE_EXTENSIONS):
+                logger.warning(f"POTD is not a still image ({path.rsplit('.', 1)[-1]}). Skipping download.")
+                raise RuntimeError("Unsupported POTD media type: not a still image.")
+
             if url.lower().endswith(".svg"):
                 logger.warning("SVG format is not supported by Pillow. Skipping image download.")
                 raise RuntimeError("Unsupported image format: SVG.")
