@@ -1,95 +1,49 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {% include 'partials/head.html' %}
     <title>{{ config.name }}</title>
-    <link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='styles/main.css') }}">
-    <script>
-        (function() {
-            const theme = localStorage.getItem('inkypi-theme') || 
-                         (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-            if (theme === 'dark') {
-                document.documentElement.setAttribute('data-theme', 'dark');
-            }
-        })();
-        let lastModified = null;
-        const refreshIntervalMs = 3 * 1000;
-
-        async function refreshImage() {
-            const img = document.querySelector('.image-container img');
-            if (!img) return;
-
-            try {
-                const headers = {};
-                if (lastModified) {
-                    headers['If-Modified-Since'] = lastModified;
-                }
-
-                const response = await fetch('{{ url_for("main.get_current_image") }}', { headers });
-                
-                if (response.status === 304) {
-                    return;
-                }
-
-                if (!response.ok) {
-                    console.error('Failed to fetch image:', response.status);
-                    return;
-                }
-
-                const blob = await response.blob();
-                const objectUrl = URL.createObjectURL(blob);
-                
-                img.src = objectUrl;
-                lastModified = response.headers.get('Last-Modified');
-            } catch (error) {
-                console.error('Error refreshing image:', error);
-            }
-        }
-
-        document.addEventListener('DOMContentLoaded', function() {
-            refreshImage();
-            setInterval(refreshImage, refreshIntervalMs);
-        });
-    </script>
     <script src="{{ url_for('static', filename='scripts/image_modal.js') }}"></script>
 </head>
 <body>
-    <script src="{{ url_for('static', filename='scripts/dark_mode.js') }}"></script>
-    <!-- Subtle frame container -->
     <div class="frame">
-        <!-- Page Title -->
-        <header class="header">
-            <h1>{{ config.name }}</h1>
-            <button class="settings-button dark-mode-toggle" title="Toggle Dark Mode" aria-label="Toggle Dark Mode"></button>
-            <a href="{{ url_for('apikeys.apikeys_page') }}" class="settings-button" title="API Keys">
-                <span style="font-size: 20px;">🔑</span>
-            </a>
-            <a href="{{ url_for('playlist.playlists') }}" class="settings-button">
-                <img src="{{ url_for('static', filename='icons/playlist.png') }}" title="Playlists" alt="playlists icon" class="icon-image">
-            </a>
-            <a href="{{ url_for('settings.settings_page') }}" class="settings-button">
-                <img src="{{ url_for('static', filename='icons/settings.png') }}" title="Settings" alt="settings icon" class="icon-image">
-            </a>
-        </header>
+        {% set active_page = 'home' %}
+        {% include 'partials/nav.html' %}
 
-        <!-- Display the current image -->
-        <div class="image-container">
-            <img src="{{ url_for('static', filename='images/current_image.png') }}" alt="Current Image">
-        </div>
+        <!-- What is on the display right now -->
+        <section class="now-showing card" aria-labelledby="nowTitle">
+            <div class="image-container" title="Click to enlarge">
+                <img src="{{ url_for('static', filename='images/current_image.png') }}" alt="Image currently on the display">
+            </div>
+            <div class="now-info">
+                <div class="now-label">On the display</div>
+                <div class="now-title" id="nowTitle">{{ status.title }}</div>
+                <div class="now-meta">
+                    <span id="nowSource">
+                        {% if status.manual %}Manual update{% if status.plugin %} · {{ status.plugin }}{% endif %}
+                        {% elif status.playlist %}{{ status.plugin }} · playlist “{{ status.playlist }}”
+                        {% else %}{{ status.plugin }}{% endif %}
+                    </span>
+                    <span id="nowRefreshed">{% if status.refreshed %}Updated {{ status.refreshed }}{% endif %}</span>
+                    <span id="nowNext">{% if status.next_change %}Next change around {{ status.next_change }}{% endif %}</span>
+                </div>
+                <div class="now-actions">
+                    <a class="btn btn-primary" href="{{ url_for('playlist.playlists') }}">Manage playlists</a>
+                    <a class="btn" href="#plugins">Add a plugin</a>
+                </div>
+            </div>
+        </section>
 
-        <!-- Separator -->
-        <div class="separator"></div>
-
-        <div class="plugins-header">
+        <div class="plugins-header" id="plugins">
             <h2 class="plugins-title">Plugins</h2>
             <div class="plugins-controls">
-                <button class="sort-toggle" id="sortToggle" title="Reorder plugins">Sort</button>
-                <button class="view-toggle" id="viewToggle" title="Switch view">List</button>
+                <button type="button" class="sort-toggle" id="sortToggle" title="Change the order of the plugins">Reorder</button>
+                <button type="button" class="view-toggle sort-toggle" id="viewToggle" title="Switch between grid and list">List view</button>
             </div>
         </div>
+        <p class="form-help" style="margin: 2px 0 8px;">Pick a plugin to preview it on the display or add it to a playlist.</p>
 
-        <div class="sort-hint" id="sortHint">Drag plugins to reorder. Click "Save" when done.</div>
+        <div class="sort-hint" id="sortHint">Drag the plugins (or use the arrows) to reorder them, then click “Done”.</div>
 
         <div class="plugins-container" id="pluginsContainer">
             {% for plugin in plugins %}
@@ -99,154 +53,175 @@
                title="{{ plugin.display_name }}"
                draggable="false">
                 <img src="{{ url_for('plugin.image', plugin_id=plugin.id, filename='icon.png') }}"
-                     alt="{{ plugin.display_name }}"
+                     alt=""
                      class="icon-image">
                 <span class="plugin-name">{{ plugin.display_name }}</span>
+                <span class="plugin-move">
+                    <button type="button" data-move="-1" aria-label="Move {{ plugin.display_name }} earlier">◀</button>
+                    <button type="button" data-move="1" aria-label="Move {{ plugin.display_name }} later">▶</button>
+                </span>
             </a>
             {% endfor %}
         </div>
+    </div>
 
-        <script>
-            // View mode (grid/list)
-            const viewToggle = document.getElementById('viewToggle');
-            const pluginsContainer = document.getElementById('pluginsContainer');
-            let currentView = localStorage.getItem('inkypi-plugins-view') || 'grid';
+    {% include 'response_modal.html' %}
 
-            function updateView() {
-                if (currentView === 'list') {
-                    pluginsContainer.classList.add('list-view');
-                    viewToggle.textContent = 'Grid';
-                } else {
-                    pluginsContainer.classList.remove('list-view');
-                    viewToggle.textContent = 'List';
-                }
+    <script>
+        // ---- live preview of the display ----
+        let lastModified = null;
+        let currentObjectUrl = null;
+        const refreshIntervalMs = 5 * 1000;
+
+        async function refreshImage() {
+            const img = document.querySelector('.image-container img');
+            if (!img || document.hidden) return;
+            try {
+                const headers = lastModified ? { 'If-Modified-Since': lastModified } : {};
+                const response = await fetch('{{ url_for("main.get_current_image") }}', { headers });
+                // The status can change without a new image (same image skipped, next change
+                // time, relative times), so it is refreshed on every cycle.
+                if (lastModified !== null) refreshStatus();
+                if (response.status === 304 || !response.ok) return;
+
+                const blob = await response.blob();
+                const objectUrl = URL.createObjectURL(blob);
+                img.src = objectUrl;
+                if (currentObjectUrl) URL.revokeObjectURL(currentObjectUrl);  // avoid leaking old images
+                currentObjectUrl = objectUrl;
+                lastModified = response.headers.get('Last-Modified');
+            } catch (error) {
+                console.error('Error refreshing image:', error);
             }
+        }
 
-            viewToggle.addEventListener('click', () => {
-                currentView = currentView === 'grid' ? 'list' : 'grid';
-                localStorage.setItem('inkypi-plugins-view', currentView);
-                updateView();
-            });
+        async function refreshStatus() {
+            try {
+                const response = await fetch('{{ url_for("main.get_status") }}');
+                if (!response.ok) return;
+                const s = await response.json();
+                document.getElementById('nowTitle').textContent = s.title;
+                let source = s.plugin;
+                if (s.manual) source = 'Manual update' + (s.plugin ? ' · ' + s.plugin : '');
+                else if (s.playlist) source = `${s.plugin} · playlist “${s.playlist}”`;
+                document.getElementById('nowSource').textContent = source;
+                document.getElementById('nowRefreshed').textContent = s.refreshed ? 'Updated ' + s.refreshed : '';
+                document.getElementById('nowNext').textContent = s.next_change ? 'Next change around ' + s.next_change : '';
+            } catch (error) { /* keep current text */ }
+        }
 
+        document.addEventListener('DOMContentLoaded', function () {
+            refreshImage();
+            setInterval(refreshImage, refreshIntervalMs);
+            document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshImage(); });
+        });
+
+        // ---- grid / list view ----
+        const viewToggle = document.getElementById('viewToggle');
+        const pluginsContainer = document.getElementById('pluginsContainer');
+        let currentView = 'grid';
+        try { currentView = localStorage.getItem('inkypi-plugins-view') || 'grid'; } catch (e) { /* ignore */ }
+
+        function updateView() {
+            const list = currentView === 'list';
+            pluginsContainer.classList.toggle('list-view', list);
+            viewToggle.textContent = list ? 'Grid view' : 'List view';
+        }
+        viewToggle.addEventListener('click', () => {
+            currentView = currentView === 'grid' ? 'list' : 'grid';
+            try { localStorage.setItem('inkypi-plugins-view', currentView); } catch (e) { /* ignore */ }
             updateView();
+        });
+        updateView();
 
-            // Sort mode
-            const sortToggle = document.getElementById('sortToggle');
-            const sortHint = document.getElementById('sortHint');
-            let isSorting = false;
-            let draggedItem = null;
+        // ---- reorder mode (mouse drag, or arrow buttons that also work on touch screens) ----
+        const sortToggle = document.getElementById('sortToggle');
+        const sortHint = document.getElementById('sortHint');
+        let isSorting = false;
+        let draggedItem = null;
+        let orderBeforeSorting = [];
 
-            function enableSorting() {
-                isSorting = true;
-                sortToggle.classList.add('active');
-                sortToggle.textContent = 'Save';
-                sortHint.classList.add('visible');
-                pluginsContainer.classList.add('sorting');
+        function currentOrder() {
+            return Array.from(pluginsContainer.children).map(item => item.dataset.pluginId);
+        }
 
-                document.querySelectorAll('.plugin-item').forEach(item => {
-                    item.draggable = true;
-                    item.addEventListener('dragstart', handleDragStart);
-                    item.addEventListener('dragend', handleDragEnd);
-                    item.addEventListener('dragover', handleDragOver);
-                    item.addEventListener('dragleave', handleDragLeave);
-                    item.addEventListener('drop', handleDrop);
-                    item.addEventListener('click', preventClick);
-                });
-            }
-
-            function disableSorting() {
-                isSorting = false;
-                sortToggle.classList.remove('active');
-                sortToggle.textContent = 'Sort';
-                sortHint.classList.remove('visible');
-                pluginsContainer.classList.remove('sorting');
-
-                document.querySelectorAll('.plugin-item').forEach(item => {
-                    item.draggable = false;
-                    item.removeEventListener('dragstart', handleDragStart);
-                    item.removeEventListener('dragend', handleDragEnd);
-                    item.removeEventListener('dragover', handleDragOver);
-                    item.removeEventListener('dragleave', handleDragLeave);
-                    item.removeEventListener('drop', handleDrop);
-                    item.removeEventListener('click', preventClick);
-                });
-
-                // Save order
+        function setSorting(enabled) {
+            isSorting = enabled;
+            sortToggle.classList.toggle('active', enabled);
+            sortToggle.textContent = enabled ? 'Done' : 'Reorder';
+            sortHint.classList.toggle('visible', enabled);
+            pluginsContainer.classList.toggle('sorting', enabled);
+            document.querySelectorAll('.plugin-item').forEach(item => { item.draggable = enabled; });
+            if (enabled) {
+                orderBeforeSorting = currentOrder();
+            } else if (currentOrder().join() !== orderBeforeSorting.join()) {
                 savePluginOrder();
             }
+        }
 
-            function preventClick(e) {
-                if (isSorting) {
-                    e.preventDefault();
-                }
+        pluginsContainer.addEventListener('click', (e) => {
+            if (!isSorting) return;
+            e.preventDefault();  // no navigation while reordering
+            const moveButton = e.target.closest('[data-move]');
+            if (!moveButton) return;
+            const item = moveButton.closest('.plugin-item');
+            if (moveButton.dataset.move === '-1' && item.previousElementSibling) {
+                pluginsContainer.insertBefore(item, item.previousElementSibling);
+            } else if (moveButton.dataset.move === '1' && item.nextElementSibling) {
+                pluginsContainer.insertBefore(item.nextElementSibling, item);
             }
+            moveButton.focus();
+        });
 
-            function handleDragStart(e) {
-                draggedItem = this;
-                this.classList.add('dragging');
-                e.dataTransfer.effectAllowed = 'move';
+        pluginsContainer.addEventListener('dragstart', (e) => {
+            if (!isSorting) return;
+            draggedItem = e.target.closest('.plugin-item');
+            draggedItem.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+        });
+        pluginsContainer.addEventListener('dragend', () => {
+            if (draggedItem) draggedItem.classList.remove('dragging');
+            document.querySelectorAll('.plugin-item.drag-over').forEach(item => item.classList.remove('drag-over'));
+            draggedItem = null;
+        });
+        pluginsContainer.addEventListener('dragover', (e) => {
+            if (!isSorting || !draggedItem) return;
+            e.preventDefault();
+            const target = e.target.closest('.plugin-item');
+            document.querySelectorAll('.plugin-item.drag-over').forEach(item => item.classList.remove('drag-over'));
+            if (target && target !== draggedItem) target.classList.add('drag-over');
+        });
+        pluginsContainer.addEventListener('drop', (e) => {
+            if (!isSorting || !draggedItem) return;
+            e.preventDefault();
+            const target = e.target.closest('.plugin-item');
+            if (!target || target === draggedItem) return;
+            const items = Array.from(pluginsContainer.children);
+            if (items.indexOf(draggedItem) < items.indexOf(target)) {
+                pluginsContainer.insertBefore(draggedItem, target.nextSibling);
+            } else {
+                pluginsContainer.insertBefore(draggedItem, target);
             }
+        });
 
-            function handleDragEnd(e) {
-                this.classList.remove('dragging');
-                document.querySelectorAll('.plugin-item').forEach(item => {
-                    item.classList.remove('drag-over');
+        async function savePluginOrder() {
+            try {
+                const response = await fetch('{{ url_for("main.save_plugin_order") }}', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ order: currentOrder() })
                 });
-            }
-
-            function handleDragOver(e) {
-                e.preventDefault();
-                e.dataTransfer.dropEffect = 'move';
-                if (this !== draggedItem) {
-                    this.classList.add('drag-over');
-                }
-            }
-
-            function handleDragLeave(e) {
-                this.classList.remove('drag-over');
-            }
-
-            function handleDrop(e) {
-                e.preventDefault();
-                this.classList.remove('drag-over');
-
-                if (this !== draggedItem) {
-                    const items = Array.from(pluginsContainer.children);
-                    const draggedIndex = items.indexOf(draggedItem);
-                    const targetIndex = items.indexOf(this);
-
-                    if (draggedIndex < targetIndex) {
-                        this.parentNode.insertBefore(draggedItem, this.nextSibling);
-                    } else {
-                        this.parentNode.insertBefore(draggedItem, this);
-                    }
-                }
-            }
-
-            async function savePluginOrder() {
-                const order = Array.from(pluginsContainer.children).map(item => item.dataset.pluginId);
-                try {
-                    const response = await fetch('{{ url_for("main.save_plugin_order") }}', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ order: order })
-                    });
-                    if (!response.ok) {
-                        console.error('Failed to save plugin order');
-                    }
-                } catch (error) {
-                    console.error('Error saving plugin order:', error);
-                }
-            }
-
-            sortToggle.addEventListener('click', () => {
-                if (isSorting) {
-                    disableSorting();
+                if (response.ok) {
+                    showResponseModal('success', 'Plugin order saved.');
                 } else {
-                    enableSorting();
+                    showResponseModal('failure', 'Could not save the plugin order.');
                 }
-            });
-        </script>
-    </div>
+            } catch (error) {
+                showResponseModal('failure', 'Could not save the plugin order: ' + error);
+            }
+        }
+
+        sortToggle.addEventListener('click', () => setSorting(!isSorting));
+    </script>
 </body>
 </html>

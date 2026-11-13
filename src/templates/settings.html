@@ -1,24 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Settings</title>
-    <script>
-        (function() {
-            const theme = localStorage.getItem('inkypi-theme') || 
-                         (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-            if (theme === 'dark') {
-                document.documentElement.setAttribute('data-theme', 'dark');
-            }
-        })();
-    </script>
-    <link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='styles/main.css') }}">
-    <script src="{{ url_for('static', filename='scripts/dark_mode.js') }}"></script>
-    <script src="{{ url_for('static', filename='scripts/response_modal.js') }}"></script>
+    {% include 'partials/head.html' %}
+    <title>Settings · {{ device_name }}</title>
     <script>
         async function handleAction() {
             const form = document.querySelector('.settings-form');
+            if (!form.reportValidity()) return;
             const formData = new FormData(form);
 
             try {
@@ -29,14 +17,14 @@
                 
                 const result = await response.json();
                 if (response.ok) {
-                    showResponseModal('success', `Success! ${result.message}`);
+                    showResponseModal('success', result.message || 'Settings saved.');
                 } else {
-                    showResponseModal('failure', `Error!  ${result.error}`);
-                    form.reset();
+                    // Keep what the user typed so they can fix the faulty field
+                    showResponseModal('failure', `Error: ${result.error}`);
                 }
             } catch (error) {
                 console.error('Error:', error);
-                alert('An error occurred while processing your request.');
+                showResponseModal('failure', 'Could not save the settings: ' + error.message);
             }
         }
 
@@ -49,12 +37,11 @@
 
             // Check if pluginCycleIntervalSeconds is valid
             if (pluginCycleIntervalSeconds !== null && pluginCycleIntervalSeconds !== undefined) {
-                // Convert seconds to minutes and hours
-                let intervalInMinutes = Math.floor(pluginCycleIntervalSeconds / 60);
-                let intervalInHours = Math.floor(pluginCycleIntervalSeconds / 3600);
+                // Use hours only for whole hours: 90 min must stay "90 minutes", not "1 hour"
+                let intervalInMinutes = Math.max(1, Math.round(pluginCycleIntervalSeconds / 60));
+                let intervalInHours = pluginCycleIntervalSeconds / 3600;
 
-                // Determine which unit to use (minute or hour) based on the interval
-                if (intervalInHours > 0) {
+                if (pluginCycleIntervalSeconds % 3600 === 0 && intervalInHours > 0) {
                     intervalInput.value = intervalInHours;
                     unitSelect.value = "hour";
                 } else {
@@ -73,14 +60,18 @@
         }
 
         async function handleShutdown(reboot) {
+            const question = reboot
+                ? 'Reboot the device now? The display and this page will be unavailable for about a minute.'
+                : 'Shut the device down now? You will have to unplug and replug it to start it again.';
+            if (!confirm(question)) return;
             if (reboot) {
                 showResponseModal('success', 'The system is rebooting. The UI will be unavailable until the reboot is complete.');
             } else {
                 showResponseModal('success', 'The system is shutting down. The UI will remain unavailable until it is manually restarted.');
             }
             await new Promise(resolve => setTimeout(resolve, 1000));
-            // we cannot await a response here
-            await fetch("{{ url_for('settings.shutdown') }}", {
+            // we cannot await a response here (the device goes down)
+            fetch("{{ url_for('settings.shutdown') }}", {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -95,23 +86,36 @@
             valueDisplay.textContent = parseFloat(slider.value).toFixed(1);
         }
         document.addEventListener('DOMContentLoaded', populateIntervalFields);
+
+        // Live preview of the accent colour before saving
+        function hexToRgb(hex) {
+            const n = parseInt(hex.slice(1), 16);
+            return `${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}`;
+        }
+        function previewAccent(input) {
+            const d = input.dataset;
+            document.getElementById('accentStyle').textContent = `
+                :root { --accent-primary: ${d.primary}; --accent-hover: ${d.hover}; --accent-rgb: ${hexToRgb(d.primary)};
+                        --accent-text: ${d.textLight}; --success-color: ${d.primary}; }
+                html[data-theme="dark"] { --accent-primary: ${d.primary}; --accent-hover: ${d.hover};
+                        --accent-text: ${d.textDark}; --success-color: ${d.primary}; }`;
+        }
+        document.addEventListener('change', (event) => {
+            if (event.target.name === 'accentColor') previewAccent(event.target);
+        });
     </script>
 </head>
 <body>
     <div class="frame">
-        <!-- Back Button -->
-        <button onclick="history.back()" class="back-button">← Back</button>
-        <!-- Settings Header -->
-        <div class="app-header">
-            <div class="header-content">
-                <div class="title-container">
-                    <img src="{{ url_for('static', filename='icons/settings.png') }}" alt="settings icon" class="app-icon">
-                    <h1 class="app-title">Settings</h1>
-                </div>
+        {% set active_page = 'settings' %}
+        {% include 'partials/nav.html' %}
+
+        <div class="page-header">
+            <div class="page-title">
+                <img src="{{ url_for('static', filename='icons/settings.png') }}" alt="" class="app-icon">
                 <div>
-                    <a class="header-button" style="text-decoration: none; background-color: #2c66b1; color: #fff;" href="{{ url_for('settings.download_logs', hours=24) }}" download>Download Logs</a>
-                    <button class="header-button" style="background-color: #FFD600; color: #333;" onclick="handleShutdown(true)">Reboot</button>
-                    <button class="header-button" style="background-color: #E53935; color: #fff;" onclick="handleShutdown(false)">Shutdown</button>
+                    <h1>Settings</h1>
+                    <div class="page-subtitle">Device, time and image settings</div>
                 </div>
             </div>
         </div>
@@ -121,7 +125,7 @@
             <div id="settings-container">
                 <!-- Device Name -->
                 <div class="form-group">
-                    <label for="deviceName" class="form-label">Device Name:</label>
+                    <label for="deviceName" class="form-label">Device name:</label>
                     <input type="text" 
                            id="deviceName" 
                            name="deviceName" 
@@ -141,7 +145,7 @@
                     </div>
                     <div class="form-group nowrap">
                         <!-- Invert Image Checkbox -->
-                        <label class="form-label" for="invertImage">Invert Image</label>
+                        <label class="form-label" for="invertImage">Upside down (rotate 180°)</label>
                         <input type="checkbox" id="invertImage" name="invertImage" {% if device_settings.inverted_image %}checked{% endif %}>
                         </label>
                     </div>
@@ -149,7 +153,7 @@
                 <div class="form-group">
                     <!-- Timezone Dropdown -->
                     <div class="form-group nowrap">
-                        <label for="timezone" class="form-label">Time Zone:</label>
+                        <label for="timezone" class="form-label">Time zone:</label>
                         <input
                             type="text"
                             id="timezone"
@@ -168,7 +172,7 @@
 
                     <!-- Time Format Dropdown -->
                     <div class="form-group nowrap">
-                        <label for="timeFormat" class="form-label">Time Format:</label>
+                        <label for="timeFormat" class="form-label">Time format:</label>
                         <select id="timeFormat" name="timeFormat" class="form-input">
                             <option value="12h" {% if device_settings.time_format == "12h" %}selected{% endif %}>12 Hour (AM/PM)</option>
                             <option value="24h" {% if device_settings.time_format == "24h" %}selected{% endif %}>24 Hour</option>
@@ -177,22 +181,39 @@
                 </div>
                 <div class="form-group">
                     <div class="form-group">
-                        <label for="interval">Plugin Cycle Interval:</label>
-                        <span title="Determines how often the display switches to a new plugin.">ⓘ</span>
-                        <span>Every</span>
+                        <label for="interval">Change plugin every</label>
+                        <span title="How often the display switches to the next plugin of the active playlist.">ⓘ</span>
                         <input type="number" id="interval" name="interval" class="form-input" required min="1">
                         <select id="unit" name="unit" class="form-input" required>
-                            <option value="minute">Minute</option>
-                            <option value="hour">Hour</option>
+                            <option value="minute">minutes</option>
+                            <option value="hour">hours</option>
                         </select>
                     </div>
 
                     <div class="form-group nowrap">
-                        <label class="form-label" for="logSystemStats">Log System Stats</label>
+                        <label class="form-label" for="logSystemStats">Log system stats</label>
                             <input type="checkbox" id="logSystemStats" name="logSystemStats" {% if device_settings.log_system_stats %}checked{% endif %}>
                         </label>
                     </div>
                 </div>
+
+                <!-- Appearance of this web interface -->
+                <div class="form-group" role="radiogroup" aria-labelledby="accentLabel">
+                    <span class="form-label" id="accentLabel">Accent colour:</span>
+                    <div class="accent-swatches">
+                        {% for key, preset in accent_presets.items() %}
+                        <label class="accent-swatch" title="{{ preset.label }}">
+                            <input type="radio" name="accentColor" value="{{ key }}"
+                                   data-primary="{{ preset.primary }}" data-hover="{{ preset.hover }}"
+                                   data-text-light="{{ preset.text_light }}" data-text-dark="{{ preset.text_dark }}"
+                                   {% if key == accent.key %}checked{% endif %}>
+                            <span class="accent-dot" style="background-color: {{ preset.primary }};"></span>
+                            <span class="accent-name">{{ preset.label }}</span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
+                <p class="form-help" style="margin-bottom: 8px;">Colour of buttons and highlights in this web interface (not on the display). Click Save to keep it.</p>
 
                 <div class="collapsible">
                     <button type="button" class="collapsible-header" onclick="toggleCollapsible(this)">
@@ -280,6 +301,16 @@
         <div class="buttons-container">
             <button type="button" onclick="handleAction()" class="action-button">Save</button>
         </div>
+
+        <section class="danger-zone" aria-labelledby="deviceTitle">
+            <h2 class="section-title" id="deviceTitle">Device</h2>
+            <p>Logs help diagnose problems. Reboot and shut down act on the Raspberry Pi itself.</p>
+            <div class="page-actions">
+                <a class="btn" href="{{ url_for('settings.download_logs', hours=24) }}" download>Download logs (24 h)</a>
+                <button type="button" class="btn" onclick="handleShutdown(true)">Reboot</button>
+                <button type="button" class="btn btn-danger" onclick="handleShutdown(false)">Shut down</button>
+            </div>
+        </section>
     </div>
     <!-- Success/Error Modal -->
     {% include 'response_modal.html' %}

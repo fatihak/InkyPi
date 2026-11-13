@@ -104,7 +104,11 @@ def save_apikeys():
             valid_entries.append((key, value))
         
         if write_env_file(env_path, valid_entries):
-            # Reload environment variables
+            # Reload environment variables; keys removed in the UI must stop working right away
+            kept = {key for key, _ in valid_entries}
+            for key in existing_values:
+                if key not in kept:
+                    os.environ.pop(key, None)
             for key, value in valid_entries:
                 os.environ[key] = value
             
