@@ -78,8 +78,31 @@ class ImmichProvider:
 
         return matching_albums[0]["id"]
 
-    def get_assets(self, album_id: str) -> list[dict]:
-        """Fetch image assets from album.
+    def _matches_orientation(self, asset: dict, orientation: str) -> bool:
+        """True when the asset's pixel dimensions match the requested orientation."""
+        exif = asset.get("exifInfo") or {}
+        width = asset.get("width") or exif.get("exifImageWidth")
+        height = asset.get("height") or exif.get("exifImageHeight")
+        if not width or not height:
+            return False
+        if orientation == "portrait":
+            return height > width
+        if orientation == "landscape":
+            return width > height
+        return True
+
+    def _filter_orientation(self, assets: list[dict], orientation: str) -> list[dict]:
+        """Filter assets by orientation. 'any' passes everything through."""
+        if orientation not in ("portrait", "landscape"):
+            return assets
+        kept = [a for a in assets if self._matches_orientation(a, orientation)]
+        logger.info(
+            f"Orientation '{orientation}': kept {len(kept)} of {len(assets)} assets"
+        )
+        return kept
+
+    def get_assets(self, album_id: str, orientation: str = "any") -> list[dict]:
+        """Fetch image assets from album, optionally filtered by orientation.
 
         Immich v3 removed the `assets` field from GET /api/albums/{id}.
         Use POST /api/search/metadata with albumIds filter instead, falling back
@@ -97,7 +120,13 @@ class ImmichProvider:
             items = search_data.get("assets", {}).get("items", [])
             logger.debug(f"Search API found {len(items)} image assets")
             if items:
-                return items
+                filtered = self._filter_orientation(items, orientation)
+                if not filtered:
+                    logger.warning(
+                        f"No assets match orientation '{orientation}'; using unfiltered list"
+                    )
+                    return items
+                return filtered
 
         # Fallback: older Immich versions embed assets in album detail
         logger.debug(f"Search API empty/failed, falling back to /api/albums/{album_id}")
@@ -111,9 +140,11 @@ class ImmichProvider:
         assets = album_data.get("assets", []) or []
         image_assets = [a for a in assets if a.get("type") in ("IMAGE", "image", "photo")]
         logger.debug(f"Album detail found {len(image_assets)} image assets ({len(assets)} total)")
-        return image_assets
+        filtered = self._filter_orientation(image_assets, orientation)
+        return filtered or image_assets
 
-    def get_image(self, album: str, dimensions: tuple[int, int], resize: bool = True) -> Image.Image | None:
+    def get_image(self, album: str, dimensions: tuple[int, int], resize: bool = True,
+                  orientation: str = "any") -> Image.Image | None:
         """
         Get a random image from the album.
 
@@ -121,6 +152,7 @@ class ImmichProvider:
             album: Album name
             dimensions: Target dimensions (width, height)
             resize: Whether to let loader resize (False when padding will be applied)
+            orientation: 'any', 'portrait' or 'landscape' photo filter
 
         Returns:
             PIL Image or None on error
@@ -129,7 +161,7 @@ class ImmichProvider:
             logger.info(f"Getting id for album '{album}'")
             album_id = self.get_album_id(album)
             logger.info(f"Getting assets from album id {album_id}")
-            assets = self.get_assets(album_id)
+            assets = self.get_assets(album_id, orientation)
 
             if not assets:
                 logger.error(f"No assets found in album '{album}'")
@@ -215,8 +247,12 @@ class ImageAlbum(BasePlugin):
                 logger.info(f"Album: {album}")
 
                 provider = ImmichProvider(url, key, self.image_loader)
+                photo_orientation = (settings.get('orientation') or 'any').lower()
+                logger.info(f"Photo orientation filter: {photo_orientation}")
                 # Let loader resize when no padding needed, otherwise load full-size for padding
-                img = provider.get_image(album, dimensions, resize=not use_padding)
+                img = provider.get_image(
+                    album, dimensions, resize=not use_padding, orientation=photo_orientation
+                )
 
                 if not img:
                     logger.error("Failed to retrieve image from Immich")

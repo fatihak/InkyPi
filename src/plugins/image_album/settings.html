@@ -13,6 +13,15 @@
 </div>
 
 <div class="form-group">
+    <label for="orientation" class="form-label">Photo Orientation:</label>
+    <select id="orientation" name="orientation" class="form-input">
+        <option value="any">Any</option>
+        <option value="portrait">Portrait only</option>
+        <option value="landscape">Landscape only</option>
+    </select>
+</div>
+
+<div class="form-group">
     <div class="form-group">
         <label for="padImage" class="form-label">Scale to Fit:</label>
         <div class="toggle-container">
@@ -51,6 +60,7 @@
         if (loadPluginSettings) {
             document.getElementById('url').value = pluginSettings.url;
             document.getElementById('album').value = pluginSettings.album;
+            document.getElementById('orientation').value = pluginSettings.orientation || 'any';
             document.getElementById('padImage').checked = pluginSettings.padImage == 'false';
             document.getElementById('randomize').checked = pluginSettings.randomize;
             document.getElementById('backgroundColor').value = pluginSettings.backgroundColor;
