@@ -83,8 +83,8 @@ class ImmichProvider:
 
         Immich v3 removed the `assets` field from GET /api/albums/{id}.
         Use POST /api/search/metadata with albumIds filter instead, falling back
-        to the album detail endpoint for older versions. `size` is raised to the
-        API maximum so a filter sees the whole album, not one page.
+        to the album detail endpoint for older versions. `size` is set to the API
+        maximum (1000, default 250) so the random pick covers more of the album.
         """
         # Immich v3+: assets no longer embedded in album response
         logger.debug(f"Fetching assets for album {album_id} via search/metadata")
