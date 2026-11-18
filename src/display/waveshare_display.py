@@ -54,6 +54,7 @@ class WaveshareDisplay(AbstractDisplay):
         """
         
         logger.info("Initializing Waveshare display")
+        self.update_count = 0
 
         # get the device type which should be the model number of the device.
         display_type = self.device_config.get_config("display_type")  
@@ -123,8 +124,13 @@ class WaveshareDisplay(AbstractDisplay):
         # Assume device was in sleep mode.
         self.epd_display_init()
 
-        # Clear residual pixels before updating the image.
-        self.epd_display.Clear()
+        # Clear residual pixels before every Nth update (1 = every update, 0 = never).
+        n = self.device_config.get_config("clear_every_n_updates", 1)
+        n = n if type(n) is int and n >= 0 else 1
+        if n and self.update_count % n == 0:
+            logger.info(f"Clearing display before update (every {n} updates).")
+            self.epd_display.Clear()
+        self.update_count += 1
 
         # Display the image on the WS display.
         if not self.bi_color_display:
