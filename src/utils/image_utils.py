@@ -8,6 +8,8 @@ import tempfile
 import subprocess
 import shutil
 
+from utils import text_font
+
 logger = logging.getLogger(__name__)
 
 def get_image(image_url):
@@ -139,6 +141,7 @@ def take_screenshot(target, dimensions, timeout_ms=None):
             "--disable-gpu",
             "--use-gl=swiftshader",
             "--hide-scrollbars",
+            "--disable-lcd-text",  # greyscale anti-aliasing: coloured subpixel fringes become ink dots on e-paper
             "--in-process-gpu",
             "--js-flags=--jitless",
             "--disable-zero-copy",
@@ -152,7 +155,8 @@ def take_screenshot(target, dimensions, timeout_ms=None):
         ]
         if timeout_ms:
             command.append(f"--timeout={timeout_ms}")
-        result = subprocess.run(command, capture_output=True, check=False)
+        # chosen text font, rendered in monochrome with full hinting (see utils.text_font)
+        result = subprocess.run(command, capture_output=True, check=False, env=text_font.browser_env())
 
         # Check if the process failed or the output file is missing
         if result.returncode != 0 or not os.path.exists(img_file_path):

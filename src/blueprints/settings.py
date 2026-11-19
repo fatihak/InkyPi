@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify, current_app, render_template, Response
 from utils.time_utils import calculate_seconds
 from utils.accent import ACCENT_PRESETS, DEFAULT_ACCENT
-from utils import cpu_limit
+from utils import cpu_limit, text_font
 from utils.i18n import UI_LANGUAGES, DEFAULT_LANGUAGE as DEFAULT_UI_LANGUAGE, _
 from datetime import datetime, timedelta
 import os
@@ -33,7 +33,11 @@ def settings_page():
     device_config = current_app.config['DEVICE_CONFIG']
     timezones = sorted(pytz.all_timezones_set)
     return render_template('settings.html', device_settings=device_config.get_config(), timezones = timezones,
-                           cpu=_cpu_limit_info(device_config))
+                           cpu=_cpu_limit_info(device_config),
+                           text_fonts=text_font.choices(),
+                           text_font=device_config.get_config("text_font", default=text_font.DEFAULT),
+                           text_rendering=device_config.get_config("text_rendering", default=text_font.AUTO),
+                           auto_text_rendering=text_font.auto_rendering_label())
 
 
 def _cpu_limit_info(device_config):
@@ -108,6 +112,16 @@ def save_settings():
                 "contrast": float(form_data.get("contrast", "1.0"))
             }
         }
+        font_choice = form_data.get("textFont")
+        if font_choice is not None:
+            if font_choice not in text_font.FONTS:
+                return jsonify({"error": _("Unknown text font: {name}", name=font_choice)}), 400
+            settings["text_font"] = font_choice
+        rendering_choice = form_data.get("textRendering")
+        if rendering_choice is not None:
+            if rendering_choice not in text_font.RENDERINGS:
+                return jsonify({"error": _("Unknown text rendering: {name}", name=rendering_choice)}), 400
+            settings["text_rendering"] = rendering_choice
         if "inky_saturation" in form_data:
             settings["image_settings"]["inky_saturation"] = float(form_data.get("inky_saturation", "0.5"))
         if cpu_mode is not None:
@@ -122,6 +136,7 @@ def save_settings():
             settings["cpu_limit_mode"] = cpu_mode
             settings["cpu_limit_percent"] = cpu_percent
         device_config.update_config(settings)
+        text_font.configure(font=font_choice, rendering=rendering_choice)
 
         if plugin_cycle_interval_seconds != previous_interval_seconds:
             # wake the background thread up to signal interval config change

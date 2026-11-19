@@ -241,6 +241,23 @@
                     </button>
                     <div class="settings-container collapsible-content">
                         <div class="form-group">
+                            <label for="textFont" class="form-label" style="min-width: 100px;">{{ _('Text font:') }}</label>
+                            <select id="textFont" name="textFont" class="form-input" style="max-width: 400px;">
+                                {% for key, label in text_fonts %}
+                                <option value="{{ key }}" {% if key == text_font %}selected{% endif %}>{{ label }}{% if key == 'jost' %} ({{ _('original') }}){% endif %}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="textRendering" class="form-label" style="min-width: 100px;">{{ _('Text rendering:') }}</label>
+                            <select id="textRendering" name="textRendering" class="form-input" style="max-width: 400px;">
+                                <option value="auto" {% if text_rendering == 'auto' %}selected{% endif %}>{{ _('Automatic') }} ({{ _('crisp') if auto_text_rendering == 'crisp' else _('smooth') }})</option>
+                                <option value="crisp" {% if text_rendering == 'crisp' %}selected{% endif %}>{{ _('Crisp: black and white pixels') }}</option>
+                                <option value="smooth" {% if text_rendering == 'smooth' %}selected{% endif %}>{{ _('Smooth: shades of grey') }}</option>
+                            </select>
+                        </div>
+                        <p class="form-help">{{ _('Colour, black and white and black/white/red e-paper panels only show full pixels: crisp text is snapped to them and stays regular. Smooth text suits screens with shades of grey. Automatic is crisp on e-paper panels and smooth on the development display.') }}</p>
+                        <div class="form-group">
                             <label for="saturation" class="form-label" style="min-width: 100px;">{{ _('Saturation:') }}</label>
                             <span id="saturation-value">{{ device_settings.get('image_settings', {}).get('saturation', 1.0) }}</span>
                             <input

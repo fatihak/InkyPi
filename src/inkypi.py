@@ -19,6 +19,7 @@ import json
 import logging
 import threading
 import argparse
+from utils import text_font
 from utils.app_utils import generate_startup_image
 from flask import Flask, request, send_from_directory
 from werkzeug.serving import is_running_from_reloader
@@ -63,6 +64,7 @@ template_dirs = [
 app.jinja_loader = ChoiceLoader([FileSystemLoader(directory) for directory in template_dirs])
 
 device_config = Config()
+text_font.configure_from(device_config)
 display_manager = DisplayManager(device_config)
 refresh_task = RefreshTask(device_config, display_manager)
 
