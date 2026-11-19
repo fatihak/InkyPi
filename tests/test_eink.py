@@ -105,6 +105,24 @@ def test_graphics_mode_keeps_thin_text_solid():
     assert (indices[12, 4:36] == 1).all()   # fringe dropped, no stray dots
 
 
+def test_graphics_mode_keeps_faint_letters_on_a_coloured_background():
+    """Dim letters (white at low opacity on navy, as in word clocks) must not merge into the background."""
+    navy, dim = (40, 60, 120), (81, 98, 146)
+    image = Image.new("RGB", (80, 40), navy)
+    pixels = image.load()
+    for x in range(20, 60):
+        for y in range(14, 26):
+            if (x // 5) % 2 == 0:          # vertical strokes, 5 px wide
+                pixels[x, y] = dim
+    indices = eink.render_indices(image, PALETTE, eink.GRAPHICS)
+    luma = (eink.perceived_palette(PALETTE) @ [0.299, 0.587, 0.114])[indices]
+    letters = np.array([[(x // 5) % 2 == 0 and 20 <= x < 60 and 14 <= y < 26 for x in range(80)]
+                        for y in range(40)])
+    background = np.zeros_like(letters)
+    background[:8] = True
+    assert luma[letters].mean() - luma[background].mean() > 25
+
+
 def test_vivid_mode_uses_the_real_ink_colours():
     """A muted green is rendered with more green ink (faithful) than the soft photo rendering."""
     sofa = Image.new("RGB", (40, 40), (120, 140, 100))

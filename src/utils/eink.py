@@ -13,7 +13,9 @@ Two rendering modes:
        (measured palette) - pastel blue becomes a readable blue, yellow stays light;
     2. pixels already close to an ink are snapped onto it (crisp text and backgrounds,
        no red fringes from dithered anti-aliasing);
-    3. ordered (Bayer) dithering: regular patterns instead of noisy error diffusion on
+    3. faint details (dim letters on a coloured background) get their lightness
+       difference back, amplified, since adapting colours tends to merge close shades;
+    4. ordered (Bayer) dithering: regular patterns instead of noisy error diffusion on
        flat areas.
   The result only contains the display's pure colours, so the driver sends it as is.
 
@@ -245,6 +247,33 @@ def _sharpen_edges(indices, pixels, rgb, palette, neutral_inks, edge_range=64, t
     return out
 
 
+def _restore_faint_detail(pixels, rgb, radius=4, faint_range=96, min_loss=10, gain=2.5):
+    """Faint details (dim letters on a coloured background, thin light lines) lose their
+    contrast when colours are adapted: two close shades of blue both become the blue ink.
+    Where the original local contrast is low, the lost lightness difference is added back,
+    so the dithering still tells them apart. Strong edges (black text) are left alone.
+    """
+    coeffs = np.array([0.299, 0.587, 0.114], dtype=np.float32)
+    luma = pixels.astype(np.float32) @ coeffs
+    grey = Image.fromarray(np.clip(luma, 0, 255).astype(np.uint8), "L")
+    size = 2 * radius + 1
+    local_range = (np.asarray(grey.filter(ImageFilter.MaxFilter(size)), dtype=np.int16)
+                   - np.asarray(grey.filter(ImageFilter.MinFilter(size)), dtype=np.int16))
+    faint = (local_range > 12) & (local_range < faint_range)
+    if not faint.any():
+        return rgb
+
+    def detail(values):
+        image = Image.fromarray(np.clip(values, 0, 255).astype(np.uint8), "L")
+        return values - np.asarray(image.filter(ImageFilter.GaussianBlur(radius)), dtype=np.float32)
+
+    missing = gain * detail(luma) - detail(rgb @ coeffs)
+    apply = faint & (np.abs(missing) >= min_loss)
+    out = rgb.copy()
+    out[apply] += missing[apply][:, None]
+    return np.clip(out, 0, 255)
+
+
 def render_indices(image, palette, mode, saturation=0.5):
     """Palette indices (one per pixel) as the display will show them."""
     quant = blended(palette, saturation)
@@ -257,6 +286,7 @@ def render_indices(image, palette, mode, saturation=0.5):
         adapted = adapt_colours(Image.fromarray(unique_rgb[None, :, :], "RGB"), palette)
         snapped = _snap(np.asarray(adapted, dtype=np.float32), quant)[0]
         rgb = snapped[inverse.ravel()].reshape(pixels.shape)
+        rgb = _restore_faint_detail(pixels, rgb)
         neutral_inks = _neutral_inks(palette)
         indices = _ordered_indices(rgb, quant, neutral_inks)
         return _sharpen_edges(indices, pixels, rgb, palette, neutral_inks)
