@@ -1,0 +1,25 @@
+{# Top navigation shared by every page. Set `active_page` before including. #}
+<nav class="topbar" aria-label="{{ _('Main') }}">
+    <a class="topbar-brand" href="{{ url_for('main.main_page') }}" title="{{ _('Home') }}">
+        <img src="{{ url_for('static', filename='icons/display.png') }}" alt="" class="topbar-logo">
+        <span class="topbar-name">{{ device_name or 'InkyPi' }}</span>
+    </a>
+    <div class="topbar-links">
+        <a href="{{ url_for('playlist.playlists') }}" class="topbar-link {% if active_page == 'playlists' %}active{% endif %}"
+           {% if active_page == 'playlists' %}aria-current="page"{% endif %}>
+            <img src="{{ url_for('static', filename='icons/playlist.png') }}" alt="" class="topbar-icon">
+            <span>{{ _('Playlists') }}</span>
+        </a>
+        <a href="{{ url_for('settings.settings_page') }}" class="topbar-link {% if active_page == 'settings' %}active{% endif %}"
+           {% if active_page == 'settings' %}aria-current="page"{% endif %}>
+            <img src="{{ url_for('static', filename='icons/settings.png') }}" alt="" class="topbar-icon">
+            <span>{{ _('Settings') }}</span>
+        </a>
+        <a href="{{ url_for('apikeys.apikeys_page') }}" class="topbar-link {% if active_page == 'apikeys' %}active{% endif %}"
+           {% if active_page == 'apikeys' %}aria-current="page"{% endif %}>
+            <span class="topbar-emoji" aria-hidden="true">🔑</span>
+            <span>{{ _('API Keys') }}</span>
+        </a>
+        <button type="button" class="topbar-link dark-mode-toggle" title="{{ _('Switch theme') }}" aria-label="{{ _('Switch theme') }}"></button>
+    </div>
+</nav>

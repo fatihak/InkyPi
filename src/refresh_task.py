@@ -12,6 +12,9 @@ from PIL import Image
 
 logger = logging.getLogger(__name__)
 
+# Manual request meaning "show the next plugin of the active playlist"
+NEXT_IN_PLAYLIST = object()
+
 class RefreshTask:
     """Handles the logic for refreshing the display using a background thread."""
 
@@ -94,6 +97,10 @@ class RefreshTask:
                         logger.info("Manual update requested")
                         refresh_action = self.manual_update_request
                         self.manual_update_request = ()
+                        if refresh_action is NEXT_IN_PLAYLIST:
+                            # Resolved here, in the refresh thread, so the playlist index is
+                            # never advanced concurrently by the web thread and the scheduler.
+                            refresh_action = self._next_in_active_playlist(playlist_manager, current_dt)
                     else:
 
                         if self.device_config.get_config("log_system_stats"):
@@ -149,6 +156,21 @@ class RefreshTask:
         else:
             logger.warning("Background refresh task is not running, unable to do a manual update")
 
+    def display_next(self):
+        """Shows the next plugin of the active playlist now (like a skip button)."""
+        self.manual_update(NEXT_IN_PLAYLIST)
+
+    def _next_in_active_playlist(self, playlist_manager, current_dt):
+        playlist = playlist_manager.determine_active_playlist(current_dt)
+        if not playlist:
+            raise RuntimeError("No playlist is active at this time.")
+        playlist_manager.active_playlist = playlist.name
+        plugin_instance = playlist.get_next_plugin()
+        if plugin_instance is None:
+            raise RuntimeError(f"Playlist '{playlist.name}' has no enabled plugin.")
+        logger.info(f"Skipping to next plugin. | playlist: {playlist.name} | plugin_instance: {plugin_instance.name}")
+        return PlaylistRefresh(playlist, plugin_instance)
+
     def signal_config_change(self):
         """Notify the background thread that config has changed (e.g., interval updated)."""
         if self.running:
@@ -183,6 +205,9 @@ class RefreshTask:
             return None, None
 
         plugin = playlist.get_next_plugin()
+        if plugin is None:
+            logger.info(f"Active playlist '{playlist.name}' has no enabled plugins.")
+            return None, None
         logger.info(f"Determined next plugin. | active_playlist: {playlist.name} | plugin_instance: {plugin.name}")
 
         return playlist, plugin
@@ -239,6 +264,23 @@ class ManualRefresh(RefreshAction):
 
     def get_plugin_id(self):
         """Return the plugin ID associated with this refresh."""
+        return self.plugin_id
+
+class PreviewRefresh(RefreshAction):
+    """Displays an image already rendered for a preview, without rendering it again
+    (a random or AI-generated image would otherwise differ from the one previewed)."""
+
+    def __init__(self, plugin_id: str, image):
+        self.plugin_id = plugin_id
+        self.image = image
+
+    def execute(self, plugin, device_config, current_dt: datetime):
+        return self.image.copy()
+
+    def get_refresh_info(self):
+        return {"refresh_type": "Manual Update", "plugin_id": self.plugin_id}
+
+    def get_plugin_id(self):
         return self.plugin_id
 
 class PlaylistRefresh(RefreshAction):

@@ -72,6 +72,19 @@ def is_connected():
         return False
 
 def get_font(font_name, font_size=50, font_weight="normal"):
+    from utils import text_font  # imports this module
+    path = text_font.pil_font_path(font_weight) if font_name == text_font.TEMPLATE_FAMILY else None
+    if path:
+        try:
+            font = ImageFont.truetype(path, font_size)
+            if font_weight == "bold" and not text_font.FONTS[text_font.current()]["files"].get("bold"):
+                try:
+                    font.set_variation_by_name("Bold")  # variable font
+                except (OSError, ValueError):
+                    pass
+            return font
+        except OSError as e:
+            logger.warning(f"Text font {path} unavailable, using {font_name}: {e}")
     if font_name in FONT_FAMILIES:
         font_variants = FONT_FAMILIES[font_name]
 
@@ -142,7 +155,7 @@ def parse_form(request_form):
             request_dict[key] = request_form.getlist(key)
     return request_dict
 
-def handle_request_files(request_files, form_data={}):
+def handle_request_files(request_files, form_data={}, save_dir=None):
     allowed_file_extensions = {'pdf', 'png', 'avif', 'jpg', 'jpeg', 'gif', 'webp', 'heif', 'heic'}
     file_location_map = {}
     # handle existing file locations being provided as part of the form data
@@ -163,7 +176,7 @@ def handle_request_files(request_files, form_data={}):
 
         file_name = os.path.basename(file_name)
 
-        file_save_dir = resolve_path(os.path.join("static", "images", "saved"))
+        file_save_dir = save_dir or resolve_path(os.path.join("static", "images", "saved"))
         file_path = os.path.join(file_save_dir, file_name)
 
         # Open the image and apply EXIF transformation before saving

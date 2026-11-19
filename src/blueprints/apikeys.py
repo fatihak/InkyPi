@@ -3,6 +3,7 @@ from dotenv import dotenv_values
 import os
 import re
 import logging
+from utils.i18n import _
 
 logger = logging.getLogger(__name__)
 apikeys_bp = Blueprint("apikeys", __name__)
@@ -92,7 +93,7 @@ def save_apikeys():
             
             # Validate key format
             if not re.match(r'^[A-Za-z_][A-Za-z0-9_]*$', key):
-                return jsonify({"error": f"Invalid key format: {key}"}), 400
+                return jsonify({"error": _("Invalid key format: {key}", key=key)}), 400
             
             if keep_existing:
                 # Use existing value from .env file
@@ -104,16 +105,20 @@ def save_apikeys():
             valid_entries.append((key, value))
         
         if write_env_file(env_path, valid_entries):
-            # Reload environment variables
+            # Reload environment variables; keys removed in the UI must stop working right away
+            kept = {key for key, _ in valid_entries}
+            for key in existing_values:
+                if key not in kept:
+                    os.environ.pop(key, None)
             for key, value in valid_entries:
                 os.environ[key] = value
             
             return jsonify({
                 "success": True,
-                "message": f"Saved {len(valid_entries)} API key(s). Some plugins may require restart to pick up changes."
+                "message": _("Saved {count} API key(s). Some plugins may require restart to pick up changes.", count=len(valid_entries))
             })
         else:
-            return jsonify({"error": "Failed to write .env file"}), 500
+            return jsonify({"error": _("Failed to write .env file")}), 500
             
     except Exception as e:
         logger.error(f"Error saving API keys: {e}")

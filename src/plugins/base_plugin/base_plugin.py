@@ -2,6 +2,7 @@ import logging
 import os
 from utils.app_utils import resolve_path, get_fonts
 from utils.image_utils import take_screenshot_html
+from utils import text_font
 from utils.image_loader import AdaptiveImageLoader
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from pathlib import Path
@@ -94,7 +95,10 @@ class BasePlugin:
         template_params["style_sheets"] = css_files
         template_params["width"] = dimensions[0]
         template_params["height"] = dimensions[1]
-        template_params["font_faces"] = get_fonts()
+        template_params["font_faces"] = [
+            font for font in get_fonts()
+            if not (text_font.overrides_template_font() and font["font_family"] == text_font.TEMPLATE_FAMILY)
+        ]
         template_params["static_dir"] = STATIC_DIR
 
         # load and render the given html template
