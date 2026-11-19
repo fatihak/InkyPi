@@ -32,6 +32,8 @@ from blueprints.playlist import playlist_bp
 from blueprints.apikeys import apikeys_bp
 from jinja2 import ChoiceLoader, FileSystemLoader
 from plugins.plugin_registry import load_plugins
+from utils.accent import ACCENT_PRESETS, DEFAULT_ACCENT, get_accent
+from utils.i18n import DEFAULT_LANGUAGE as DEFAULT_UI_LANGUAGE, UI_LANGUAGES, get_catalog, normalize_language, translate
 from waitress import serve
 
 
@@ -80,6 +82,18 @@ app.register_blueprint(settings_bp)
 app.register_blueprint(plugin_bp)
 app.register_blueprint(playlist_bp)
 app.register_blueprint(apikeys_bp)
+
+@app.context_processor
+def inject_device_name():
+    """Device name (navigation bar), accent colour and UI language, available to every page."""
+    ui_lang = normalize_language(device_config.get_config("ui_language", default=DEFAULT_UI_LANGUAGE))
+    return {"device_name": device_config.get_config("name", default="InkyPi"),
+            "accent": get_accent(device_config.get_config("accent_color", default=DEFAULT_ACCENT)),
+            "accent_presets": ACCENT_PRESETS,
+            "ui_lang": ui_lang,
+            "ui_languages": UI_LANGUAGES,
+            "i18n_catalog": get_catalog(ui_lang),
+            "_": lambda text, **kwargs: translate(text, ui_lang, **kwargs)}
 
 # Register opener for HEIF/HEIC images
 register_heif_opener()

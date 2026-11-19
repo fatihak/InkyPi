@@ -3,6 +3,7 @@ import json
 import logging
 
 from utils.image_utils import resize_image, change_orientation, apply_image_enhancement
+from utils import eink
 from display.mock_display import MockDisplay
 
 logger = logging.getLogger(__name__)
@@ -54,7 +55,23 @@ class DisplayManager:
         else:
             raise ValueError(f"Unsupported display type: {display_type}")
 
-    def display_image(self, image, image_settings=[]):
+    def get_palette(self):
+        return self.display.get_palette() if hasattr(self, "display") else None
+
+    def prepare_colours(self, image, plan):
+        """Applies the colour rendering of limited-palette displays (see utils.eink).
+
+        Vivid and graphics renderings are converted here to an image in the display's pure
+        colours, which the driver sends without dithering again. The photo rendering is the
+        driver's own, unless manual settings give it their own ink saturation.
+        """
+        palette = self.get_palette()
+        if not plan or not palette or (plan["mode"] == eink.PHOTO and not plan["manual"]):
+            return image
+        indices = eink.render_indices(image, palette, plan["mode"], plan["saturation"])
+        return eink.to_pure_palette_image(indices, palette)
+
+    def display_image(self, image, image_settings=[], colour_plan=None):
         
         """
         Delegates image rendering to the appropriate display instance.
@@ -78,7 +95,9 @@ class DisplayManager:
         image = change_orientation(image, self.device_config.get_config("orientation"))
         image = resize_image(image, self.device_config.get_resolution(), image_settings)
         if self.device_config.get_config("inverted_image"): image = image.rotate(180)
-        image = apply_image_enhancement(image, self.device_config.get_config("image_settings"))
+        enhancement = colour_plan["enhance"] if colour_plan else self.device_config.get_config("image_settings")
+        image = apply_image_enhancement(image, enhancement or {})
+        image = self.prepare_colours(image, colour_plan)
 
         # Pass to the concrete instance to render to the device.
         self.display.display_image(image, image_settings)

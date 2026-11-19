@@ -1,6 +1,7 @@
 import logging
 from inky.auto import auto
 from display.abstract_display import AbstractDisplay
+from utils.eink import palette_from_inky
 
 
 logger = logging.getLogger(__name__)
@@ -36,6 +37,15 @@ class InkyDisplay(AbstractDisplay):
                 "resolution",
                 [int(self.inky_display.width), int(self.inky_display.height)], 
                 write=True)
+
+    def get_palette(self):
+        if not hasattr(self, "_palette"):
+            try:
+                self._palette = palette_from_inky(self.inky_display)
+            except Exception as e:
+                logger.warning(f"Could not read the display palette: {e}")
+                self._palette = None
+        return self._palette
 
     def display_image(self, image, image_settings=[]):
         

@@ -1,21 +1,8 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ ui_lang }}">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ plugin.display_name }} Settings</title>
-    <script>
-        (function() {
-            const theme = localStorage.getItem('inkypi-theme') ||
-                         (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-            if (theme === 'dark') {
-                document.documentElement.setAttribute('data-theme', 'dark');
-            }
-        })();
-    </script>
-    <link rel= "stylesheet" type= "text/css" href= "{{ url_for('static',filename='styles/main.css') }}">
-    <script src="{{ url_for('static', filename='scripts/dark_mode.js') }}"></script>
-    <script src="{{ url_for('static', filename='scripts/response_modal.js') }}"></script>
+    {% include 'partials/head.html' %}
+    <title>{{ _(plugin.display_name) }}{% if plugin_instance %} · {{ plugin_instance }}{% endif %}</title>
     <script src="{{ url_for('static', filename='scripts/refresh_settings_manager.js') }}"></script>
     <!-- Select2 CSS -->
     <link href="{{ url_for('static', filename='styles/select2.min.css') }}" rel="stylesheet" />
@@ -26,10 +13,11 @@
 
     <script>
         const pluginSettings = {{ plugin_settings | tojson if plugin_settings else {} }};
-        const pluginInstanceName ='{{ plugin_instance }}';
-        const loadPluginSettings = pluginInstanceName != '';
+        const pluginInstanceName = {{ (plugin_instance or '') | tojson }};
+        const loadPluginSettings = pluginInstanceName !== '';
         const styleSettings = {{ style_settings | default(false) | tojson }};
-        const refreshSettings = {{ refresh_settings | tojson if refresh_settings else {} }};
+        let refreshSettings = {{ refresh_settings | tojson if refresh_settings else {} }};
+        const playlistsUrl = "{{ url_for('playlist.playlists') }}";
 
         let uploadedFiles = {};
 
@@ -39,6 +27,16 @@
         editRefreshManager = createRefreshSettingsManager('refreshSettingsModal', 'edit');
         {% endif %}
 
+        function describeSchedule(refresh) {
+            if (!refresh) return '';
+            if (refresh.scheduled) return t('Daily at {time}', { time: refresh.scheduled });
+            const seconds = parseInt(refresh.interval || 0, 10);
+            if (!seconds) return '';
+            if (seconds % 86400 === 0) return seconds === 86400 ? t('Every day') : t('Every {n} days', { n: seconds / 86400 });
+            if (seconds % 3600 === 0) return seconds === 3600 ? t('Every hour') : t('Every {n} h', { n: seconds / 3600 });
+            return t('Every {n} min', { n: Math.max(1, Math.round(seconds / 60)) });
+        }
+
         async function saveRefreshSettings() {
             if (!editRefreshManager) return;
 
@@ -47,24 +45,40 @@
                 data.append("plugin_id", "{{ plugin.id }}");
                 data.append("refresh_settings", JSON.stringify(formData));
 
-                const response = await fetch("{{ url_for('plugin.update_plugin_instance', instance_name='') }}" + pluginInstanceName, {
+                const response = await fetch("{{ url_for('plugin.update_plugin_instance', instance_name='') }}" + encodeURIComponent(pluginInstanceName), {
                     method: 'PUT',
                     body: data
                 });
 
                 const result = await response.json();
-                if (response.ok) {
-                    showResponseModal('success', `Success! ${result.message}`);
-                } else {
-                    throw new Error(result.error || 'Failed to update refresh settings');
+                if (!response.ok) {
+                    throw new Error(result.error || t('Failed to update refresh settings'));
                 }
+                // Keep the modal in sync with what was just saved
+                refreshSettings = formData.refreshType === 'scheduled'
+                    ? { scheduled: formData.refreshTime }
+                    : { interval: secondsFromForm(formData) };
+                const label = document.getElementById('scheduleLabel');
+                if (label) label.textContent = describeSchedule(refreshSettings);
+                showResponseModal('success', result.message || t('Schedule saved.'));
             });
         }
 
-        async function handleAction(action) {
-            const loadingIndicator = document.getElementById('loadingIndicator');
-            loadingIndicator.style.display = 'block';
+        function secondsFromForm(formData) {
+            const units = { minute: 60, hour: 3600, day: 86400 };
+            return parseInt(formData.interval, 10) * (units[formData.unit] || 60);
+        }
 
+        function setBusy(busy, label) {
+            document.querySelectorAll('.buttons-container button, .modal .action-button').forEach(button => {
+                button.disabled = busy;
+            });
+            const indicator = document.getElementById('loadingIndicator');
+            indicator.style.display = busy ? 'block' : 'none';
+            document.getElementById('loadingText').textContent = busy ? (label || t('Working…')) : '';
+        }
+
+        async function handleAction(action) {
             // Gather plugin settings form data
             const form = document.getElementById('settingsForm');
             const scheduleForm = document.getElementById('scheduleForm');
@@ -72,64 +86,175 @@
             const formData = new FormData(form);
             let url = '{{ url_for("plugin.update_now") }}';
             let method = 'POST';
-            let clearFormOnSubmit = false;
+            let busyLabel = t('Rendering and updating the display…');
 
             // Add uploaded files to the form under its key
             Object.keys(uploadedFiles).forEach(key => {
-                if (uploadedFiles[key].length > 0) {
-                    uploadedFiles[key].forEach(file => {
-                        formData.append(key, file);
-                    });
-                }
+                (uploadedFiles[key] || []).forEach(file => formData.append(key, file));
             });
 
-            if (action == "add_to_playlist"){
+            if (action === "add_to_playlist") {
+                const nameInput = document.getElementById('instance');
+                const name = nameInput.value.trim();
+                if (!name) {
+                    showResponseModal('failure', t('Please give this item a name.'));
+                    nameInput.focus();
+                    return;
+                }
+                if (!/^[\p{L}\p{N} ]+$/u.test(name)) {
+                    showResponseModal('failure', t('The name can only contain letters, numbers and spaces.'));
+                    nameInput.focus();
+                    return;
+                }
                 url = '{{ url_for("playlist.add_plugin") }}';
-                const scheduleFormData = new FormData(scheduleForm);
                 const scheduleData = {};
-                for (const [key, value] of scheduleFormData.entries()) {
+                for (const [key, value] of new FormData(scheduleForm).entries()) {
                     scheduleData[key] = value;
                 }
                 formData.append("refresh_settings", JSON.stringify(scheduleData));
-                clearFormOnSubmit = true
-            } else if (action == "update_instance") {
-                url = "{{ url_for('plugin.update_plugin_instance', instance_name='') }}" + pluginInstanceName,
-                method = 'PUT'
+                busyLabel = t('Adding to the playlist…');
+            } else if (action === "update_instance") {
+                url = "{{ url_for('plugin.update_plugin_instance', instance_name='') }}" + encodeURIComponent(pluginInstanceName);
+                method = 'PUT';
+                busyLabel = t('Saving…');
             }
 
-            // Send data to the server
+            setBusy(true, busyLabel);
             try {
                 const response = await fetch(url, {method: method, body: formData});
-                const result = await response.json();
-                // Handle the response
-                if (response.ok) {
-                    showResponseModal('success', `Success! ${result.message}`);
-                } else {
-                    showResponseModal('failure', `Error!  ${result.error}`);
-                }
-                closeModal('scheduleModal');
+                let result = {};
+                try { result = await response.json(); } catch (e) { /* non-JSON error */ }
 
-                if (clearFormOnSubmit) {
-                    form.reset()
-                    uploadedFiles = {};
-                    document.querySelectorAll('input[clear-on-submit]').forEach(input => {
-                        input.value = '';
-                        input.dispatchEvent(new Event('change'));
-                    });
-                    document.querySelectorAll('[delete-on-submit]').forEach(div => {
-                        div.remove();
-                    });
-                    if (action == "add_to_playlist"){
-                        scheduleForm.reset()
-                    }
+                if (!response.ok) {
+                    // Keep the modal open and the form untouched so nothing is lost
+                    showResponseModal('failure', t('Error: {message}', { message: result.error || result.message || response.status }));
+                    return;
                 }
+                if (action === "add_to_playlist") {
+                    closeModal('scheduleModal');
+                    storeMessageForNextPage('success', result.message || t('Added to the playlist.'));
+                    window.location.href = playlistsUrl;
+                    return;
+                }
+                showResponseModal('success', result.message || t('Done.'));
             } catch (error) {
                 console.error('Error:', error);
-                alert('An error occurred while processing your request.');
+                showResponseModal('failure', t('Error: {message}', { message: error.message || 'request failed' }));
             } finally {
-                // Hide loading indicator after the action is complete
-                loadingIndicator.style.display = 'none';
+                setBusy(false);
             }
+        }
+
+        // ---- in-browser preview (does not touch the e-ink display) ----
+        let previewUrl = null;
+        let previewRequest = 0;
+        let previewId = null;
+
+        // Sends the previewed image itself (not a new render) to the display
+        async function sendPreviewToDisplay() {
+            closePreview();
+            if (!previewId) return handleAction();
+            setBusy(true, t('Updating the display…'));
+            try {
+                const response = await fetch('{{ url_for("plugin.display_preview") }}', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ preview_id: previewId })
+                });
+                let result = {};
+                try { result = await response.json(); } catch (e) { /* not JSON */ }
+                if (response.status === 410) {  // preview expired: render and display
+                    setBusy(false);
+                    return await handleAction();
+                }
+                if (!response.ok) throw new Error(result.error || `HTTP ${response.status}`);
+                showResponseModal('success', result.message || t('Display updated.'));
+            } catch (error) {
+                showResponseModal('failure', t('Error: {message}', { message: error.message }));
+            } finally {
+                setBusy(false);
+            }
+        }
+
+        function syncColourMode(value) {
+            const field = document.getElementById('colourMode');
+            if (field) { field.value = value; updateColourManual(); }
+            showPreview(true);
+        }
+
+        function updateColourManual() {
+            const field = document.getElementById('colourMode');
+            const panel = document.getElementById('colourManual');
+            if (field && panel) panel.hidden = field.value !== 'manual';
+        }
+
+        function buildSettingsFormData() {
+            const formData = new FormData(document.getElementById('settingsForm'));
+            Object.keys(uploadedFiles).forEach(key => {
+                (uploadedFiles[key] || []).forEach(file => formData.append(key, file));
+            });
+            return formData;
+        }
+
+        // reuse: only the colour rendering changed, the server can reuse the last plugin output
+        async function showPreview(reuse = false) {
+            const requestId = ++previewRequest;
+            const simulateBox = document.getElementById('simulateDisplay');
+            const modeField = document.getElementById('colourMode');
+            const previewMode = document.getElementById('previewColourMode');
+            if (modeField && previewMode) previewMode.value = modeField.value;
+            const img = document.getElementById('previewImage');
+            const status = document.getElementById('previewStatus');
+            const statusText = document.getElementById('previewStatusText');
+            const sendButton = document.getElementById('sendToDisplayButton');
+            document.getElementById('previewModal').style.display = 'block';
+            const keepImage = reuse && !img.hidden;  // quick update: keep the current image meanwhile
+            img.classList.toggle('updating', keepImage);
+            if (!keepImage) {
+                img.hidden = true;
+                status.hidden = false;
+                status.querySelector('.loading-indicator').style.display = 'block';
+                statusText.textContent = t('Rendering… this can take a few seconds.');
+            }
+            sendButton.disabled = true;
+            const started = performance.now();
+            try {
+                const previewData = buildSettingsFormData();
+                if (simulateBox) previewData.append('simulateDisplay', simulateBox.checked ? 'true' : 'false');
+                if (reuse) previewData.append('reuseRender', 'true');
+                const response = await fetch('{{ url_for("plugin.preview_image") }}', { method: 'POST', body: previewData });
+                if (requestId !== previewRequest) return;  // a newer preview was requested
+                if (!response.ok) {
+                    let result = {};
+                    try { result = await response.json(); } catch (e) { /* not JSON */ }
+                    throw new Error(result.error || `HTTP ${response.status}`);
+                }
+                previewId = response.headers.get('X-Preview-Id');
+                const blob = await response.blob();
+                if (previewUrl) URL.revokeObjectURL(previewUrl);
+                previewUrl = URL.createObjectURL(blob);
+                img.src = previewUrl;
+                img.hidden = false;
+                img.classList.remove('updating');
+                status.hidden = true;
+                sendButton.disabled = false;
+                const seconds = ((performance.now() - started) / 1000).toFixed(1);
+                document.getElementById('previewHint').textContent = response.headers.get('X-Preview-Reused') === '1'
+                    ? t('Colours updated in {seconds} s (same plugin image). Nothing has been sent to the display yet.', { seconds })
+                    : t('Rendered in {seconds} s. Nothing has been sent to the display yet.', { seconds });
+            } catch (error) {
+                if (requestId !== previewRequest) return;
+                img.hidden = true;
+                img.classList.remove('updating');
+                status.hidden = false;
+                status.querySelector('.loading-indicator').style.display = 'none';
+                statusText.textContent = t('Could not render the preview: {message}', { message: error.message });
+            }
+        }
+
+        function closePreview() {
+            previewRequest++;  // ignore a render still in progress
+            closeModal('previewModal');
         }
 
         function openModal(modal_id) {
@@ -138,10 +263,10 @@
                 editRefreshManager.open({ refreshSettings });
                 return;
             }
-
-            // Generic modal opening for other modals
             const modal = document.getElementById(modal_id);
             if (modal) modal.style.display = 'block';
+            const firstInput = modal && modal.querySelector('input[type="text"]');
+            if (firstInput) firstInput.focus();
         }
 
         function closeModal(modal_id) {
@@ -149,13 +274,19 @@
             if (modal) modal.style.display = 'none';
         }
 
-        // Close modal if the user clicks outside the modal content
-        window.onclick = function (event) {
-            const modal = document.getElementById('scheduleModal');
-            if (event.target === modal) {
-                modal.style.display = 'none';
+        // Close modals when clicking the backdrop or pressing Escape
+        window.addEventListener('click', (event) => {
+            ['scheduleModal', 'refreshSettingsModal'].forEach(id => {
+                if (event.target.id === id) closeModal(id);
+            });
+            if (event.target.id === 'previewModal') closePreview();
+        });
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') {
+                ['scheduleModal', 'refreshSettingsModal'].forEach(closeModal);
+                closePreview();
             }
-        };
+        });
 
         function toggleCollapsible(button) {
             const content = button.nextElementSibling;
@@ -167,19 +298,12 @@
 
         function selectedFrame(element) {
             if (!element) return; // Guard clause for null element
-
-            // Remove the selected class from any previously selected option
             const previousSelection = document.querySelector('.image-option.selected');
             if (previousSelection) {
                 previousSelection.classList.remove('selected');
             }
-
-            // Add the selected class to the clicked option
             element.classList.add('selected');
-
-            // Update the hidden input with the selected frame
-            const selectedFaceName = element.getAttribute('data-face-name');
-            document.getElementById('selected-frame').value = selectedFaceName;
+            document.getElementById('selected-frame').value = element.getAttribute('data-face-name');
         }
 
         function showFileName() {
@@ -187,16 +311,15 @@
             const fileNameDisplay = document.getElementById('fileName');
             const fileNameText = document.getElementById('fileNameText');
             const uploadButtonLabel = document.getElementById('uploadButtonLabel');
-            const removeFileButton = document.getElementById('removeFileButton');
             const file = fileInput.files[0];
 
             if (file) {
                 fileNameText.textContent = `${file.name}`;
-                fileNameDisplay.style.display = 'flex';  // Show the file name and remove button
-                uploadButtonLabel.style.display = 'none';  // Hide the upload button label
+                fileNameDisplay.style.display = 'flex';
+                uploadButtonLabel.style.display = 'none';
             } else {
-                fileNameDisplay.style.display = 'none';  // Hide if no file is selected
-                uploadButtonLabel.style.display = 'block';  // Show the upload button label
+                fileNameDisplay.style.display = 'none';
+                uploadButtonLabel.style.display = 'block';
             }
         }
 
@@ -205,15 +328,35 @@
             const fileNameDisplay = document.getElementById('fileName');
             const uploadButtonLabel = document.getElementById('uploadButtonLabel');
 
-            fileInput.value = '';  // Clear the file input
-            fileNameDisplay.style.display = 'none';  // Hide the file name and remove button
-            uploadButtonLabel.style.display = 'block';  // Show the upload button label
+            fileInput.value = '';
+            fileNameDisplay.style.display = 'none';
+            uploadButtonLabel.style.display = 'block';
 
             const hiddenElement = document.getElementById(`hidden-file-name`);
             if (hiddenElement) {
                 hiddenElement.remove();
             }
         }
+
+        // colour rendering of this instance (recommended mode when not chosen yet)
+        document.addEventListener('DOMContentLoaded', () => {
+            const modeField = document.getElementById('colourMode');
+            if (!modeField) return;
+            const saved = loadPluginSettings ? pluginSettings : {};
+            modeField.value = ['photo', 'vivid', 'graphics', 'manual'].includes(saved.colourMode) ? saved.colourMode : modeField.dataset.default;
+            const rendering = document.getElementById('colourRendering');
+            const savedRendering = saved.colourRendering === 'classic' ? 'photo' : saved.colourRendering;
+            rendering.value = ['photo', 'vivid', 'graphics'].includes(savedRendering) ? savedRendering : modeField.dataset.default;
+            document.querySelectorAll('.colour-slider input').forEach(slider => {
+                if (saved[slider.name] !== undefined && saved[slider.name] !== '') slider.value = saved[slider.name];
+                const output = slider.parentElement.querySelector('output');
+                const show = () => { output.textContent = Number(slider.value).toFixed(slider.step === '0.05' ? 2 : 1); };
+                slider.addEventListener('input', show);
+                show();
+            });
+            modeField.addEventListener('change', updateColourManual);
+            updateColourManual();
+        });
 
         // populate form values from plugin settings
         document.addEventListener('DOMContentLoaded', () => {
@@ -289,41 +432,95 @@
 </head>
 <body>
     <div class="frame">
-        <!-- Back Button -->
-        <button onclick="history.back()" class="back-button">← Back</button>
+        {% set active_page = 'plugin' %}
+        {% include 'partials/nav.html' %}
+
+        {% if plugin_instance %}
+        <a class="breadcrumb" href="{{ url_for('playlist.playlists') }}">← {{ _('Playlists') }}</a>
+        {% else %}
+        <a class="breadcrumb" href="{{ url_for('main.main_page') }}#plugins">← {{ _('All plugins') }}</a>
+        {% endif %}
 
         <!-- Plugin Title and Icon -->
-        <div class="app-header">
-            <div class="header-content">
-                <div class="title-container">
-                    <img src="{{ url_for('plugin.image', plugin_id=plugin.id, filename='icon.png') }}" alt="{{ plugin.display_name }} icon" class="app-icon">
-                    <h1 class="app-title">{{ plugin.display_name }}</h1>
-                    {% if api_key and api_key.required %}<span class="api-key-label" title="{{api_key.service}} (Set {{api_key.expected_key}} in .env)">Requires API Key</span>{% endif %}
+        <div class="page-header">
+            <div class="page-title">
+                <img src="{{ url_for('plugin.image', plugin_id=plugin.id, filename='icon.png') }}" alt="" class="app-icon">
+                <div>
+                    <h1>{% if plugin_instance %}{{ plugin_instance }}{% else %}{{ _(plugin.display_name) }}{% endif %}</h1>
+                    <div class="page-subtitle">
+                        {% if plugin_instance %}{{ _(plugin.display_name) }} · {{ _('editing a playlist item') }}
+                        {% else %}{{ _('Preview it, or add it to a playlist') }}{% endif %}
+                    </div>
                 </div>
-                {% if plugin_instance %}
-                    <button class="header-button" onclick="openModal('refreshSettingsModal')">Refresh Settings</button>
+                {% if api_key and api_key.required %}
+                <a class="badge api-key-label" href="{{ url_for('apikeys.apikeys_page') }}" title="{{ _('Set {key} on the API Keys page', key=api_key.expected_key) }}">🔑 {{ _('{service} needs an API key', service=api_key.service) }}</a>
                 {% endif %}
             </div>
-            <div id="loadingIndicator" class="loading-indicator"></div>
+            {% if plugin_instance %}
+            <button type="button" class="btn" onclick="openModal('refreshSettingsModal')" title="{{ _('How often the image is regenerated') }}">
+                <img src="{{ url_for('static', filename='icons/clock.svg') }}" alt="">
+                <span id="scheduleLabel">{{ refresh_settings | format_refresh_schedule or _('Refresh schedule') }}</span>
+            </button>
+            {% endif %}
         </div>
         <div class="separator"></div>
 
         <!-- Include plugin settings -->
-        <form id = "settingsForm" class="settings-form" onsubmit="return false;">
+        <form id="settingsForm" class="settings-form" onsubmit="return false;">
             <div class="settings-container">
                 {% include settings_template %}
+
+                {% if has_palette %}
+                <!-- How colours are converted for the e-paper palette -->
+                {% set recommended = ' (' ~ _('recommended') ~ ')' %}
+                <div class="form-group colour-mode-group">
+                    <label for="colourMode" class="form-label">{{ _('Colours on the display:') }}</label>
+                    <select id="colourMode" name="colourMode" class="form-input" data-default="{{ default_colour_mode }}">
+                        <option value="photo">{{ _('Photo: soft, light colours') }}{{ recommended if default_colour_mode == 'photo' }}</option>
+                        <option value="vivid">{{ _('Vivid photo: faithful, stronger colours') }}</option>
+                        <option value="graphics">{{ _('Graphics: vivid colours, crisp text') }}{{ recommended if default_colour_mode == 'graphics' }}</option>
+                        <option value="manual">{{ _('Manual: my own settings') }}</option>
+                    </select>
+                    <p class="form-help" style="flex-basis: 100%;">{{ _('Graphics mode adapts colours to the inks of the display (pastel colours become readable, text stays black). Use Preview with “Simulate the e-ink display” to compare.') }}</p>
+                </div>
+                <div class="colour-manual" id="colourManual" hidden>
+                    <p class="form-help">{{ _('These values replace the image settings of the Settings page for this instance only.') }}</p>
+                    <div class="form-group">
+                        <label for="colourRendering" class="form-label">{{ _('Rendering:') }}</label>
+                        <select id="colourRendering" name="colourRendering" class="form-input">
+                            <option value="photo">{{ _('Photo') }}</option>
+                            <option value="vivid">{{ _('Vivid photo') }}</option>
+                            <option value="graphics">{{ _('Graphics') }}</option>
+                        </select>
+                    </div>
+                    {% for field, key, label, max, step in [
+                        ('colourSaturation', 'saturation', _('Saturation:'), 2, 0.1),
+                        ('colourContrast', 'contrast', _('Contrast:'), 2, 0.1),
+                        ('colourBrightness', 'brightness', _('Brightness:'), 2, 0.1),
+                        ('colourSharpness', 'sharpness', _('Sharpness:'), 2, 0.1),
+                        ('colourInk', 'inky_saturation', _('Inky Driver Saturation:'), 1, 0.05)] %}
+                    <div class="form-group colour-slider">
+                        <label for="{{ field }}" class="form-label">{{ label }}</label>
+                        <input type="range" id="{{ field }}" name="{{ field }}" class="form-input"
+                               min="0" max="{{ max }}" step="{{ step }}"
+                               value="{{ global_image_settings.get(key, 0.5 if key == 'inky_saturation' else 1.0) }}">
+                        <output for="{{ field }}" class="colour-slider-value">{{ global_image_settings.get(key, 0.5 if key == 'inky_saturation' else 1.0) }}</output>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
 
                 <!-- Collapsible Style Settings Section -->
                 {% if style_settings %}
                 <div class="collapsible">
                     <button type="button" class="collapsible-header" onclick="toggleCollapsible(this)">
-                        Style <span class="collapsible-icon">▼</span>
+                        {{ _('Style') }} <span class="collapsible-icon">▼</span>
                     </button>
                     <div class="settings-container collapsible-content">
                         <div class="form-group">
 
                             <div class="form-group nowrap">
-                                <label for="selected-frame" class="form-label">Frame:</label>
+                                <label for="selected-frame" class="form-label">{{ _('Frame:') }}</label>
                                 <div id="frame-selection" class="image-grid">
                                     {% for frame in frame_styles %}
                                     <div
@@ -338,25 +535,25 @@
                                     </div>
                                     {% endfor %}
                                 </div>
-                                <input type="hidden" id="selected-frame" name="selectedFrame" value="{{ frame_styles[0].Name }}" />
+                                <input type="hidden" id="selected-frame" name="selectedFrame" value="{{ frame_styles[0].name }}" />
                             </div>
 
                             <div class="form-group">
-                                <label for="margin" class="form-label">Margins:</label>
+                                <label for="margin" class="form-label">{{ _('Margins:') }}</label>
                                 <div class="form-group nowrap">
-                                    <label for="topMargin" class="form-label">Top</label>
+                                    <label for="topMargin" class="form-label">{{ _('Top') }}</label>
                                     <input type="number" class="form-input" id="topMargin" name="topMargin" min="0" max="100" step="5"><span>px</span>
                                 </div>
                                 <div class="form-group nowrap">
-                                    <label for="bottomMargin" class="form-label">Bottom</label>
+                                    <label for="bottomMargin" class="form-label">{{ _('Bottom') }}</label>
                                     <input type="number" class="form-input" id="bottomMargin" name="bottomMargin" min="0" max="100" step="5"><span>px</span>
                                 </div>
                                 <div class="form-group nowrap">
-                                    <label for="leftMargin" class="form-label">Left</label>
+                                    <label for="leftMargin" class="form-label">{{ _('Left') }}</label>
                                     <input type="number" class="form-input" id="leftMargin" name="leftMargin" min="0" max="100" step="5"><span>px</span>
                                 </div>
                                 <div class="form-group nowrap">
-                                    <label for="rightMargin" class="form-label">Right</label>
+                                    <label for="rightMargin" class="form-label">{{ _('Right') }}</label>
                                     <input type="number" class="form-input" id="rightMargin" name="rightMargin" min="0" max="100" step="5"><span>px</span>
                                 </div>
                             </div>
@@ -364,20 +561,20 @@
 
                         <!-- Background Color Option -->
                         <div class="form-group">
-                            <label class="form-label">Background:</label>
+                            <label class="form-label">{{ _('Background:') }}</label>
                             <div class="form-group nowrap">
                                 <label>
                                     <input type="radio" name="backgroundOption" value="color" checked>
-                                    Color
+                                    {{ _('Color') }}
                                 </label>
                                 <input type="color" id="backgroundColor" name="backgroundColor" class="color-picker" value="#ffffff">
                             </div>
                             <div class="form-group nowrap">
                                 <label>
                                     <input type="radio" name="backgroundOption" value="image">
-                                    Image
+                                    {{ _('Image') }}
                                 </label>
-                                <label for="imageUpload" class="form-input file-upload-label" id="uploadButtonLabel">Upload Image</label>
+                                <label for="imageUpload" class="form-input file-upload-label" id="uploadButtonLabel">{{ _('Upload Image') }}</label>
                                 <input type="file" clear-on-submit id="imageUpload" name="backgroundImageFile" accept="image/*" class="file-upload-input" onchange="showFileName()">
                                 <div id="fileName" class="file-name" style="display: none;">
                                     <span id="fileNameText"></span>
@@ -391,7 +588,7 @@
 
                         <!-- Text Color Picker -->
                         <div class="form-group">
-                            <label for="textColor" class="form-label">Text Color:</label>
+                            <label for="textColor" class="form-label">{{ _('Text Color:') }}</label>
                             <input type="color" id="textColor" name="textColor" class="color-picker" value="#000000">
                         </div>
                     </div>
@@ -404,12 +601,17 @@
 
             <div class="buttons-container">
                 {% if plugin_instance %}
-                    <button type="button" onclick="handleAction('update_instance')" class="action-button">Save</button>
-                    <button type="button" onclick="openModal('scheduleModal')" class="action-button right">Save As...</button>
+                    <button type="button" onclick="handleAction('update_instance')" class="action-button">{{ _('Save') }}</button>
+                    <button type="button" onclick="showPreview()" class="action-button secondary" title="{{ _('See the image these settings produce, without touching the display') }}">{{ _('Preview') }}</button>
+                    <button type="button" onclick="openModal('scheduleModal')" class="action-button secondary" title="{{ _('Save these settings as a new item in a playlist') }}">{{ _('Save as new…') }}</button>
                 {% else %}
-                    <button type="button" onclick="handleAction()" class="action-button left">Update Now</button>
-                    <button type="button" onclick="openModal('scheduleModal')" class="action-button right">Add to Playlist</button>
+                    <button type="button" onclick="showPreview()" class="action-button secondary" title="{{ _('See the image these settings produce, without touching the display') }}">{{ _('Preview') }}</button>
+                    <button type="button" onclick="openModal('scheduleModal')" class="action-button">{{ _('Add to playlist') }}</button>
                 {% endif %}
+            </div>
+            <div class="busy-row" aria-live="polite">
+                <div id="loadingIndicator" class="loading-indicator small left-align"></div>
+                <span id="loadingText" class="muted"></span>
             </div>
         </form>
     </div>
@@ -417,33 +619,67 @@
     <!-- Success/Error Modal -->
     {% include 'response_modal.html' %}
 
+    <!-- In-browser preview of the rendered image -->
+    <div id="previewModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="previewModalTitle">
+        <div class="modal-content preview-modal-content">
+            <button type="button" class="close-button" onclick="closePreview()" aria-label="{{ _('Close') }}">×</button>
+            <h2 id="previewModalTitle">{{ _('Preview') }}</h2>
+            {% if has_palette %}
+            <div class="preview-options">
+                <label class="check-label">
+                    <input type="checkbox" id="simulateDisplay" checked onchange="showPreview(true)">
+                    <span>{{ _('Simulate the e-ink display') }}</span>
+                </label>
+                <select id="previewColourMode" class="form-input" onchange="syncColourMode(this.value)" aria-label="{{ _('Colours on the display:') }}">
+                    <option value="photo">{{ _('Photo') }}{{ recommended if default_colour_mode == 'photo' }}</option>
+                    <option value="vivid">{{ _('Vivid photo') }}</option>
+                    <option value="graphics">{{ _('Graphics') }}{{ recommended if default_colour_mode == 'graphics' }}</option>
+                    <option value="manual">{{ _('Manual') }}</option>
+                </select>
+            </div>
+            {% endif %}
+            <div class="preview-frame" id="previewFrame">
+                <div class="preview-status" id="previewStatus">
+                    <div class="loading-indicator" style="display:block; margin: 0 auto 10px;"></div>
+                    <span id="previewStatusText">{{ _('Rendering… this can take a few seconds.') }}</span>
+                </div>
+                <img id="previewImage" alt="{{ _('Preview of the image') }}" hidden>
+            </div>
+            <p class="form-help" id="previewHint">{{ _('This is what the display will show. Nothing has been sent to the display yet.') }}</p>
+            <div class="buttons-container">
+                <button type="button" class="action-button secondary" onclick="showPreview()">{{ _('Render again') }}</button>
+                <button type="button" class="action-button" id="sendToDisplayButton" onclick="sendPreviewToDisplay()" disabled>{{ _('Show on the display') }}</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Refresh Settings Modal (for editing existing instances) -->
     {% if plugin_instance %}
-    <div id="refreshSettingsModal" class="modal">
+    <div id="refreshSettingsModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="refreshModalTitle">
         <div class="modal-content">
-            <span class="close-button" onclick="closeModal('refreshSettingsModal')">×</span>
-            <h2>Refresh Settings</h2>
+            <button type="button" class="close-button" onclick="closeModal('refreshSettingsModal')" aria-label="{{ _('Close') }}">×</button>
+            <h2 id="refreshModalTitle">{{ _('Refresh schedule') }}</h2>
             <div class="separator"></div>
-            <form id="refreshSettingsForm" class="settings-form">
+            <form id="refreshSettingsForm" class="settings-form" onsubmit="return false;">
                 {% set prefix = "edit" %}
                 {% include 'refresh_settings_form.html' %}
             </form>
             <div class="buttons-container">
-                <button type="button" onclick="saveRefreshSettings()" class="action-button">Save</button>
+                <button type="button" onclick="saveRefreshSettings()" class="action-button">{{ _('Save') }}</button>
             </div>
         </div>
     </div>
     {% endif %}
 
-    <!-- Schedule Configuration Modal -->
-    <div id="scheduleModal" class="modal">
+    <!-- Add to playlist / save as new -->
+    <div id="scheduleModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="scheduleModalTitle">
         <div class="modal-content">
-            <span class="close-button" onclick="closeModal('scheduleModal')">×</span>
-            <h2>Add to Playlist</h2>
+            <button type="button" class="close-button" onclick="closeModal('scheduleModal')" aria-label="{{ _('Close') }}">×</button>
+            <h2 id="scheduleModalTitle">{% if plugin_instance %}{{ _('Save as a new item') }}{% else %}{{ _('Add to playlist') }}{% endif %}</h2>
             <div class="separator"></div>
-            <form id="scheduleForm" class="settings-form">
+            <form id="scheduleForm" class="settings-form" novalidate onsubmit="handleAction('add_to_playlist'); return false;">
                 <div class="form-group">
-                    <label for="playlist" class="form-label">Playlist:</label>
+                    <label for="playlist" class="form-label">{{ _('Playlist') }}</label>
                     <select id="playlist" name="playlist" class="form-input">
                         {% for playlist_name in playlists %}
                         <option value="{{playlist_name}}">{{playlist_name}}</option>
@@ -451,17 +687,18 @@
                     </select>
                 </div>
                 <div class="form-group">
-                    <label for="instance" class="form-label">Instance Name:</label>
-                    <input type="text" id="instance" name="instance_name" placeholder="Type something..." required class="form-input">
+                    <label for="instance" class="form-label">{{ _('Name') }}</label>
+                    <input type="text" id="instance" name="instance_name" placeholder="{{ _('e.g. {name} kitchen', name=_(plugin.display_name)) }}" required class="form-input" maxlength="60" autocomplete="off">
                 </div>
+                <p class="form-help">{{ _('Letters, numbers and spaces only. The name must be unique.') }}</p>
 
                 {% set prefix = "add" %}
                 {% include 'refresh_settings_form.html' %}
 
+                <div class="buttons-container">
+                    <button type="submit" class="action-button">{% if plugin_instance %}{{ _('Save as new') }}{% else %}{{ _('Add to playlist') }}{% endif %}</button>
+                </div>
             </form>
-            <div class="buttons-container">
-                <button type="button" onclick="handleAction('add_to_playlist')" class="action-button">Save</button>
-            </div>
         </div>
     </div>
 </body>

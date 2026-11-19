@@ -60,7 +60,9 @@
 
         if (loadPluginSettings) {
             document.getElementById('textPrompt').value = pluginSettings.textPrompt || '';
-            document.getElementById('randomizePrompt').checked = pluginSettings.randomizePrompt || false;
+            { const toggle = document.getElementById('randomizePrompt');
+              toggle.checked = pluginSettings.randomizePrompt === true || pluginSettings.randomizePrompt === 'true';
+              toggle.value = toggle.checked ? 'true' : 'false'; }
 
             imageModel = pluginSettings.imageModel;
             quality = pluginSettings.quality;

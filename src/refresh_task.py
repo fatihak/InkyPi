@@ -7,10 +7,15 @@ import pytz
 from datetime import datetime, timezone
 from plugins.plugin_registry import get_plugin_instance
 from utils.image_utils import compute_image_hash
+from utils import eink
+from utils import eink
 from model import RefreshInfo, PlaylistManager
 from PIL import Image
 
 logger = logging.getLogger(__name__)
+
+# Manual request meaning "show the next plugin of the active playlist"
+NEXT_IN_PLAYLIST = object()
 
 class RefreshTask:
     """Handles the logic for refreshing the display using a background thread."""
@@ -94,6 +99,10 @@ class RefreshTask:
                         logger.info("Manual update requested")
                         refresh_action = self.manual_update_request
                         self.manual_update_request = ()
+                        if refresh_action is NEXT_IN_PLAYLIST:
+                            # Resolved here, in the refresh thread, so the playlist index is
+                            # never advanced concurrently by the web thread and the scheduler.
+                            refresh_action = self._next_in_active_playlist(playlist_manager, current_dt)
                     else:
 
                         if self.device_config.get_config("log_system_stats"):
@@ -119,7 +128,10 @@ class RefreshTask:
                         # check if image is the same as current image
                         if image_hash != latest_refresh.image_hash:
                             logger.info(f"Updating display. | refresh_info: {refresh_info}")
-                            self.display_manager.display_image(image, image_settings=plugin.config.get("image_settings", []))
+                            colour_plan = eink.colour_plan(refresh_action.get_plugin_id(), refresh_action.get_settings(),
+                                                           self.device_config.get_config("image_settings"))
+                            self.display_manager.display_image(image, image_settings=plugin.config.get("image_settings", []),
+                                                               colour_plan=colour_plan)
                         else:
                             logger.info(f"Image already displayed, skipping refresh. | refresh_info: {refresh_info}")
 
@@ -148,6 +160,21 @@ class RefreshTask:
                 raise self.refresh_result.get("exception")
         else:
             logger.warning("Background refresh task is not running, unable to do a manual update")
+
+    def display_next(self):
+        """Shows the next plugin of the active playlist now (like a skip button)."""
+        self.manual_update(NEXT_IN_PLAYLIST)
+
+    def _next_in_active_playlist(self, playlist_manager, current_dt):
+        playlist = playlist_manager.determine_active_playlist(current_dt)
+        if not playlist:
+            raise RuntimeError("No playlist is active at this time.")
+        playlist_manager.active_playlist = playlist.name
+        plugin_instance = playlist.get_next_plugin()
+        if plugin_instance is None:
+            raise RuntimeError(f"Playlist '{playlist.name}' has no enabled plugin.")
+        logger.info(f"Skipping to next plugin. | playlist: {playlist.name} | plugin_instance: {plugin_instance.name}")
+        return PlaylistRefresh(playlist, plugin_instance)
 
     def signal_config_change(self):
         """Notify the background thread that config has changed (e.g., interval updated)."""
@@ -183,6 +210,9 @@ class RefreshTask:
             return None, None
 
         plugin = playlist.get_next_plugin()
+        if plugin is None:
+            logger.info(f"Active playlist '{playlist.name}' has no enabled plugins.")
+            return None, None
         logger.info(f"Determined next plugin. | active_playlist: {playlist.name} | plugin_instance: {plugin.name}")
 
         return playlist, plugin
@@ -217,6 +247,10 @@ class RefreshAction:
         """Return the plugin ID associated with this refresh."""
         raise NotImplementedError("Subclasses must implement the get_plugin_id method.")
 
+    def get_settings(self):
+        """Plugin settings used for this refresh (for display options such as the colour mode)."""
+        return {}
+
 class ManualRefresh(RefreshAction):
     """Performs a manual refresh based on a plugin's ID and its associated settings.
     
@@ -237,8 +271,32 @@ class ManualRefresh(RefreshAction):
         """Return refresh metadata as a dictionary."""
         return {"refresh_type": "Manual Update", "plugin_id": self.plugin_id}
 
+    def get_settings(self):
+        return self.plugin_settings
+
     def get_plugin_id(self):
         """Return the plugin ID associated with this refresh."""
+        return self.plugin_id
+
+class PreviewRefresh(RefreshAction):
+    """Displays an image already rendered for a preview, without rendering it again
+    (a random or AI-generated image would otherwise differ from the one previewed)."""
+
+    def __init__(self, plugin_id: str, image, plugin_settings=None):
+        self.plugin_id = plugin_id
+        self.image = image
+        self.plugin_settings = plugin_settings or {}
+
+    def execute(self, plugin, device_config, current_dt: datetime):
+        return self.image.copy()
+
+    def get_settings(self):
+        return self.plugin_settings
+
+    def get_refresh_info(self):
+        return {"refresh_type": "Manual Update", "plugin_id": self.plugin_id}
+
+    def get_plugin_id(self):
         return self.plugin_id
 
 class PlaylistRefresh(RefreshAction):
@@ -266,6 +324,9 @@ class PlaylistRefresh(RefreshAction):
     def get_plugin_id(self):
         """Return the plugin ID associated with this refresh."""
         return self.plugin_instance.plugin_id
+
+    def get_settings(self):
+        return self.plugin_instance.settings
 
     def execute(self, plugin, device_config, current_dt: datetime):
         """Performs a refresh for the specified plugin instance within its playlist context."""

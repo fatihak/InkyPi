@@ -1,29 +1,42 @@
-// Function to Show the Response Modal
+// Toast notification shown at the top of the page (success or failure)
+let responseModalTimer = null;
+
 function showResponseModal(status, message) {
     const modal = document.getElementById('responseModal');
-    const modalContent = document.getElementById('modalContent');
     const modalMessage = document.getElementById('modalMessage');
+    if (!modal || !modalMessage) return;
 
-    // Remove any previous status classes
     modal.classList.remove('success', 'failure');
-
-    // Add the correct class based on the status
-    if (status === 'success') {
-        modal.classList.add('success'); // Apply success class
-    } else {
-        modal.classList.add('failure'); // Apply failure class
-    }
+    modal.classList.add(status === 'success' ? 'success' : 'failure');
+    modal.setAttribute('role', status === 'success' ? 'status' : 'alert');
     modalMessage.textContent = message;
-
-    // Display Modal
     modal.style.display = 'block';
 
-    // Auto-Close Modal After 10 Seconds
-    setTimeout(() => closeResponseModal(), 10000);
+    // Restart the auto-close timer so a newer message is not closed early
+    clearTimeout(responseModalTimer);
+    responseModalTimer = setTimeout(closeResponseModal, status === 'success' ? 5000 : 10000);
 }
 
-// Function to Close the Modal
 function closeResponseModal() {
     const modal = document.getElementById('responseModal');
-    modal.style.display = 'none';
+    if (modal) modal.style.display = 'none';
+}
+
+// Show a message stored before a page reload/redirect (sessionStorage "storedMessage")
+window.addEventListener('load', () => {
+    let stored = null;
+    try {
+        stored = sessionStorage.getItem('storedMessage');
+        sessionStorage.removeItem('storedMessage');
+    } catch (e) { /* storage unavailable */ }
+    if (stored) {
+        try {
+            const { type, text } = JSON.parse(stored);
+            showResponseModal(type, text);
+        } catch (e) { /* ignore malformed message */ }
+    }
+});
+
+function storeMessageForNextPage(type, text) {
+    try { sessionStorage.setItem('storedMessage', JSON.stringify({ type, text })); } catch (e) { /* ignore */ }
 }

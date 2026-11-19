@@ -30,6 +30,14 @@ class AbstractDisplay:
         """
         raise NotImplementedError("Method 'initialize_display(...) must be provided in a subclass.")
 
+    def get_palette(self):
+        """Palette of a limited-colour display ({"pure": [...], "measured": [...]}), or None.
+
+        Displays that return a palette accept palette images made of the pure colours
+        without re-dithering them (used by the "graphics" colour rendering mode).
+        """
+        return None
+
     def display_image(self, image, image_settings=[]):
         """
         Abstract method to display an image on the screen.  Implementations of this
