@@ -14,7 +14,8 @@ Two rendering modes:
     2. pixels already close to an ink are snapped onto it (crisp text and backgrounds,
        no red fringes from dithered anti-aliasing);
     3. faint details (dim letters on a coloured background) get their lightness
-       difference back, amplified, since adapting colours tends to merge close shades;
+       difference back, amplified, since adapting colours tends to merge close shades,
+       and are drawn with one solid ink;
     4. ordered (Bayer) dithering: regular patterns instead of noisy error diffusion on
        flat areas.
   The result only contains the display's pure colours, so the driver sends it as is.
@@ -223,12 +224,14 @@ def _ordered_indices(rgb, quant_palette, neutral_inks=(), spread=96.0, neutral_c
     return indices
 
 
-def _sharpen_edges(indices, pixels, rgb, palette, neutral_inks, edge_range=64, text_threshold=170,
-                   neutral_chroma=24):
-    """Text and thin lines: grey anti-aliasing pixels on an edge become black or white.
+def _sharpen_edges(indices, pixels, rgb, palette, neutral_inks, quant_palette=None, edge_range=64,
+                   text_threshold=170, neutral_chroma=24):
+    """Text and thin lines: anti-aliasing pixels on an edge get one solid ink.
 
     Dithering them would give isolated dots, which e-paper renders poorly (thin, broken
-    letters). A threshold above mid-grey keeps strokes slightly bolder, like on paper.
+    letters, specks around light text). Grey edge pixels become black or white, with a
+    threshold above mid-grey that keeps strokes slightly bolder, like on paper; coloured
+    edge pixels (shadows, coloured text) become the closest ink.
     """
     if len(neutral_inks) < 2:
         return indices
@@ -244,6 +247,9 @@ def _sharpen_edges(indices, pixels, rgb, palette, neutral_inks, edge_range=64, t
     luma = np.asarray(grey, dtype=np.int16)
     out = indices.copy()
     out[edge] = np.where(luma[edge] < text_threshold, black, white)
+    coloured_edge = ~neutral & (local_range > edge_range)
+    if quant_palette is not None and coloured_edge.any():
+        out[coloured_edge] = _distances(rgb[coloured_edge][None].astype(np.float32), quant_palette)[0].argmin(-1)
     return out
 
 
@@ -251,7 +257,10 @@ def _restore_faint_detail(pixels, rgb, radius=4, faint_range=96, min_loss=10, ga
     """Faint details (dim letters on a coloured background, thin light lines) lose their
     contrast when colours are adapted: two close shades of blue both become the blue ink.
     Where the original local contrast is low, the lost lightness difference is added back,
-    so the dithering still tells them apart. Strong edges (black text) are left alone.
+    amplified. Strong edges (black text) are left alone.
+
+    Returns the corrected colours and the mask of faint details that were made lighter:
+    those are drawn with one solid ink (see _solid_faint_details).
     """
     coeffs = np.array([0.299, 0.587, 0.114], dtype=np.float32)
     luma = pixels.astype(np.float32) @ coeffs
@@ -261,7 +270,7 @@ def _restore_faint_detail(pixels, rgb, radius=4, faint_range=96, min_loss=10, ga
                    - np.asarray(grey.filter(ImageFilter.MinFilter(size)), dtype=np.int16))
     faint = (local_range > 12) & (local_range < faint_range)
     if not faint.any():
-        return rgb
+        return rgb, np.zeros(faint.shape, dtype=bool)
 
     def detail(values):
         image = Image.fromarray(np.clip(values, 0, 255).astype(np.uint8), "L")
@@ -271,7 +280,29 @@ def _restore_faint_detail(pixels, rgb, radius=4, faint_range=96, min_loss=10, ga
     apply = faint & (np.abs(missing) >= min_loss)
     out = rgb.copy()
     out[apply] += missing[apply][:, None]
-    return np.clip(out, 0, 255)
+    # Solid ink only for tints of the surrounding colour (white text faded over blue stays
+    # blue): not for greys (black and white only) nor blends of different colours, such as
+    # an orange line anti-aliased over blue bars.
+    hsv = np.asarray(Image.fromarray(pixels).convert("HSV"), dtype=np.int16)
+    around = np.asarray(Image.fromarray(pixels).filter(ImageFilter.GaussianBlur(radius)).convert("HSV"),
+                        dtype=np.int16)
+    hue_gap = np.abs((hsv[..., 0] - around[..., 0] + 128) % 256 - 128)       # 256 = full circle
+    coloured = (pixels.max(-1).astype(np.int16) - pixels.min(-1)) >= 24
+    tint = coloured & (around[..., 1] >= 40) & (hue_gap <= 12)
+    return np.clip(out, 0, 255), apply & (missing > 0) & tint
+
+
+def _solid_faint_details(indices, rgb, mask, quant_palette, neutral_inks):
+    """Faint light details become the closest coloured ink, without a dither pattern:
+    dim letters on navy are drawn in plain blue, crisp and distinct from both the
+    background and the bright (white) letters."""
+    chromatic = [i for i in range(len(quant_palette)) if i not in neutral_inks]
+    if not mask.any() or not chromatic:
+        return indices
+    dist = _distances(rgb[mask][None].astype(np.float32), quant_palette)[0]
+    out = indices.copy()
+    out[mask] = np.array(chromatic)[dist[:, chromatic].argmin(-1)]
+    return out
 
 
 def render_indices(image, palette, mode, saturation=0.5):
@@ -286,10 +317,11 @@ def render_indices(image, palette, mode, saturation=0.5):
         adapted = adapt_colours(Image.fromarray(unique_rgb[None, :, :], "RGB"), palette)
         snapped = _snap(np.asarray(adapted, dtype=np.float32), quant)[0]
         rgb = snapped[inverse.ravel()].reshape(pixels.shape)
-        rgb = _restore_faint_detail(pixels, rgb)
+        rgb, faint = _restore_faint_detail(pixels, rgb)
         neutral_inks = _neutral_inks(palette)
         indices = _ordered_indices(rgb, quant, neutral_inks)
-        return _sharpen_edges(indices, pixels, rgb, palette, neutral_inks)
+        indices = _solid_faint_details(indices, rgb, faint, quant, neutral_inks)
+        return _sharpen_edges(indices, pixels, rgb, palette, neutral_inks, quant)
     image = image.convert("RGB")
     if mode == VIVID:
         quant = perceived_palette(palette)

@@ -121,6 +121,9 @@ def test_graphics_mode_keeps_faint_letters_on_a_coloured_background():
     background = np.zeros_like(letters)
     background[:8] = True
     assert luma[letters].mean() - luma[background].mean() > 25
+    # drawn with one solid ink (blue), not a dither pattern
+    inner = letters & np.roll(letters, 1, 1) & np.roll(letters, -1, 1)
+    assert (indices[inner] == 4).mean() > 0.9
 
 
 def test_vivid_mode_uses_the_real_ink_colours():
