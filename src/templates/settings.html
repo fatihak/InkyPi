@@ -193,6 +193,15 @@
                         </label>
                     </div>
                 </div>
+                {% if device_settings.get('display_type', 'inky').startswith('epd') %}
+                <div class="form-group">
+                    <label for="clearEveryNUpdates">Screen Clear Interval:</label>
+                    <span title="Blanks the whole screen before every Nth update to remove leftover traces of the previous image (ghosting). 1 = every update (default), 0 = never. Skipping it roughly halves update time.">ⓘ</span>
+                    <span>Every</span>
+                    <input type="number" id="clearEveryNUpdates" name="clearEveryNUpdates" class="form-input" required min="0" step="1" value="{{ device_settings.get('clear_every_n_updates', 1) }}">
+                    <span>updates</span>
+                </div>
+                {% endif %}
 
                 <div class="collapsible">
                     <button type="button" class="collapsible-header" onclick="toggleCollapsible(this)">

@@ -51,6 +51,9 @@ def save_settings():
         plugin_cycle_interval_seconds = calculate_seconds(int(interval), unit)
         if plugin_cycle_interval_seconds > 86400 or plugin_cycle_interval_seconds <= 0:
             return jsonify({"error": "Plugin cycle interval must be less than 24 hours"}), 400
+        clear_every_n_updates = form_data.get("clearEveryNUpdates")
+        if clear_every_n_updates is not None and not clear_every_n_updates.isdecimal():
+            return jsonify({"error": "Screen clear interval must be a whole number (0 or more)"}), 400
 
         settings = {
             "name": form_data.get("deviceName"),
@@ -69,6 +72,8 @@ def save_settings():
         }
         if "inky_saturation" in form_data:
             settings["image_settings"]["inky_saturation"] = float(form_data.get("inky_saturation", "0.5"))
+        if clear_every_n_updates is not None:
+            settings["clear_every_n_updates"] = int(clear_every_n_updates)
         device_config.update_config(settings)
 
         if plugin_cycle_interval_seconds != previous_interval_seconds:
